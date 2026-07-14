@@ -1,92 +1,111 @@
-# START HERE: The Long Haul product-intent implementation admission
+# START HERE: The Long Haul course-generation admission and rollback
 
-**Last updated:** `2026-07-14T07-40-37-04-00`  
+**Last updated:** `2026-07-14T09-03-47-04-00`  
 **Repository:** `LuminaryLabs-Publish/TheLongHaul`  
 **Branch:** `main`  
-**Reviewed implementation revision:** `54f2367040c84f7517ad43579f3344fcdb0d9988`  
-**Reviewed pre-audit repository head:** `c8649eb8c5f24a1dd39f6fd22136c4c1ff1e3b12`  
-**Status:** `product-intent-implementation-admission-audited`
+**Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
+**Reviewed pre-audit documentation head:** `263db0d039cdf38b8c892c04c7ba21ced5f95812`  
+**Status:** `course-generation-admission-rollback-audited`
 
 ## Summary
 
-`TheLongHaul` still contains no executable product source. The only non-audit product file is `README.md`, containing the heading `# TheLongHaul`.
+`TheLongHaul` is now a complete static browser game. One `index.html` composes ten Nexus Engine kits, two streamed world providers, Three.js WebGL presentation, a Canvas2D exploration map, DOM menus and HUD, WebAudio, localStorage, and a GitHub Pages workflow.
 
-The initial audit correctly established a zero-implementation baseline. This run adds the missing governance boundary between external product ideas and source-backed implementation truth: no gameplay, domain, kit, service, render, build, or deployment claim is admitted until it is declared in a checked-in product manifest and proven by executable source.
+The current priority is procedural-course admission. The generation plan mutates live engine, world, DOM, and GPU participants before final validation. A late failure shows a reload overlay but does not roll back the partial candidate, preserve the predecessor generation, or publish a typed result.
 
 ## Plan ledger
 
-**Goal:** preserve the truthful empty-repository baseline while defining the exact source evidence required for the first implementation to become an admitted Nexus Engine product.
+**Goal:** make the first executable implementation accurately documented and require every generated course to be fully validated, atomically adopted, recoverable on failure, and proven through its first visible frame.
 
-- [x] Compare all 11 accessible Publish repositories with the ten eligible central ledgers.
+- [x] Compare all 11 accessible Publish repositories and ten eligible central ledgers.
 - [x] Exclude `LuminaryLabs-Publish/TheCavalryOfRome`.
-- [x] Confirm all ten eligible repositories have root `.agent` state.
-- [x] Confirm every eligible repository head matches its recorded repo-local documentation head.
-- [x] Select only `TheLongHaul` by the oldest eligible central documentation timestamp.
-- [x] Reinspect repository history, README, root audit state, and machine registry.
-- [x] Confirm the implemented interaction loop remains absent.
-- [x] Confirm the implemented runtime-domain, kit, adapter, service, and render counts remain zero.
-- [x] Define product-intent and implementation-admission boundaries without counting planned surfaces as implemented.
-- [x] Add a new timestamped tracker, turn ledger, and focused audit family.
-- [ ] Add a checked-in product manifest.
-- [ ] Add an executable entry point and immutable Nexus Engine provider identity.
-- [ ] Add source, headless, browser, build, and deployment proof before readiness claims.
+- [x] Select only `TheLongHaul` because it changed from a recently added empty skeleton to its first complete executable implementation.
+- [x] Inspect the pinned imports, engine composition, generation pipeline, gameplay, presentation, storage, and deployment workflow.
+- [x] Identify the full interaction loop.
+- [x] Identify all active domains.
+- [x] Inventory 10 engine kits, two world providers, six browser/product adapters, and one deployment adapter.
+- [x] Add the timestamped tracker and focused audit family.
+- [ ] Implement detached generation candidates and atomic adoption.
+- [ ] Add rollback, retry, fault-injection, and first-frame proof.
+- [ ] Add source, browser, artifact, and Pages validation commands.
 
-## Current interaction loop
+## Interaction loop
 
 ```txt
-repository open
-  -> README heading is visible
-  -> no application boots
-  -> no command is admitted
-  -> no simulation advances
-  -> no state transition occurs
-  -> no frame is rendered
-  -> no result is published
+title
+  -> generate a seeded five-branch course
+  -> choose one valid destination among five plausible depots
+  -> prepare streamed terrain, roads, hazards, and truck
+  -> drive a six-minute freight run
+  -> discover roads and depots
+  -> reject wrong yards with a 20-second penalty
+  -> protect fuel, truck, and cargo
+  -> use at most one roadside recovery
+  -> deliver to the valid yard or fail
+  -> receive golf-style score
+  -> retry the same seed, generate a new seed, or return to title
 ```
 
-## Current domains
+## Domains
 
 ```txt
-repository identity
-README documentation
-repo-local audit tracking
-central ledger tracking
+browser lifecycle and provider resolution
+Nexus Engine runtime and ticking
+Core Scene
+Core World and streamed effect providers
+Core Input
+Long Haul Delivery
+Core Simulation
+Vehicle Dynamics
+Route Field
+Resource Pressure
+Hazard Field
+Telemetry
+procedural route and course generation
+Three.js WebGL presentation
+DOM scene and HUD projection
+Canvas2D map projection
+WebAudio
+localStorage settings and best score
+GitHub Pages deployment
+audit governance
 ```
 
-There are no implemented gameplay, input, simulation, world, physics, camera, graphics, UI, audio, persistence, networking, build, deployment, or Nexus Engine runtime domains.
-
-## Current kits and services
+## Kit and surface census
 
 ```txt
-implemented DSKs and kits: 0
-implemented adapters: 0
-implemented runtime services: 0
-render surfaces: 0
+engine-installed DSKs and kits: 10
+world effect providers: 2
+browser/product adapters: 6
+deployment adapters: 1
+total source-backed surfaces: 19
+render surfaces: 3
 executable validation commands: 0
 ```
 
 ## Required authority
 
 ```txt
-the-long-haul-product-intent-implementation-admission-authority-domain
+the-long-haul-course-generation-admission-rollback-authority-domain
 ```
 
-It must separate approved product intent from implemented capability and reject any admission that lacks source revision identity, entry points, provider identity, domain ownership, kit/service manifests, an authored interaction state machine, proof commands, and deployment policy.
+It must prepare route, destination, terrain, providers, hazards, truck, and presentation as one detached candidate; validate all participants; atomically adopt the accepted generation; preserve the predecessor until first-frame acknowledgement; and dispose failed candidates with a typed recoverable result.
 
 ## Read this run first
 
 1. `current-audit.md`
 2. `known-gaps.md`
-3. `trackers/2026-07-14T07-40-37-04-00/project-breakdown.md`
-4. `architecture-audit/2026-07-14T07-40-37-04-00-product-intent-implementation-admission-dsk-map.md`
-5. `product-intent-audit/2026-07-14T07-40-37-04-00-product-manifest-source-of-truth-contract.md`
-6. `gameplay-audit/2026-07-14T07-40-37-04-00-absent-player-loop-and-first-contract.md`
-7. `interaction-audit/2026-07-14T07-40-37-04-00-command-result-absence-map.md`
-8. `deploy-audit/2026-07-14T07-40-37-04-00-no-runtime-release-evidence-gate.md`
-9. `central-sync-audit/2026-07-14T07-40-37-04-00-oldest-selection-zero-implementation-reconciliation.md`
-10. `next-steps.md`
-11. `validation.md`
+3. `trackers/2026-07-14T09-03-47-04-00/project-breakdown.md`
+4. `architecture-audit/2026-07-14T09-03-47-04-00-course-generation-admission-dsk-map.md`
+5. `course-generation-audit/2026-07-14T09-03-47-04-00-staged-generation-rollback-contract.md`
+6. `render-audit/2026-07-14T09-03-47-04-00-partial-world-visible-before-admission-gap.md`
+7. `gameplay-audit/2026-07-14T09-03-47-04-00-generation-failure-run-entry-loop.md`
+8. `interaction-audit/2026-07-14T09-03-47-04-00-course-generation-command-result-map.md`
+9. `deploy-audit/2026-07-14T09-03-47-04-00-single-file-runtime-proof-gate.md`
+10. `central-sync-audit/2026-07-14T09-03-47-04-00-first-runtime-implementation-reconciliation.md`
+11. `next-steps.md`
+12. `validation.md`
 
 ## Next safe ledge
 
-Add one small `product.manifest.json` before runtime code. It should declare the product status, player-facing loop, supported route, initial state machine, immutable Nexus Engine revision, intended domain owners, entry points, proof commands, artifact root, and explicit non-goals.
+Extract course generation behind one command/result boundary without restructuring the rest of Nexus Engine. Keep the existing kit ownership, but stop clearing the accepted predecessor until the candidate route, world, hazards, truck, and offscreen frame all pass admission.
