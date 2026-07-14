@@ -1,33 +1,33 @@
-# START HERE: The Long Haul course-generation admission and rollback
+# START HERE: The Long Haul delivery terminal settlement
 
-**Last updated:** `2026-07-14T09-03-47-04-00`  
+**Last updated:** `2026-07-14T14-39-54-04-00`  
 **Repository:** `LuminaryLabs-Publish/TheLongHaul`  
 **Branch:** `main`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit documentation head:** `263db0d039cdf38b8c892c04c7ba21ced5f95812`  
-**Status:** `course-generation-admission-rollback-audited`
+**Reviewed pre-audit repository head:** `ed31f1903e0400200688465abfc124268eeadd9e`  
+**Status:** `delivery-terminal-result-settlement-authority-audited`
 
 ## Summary
 
-`TheLongHaul` is now a complete static browser game. One `index.html` composes ten Nexus Engine kits, two streamed world providers, Three.js WebGL presentation, a Canvas2D exploration map, DOM menus and HUD, WebAudio, localStorage, and a GitHub Pages workflow.
+`TheLongHaul` is a complete static browser game built from ten Nexus Engine kits, two streamed world providers, Three.js, Canvas2D, DOM UI, WebAudio, localStorage and Pages deployment.
 
-The current priority is procedural-course admission. The generation plan mutates live engine, world, DOM, and GPU participants before final validation. A late failure shows a reload overlay but does not roll back the partial candidate, preserve the predecessor generation, or publish a typed result.
+The current priority is terminal delivery settlement. An accepted depot check creates the score result before the resolve phase finishes. The simulation then marks the run completed before processing same-step collision, impact, failure and timeout proposals. This gives delivery implicit precedence through system order, can omit same-step damage or penalties from the score, and publishes no immutable result identity or matching visible-frame receipt.
 
 ## Plan ledger
 
-**Goal:** make the first executable implementation accurately documented and require every generated course to be fully validated, atomically adopted, recoverable on failure, and proven through its first visible frame.
+**Goal:** make delivery, failure, same-step impacts, final metrics, score, persistence, presentation and retry settle through one explicit terminal policy and one immutable run outcome.
 
 - [x] Compare all 11 accessible Publish repositories and ten eligible central ledgers.
 - [x] Exclude `LuminaryLabs-Publish/TheCavalryOfRome`.
-- [x] Select only `TheLongHaul` because it changed from a recently added empty skeleton to its first complete executable implementation.
-- [x] Inspect the pinned imports, engine composition, generation pipeline, gameplay, presentation, storage, and deployment workflow.
-- [x] Identify the full interaction loop.
-- [x] Identify all active domains.
-- [x] Inventory 10 engine kits, two world providers, six browser/product adapters, and one deployment adapter.
-- [x] Add the timestamped tracker and focused audit family.
-- [ ] Implement detached generation candidates and atomic adoption.
-- [ ] Add rollback, retry, fault-injection, and first-frame proof.
-- [ ] Add source, browser, artifact, and Pages validation commands.
+- [x] Confirm every eligible repository is tracked, has root `.agent` state and matches its central documentation head.
+- [x] Select only `TheLongHaul` using the oldest eligible central documentation timestamp.
+- [x] Inspect delivery checks, simulation resolution, condition pressure, penalties, score construction, results UI, best-score storage and retry.
+- [x] Preserve the complete 10-kit, two-provider, six-adapter and one-deployment-adapter census.
+- [x] Add a new timestamped tracker and focused audit family.
+- [ ] Add explicit terminal proposal collection and precedence.
+- [ ] Finalize all same-step metrics before score construction.
+- [ ] Publish immutable outcome, persistence and visible-frame receipts.
+- [ ] Add terminal-conflict, retry-lineage and source-to-Pages fixtures.
 
 ## Interaction loop
 
@@ -35,15 +35,16 @@ The current priority is procedural-course admission. The generation plan mutates
 title
   -> generate a seeded five-branch course
   -> choose one valid destination among five plausible depots
-  -> prepare streamed terrain, roads, hazards, and truck
+  -> prepare streamed terrain, roads, hazards and truck
   -> drive a six-minute freight run
-  -> discover roads and depots
+  -> explore roads and candidate depots
   -> reject wrong yards with a 20-second penalty
-  -> protect fuel, truck, and cargo
-  -> use at most one roadside recovery
-  -> deliver to the valid yard or fail
-  -> receive golf-style score
-  -> retry the same seed, generate a new seed, or return to title
+  -> protect fuel, truck and cargo
+  -> check the valid yard while stopped
+  -> settle delivery or failure for the current step
+  -> calculate golf-style score
+  -> show results and optionally update best score
+  -> retry the same seed, generate a new seed or return to title
 ```
 
 ## Domains
@@ -61,7 +62,9 @@ Route Field
 Resource Pressure
 Hazard Field
 Telemetry
-procedural route and course generation
+procedural course generation
+terminal proposal collection and outcome settlement
+score policy, result history and retry lineage
 Three.js WebGL presentation
 DOM scene and HUD projection
 Canvas2D map projection
@@ -86,26 +89,26 @@ executable validation commands: 0
 ## Required authority
 
 ```txt
-the-long-haul-course-generation-admission-rollback-authority-domain
+the-long-haul-delivery-terminal-result-settlement-authority-domain
 ```
 
-It must prepare route, destination, terrain, providers, hazards, truck, and presentation as one detached candidate; validate all participants; atomically adopt the accepted generation; preserve the predecessor until first-frame acknowledgement; and dispose failed candidates with a typed recoverable result.
+It must collect delivery, timeout, damage and failure proposals for one RunId and StepId; apply an explicit precedence policy; finalize penalties and resource values; create one immutable score-bound outcome; persist only accepted evidence; project the same result into the DOM; acknowledge the matching frame; and require retry to cite the predecessor outcome.
 
 ## Read this run first
 
 1. `current-audit.md`
 2. `known-gaps.md`
-3. `trackers/2026-07-14T09-03-47-04-00/project-breakdown.md`
-4. `architecture-audit/2026-07-14T09-03-47-04-00-course-generation-admission-dsk-map.md`
-5. `course-generation-audit/2026-07-14T09-03-47-04-00-staged-generation-rollback-contract.md`
-6. `render-audit/2026-07-14T09-03-47-04-00-partial-world-visible-before-admission-gap.md`
-7. `gameplay-audit/2026-07-14T09-03-47-04-00-generation-failure-run-entry-loop.md`
-8. `interaction-audit/2026-07-14T09-03-47-04-00-course-generation-command-result-map.md`
-9. `deploy-audit/2026-07-14T09-03-47-04-00-single-file-runtime-proof-gate.md`
-10. `central-sync-audit/2026-07-14T09-03-47-04-00-first-runtime-implementation-reconciliation.md`
+3. `trackers/2026-07-14T14-39-54-04-00/project-breakdown.md`
+4. `architecture-audit/2026-07-14T14-39-54-04-00-delivery-terminal-settlement-dsk-map.md`
+5. `outcome-audit/2026-07-14T14-39-54-04-00-delivery-result-score-retry-contract.md`
+6. `render-audit/2026-07-14T14-39-54-04-00-terminal-result-visible-frame-gap.md`
+7. `gameplay-audit/2026-07-14T14-39-54-04-00-delivery-check-terminal-precedence-loop.md`
+8. `interaction-audit/2026-07-14T14-39-54-04-00-delivery-command-settlement-result-map.md`
+9. `deploy-audit/2026-07-14T14-39-54-04-00-delivery-terminal-fixture-gate.md`
+10. `central-sync-audit/2026-07-14T14-39-54-04-00-oldest-selection-delivery-settlement-reconciliation.md`
 11. `next-steps.md`
 12. `validation.md`
 
 ## Next safe ledge
 
-Extract course generation behind one command/result boundary without restructuring the rest of Nexus Engine. Keep the existing kit ownership, but stop clearing the accepted predecessor until the candidate route, world, hazards, truck, and offscreen frame all pass admission.
+Keep the existing delivery and simulation kits. Add one terminal settlement coordinator after proposal collection and before result construction, persistence, results transition or retry.
