@@ -1,45 +1,56 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "repository": "LuminaryLabs-Publish/TheLongHaul",
   "branch": "main",
-  "auditTimestamp": "2026-07-14T02-40-58-04-00",
-  "reviewedSourceRevision": "54f2367040c84f7517ad43579f3344fcdb0d9988",
-  "status": "repository-bootstrap-admission-audited",
+  "auditTimestamp": "2026-07-14T07-40-37-04-00",
+  "reviewedImplementationRevision": "54f2367040c84f7517ad43579f3344fcdb0d9988",
+  "reviewedPreAuditRepositoryHead": "c8649eb8c5f24a1dd39f6fd22136c4c1ff1e3b12",
+  "status": "product-intent-implementation-admission-audited",
+  "implementationClassification": "documentation-only",
   "implementedDomains": [
     "repository-identity",
     "readme-documentation",
-    "repo-local-audit-tracking"
+    "repo-local-audit-governance",
+    "central-ledger-governance"
   ],
   "implementedKits": [],
   "implementedAdapters": [],
   "implementedServices": [],
   "renderSurfaces": [],
+  "validationCommands": [],
   "counts": {
+    "implementedRuntimeDomains": 0,
     "implementedKits": 0,
     "implementedAdapters": 0,
     "implementedRuntimeServices": 0,
-    "renderSurfaces": 0
+    "renderSurfaces": 0,
+    "executableValidationCommands": 0
   },
   "plannedAuthority": {
-    "domain": "the-long-haul-project-bootstrap-admission-authority-domain",
+    "domain": "the-long-haul-product-intent-implementation-admission-authority-domain",
     "status": "planned-not-implemented",
     "surfaces": [
-      "product-manifest-kit",
+      "product-intent-manifest-kit",
+      "intent-schema-validation-kit",
+      "intent-revision-fingerprint-kit",
       "repository-revision-kit",
       "provider-identity-kit",
       "entry-point-manifest-kit",
       "domain-composition-manifest-kit",
       "kit-service-inventory-kit",
       "interaction-loop-contract-kit",
+      "command-result-contract-kit",
       "validation-command-manifest-kit",
+      "artifact-policy-kit",
       "deployment-policy-kit",
+      "implementation-classification-kit",
       "implementation-admission-result-kit"
     ]
   },
   "validation": {
-    "executableCommands": [],
     "runtimeClaims": false,
     "renderClaims": false,
+    "buildClaims": false,
     "deploymentClaims": false
   }
 }

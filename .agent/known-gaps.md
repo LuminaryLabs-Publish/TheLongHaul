@@ -1,47 +1,46 @@
 # Known gaps
 
-## Repository and product identity
+## Product identity and intent
 
-- No authored product manifest.
-- No declared scope, experience, supported platform or completion condition.
-- No compatibility or provider policy.
+- No checked-in product manifest.
+- No schema version, accepted intent revision, or intent fingerprint.
+- No declared supported route, platform, player-facing loop, completion condition, or explicit non-goals.
+- No immutable Nexus Engine provider policy.
 
 ## Interaction and gameplay
 
-- No boot sequence.
-- No menu, run, result or retry state.
-- No input commands.
-- No simulation or time authority.
-- No player, vehicle, route, freight, risk, discovery, delivery or scoring implementation.
+- No executable boot sequence.
+- No menu, generation, run, delivery, result, retry, or shutdown state.
+- No input commands or typed results.
+- No simulation, time, route, freight, vehicle, depot, discovery, risk, score, or outcome authority.
 
-## Domains and kits
+## Domains, kits, and services
 
 - No Nexus Engine dependency.
-- No installed domains.
-- No DSKs or kits.
-- No service registry or ownership map.
-- No command, event, snapshot, reset or disposal contracts.
+- No installed runtime domains.
+- No source-backed DSKs, kits, or adapters.
+- No capability-token, service-ownership, snapshot, reset, rollback, or disposal contracts.
+- Planned audit surfaces are not implementation.
 
 ## Rendering and presentation
 
-- No visual surface.
-- No renderer, scene, camera, UI or visible-frame evidence.
-- A `render-audit/` folder is not required yet because there is no render implementation to inspect.
+- No HTML, Canvas2D, WebGL, WebGPU, or native visual surface.
+- No renderer, scene, camera, HUD, loading state, or visible-frame evidence.
+- A `render-audit/` folder remains inapplicable until a visual surface exists.
 
 ## Persistence and platform
 
-- No save format or migration policy.
-- No audio, storage, networking or platform adapter.
-- No build artifact or static-host contract.
+- No save schema, migration, audio, storage, networking, or platform adapter.
+- No host lifecycle or public runtime contract.
 
 ## Validation and deployment
 
-- No package manifest.
-- No syntax, unit, headless, browser, build or deployment command.
-- No GitHub Actions workflow.
-- No GitHub Pages evidence.
+- No package or build manifest.
+- No syntax, unit, headless, browser, build, artifact, or deployment command.
+- No workflow, Pages configuration, deployed route, or source-to-artifact parity evidence.
 
 ## Governance
 
-- The initial repository had no root `.agent` state.
-- The central repo had no ledger entry for this repository before this run.
+- Product ideas discussed outside the repository are not source truth.
+- No automated guard currently rejects runtime commits that omit the product manifest or kit/service inventory.
+- No implementation-admission result can yet distinguish documentation-only, incomplete, stale, and executable states.
