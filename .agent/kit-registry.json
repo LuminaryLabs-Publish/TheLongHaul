@@ -2,55 +2,189 @@
   "schemaVersion": 2,
   "repository": "LuminaryLabs-Publish/TheLongHaul",
   "branch": "main",
-  "auditTimestamp": "2026-07-14T07-40-37-04-00",
-  "reviewedImplementationRevision": "54f2367040c84f7517ad43579f3344fcdb0d9988",
-  "reviewedPreAuditRepositoryHead": "c8649eb8c5f24a1dd39f6fd22136c4c1ff1e3b12",
-  "status": "product-intent-implementation-admission-audited",
-  "implementationClassification": "documentation-only",
+  "auditTimestamp": "2026-07-14T09-03-47-04-00",
+  "reviewedImplementationRevision": "4ab7591224f23f3cb84450f0aa101bd78fe95d25",
+  "reviewedPreAuditRepositoryHead": "263db0d039cdf38b8c892c04c7ba21ced5f95812",
+  "status": "course-generation-admission-rollback-audited",
+  "implementationClassification": "executable-static-browser-game",
+  "providers": {
+    "nexusEngine": "c5548de504072bf09eb68986b98aca0292903803",
+    "three": "0.165.0"
+  },
   "implementedDomains": [
-    "repository-identity",
-    "readme-documentation",
+    "browser-lifecycle",
+    "provider-resolution",
+    "core-scene",
+    "core-world",
+    "core-input",
+    "long-haul-delivery",
+    "core-simulation",
+    "vehicle-dynamics",
+    "route-field",
+    "resource-pressure",
+    "hazard-field",
+    "telemetry",
+    "procedural-course-generation",
+    "world-effect-streaming",
+    "webgl-presentation",
+    "dom-ui-hud",
+    "canvas-map",
+    "web-audio",
+    "browser-storage",
+    "github-pages-deployment",
     "repo-local-audit-governance",
     "central-ledger-governance"
   ],
-  "implementedKits": [],
-  "implementedAdapters": [],
-  "implementedServices": [],
-  "renderSurfaces": [],
+  "implementedKits": [
+    {
+      "id": "core-scene-kit",
+      "factory": "createCoreSceneKit",
+      "services": ["scene-registry", "current-scene", "transition-request", "exit-validation", "scene-snapshot"]
+    },
+    {
+      "id": "core-world-domain",
+      "factory": "createCoreWorldDomain",
+      "services": ["world-register", "world-remove", "grid-partition", "focus", "active-cell-lifecycle", "provider-ordering", "world-validation"]
+    },
+    {
+      "id": "long-haul-core-input-kit",
+      "factory": "createCoreInputKit",
+      "services": ["action-manifest", "keyboard-bindings", "input-contexts", "driving-intent", "input-reset"]
+    },
+    {
+      "id": "long-haul-delivery-domain-kit",
+      "factory": "defineDomainServiceKit",
+      "services": ["seed", "generation-progress", "candidate-depots", "destination-selection", "depot-checks", "retry", "run-result", "snapshot", "reset"]
+    },
+    {
+      "id": "long-haul-core-simulation-kit",
+      "factory": "createCoreSimulationKit",
+      "services": ["run-reset", "run-start", "pause", "resume", "timer", "distance", "penalty-ledger", "collisions", "recovery", "failure", "completion"]
+    },
+    {
+      "id": "vehicle-dynamics-kit",
+      "factory": "createVehicleDynamicsKit",
+      "services": ["heavy-truck-state", "vehicle-input", "kinematics", "boost", "bounds", "impact-events", "reset"]
+    },
+    {
+      "id": "long-haul-route",
+      "factory": "createRouteFieldKit",
+      "services": ["route-markers", "route-corridors", "nearest-marker", "route-state", "reset"]
+    },
+    {
+      "id": "long-haul-condition",
+      "factory": "createResourcePressureKit",
+      "services": ["fuel", "truck-condition", "cargo-condition", "bounded-adjustment", "state", "reset"]
+    },
+    {
+      "id": "long-haul-wildlife",
+      "factory": "createHazardFieldKit",
+      "services": ["hazard-state", "hazard-motion", "bounds", "circle-collision", "collision-events", "reset"]
+    },
+    {
+      "id": "long-haul-telemetry",
+      "factory": "createTelemetryKit",
+      "services": ["truck-history", "run-history", "condition-history", "delivery-history", "reset"]
+    }
+  ],
+  "implementedWorldProviders": [
+    {
+      "id": "long-haul-terrain-provider",
+      "phase": "foundation",
+      "provides": ["terrain:surface"],
+      "services": ["prepare-cell", "update-cell", "release-cell", "effect-descriptor", "active-cell-snapshot", "reset"]
+    },
+    {
+      "id": "long-haul-course-provider",
+      "phase": "population",
+      "requires": ["terrain:surface"],
+      "provides": ["route:content"],
+      "services": ["prepare-cell", "update-cell", "release-cell", "roads", "depots", "signs", "vegetation", "obstacles", "effect-descriptor", "active-cell-snapshot", "reset"]
+    }
+  ],
+  "implementedAdapters": [
+    {
+      "id": "procedural-course-generator",
+      "services": ["seed-hash", "deterministic-rng", "five-branch-graph", "confusing-fork", "depot-placement", "par-calculation", "course-validation", "generation-plan"]
+    },
+    {
+      "id": "three-webgl-presentation-adapter",
+      "services": ["renderer", "scene", "camera", "lighting", "atmosphere", "streamed-meshes", "truck-rig", "wildlife-rig", "dust", "shadows", "resize", "raf"]
+    },
+    {
+      "id": "dom-scene-hud-adapter",
+      "services": ["title", "help", "settings", "generation-progress", "hud", "pause", "results", "loss", "toast", "failure-overlay"]
+    },
+    {
+      "id": "canvas-map-adapter",
+      "services": ["explored-road-map", "depot-map", "rejected-yard-map", "truck-map", "map-resize"]
+    },
+    {
+      "id": "web-audio-adapter",
+      "services": ["engine-loop", "wind-loop", "click-cue", "wrong-yard-cue", "impact-cue", "delivery-cue"]
+    },
+    {
+      "id": "browser-storage-adapter",
+      "services": ["settings-document", "best-score-document"]
+    }
+  ],
+  "deploymentAdapters": [
+    {
+      "id": "github-pages-workflow",
+      "services": ["main-push-trigger", "pages-configure", "root-artifact-upload", "pages-deploy"]
+    }
+  ],
+  "renderSurfaces": [
+    "webgl-game-canvas",
+    "canvas2d-paper-map",
+    "dom-menu-hud-overlay"
+  ],
   "validationCommands": [],
   "counts": {
-    "implementedRuntimeDomains": 0,
-    "implementedKits": 0,
-    "implementedAdapters": 0,
-    "implementedRuntimeServices": 0,
-    "renderSurfaces": 0,
+    "implementedRuntimeDomains": 20,
+    "implementedKits": 10,
+    "implementedWorldProviders": 2,
+    "implementedAdapters": 6,
+    "deploymentAdapters": 1,
+    "totalSourceBackedSurfaces": 19,
+    "renderSurfaces": 3,
     "executableValidationCommands": 0
   },
   "plannedAuthority": {
-    "domain": "the-long-haul-product-intent-implementation-admission-authority-domain",
+    "domain": "the-long-haul-course-generation-admission-rollback-authority-domain",
     "status": "planned-not-implemented",
     "surfaces": [
-      "product-intent-manifest-kit",
-      "intent-schema-validation-kit",
-      "intent-revision-fingerprint-kit",
-      "repository-revision-kit",
-      "provider-identity-kit",
-      "entry-point-manifest-kit",
-      "domain-composition-manifest-kit",
-      "kit-service-inventory-kit",
-      "interaction-loop-contract-kit",
-      "command-result-contract-kit",
-      "validation-command-manifest-kit",
-      "artifact-policy-kit",
-      "deployment-policy-kit",
-      "implementation-classification-kit",
-      "implementation-admission-result-kit"
+      "course-generation-command-kit",
+      "generation-attempt-identity-kit",
+      "seed-revision-kit",
+      "generation-plan-manifest-kit",
+      "generation-unit-receipt-kit",
+      "course-graph-candidate-kit",
+      "route-field-candidate-kit",
+      "destination-candidate-kit",
+      "terrain-cell-candidate-kit",
+      "world-provider-candidate-kit",
+      "hazard-candidate-kit",
+      "truck-candidate-kit",
+      "course-validation-receipt-kit",
+      "generation-resource-manifest-kit",
+      "generation-rollback-kit",
+      "predecessor-generation-preservation-kit",
+      "offscreen-course-probe-kit",
+      "course-generation-result-kit",
+      "first-admitted-course-frame-kit",
+      "generation-fault-injection-kit",
+      "source-pages-course-parity-kit"
     ]
   },
   "validation": {
-    "runtimeClaims": false,
-    "renderClaims": false,
+    "sourceInspected": true,
+    "runtimeClaims": true,
+    "renderClaims": true,
     "buildClaims": false,
-    "deploymentClaims": false
+    "deploymentConfigured": true,
+    "deploymentSmokeClaim": false,
+    "atomicGenerationClaim": false,
+    "rollbackClaim": false
   }
 }
