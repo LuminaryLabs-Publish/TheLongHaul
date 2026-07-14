@@ -1,18 +1,16 @@
 # Validation
 
-**Audit timestamp:** `2026-07-14T09-03-47-04-00`
+**Audit timestamp:** `2026-07-14T14-39-54-04-00`
 
 ## Repository evidence
 
 ```txt
 reviewed implementation revision: 4ab7591224f23f3cb84450f0aa101bd78fe95d25
-reviewed pre-audit documentation head: 263db0d039cdf38b8c892c04c7ba21ced5f95812
-implementation commit: feat: publish The Long Haul
+reviewed pre-audit repository head: ed31f1903e0400200688465abfc124268eeadd9e
 runtime entry point: index.html
 Pages workflow: .github/workflows/deploy-pages.yml
 Nexus Engine revision: c5548de504072bf09eb68986b98aca0292903803
 Three.js version: 0.165.0
-combined status records on implementation commit: none
 ```
 
 ## Inventory evidence
@@ -33,13 +31,16 @@ executable validation commands: 0
 
 ## Source checks completed
 
-- Confirmed the import map pins Three.js and Nexus Engine.
-- Confirmed the engine composition includes scene, world, input, delivery, simulation, vehicle, route, condition, hazard, and telemetry kits.
-- Confirmed two ordered world-effect providers expose terrain and route-content capabilities.
-- Confirmed the player loop includes generation, driving, five depot checks, penalties, completion, failure, score, same-seed retry, and new-seed retry.
-- Confirmed the WebGL world is made visible before final route and world validation units run.
-- Confirmed late generation failure shows a reload overlay without a typed result or complete rollback path.
-- Confirmed the Pages workflow uploads the repository root directly.
+- Confirmed the complete title, generation, driving, depot-check, completion, failure, score and retry loop.
+- Confirmed `processDrivingBeforeTick()` captures delivery metrics and emits the depot check before `engine.tick()`.
+- Confirmed the Delivery system constructs `runResult` when the accepted check is processed in `simulate`.
+- Confirmed the Simulation system marks the run completed before later collision and impact loops.
+- Confirmed collision and impact handling skips once status is no longer `running`.
+- Confirmed explicit failure requests are ignored after completion and timeout only applies while running.
+- Confirmed the effective accepted-delivery precedence is implicit rather than a source-declared policy object.
+- Confirmed the result lacks RunId, StepId, ResultId, policy revision and fingerprint.
+- Confirmed results UI and best-score storage consume the mutable result without participant receipts or frame acknowledgement.
+- Confirmed retry uses a transient time-derived ID and does not cite an immutable predecessor outcome.
 
 ## Change boundary
 
@@ -47,14 +48,12 @@ executable validation commands: 0
 documentation changed: yes
 runtime source changed: no
 HTML or CSS changed: no
-gameplay changed: no
+gameplay or score behavior changed: no
 rendering changed: no
 settings or persistence changed: no
-dependencies changed: no
-package scripts changed: no
+dependencies or package scripts changed: no
 tests changed: no
-workflow changed: no
-deployment behavior changed: no
+workflow or deployment behavior changed: no
 branch created: no
 pull request created: no
 ```
@@ -64,11 +63,13 @@ pull request created: no
 ```txt
 syntax command: unavailable
 unit tests: unavailable
-deterministic course test: unavailable
-headless game test: unavailable
-browser startup smoke: unavailable
-generation rollback fixture: unavailable
-first admitted-frame fixture: unavailable
+terminal precedence fixture: unavailable
+same-step delivery-plus-impact fixture: unavailable
+same-step delivery-plus-timeout fixture: unavailable
+result fingerprint fixture: unavailable
+best-score persistence fixture: unavailable
+retry-lineage fixture: unavailable
+browser terminal-frame fixture: unavailable
 build command: unavailable
 artifact inspection: unavailable
 Pages smoke: not run
@@ -76,4 +77,4 @@ Pages smoke: not run
 
 ## Claims not made
 
-This audit does not claim atomic course generation, complete rollback, stale-attempt rejection, browser startup containment, first-frame convergence, artifact parity, deployed readiness, or production readiness is implemented.
+This audit does not claim explicit terminal precedence, complete same-step metric settlement, immutable result identity, score-policy versioning, durable result history, persistence correctness, retry lineage, visible-frame convergence, artifact parity, deployed readiness or production readiness is implemented.
