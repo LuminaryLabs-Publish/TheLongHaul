@@ -1,59 +1,57 @@
-# START HERE: The Long Haul delivery terminal settlement
+# START HERE: The Long Haul pause suspension authority
 
-**Last updated:** `2026-07-14T14-39-54-04-00`  
+**Last updated:** `2026-07-14T19-39-36-04-00`  
 **Repository:** `LuminaryLabs-Publish/TheLongHaul`  
 **Branch:** `main`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `ed31f1903e0400200688465abfc124268eeadd9e`  
-**Status:** `delivery-terminal-result-settlement-authority-audited`
+**Reviewed pre-audit repository head:** `9e76011ec6ab4acc665f99c08067e3a758833865`  
+**Status:** `pause-scheduler-input-world-suspension-authority-audited`
 
 ## Summary
 
-`TheLongHaul` is a complete static browser game built from ten Nexus Engine kits, two streamed world providers, Three.js, Canvas2D, DOM UI, WebAudio, localStorage and Pages deployment.
+`TheLongHaul` is a complete static Nexus Engine browser freight game with ten engine kits, two streamed world providers, Three.js, Canvas2D, DOM UI, WebAudio, localStorage and Pages deployment.
 
-The current priority is terminal delivery settlement. An accepted depot check creates the score result before the resolve phase finishes. The simulation then marks the run completed before processing same-step collision, impact, failure and timeout proposals. This gives delivery implicit precedence through system order, can omit same-step damage or penalties from the score, and publishes no immutable result identity or matching visible-frame receipt.
+The current audit isolates pause ownership. `pauseGame()` pauses only the Core Simulation run, zeroes vehicle velocity and changes scene. The perpetual RAF still calls `engine.tick(dt)` for every kit, continues wildlife, dust, truck, camera and render updates, and preserves held browser keys. The source therefore has no authoritative proof that the whole gameplay world is suspended or that pre-pause held input cannot immediately affect the resumed run.
 
 ## Plan ledger
 
-**Goal:** make delivery, failure, same-step impacts, final metrics, score, persistence, presentation and retry settle through one explicit terminal policy and one immutable run outcome.
+**Goal:** make pause and resume explicit generation-bound transactions that suspend every gameplay-mutating domain, settle held input, preserve an intentional presentation policy and prove the first paused and resumed frames.
 
 - [x] Compare all 11 accessible Publish repositories and ten eligible central ledgers.
 - [x] Exclude `LuminaryLabs-Publish/TheCavalryOfRome`.
-- [x] Confirm every eligible repository is tracked, has root `.agent` state and matches its central documentation head.
-- [x] Select only `TheLongHaul` using the oldest eligible central documentation timestamp.
-- [x] Inspect delivery checks, simulation resolution, condition pressure, penalties, score construction, results UI, best-score storage and retry.
-- [x] Preserve the complete 10-kit, two-provider, six-adapter and one-deployment-adapter census.
-- [x] Add a new timestamped tracker and focused audit family.
-- [ ] Add explicit terminal proposal collection and precedence.
-- [ ] Finalize all same-step metrics before score construction.
-- [ ] Publish immutable outcome, persistence and visible-frame receipts.
-- [ ] Add terminal-conflict, retry-lineage and source-to-Pages fixtures.
+- [x] Confirm every eligible repository is tracked and has root `.agent` state.
+- [x] Select only `TheLongHaul` using the oldest synchronized central update timestamp.
+- [x] Inspect pause, resume, keyboard state, RAF, engine ticking, vehicle, hazards, telemetry and presentation.
+- [x] Preserve the complete 19-surface source-backed inventory.
+- [x] Add a timestamped tracker and pause-specific audit family.
+- [ ] Add one versioned pause policy and scheduler gate.
+- [ ] Clear or journal held input at pause and require fresh post-resume intent.
+- [ ] Add paused-domain, stale-input and visible-frame fixtures.
 
 ## Interaction loop
 
 ```txt
 title
-  -> generate a seeded five-branch course
-  -> choose one valid destination among five plausible depots
-  -> prepare streamed terrain, roads, hazards and truck
-  -> drive a six-minute freight run
-  -> explore roads and candidate depots
-  -> reject wrong yards with a 20-second penalty
-  -> protect fuel, truck and cargo
-  -> check the valid yard while stopped
-  -> settle delivery or failure for the current step
-  -> calculate golf-style score
-  -> show results and optionally update best score
-  -> retry the same seed, generate a new seed or return to title
+  -> generate seeded five-branch course
+  -> choose one valid destination among five depots
+  -> stream terrain, roads, hazards and truck
+  -> drive timed freight run
+  -> pause with Escape
+  -> Core Simulation changes to paused
+  -> vehicle velocity is zeroed and pause UI appears
+  -> global RAF and engine tick continue
+  -> resume with Escape or button
+  -> held browser keys can still be present
+  -> continue delivery, failure, results and retry loop
 ```
 
 ## Domains
 
 ```txt
-browser lifecycle and provider resolution
-Nexus Engine runtime and ticking
+browser keyboard, blur, resize and RAF lifecycle
+Nexus Engine world, scheduler, clock, events and resources
 Core Scene
-Core World and streamed effect providers
+Core World
 Core Input
 Long Haul Delivery
 Core Simulation
@@ -63,13 +61,13 @@ Resource Pressure
 Hazard Field
 Telemetry
 procedural course generation
-terminal proposal collection and outcome settlement
-score policy, result history and retry lineage
+streamed terrain and course content
+pause policy, scheduler admission and stale-input settlement
 Three.js WebGL presentation
 DOM scene and HUD projection
 Canvas2D map projection
 WebAudio
-localStorage settings and best score
+localStorage
 GitHub Pages deployment
 audit governance
 ```
@@ -77,7 +75,7 @@ audit governance
 ## Kit and surface census
 
 ```txt
-engine-installed DSKs and kits: 10
+engine-installed kits: 10
 world effect providers: 2
 browser/product adapters: 6
 deployment adapters: 1
@@ -89,26 +87,22 @@ executable validation commands: 0
 ## Required authority
 
 ```txt
-the-long-haul-delivery-terminal-result-settlement-authority-domain
+the-long-haul-pause-scheduler-input-world-suspension-authority-domain
 ```
 
-It must collect delivery, timeout, damage and failure proposals for one RunId and StepId; apply an explicit precedence policy; finalize penalties and resource values; create one immutable score-bound outcome; persist only accepted evidence; project the same result into the DOM; acknowledge the matching frame; and require retry to cite the predecessor outcome.
+It must publish one `PauseRevision`, gate all gameplay-mutating systems and commands, settle held input, define which visual systems may continue, reject stale pre-pause work, and acknowledge matching paused and resumed frames.
 
 ## Read this run first
 
 1. `current-audit.md`
 2. `known-gaps.md`
-3. `trackers/2026-07-14T14-39-54-04-00/project-breakdown.md`
-4. `architecture-audit/2026-07-14T14-39-54-04-00-delivery-terminal-settlement-dsk-map.md`
-5. `outcome-audit/2026-07-14T14-39-54-04-00-delivery-result-score-retry-contract.md`
-6. `render-audit/2026-07-14T14-39-54-04-00-terminal-result-visible-frame-gap.md`
-7. `gameplay-audit/2026-07-14T14-39-54-04-00-delivery-check-terminal-precedence-loop.md`
-8. `interaction-audit/2026-07-14T14-39-54-04-00-delivery-command-settlement-result-map.md`
-9. `deploy-audit/2026-07-14T14-39-54-04-00-delivery-terminal-fixture-gate.md`
-10. `central-sync-audit/2026-07-14T14-39-54-04-00-oldest-selection-delivery-settlement-reconciliation.md`
+3. `trackers/2026-07-14T19-39-36-04-00/project-breakdown.md`
+4. `architecture-audit/2026-07-14T19-39-36-04-00-pause-scheduler-world-suspension-dsk-map.md`
+5. `pause-audit/2026-07-14T19-39-36-04-00-scheduler-hazard-input-suspension-contract.md`
+6. `render-audit/2026-07-14T19-39-36-04-00-paused-frame-world-motion-gap.md`
+7. `gameplay-audit/2026-07-14T19-39-36-04-00-pause-clock-world-continues-loop.md`
+8. `interaction-audit/2026-07-14T19-39-36-04-00-pause-resume-command-admission-map.md`
+9. `deploy-audit/2026-07-14T19-39-36-04-00-pause-suspension-browser-fixture-gate.md`
+10. `central-sync-audit/2026-07-14T19-39-36-04-00-oldest-selection-pause-suspension-reconciliation.md`
 11. `next-steps.md`
 12. `validation.md`
-
-## Next safe ledge
-
-Keep the existing delivery and simulation kits. Add one terminal settlement coordinator after proposal collection and before result construction, persistence, results transition or retry.
