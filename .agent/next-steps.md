@@ -2,35 +2,38 @@
 
 ## Plan ledger
 
-**Goal:** admit the smallest truthful Nexus Engine implementation without allowing product intent, runtime capability, or release readiness to exist only in conversational context.
+**Goal:** keep the current gameplay and domain ownership intact while making procedural generation atomic, recoverable, testable, and visible only after admission.
 
-- [ ] Add `product.manifest.json` with schema version, product status, supported route, player-facing loop, states, completion condition, and non-goals.
-- [ ] Record the immutable Nexus Engine provider revision and expected exports.
-- [ ] Add one executable entry point with an explicit startup failure result.
-- [ ] Define the first state machine before adding presentation breadth.
-- [ ] Define typed command inputs and terminal results for every transition.
-- [ ] Declare installed domains, hierarchy, `requires`, `provides`, state ownership, and disposal ownership.
-- [ ] Inventory every implemented kit, adapter, and offered service from source.
-- [ ] Keep DOM, Three.js, audio, storage, and platform code as adapters around engine truth.
-- [ ] Add deterministic headless proof for the first loop.
-- [ ] Add browser proof only when a browser entry point exists.
-- [ ] Add a render audit and first-visible-frame proof only when a visual surface exists.
-- [ ] Add build and Pages policy only after source validation passes.
-- [ ] Update `.agent/kit-registry.json` only from source-backed evidence.
-- [ ] Add a new timestamped tracker for every future breakdown.
+- [ ] Add `CourseGenerationCommand` with attempt ID, seed, predecessor generation, and expected provider revisions.
+- [ ] Move route graph and depot creation into a detached candidate object.
+- [ ] Keep candidate route and destination data out of live engine resources until validation succeeds.
+- [ ] Prepare terrain, provider descriptors, hazards, and truck spawn under the same candidate generation.
+- [ ] Add one complete candidate resource and disposal manifest.
+- [ ] Validate exactly five branches, five unique depots, one destination, reachability, bounds, provider order, active cells, hazards, and truck spawn.
+- [ ] Render one offscreen probe frame before adding `world-visible`.
+- [ ] Atomically adopt delivery, route, world, hazards, truck, scene, and render revisions.
+- [ ] Preserve the accepted predecessor until the first admitted course frame is acknowledged.
+- [ ] Roll back every candidate participant on failure or supersession.
+- [ ] Replace reload-only failure with same-seed retry, new-seed retry, and title actions.
+- [ ] Add deterministic same-seed and different-seed course fixtures.
+- [ ] Add generation-unit fault injection for route, terrain, provider, hazard, truck, and probe failures.
+- [ ] Add browser proof for startup, generation, rollback, driving entry, result, loss, and retry.
+- [ ] Add a package manifest with explicit check and test commands.
+- [ ] Restrict the Pages artifact to declared product and audit files.
+- [ ] Add source-to-Pages fingerprint and live-route smoke evidence.
 
-## Minimum first composition
+## Preserve
 
 ```txt
-Core Startup
-Core Scene
-Core Input
-Core Simulation
-one product run domain
-one thin browser host
-Core Presentation only after a visual contract exists
+existing 10-kit Nexus Engine composition
+existing delivery and simulation ownership
+five-branch and five-depot game structure
+wrong-depot penalty loop
+fuel, truck, cargo, hazard, and recovery risk
+same-seed and new-seed retry options
+Three.js, DOM, Canvas2D, audio, and storage as host adapters
 ```
 
-## Admission rule
+## First implementation slice
 
-A proposed surface is not implemented because it appears in a plan. It becomes implemented only when source, ownership, callable behavior, and validation evidence all exist at the reviewed revision.
+Introduce a detached `GenerationCandidate` and `CourseGenerationResult` around the existing generation-unit array. Do not restructure Nexus Engine or replace the existing kits.
