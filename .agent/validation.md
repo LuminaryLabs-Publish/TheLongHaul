@@ -1,44 +1,60 @@
 # Validation
 
-**Audit timestamp:** `2026-07-14T07-40-37-04-00`
+**Audit timestamp:** `2026-07-14T09-03-47-04-00`
 
 ## Repository evidence
 
 ```txt
-implementation-bearing revision inspected: 54f2367040c84f7517ad43579f3344fcdb0d9988
-pre-audit repository head: c8649eb8c5f24a1dd39f6fd22136c4c1ff1e3b12
-repository commit count before this run: 2
-implementation commit content: README.md only
-README content: # TheLongHaul
-second commit class: audit documentation only
+reviewed implementation revision: 4ab7591224f23f3cb84450f0aa101bd78fe95d25
+reviewed pre-audit documentation head: 263db0d039cdf38b8c892c04c7ba21ced5f95812
+implementation commit: feat: publish The Long Haul
+runtime entry point: index.html
+Pages workflow: .github/workflows/deploy-pages.yml
+Nexus Engine revision: c5548de504072bf09eb68986b98aca0292903803
+Three.js version: 0.165.0
+combined status records on implementation commit: none
 ```
 
 ## Inventory evidence
 
 ```txt
-product source files: 1 README heading
-runtime entry points: 0
-runtime domains: 0
-implemented kits: 0
-implemented adapters: 0
-implemented runtime services: 0
-render surfaces: 0
-executable proof commands: 0
+engine-installed kits: 10
+world effect providers: 2
+browser/product adapters: 6
+deployment adapters: 1
+total source-backed surfaces: 19
+render surfaces: 3
+runtime entry points: 1
+workflow files: 1
+package manifests: 0
+test files: 0
+executable validation commands: 0
 ```
+
+## Source checks completed
+
+- Confirmed the import map pins Three.js and Nexus Engine.
+- Confirmed the engine composition includes scene, world, input, delivery, simulation, vehicle, route, condition, hazard, and telemetry kits.
+- Confirmed two ordered world-effect providers expose terrain and route-content capabilities.
+- Confirmed the player loop includes generation, driving, five depot checks, penalties, completion, failure, score, same-seed retry, and new-seed retry.
+- Confirmed the WebGL world is made visible before final route and world validation units run.
+- Confirmed late generation failure shows a reload overlay without a typed result or complete rollback path.
+- Confirmed the Pages workflow uploads the repository root directly.
 
 ## Change boundary
 
 ```txt
 documentation changed: yes
 runtime source changed: no
-README changed: no
+HTML or CSS changed: no
 gameplay changed: no
 rendering changed: no
+settings or persistence changed: no
 dependencies changed: no
 package scripts changed: no
 tests changed: no
 workflow changed: no
-deployment changed: no
+deployment behavior changed: no
 branch created: no
 pull request created: no
 ```
@@ -46,16 +62,18 @@ pull request created: no
 ## Executable validation
 
 ```txt
-syntax check: unavailable
+syntax command: unavailable
 unit tests: unavailable
+deterministic course test: unavailable
 headless game test: unavailable
-browser smoke: unavailable
-render-frame smoke: not applicable
-build: unavailable
+browser startup smoke: unavailable
+generation rollback fixture: unavailable
+first admitted-frame fixture: unavailable
+build command: unavailable
 artifact inspection: unavailable
-Pages smoke: unavailable
+Pages smoke: not run
 ```
 
 ## Claims not made
 
-No claim is made that a game, Nexus Engine composition, input path, simulation, render surface, save system, build artifact, workflow, or deployed application exists. The validated outcome is `DocumentationOnly`: one README heading plus audit governance.
+This audit does not claim atomic course generation, complete rollback, stale-attempt rejection, browser startup containment, first-frame convergence, artifact parity, deployed readiness, or production readiness is implemented.
