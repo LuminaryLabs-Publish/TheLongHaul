@@ -1,94 +1,124 @@
-# Current audit: product-intent implementation admission
+# Current audit: course-generation admission and rollback
 
-**Timestamp:** `2026-07-14T07-40-37-04-00`  
-**Reviewed implementation revision:** `54f2367040c84f7517ad43579f3344fcdb0d9988`  
-**Reviewed pre-audit repository head:** `c8649eb8c5f24a1dd39f6fd22136c4c1ff1e3b12`  
-**Status:** `product-intent-implementation-admission-audited`
+**Timestamp:** `2026-07-14T09-03-47-04-00`  
+**Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
+**Reviewed pre-audit documentation head:** `263db0d039cdf38b8c892c04c7ba21ced5f95812`  
+**Status:** `course-generation-admission-rollback-audited`
 
 ## Summary
 
-The repository remains a documentation-only product placeholder. Repository history contains one implementation-bearing commit that adds only `README.md`, followed by one audit-only commit that adds `.agent` state.
+The repository has advanced from an empty product skeleton to a complete single-file Nexus Engine browser game with procedural world generation, driving, depot discovery, risk, scoring, retry, WebGL rendering, map projection, audio, persistence, and Pages deployment.
 
 ## Source-backed inventory
 
 ```txt
-README.md: present, one heading
-runtime source directories: absent
-HTML entry points: absent
-JavaScript or TypeScript: absent
-Rust, C#, C++, Python runtime source: absent
-Nexus Engine dependency or import: absent
-package or build manifest: absent
-tests: absent
-workflow files: absent
-Pages configuration: absent
-root .agent: present
-central repo ledger: present
+runtime entry point: index.html
+Nexus Engine revision: c5548de504072bf09eb68986b98aca0292903803
+Three.js version: 0.165.0
+engine-installed kits: 10
+world effect providers: 2
+browser/product adapters: 6
+deployment adapters: 1
+render surfaces: 3
+Pages workflow: present
+package manifest: absent
+test suite: absent
+build command: absent
 ```
 
-## Complete current interaction loop
+## Complete interaction loop
 
 ```txt
-open repository
-  -> read # TheLongHaul
-  -> no executable route exists
-  -> no input or command boundary exists
-  -> no state is created or advanced
-  -> no presentation occurs
-  -> end
+boot -> title
+  -> start seeded generation
+  -> build trunk and five branches
+  -> place five depots and choose one destination
+  -> prepare terrain, streamed content, hazards, and truck
+  -> validate route and world
+  -> enter timed driving
+  -> explore roads and candidate depots
+  -> wrong depot adds 20 seconds
+  -> correct depot settles score
+  -> failure on time, cargo, truck, fuel, or unrecoverable stuck state
+  -> retry same seed, generate new seed, or return to title
 ```
 
 ## Domains in use
 
 ```txt
-repository identity
-README documentation
-repo-local audit governance
-central ledger governance
+browser and import-map lifecycle
+Core Scene
+Core World
+Core Input
+Long Haul Delivery
+Core Simulation
+Vehicle Dynamics
+Route Field
+Resource Pressure
+Hazard Field
+Telemetry
+procedural course generation
+streamed terrain and course content
+WebGL presentation
+DOM UI and HUD
+Canvas2D map
+WebAudio
+localStorage
+GitHub Pages deployment
+audit governance
 ```
 
-No runtime domain is implemented.
-
-## Kits and offered services
+## Kits and services
 
 ```txt
-source-backed DSKs: 0
-source-backed kits: 0
-source-backed adapters: 0
-runtime capability tokens: 0
-runtime services: 0
-render surfaces: 0
-proof commands: 0
-```
+10 engine kits
+  scene routing
+  world lifecycle and validation
+  input intent
+  delivery seed/progress/depot/result/retry
+  run timer/distance/penalties/recovery/failure
+  heavy-truck dynamics
+  route queries
+  fuel/truck/cargo pressure
+  wildlife hazards and collisions
+  telemetry history
 
-The planned names in `.agent` are governance proposals only. They are not included in the implemented census.
+2 world providers
+  terrain cell lifecycle
+  roads/depots/signs/vegetation/obstacle cell lifecycle
+
+6 browser/product adapters
+  procedural course generation
+  Three.js presentation
+  DOM UI and HUD
+  Canvas2D map
+  WebAudio
+  localStorage
+```
 
 ## Main finding
 
-The zero-implementation baseline is accurate, but the repository still has no source-controlled boundary between product ideas and implementation claims. Without a versioned product manifest, a future commit could introduce a monolithic host, inferred game rules, mutable provider URLs, or undocumented domain ownership before the intended loop and proof obligations are reviewable.
+The generation plan is deterministic but not transactional. `startGeneration()` clears the predecessor and resets live participants immediately. Later generation units mutate the route field, delivery state, Core World registry, active cells, hazards, truck, Three.js scene, and DOM visibility. The final route and world checks occur after the candidate has already become live and partially visible.
+
+A late failure stores an exception and shows a reload-only overlay. There is no complete rollback, predecessor restoration, candidate disposal receipt, recoverable retry result, or first admitted-frame acknowledgement.
 
 ## Required authority
 
 ```txt
-the-long-haul-product-intent-implementation-admission-authority-domain
+the-long-haul-course-generation-admission-rollback-authority-domain
 ```
 
 ```txt
-ProductIntentAdmissionCommand
-  -> bind repository revision and manifest schema
-  -> validate product status, supported route, loop states, commands, outcomes, non-goals, provider identity, intended domains, proof commands, and artifact policy
-  -> fingerprint the accepted intent artifact
-  -> publish ProductIntentAdmissionResult
-
-ImplementationAdmissionCommand
-  -> cite an accepted intent revision
-  -> inspect executable entry points and immutable provider identity
-  -> inventory installed domains, kits, adapters, and services
-  -> verify interaction-state and command-result coverage
-  -> run declared source and runtime proofs
-  -> classify Implemented, Incomplete, Stale, Rejected, or DocumentationOnly
+CourseGenerationCommand
+  -> bind attempt, seed, provider, and predecessor revisions
+  -> prepare detached route, destination, terrain, provider, hazard, truck, and render candidates
+  -> collect generation-unit receipts
+  -> validate topology, world, disposal, and probe frame
+  -> atomically adopt or fully roll back
+  -> publish CourseGenerationResult
+  -> publish FirstAdmittedCourseFrameAck
 ```
 
 ## Audit boundary
 
-This run changes documentation only. It does not add or infer a game, engine dependency, host, render surface, validation command, build, workflow, or deployment.
+This run changes documentation only. It does not alter runtime source, gameplay, rendering, settings, storage, imports, workflow, or deployment behavior.
