@@ -1,0 +1,2142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14120d">
+  <title>THE LONG HAUL</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f4ead1;
+      --muted: #b8ad95;
+      --amber: #e8a53b;
+      --amber2: #ffd477;
+      --rust: #a44727;
+      --green: #83aa71;
+      --red: #ee6a52;
+      --panel: rgba(18, 17, 13, .88);
+      --line: rgba(255, 225, 167, .22);
+      --shadow: 0 24px 80px rgba(0,0,0,.55);
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #11100c; }
+    body { color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--amber2); outline-offset: 3px; }
+    #game-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .6s ease; }
+    body.world-visible #game-canvas { opacity: 1; }
+    #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 3; background: radial-gradient(circle at 50% 44%, transparent 46%, rgba(4,3,2,.25) 80%, rgba(4,3,2,.54)); opacity: 0; transition: opacity .4s; }
+    body.world-visible #vignette { opacity: 1; }
+    #grain { position: fixed; inset: -50%; width: 200%; height: 200%; pointer-events: none; z-index: 70; opacity: .025; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E"); animation: grain .22s steps(2) infinite; }
+    @keyframes grain { 0%{transform:translate(0,0)} 25%{transform:translate(2%,-3%)} 50%{transform:translate(-3%,2%)} 75%{transform:translate(3%,3%)} 100%{transform:translate(-2%,-2%)} }
+    .screen { position: fixed; inset: 0; z-index: 10; display: none; place-items: center; padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); }
+    .screen.active { display: grid; }
+    .menu-screen { background:
+      linear-gradient(180deg, rgba(9,11,10,.18), rgba(14,12,8,.84)),
+      radial-gradient(ellipse at 72% 32%, rgba(238,166,69,.42), transparent 28%),
+      linear-gradient(145deg, #25322f 0%, #475640 44%, #d38b42 78%, #3e271b 100%); }
+    .menu-screen::before { content:""; position:absolute; inset:0; opacity:.8; background:
+      linear-gradient(168deg, transparent 0 54%, rgba(14,16,12,.85) 54.3% 57%, transparent 57.3%),
+      linear-gradient(173deg, transparent 0 62%, rgba(20,21,15,.95) 62.3% 66%, transparent 66.3%),
+      linear-gradient(90deg, transparent 0 12%, rgba(8,9,7,.9) 12.2% 14%, transparent 14.2% 26%, rgba(8,9,7,.7) 26.2% 28%, transparent 28.2%); clip-path: polygon(0 50%,100% 26%,100% 100%,0 100%); }
+    .menu-screen::after { content:""; position:absolute; left:54%; bottom:15%; width:180px; height:78px; background:#0b0c09; border-radius:12px 18px 7px 5px; box-shadow: 118px 22px 0 -18px #0b0c09; transform:skewX(-4deg); opacity:.95; }
+    .title-card { position: relative; z-index: 2; width: min(760px, 94vw); text-align: left; justify-self: start; margin-left: clamp(0px, 7vw, 130px); }
+    .eyebrow { font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: var(--amber2); font-weight: 800; }
+    h1 { margin: 12px 0 4px; max-width: 720px; font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: clamp(62px, 10vw, 148px); line-height: .78; letter-spacing: -.035em; text-transform: uppercase; text-shadow: 0 6px 0 rgba(74,34,18,.65), 0 18px 45px rgba(0,0,0,.42); }
+    .tagline { margin: 22px 0 32px; max-width: 580px; color: #f1dfbb; font-size: clamp(16px, 2vw, 21px); line-height: 1.5; }
+    .menu-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn { border: 1px solid var(--line); border-radius: 3px; padding: 13px 19px; min-width: 148px; background: rgba(20,18,13,.78); box-shadow: 0 8px 25px rgba(0,0,0,.24); cursor: pointer; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 850; transition: transform .12s, border-color .12s, background .12s; }
+    .btn:hover { transform: translateY(-2px); border-color: rgba(255,215,139,.7); background: rgba(42,34,22,.9); }
+    .btn.primary { color: #21180d; border-color: #ffd98c; background: linear-gradient(#ffd98c,#df9631); box-shadow: 0 10px 32px rgba(223,150,49,.26); }
+    .btn.danger { border-color: rgba(238,106,82,.7); color: #ffc9bd; }
+    .control-strip { margin-top: 32px; display:flex; flex-wrap:wrap; gap:8px 17px; color: rgba(246,231,201,.68); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
+    .key { display:inline-grid; place-items:center; min-width:22px; height:22px; padding:0 6px; margin-right:5px; border:1px solid rgba(255,255,255,.25); border-bottom-width:2px; border-radius:3px; background:rgba(0,0,0,.3); color:#fff1cf; font-size:10px; font-weight:800; }
+    .panel { position:relative; width:min(720px,94vw); max-height:min(820px,90vh); overflow:auto; padding: clamp(25px,5vw,54px); border:1px solid var(--line); border-radius:5px; background: linear-gradient(145deg, rgba(31,29,22,.96), rgba(15,14,11,.96)); box-shadow:var(--shadow); }
+    .panel h2 { margin:0 0 9px; font-family:Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; letter-spacing:.04em; font-size:clamp(36px,6vw,68px); text-transform:uppercase; }
+    .panel .lead { color:var(--muted); line-height:1.55; margin:0 0 28px; }
+    .panel-footer { display:flex; flex-wrap:wrap; gap:12px; margin-top:28px; }
+    .how-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .how-item { min-height:94px; padding:16px; border:1px solid var(--line); background:rgba(255,255,255,.025); }
+    .how-item b { display:block; color:var(--amber2); text-transform:uppercase; letter-spacing:.11em; font-size:11px; margin-bottom:7px; }
+    .how-item span { color:#ddd1b8; font-size:14px; line-height:1.45; }
+    .setting { display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center; padding:17px 0; border-bottom:1px solid var(--line); }
+    .setting label { font-weight:750; }
+    .setting small { display:block; margin-top:4px; color:var(--muted); font-weight:400; }
+    .switch { width:52px; height:29px; padding:3px; border:1px solid var(--line); border-radius:20px; background:#28261f; cursor:pointer; }
+    .switch i { display:block; width:21px; height:21px; border-radius:50%; background:#8e8778; transition:.18s; }
+    .switch.on { background:#72501f; border-color:#d79a40; }
+    .switch.on i { transform:translateX(21px); background:#ffd379; }
+    input[type="range"] { width:min(220px,42vw); accent-color:var(--amber); }
+    #generating-screen { background:radial-gradient(circle at 50% 40%, rgba(55,49,34,.88), rgba(9,9,7,.98)); }
+    .loading-card { width:min(670px,92vw); }
+    .loading-card h2 { margin:10px 0 8px; font-family:Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size:clamp(44px,8vw,86px); line-height:.9; letter-spacing:.015em; text-transform:uppercase; }
+    .course-code { color:var(--amber2); font-size:12px; letter-spacing:.22em; text-transform:uppercase; }
+    .progress-shell { height:8px; margin:30px 0 14px; background:rgba(255,255,255,.09); border-radius:20px; overflow:hidden; }
+    #progress-fill { width:0; height:100%; background:linear-gradient(90deg,#a85c27,#ffd273); box-shadow:0 0 18px rgba(255,191,91,.55); transition:width .16s ease-out; }
+    .progress-row { display:flex; justify-content:space-between; align-items:center; gap:20px; color:#e7d9bb; font-size:13px; }
+    #progress-percent { font-variant-numeric:tabular-nums; color:var(--amber2); font-weight:800; }
+    #phase-list { margin-top:26px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 18px; }
+    .phase { display:flex; align-items:center; gap:9px; padding:7px 0; color:#777266; font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+    .phase::before { content:""; width:8px; height:8px; border:1px solid currentColor; border-radius:50%; }
+    .phase.active { color:var(--amber2); }
+    .phase.active::before { background:var(--amber2); box-shadow:0 0 12px var(--amber); }
+    .phase.done { color:#92b27e; }
+    .phase.done::before { background:#92b27e; }
+    #hud { position:fixed; inset:0; z-index:5; display:none; pointer-events:none; padding:max(18px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); }
+    body.driving #hud { display:block; }
+    .hud-box { position:absolute; border:1px solid rgba(255,232,190,.18); background:linear-gradient(145deg,rgba(16,16,13,.78),rgba(9,9,8,.57)); box-shadow:0 8px 30px rgba(0,0,0,.26); backdrop-filter:blur(8px); }
+    #timer-box { top:18px; left:50%; transform:translateX(-50%); min-width:190px; padding:10px 20px 8px; text-align:center; border-top:2px solid var(--amber); }
+    #timer-label { color:var(--muted); text-transform:uppercase; font-size:9px; letter-spacing:.24em; }
+    #timer { font-family:Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size:35px; letter-spacing:.08em; font-variant-numeric:tabular-nums; }
+    body.final-minute #timer-box { border-color:rgba(238,106,82,.75); animation:urgent 1s ease-in-out infinite; }
+    body.final-minute #timer { color:#ff8068; }
+    @keyframes urgent { 50%{box-shadow:0 0 34px rgba(238,74,52,.32)} }
+    #drive-box { left:20px; bottom:20px; width:220px; padding:14px; }
+    .speed-readout { display:flex; align-items:baseline; gap:8px; }
+    #speed { font-family:Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size:48px; line-height:.9; font-variant-numeric:tabular-nums; }
+    .unit { color:var(--muted); font-size:10px; letter-spacing:.12em; }
+    #road-name { margin-top:9px; padding-top:9px; border-top:1px solid var(--line); color:var(--amber2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; letter-spacing:.1em; font-size:10px; }
+    #condition-box { right:20px; top:20px; width:224px; padding:13px 14px; }
+    .meter-row { margin:0 0 9px; }
+    .meter-row:last-child { margin:0; }
+    .meter-label { display:flex; justify-content:space-between; margin-bottom:4px; color:#ded2ba; text-transform:uppercase; font-size:9px; letter-spacing:.11em; }
+    .meter { height:5px; background:rgba(255,255,255,.1); overflow:hidden; }
+    .meter > i { display:block; width:100%; height:100%; background:var(--green); transition:width .18s,background .18s; }
+    #run-box { right:20px; bottom:20px; padding:12px 14px; min-width:196px; color:#ddd2ba; font-size:11px; line-height:1.8; text-transform:uppercase; letter-spacing:.08em; }
+    #run-box b { float:right; color:#fff0ce; margin-left:18px; }
+    #interact { position:absolute; left:50%; bottom:36px; transform:translate(-50%,12px); opacity:0; padding:11px 16px; border:1px solid rgba(255,217,145,.4); background:rgba(13,12,9,.86); box-shadow:0 8px 28px rgba(0,0,0,.35); text-transform:uppercase; letter-spacing:.11em; font-weight:800; font-size:11px; transition:.18s; }
+    #interact.show { transform:translate(-50%,0); opacity:1; }
+    #toast { position:fixed; z-index:30; left:50%; top:98px; transform:translate(-50%,-15px); opacity:0; width:max-content; max-width:min(560px,90vw); padding:11px 18px; border:1px solid var(--line); background:rgba(16,14,10,.9); box-shadow:0 10px 34px rgba(0,0,0,.42); text-align:center; text-transform:uppercase; letter-spacing:.12em; font-weight:850; font-size:12px; pointer-events:none; transition:.2s; }
+    #toast.show { opacity:1; transform:translate(-50%,0); }
+    #toast.good { color:#c8f0b3; border-color:rgba(138,191,106,.6); }
+    #toast.bad { color:#ffd0c5; border-color:rgba(238,106,82,.65); }
+    #map-panel { position:fixed; z-index:25; right:0; top:0; bottom:0; width:min(620px,48vw); min-width:380px; transform:translateX(105%); transition:transform .28s cubic-bezier(.2,.8,.2,1); pointer-events:none; border-left:1px solid rgba(80,51,22,.5); background:
+      radial-gradient(circle at 30% 20%,rgba(255,244,197,.48),transparent 32%),
+      repeating-linear-gradient(4deg,rgba(93,61,27,.04) 0 1px,transparent 1px 5px),
+      #d8bd82; color:#302217; box-shadow:-24px 0 70px rgba(0,0,0,.45); padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom)); }
+    #map-panel.open { transform:translateX(0); }
+    #map-panel h2 { margin:0; font-family:Georgia,serif; font-size:31px; letter-spacing:.08em; text-transform:uppercase; }
+    .map-head { display:flex; justify-content:space-between; align-items:end; gap:20px; border-bottom:2px solid rgba(64,42,19,.35); padding-bottom:12px; }
+    #map-time { font-family:Georgia,serif; font-weight:bold; }
+    #map-canvas { display:block; width:100%; height:calc(100% - 140px); margin-top:14px; border:1px solid rgba(61,42,20,.26); background:rgba(240,218,164,.3); }
+    .map-legend { display:flex; flex-wrap:wrap; gap:14px; padding-top:11px; font:700 10px/1.4 Georgia,serif; text-transform:uppercase; letter-spacing:.07em; }
+    .map-dot { display:inline-block; width:8px; height:8px; margin-right:5px; border-radius:50%; background:#7d4a26; }
+    .map-dot.red { background:#a33e2c; }
+    .map-dot.truck { background:#1f4a47; }
+    #pause-screen { background:rgba(5,5,4,.55); backdrop-filter:blur(8px); }
+    .pause-card { width:min(480px,92vw); padding:42px; border:1px solid var(--line); background:rgba(19,18,14,.94); box-shadow:var(--shadow); text-align:center; }
+    .pause-card h2 { margin:0 0 8px; font-family:Impact, sans-serif; font-size:64px; letter-spacing:.04em; text-transform:uppercase; }
+    .pause-card p { color:var(--muted); margin:0 0 26px; }
+    .pause-actions { display:grid; gap:10px; }
+    #results-screen, #loss-screen { background:linear-gradient(rgba(11,10,8,.62),rgba(11,10,8,.92)); backdrop-filter:blur(6px); }
+    .result-card { width:min(760px,94vw); max-height:92vh; overflow:auto; border:1px solid var(--line); background:linear-gradient(145deg,rgba(33,30,22,.97),rgba(13,13,10,.97)); box-shadow:var(--shadow); padding:clamp(25px,5vw,48px); }
+    .result-kicker { color:var(--amber2); text-transform:uppercase; letter-spacing:.25em; font-size:11px; font-weight:850; }
+    .result-title { display:flex; justify-content:space-between; align-items:end; gap:20px; margin:4px 0 24px; }
+    .result-title h2 { margin:0; font-family:Impact,sans-serif; font-size:clamp(49px,8vw,88px); line-height:.9; text-transform:uppercase; }
+    #score-name { color:var(--amber2); font-family:Georgia,serif; font-size:clamp(25px,5vw,48px); font-style:italic; }
+    .score-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line); }
+    .score-cell { padding:14px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .score-cell span { display:block; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; font-size:9px; margin-bottom:6px; }
+    .score-cell b { font-size:18px; font-variant-numeric:tabular-nums; }
+    .score-cell.major { background:rgba(232,165,59,.08); }
+    .loss-mark { color:var(--red); font-family:Impact,sans-serif; font-size:clamp(58px,9vw,104px); line-height:.88; text-transform:uppercase; }
+    #loss-reason { color:#f1d9d2; font-size:18px; margin:13px 0 28px; }
+    #boot-failure { position:fixed; z-index:100; inset:0; display:none; place-items:center; padding:24px; background:#15120e; }
+    #boot-failure .panel { border-color:rgba(238,106,82,.45); }
+    #boot-failure h2 { color:#ff9c88; font-size:48px; }
+    @media (max-width:780px) {
+      .title-card { margin-left:0; align-self:end; margin-bottom:7vh; }
+      .menu-screen::after { left:auto; right:8%; bottom:30%; transform:scale(.7); transform-origin:right bottom; }
+      .how-grid { grid-template-columns:1fr; }
+      #map-panel { width:100%; min-width:0; }
+      #condition-box { width:180px; }
+      #drive-box { width:175px; }
+      #run-box { display:none; }
+      .score-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width:520px) {
+      #condition-box { top:86px; right:12px; width:158px; }
+      #drive-box { left:12px; bottom:12px; }
+      #timer-box { top:10px; }
+      #interact { bottom:94px; }
+      #phase-list { grid-template-columns:1fr; }
+      .control-strip { display:none; }
+      .score-grid { grid-template-columns:1fr 1fr; }
+    }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.001ms!important; transition-duration:.001ms!important; } }
+  </style>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","nexusengine":"https://cdn.jsdelivr.net/gh/LuminaryLabs-Dev/NexusEngine@c5548de504072bf09eb68986b98aca0292903803/src/index.js"}}
+  </script>
+</head>
+<body>
+  <canvas id="game-canvas" aria-label="The Long Haul game view"></canvas>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+
+  <section id="title-screen" class="screen menu-screen" aria-label="Title">
+    <div class="title-card">
+      <div class="eyebrow">One load · Five roads · One right yard</div>
+      <h1>The Long Haul</h1>
+      <p class="tagline">The destination code is gone. Read the country, check the freight yards, and deliver before the clock runs out.</p>
+      <div class="menu-actions">
+        <button id="start-btn" class="btn primary">Start the Haul</button>
+        <button id="how-btn" class="btn">How to Play</button>
+        <button id="settings-btn" class="btn">Settings</button>
+      </div>
+      <div class="control-strip" aria-label="Quick controls">
+        <span><i class="key">WASD</i>Drive</span><span><i class="key">E</i>Depot</span><span><i class="key">C</i>Camera</span><span><i class="key">M</i>Map</span><span><i class="key">Esc</i>Pause</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="how-screen" class="screen menu-screen" aria-label="How to play">
+    <div class="panel">
+      <div class="eyebrow">Driver's briefing</div>
+      <h2>Find the right yard</h2>
+      <p class="lead">Five roads lead to five believable freight depots. Only one has your receiving order. Every wrong gate costs twenty seconds, so drive hard and read each road.</p>
+      <div class="how-grid">
+        <div class="how-item"><b>Drive</b><span>W or ↑ accelerates. S or ↓ brakes, then reverses. A and D steer. Shift gives a fuel-hungry push.</span></div>
+        <div class="how-item"><b>Deliver</b><span>Enter a depot's gate, stop the truck, and press E. A wrong yard keeps the cargo and the clock moving.</span></div>
+        <div class="how-item"><b>Navigate</b><span>Press M for the paper map. It records only roads and depots you have explored. The correct yard is never marked early.</span></div>
+        <div class="how-item"><b>Protect the load</b><span>Stay on the road, brake for wildlife, and save your single roadside recovery for a true emergency.</span></div>
+        <div class="how-item"><b>Score</b><span>Lower adjusted time wins. Wrong yards, impacts, lost cargo, recovery, and excess distance all count against par.</span></div>
+        <div class="how-item"><b>Controls</b><span>C changes camera. Escape pauses. E calls recovery when stranded. R restarts the same course.</span></div>
+      </div>
+      <div class="panel-footer"><button id="how-back-btn" class="btn primary">Back</button></div>
+    </div>
+  </section>
+
+  <section id="settings-screen" class="screen menu-screen" aria-label="Settings">
+    <div class="panel">
+      <div class="eyebrow">Cab setup</div>
+      <h2>Settings</h2>
+      <div class="setting"><div><label>Sound</label><small>Engine, road, wildlife, and radio cues.</small></div><button id="sound-switch" class="switch on" aria-label="Toggle sound" aria-pressed="true"><i></i></button></div>
+      <div class="setting"><div><label for="steer-range">Steering response</label><small>Higher values turn the wheel faster.</small></div><input id="steer-range" type="range" min="70" max="130" value="100"></div>
+      <div class="setting"><div><label>Sharper picture</label><small>Uses more detail on high-density displays.</small></div><button id="quality-switch" class="switch on" aria-label="Toggle sharper picture" aria-pressed="true"><i></i></button></div>
+      <div class="setting"><div><label>Camera movement</label><small>Road shake and body motion.</small></div><button id="motion-switch" class="switch on" aria-label="Toggle camera movement" aria-pressed="true"><i></i></button></div>
+      <div class="panel-footer"><button id="settings-back-btn" class="btn primary">Back</button></div>
+    </div>
+  </section>
+
+  <section id="generating-screen" class="screen" aria-label="Preparing course">
+    <div class="loading-card">
+      <div class="course-code" id="course-code">Course</div>
+      <h2>Preparing the road</h2>
+      <p id="phase-detail" class="lead">Choosing course</p>
+      <div class="progress-shell"><div id="progress-fill"></div></div>
+      <div class="progress-row"><span>Freight route preparation</span><span id="progress-percent">0%</span></div>
+      <div id="phase-list">
+        <div class="phase" data-phase="Choosing course">Choosing course</div>
+        <div class="phase" data-phase="Building roads">Building roads</div>
+        <div class="phase" data-phase="Placing depots">Placing depots</div>
+        <div class="phase" data-phase="Growing terrain">Growing terrain</div>
+        <div class="phase" data-phase="Adding hazards">Adding hazards</div>
+        <div class="phase" data-phase="Preparing truck">Preparing truck</div>
+        <div class="phase" data-phase="Checking course">Checking course</div>
+        <div class="phase" data-phase="Ready">Ready</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="hud" aria-live="polite">
+    <div id="timer-box" class="hud-box"><div id="timer-label">Time remaining</div><div id="timer">06:00</div></div>
+    <div id="drive-box" class="hud-box"><div class="speed-readout"><span id="speed">0</span><span class="unit">MPH</span></div><div id="road-name">Dispatch Road</div></div>
+    <div id="condition-box" class="hud-box">
+      <div class="meter-row"><div class="meter-label"><span>Fuel</span><span id="fuel-num">100%</span></div><div class="meter"><i id="fuel-meter"></i></div></div>
+      <div class="meter-row"><div class="meter-label"><span>Truck</span><span id="truck-num">0% damage</span></div><div class="meter"><i id="truck-meter"></i></div></div>
+      <div class="meter-row"><div class="meter-label"><span>Cargo</span><span id="cargo-num">100%</span></div><div class="meter"><i id="cargo-meter"></i></div></div>
+    </div>
+    <div id="run-box" class="hud-box"><div>Depots checked <b id="checked-num">0 / 5</b></div><div>Penalties <b id="penalty-num">+0s</b></div><div>Recovery <b id="recovery-num">Ready</b></div></div>
+    <div id="interact">Stop at the gate</div>
+  </div>
+
+  <aside id="map-panel" aria-label="Road map" aria-hidden="true">
+    <div class="map-head"><div><div style="font:700 9px Georgia,serif;letter-spacing:.16em;text-transform:uppercase">Driver's field map</div><h2>Freight Roads</h2></div><div id="map-time">06:00</div></div>
+    <canvas id="map-canvas"></canvas>
+    <div class="map-legend"><span><i class="map-dot truck"></i>Truck</span><span><i class="map-dot"></i>Depot</span><span><i class="map-dot red"></i>Rejected</span><span>M closes map</span></div>
+  </aside>
+
+  <section id="pause-screen" class="screen" aria-label="Paused">
+    <div class="pause-card"><div class="eyebrow">Handbrake on</div><h2>Paused</h2><p>The clock is stopped.</p><div class="pause-actions"><button id="resume-btn" class="btn primary">Keep Driving</button><button id="pause-settings-btn" class="btn">Settings</button><button id="pause-retry-btn" class="btn">Retry Course</button><button id="pause-title-btn" class="btn danger">Return to Title</button></div></div>
+  </section>
+
+  <section id="results-screen" class="screen" aria-label="Delivery results">
+    <div class="result-card">
+      <div class="result-kicker">Delivery accepted</div>
+      <div class="result-title"><h2>Run complete</h2><div id="score-name">Par</div></div>
+      <div id="score-grid" class="score-grid"></div>
+      <div class="panel-footer"><button id="result-retry-btn" class="btn primary">Retry Same Course</button><button id="result-new-btn" class="btn">New Course</button><button id="result-title-btn" class="btn">Title</button></div>
+    </div>
+  </section>
+
+  <section id="loss-screen" class="screen" aria-label="Run over">
+    <div class="result-card"><div class="result-kicker">Freight undelivered</div><div class="loss-mark">Haul over</div><p id="loss-reason">The road won this round.</p><div class="panel-footer"><button id="loss-retry-btn" class="btn primary">Retry Same Course</button><button id="loss-new-btn" class="btn">New Course</button><button id="loss-title-btn" class="btn">Title</button></div></div>
+  </section>
+
+  <div id="toast"></div>
+  <div id="boot-failure"><div class="panel"><div class="eyebrow">The truck could not leave the yard</div><h2>Road closed</h2><p class="lead">Reload the page to try the route again.</p><button id="reload-btn" class="btn primary">Reload</button></div></div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import {
+      createEngine,
+      defineDomainServiceKit,
+      defineResource,
+      defineEvent,
+      createCoreSceneKit,
+      createCoreWorldDomain,
+      createUniformGridPartition,
+      createFlatWorldSurface,
+      defineWorldEffectProvider,
+      createCoreSimulationKit,
+      createCoreInputKit,
+      createVehicleDynamicsKit,
+      createRouteFieldKit,
+      createResourcePressureKit,
+      createHazardFieldKit,
+      createTelemetryKit,
+      VehicleDynamicsState,
+      VehicleImpact,
+      RouteFieldState,
+      ResourcePressureState,
+      ResourcePressureAdjust,
+      HazardFieldState,
+      HazardFieldCollision
+    } from "nexusengine";
+
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const smooth = (current, target, rate, dt) => lerp(current, target, 1 - Math.exp(-rate * dt));
+    const clone = (value) => structuredClone(value);
+    const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+    const phaseNames = ["Choosing course","Building roads","Placing depots","Growing terrain","Adding hazards","Preparing truck","Checking course","Ready"];
+    const CELL_SIZE = 192;
+    const WORLD_ID = "long-haul-country";
+    const TIME_LIMIT = 360;
+    const PAR_TIME = 300;
+
+    function hashText(text) {
+      let h = 2166136261;
+      for (const char of String(text)) { h ^= char.charCodeAt(0); h = Math.imul(h, 16777619); }
+      return h >>> 0;
+    }
+
+    function makeRng(seed) {
+      let state = hashText(seed) || 0x9e3779b9;
+      return () => {
+        state += 0x6D2B79F5;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function seedCode(seed) {
+      return hashText(seed).toString(36).toUpperCase().padStart(7, "0").slice(0, 7);
+    }
+
+    function newSeed(previous = "") {
+      const values = new Uint32Array(2);
+      try { crypto.getRandomValues(values); }
+      catch { values[0] = Date.now() >>> 0; values[1] = Math.floor(Math.random() * 0xffffffff); }
+      let seed = `haul-${values[0].toString(36)}-${values[1].toString(36)}`;
+      if (seed === previous) seed += "-next";
+      return seed;
+    }
+
+    function formatTime(seconds) {
+      const safe = Math.max(0, number(seconds));
+      const minutes = Math.floor(safe / 60);
+      const remainder = Math.floor(safe % 60);
+      const tenths = Math.floor((safe - Math.floor(safe)) * 10);
+      return safe < 60 ? `${minutes}:${String(remainder).padStart(2,"0")}.${tenths}` : `${minutes}:${String(remainder).padStart(2,"0")}`;
+    }
+
+    function formatDistance(distance) {
+      const miles = Math.max(0, distance) / 1609.344;
+      return `${miles.toFixed(2)} mi`;
+    }
+
+    function pointSegmentInfo(point, a, b) {
+      const abx = b.x - a.x, aby = b.y - a.y;
+      const length2 = abx * abx + aby * aby || 1;
+      const t = clamp(((point.x - a.x) * abx + (point.y - a.y) * aby) / length2, 0, 1);
+      const x = a.x + abx * t, y = a.y + aby * t;
+      const dx = point.x - x, dy = point.y - y;
+      return { distance: Math.hypot(dx, dy), x, y, t, heading: Math.atan2(aby, abx) };
+    }
+
+    function segmentLength(edge) { return Math.hypot(edge.b.x - edge.a.x, edge.b.y - edge.a.y); }
+
+    const LongHaulDeliveryState = defineResource("long-haul.deliveryState");
+    const DeliveryGenerationBegin = defineEvent("long-haul.generationBegin.request");
+    const DeliveryGenerationStep = defineEvent("long-haul.generationStep.report");
+    const DeliveryCandidatesSet = defineEvent("long-haul.candidatesSet.request");
+    const DeliveryDestinationChoose = defineEvent("long-haul.destinationChoose.request");
+    const DeliveryRegionCheck = defineEvent("long-haul.regionCheck.request");
+    const DeliveryRegionChecked = defineEvent("long-haul.regionChecked.report");
+
+    function initialDeliveryState() {
+      return {
+        id: "long-haul-delivery",
+        seed: null,
+        generation: { status: "idle", plan: [], completedStepIds: [], completed: 0, total: 0, ratio: 0, phase: "Choosing course" },
+        candidateRegionIds: [],
+        validRegionId: null,
+        checkedRegionIds: [],
+        lastCheck: null,
+        retry: null,
+        retryId: null,
+        runResult: null,
+        sequence: 0
+      };
+    }
+
+    function scoreName(delta) {
+      if (delta <= -60) return "Eagle";
+      if (delta <= -20) return "Birdie";
+      if (delta <= 20) return "Par";
+      if (delta <= 60) return "Bogey";
+      return "Double Bogey";
+    }
+
+    function buildRunResult(metrics = {}, validRegionId) {
+      const rawTime = Math.max(0, number(metrics.rawTime));
+      const distance = Math.max(0, number(metrics.distance));
+      const cargoCondition = clamp(number(metrics.cargoCondition, 100), 0, 100);
+      const penaltyTotal = Math.max(0, number(metrics.penaltyTotal));
+      const parDistance = Math.max(1, number(metrics.parDistance, 6200));
+      const cargoPenalty = (100 - cargoCondition) * 0.45;
+      const distancePenalty = Math.max(0, distance - parDistance) / 80;
+      const adjustedTime = rawTime + penaltyTotal + cargoPenalty + distancePenalty;
+      const versusPar = adjustedTime - number(metrics.parTime, PAR_TIME);
+      return {
+        validRegionId,
+        parTime: number(metrics.parTime, PAR_TIME),
+        parDistance,
+        rawTime,
+        distance,
+        depotsChecked: Math.max(1, number(metrics.depotsChecked, 1)),
+        collisions: Math.max(0, Math.floor(number(metrics.collisions))),
+        cargoCondition,
+        penaltyTotal,
+        cargoPenalty,
+        distancePenalty,
+        adjustedTime,
+        versusPar,
+        score: scoreName(versusPar)
+      };
+    }
+
+    function longHaulDeliverySystem(world) {
+      let state = world.getResource(LongHaulDeliveryState);
+      if (!state) return;
+
+      for (const request of world.readEvents(DeliveryGenerationBegin)) {
+        const plan = Array.isArray(request.plan) ? request.plan.map((entry, index) => ({ id: String(entry.id ?? `step-${index + 1}`), phase: String(entry.phase ?? "Preparing") })) : [];
+        state = {
+          ...initialDeliveryState(),
+          seed: String(request.seed),
+          retry: state.retry,
+          retryId: state.retryId,
+          generation: { status: "running", plan, completedStepIds: [], completed: 0, total: plan.length, ratio: 0, phase: plan[0]?.phase ?? "Choosing course" },
+          sequence: state.sequence + 1
+        };
+      }
+
+      for (const report of world.readEvents(DeliveryGenerationStep)) {
+        const id = String(report.stepId);
+        if (!state.generation.completedStepIds.includes(id) && state.generation.plan.some((entry) => entry.id === id)) {
+          const completedStepIds = [...state.generation.completedStepIds, id];
+          const completed = completedStepIds.length;
+          const next = state.generation.plan.find((entry) => !completedStepIds.includes(entry.id));
+          state = {
+            ...state,
+            generation: {
+              ...state.generation,
+              completedStepIds,
+              completed,
+              ratio: state.generation.total ? completed / state.generation.total : 1,
+              phase: next?.phase ?? "Ready",
+              status: completed >= state.generation.total ? "ready" : "running"
+            },
+            sequence: state.sequence + 1
+          };
+        }
+      }
+
+      for (const request of world.readEvents(DeliveryCandidatesSet)) {
+        const ids = Array.from(new Set((request.regionIds ?? []).map(String)));
+        state = { ...state, candidateRegionIds: ids, validRegionId: ids.includes(state.validRegionId) ? state.validRegionId : null, checkedRegionIds: [], lastCheck: null, runResult: null, sequence: state.sequence + 1 };
+      }
+
+      for (const request of world.readEvents(DeliveryDestinationChoose)) {
+        if (state.candidateRegionIds.length) {
+          const requested = request.regionId ? String(request.regionId) : null;
+          const validRegionId = requested && state.candidateRegionIds.includes(requested)
+            ? requested
+            : state.candidateRegionIds[hashText(`${state.seed}:destination`) % state.candidateRegionIds.length];
+          state = { ...state, validRegionId, sequence: state.sequence + 1 };
+        }
+      }
+
+      for (const request of world.readEvents(DeliveryRegionCheck)) {
+        const regionId = String(request.regionId ?? "");
+        if (!state.candidateRegionIds.includes(regionId)) continue;
+        const duplicate = state.checkedRegionIds.includes(regionId);
+        const accepted = regionId === state.validRegionId;
+        const checkedRegionIds = duplicate ? state.checkedRegionIds : [...state.checkedRegionIds, regionId];
+        const check = { regionId, accepted, rejected: !accepted, duplicate, checkedCount: checkedRegionIds.length, sequence: state.sequence + 1 };
+        const runResult = accepted && !state.runResult ? buildRunResult({ ...(request.metrics ?? {}), depotsChecked: checkedRegionIds.length }, regionId) : state.runResult;
+        state = { ...state, checkedRegionIds, lastCheck: check, runResult, sequence: state.sequence + 1 };
+        world.emit(DeliveryRegionChecked, check);
+      }
+
+      world.setResource(LongHaulDeliveryState, state);
+    }
+
+    const longHaulDeliveryKit = defineDomainServiceKit({
+      id: "long-haul-delivery-domain-kit",
+      domain: "long-haul-delivery",
+      apiName: "longHaulDelivery",
+      services: ["seed", "generation-progress", "depot-evaluation", "retry", "run-result"],
+      stability: "game-stable",
+      version: "1.0.0",
+      resources: { LongHaulDeliveryState },
+      events: { DeliveryGenerationBegin, DeliveryGenerationStep, DeliveryCandidatesSet, DeliveryDestinationChoose, DeliveryRegionCheck, DeliveryRegionChecked },
+      systems: [{ phase: "simulate", name: "longHaulDeliverySystem", system: longHaulDeliverySystem }],
+      initWorld({ world }) { world.setResource(LongHaulDeliveryState, initialDeliveryState()); },
+      createApi({ world }) {
+        const get = () => world.getResource(LongHaulDeliveryState);
+        return {
+          beginGeneration(seed, plan = []) { world.emit(DeliveryGenerationBegin, { seed: String(seed), plan: clone(plan) }); return get(); },
+          recordGenerationStep(stepId) { world.emit(DeliveryGenerationStep, { stepId: String(stepId) }); return get(); },
+          setCandidateRegions(regionIds) { world.emit(DeliveryCandidatesSet, { regionIds: clone(regionIds) }); return get(); },
+          chooseValidDestination(regionId) { world.emit(DeliveryDestinationChoose, { regionId: regionId ?? null }); return get(); },
+          checkRegion(regionId, metrics = {}) { world.emit(DeliveryRegionCheck, { regionId: String(regionId), metrics: clone(metrics) }); return get(); },
+          getCheckedRegions() { return clone(get().checkedRegionIds); },
+          getGenerationProgress() { return clone(get().generation); },
+          getRunResult() { return clone(get().runResult); },
+          setRetry(retry) {
+            const state = get();
+            const retryId = String(retry?.retryId ?? `retry-${state.sequence + 1}`);
+            world.setResource(LongHaulDeliveryState, { ...state, retry: clone({ ...retry, retryId }), retryId, sequence: state.sequence + 1 });
+            return retryId;
+          },
+          consumeRetry() {
+            const state = get();
+            const retry = clone(state.retry);
+            world.setResource(LongHaulDeliveryState, { ...state, retry: null, sequence: state.sequence + 1 });
+            return retry;
+          },
+          snapshot() { return clone(get()); },
+          loadSnapshot(snapshot = {}) { const next = { ...initialDeliveryState(), ...clone(snapshot) }; world.setResource(LongHaulDeliveryState, next); return clone(next); },
+          reset() { const next = initialDeliveryState(); world.setResource(LongHaulDeliveryState, next); return clone(next); }
+        };
+      }
+    });
+
+    const RunSimulationState = defineResource("long-haul.runSimulationState");
+    const RunResetRequest = defineEvent("long-haul.runReset.request");
+    const RunStartRequest = defineEvent("long-haul.runStart.request");
+    const RunPauseRequest = defineEvent("long-haul.runPause.request");
+    const RunResumeRequest = defineEvent("long-haul.runResume.request");
+    const RunFailRequest = defineEvent("long-haul.runFail.request");
+    const RunSampleRequest = defineEvent("long-haul.runSample.request");
+    const RunImpactRequest = defineEvent("long-haul.runImpact.request");
+    const RunRecoveryRequest = defineEvent("long-haul.runRecovery.request");
+
+    function initialRunState() {
+      return {
+        id: "long-haul-run",
+        status: "idle",
+        rawTime: 0,
+        timeLimit: TIME_LIMIT,
+        remaining: TIME_LIMIT,
+        distance: 0,
+        lastPosition: null,
+        penaltyLedger: {},
+        penaltyTotal: 0,
+        collisionCooldowns: {},
+        collisions: 0,
+        offRoadImpacts: 0,
+        recoveryUsed: false,
+        lastPenalty: null,
+        failureReason: null,
+        sequence: 0
+      };
+    }
+
+    function simulationSystem(world) {
+      let state = world.getResource(RunSimulationState);
+      if (!state) return;
+      const delta = Math.max(0, number(world.__nexusClock?.delta));
+
+      for (const request of world.readEvents(RunResetRequest)) {
+        state = { ...initialRunState(), timeLimit: number(request.timeLimit, TIME_LIMIT), remaining: number(request.timeLimit, TIME_LIMIT), sequence: state.sequence + 1 };
+      }
+
+      for (const request of world.readEvents(RunStartRequest)) {
+        const limit = Math.max(1, number(request.timeLimit, TIME_LIMIT));
+        state = { ...initialRunState(), status: "running", timeLimit: limit, remaining: limit, lastPosition: request.position ? clone(request.position) : null, sequence: state.sequence + 1 };
+      }
+
+      for (const request of world.readEvents(RunPauseRequest)) {
+        if (state.status === "running") state = { ...state, status: "paused", sequence: state.sequence + 1 };
+      }
+      for (const request of world.readEvents(RunResumeRequest)) {
+        if (state.status === "paused") state = { ...state, status: "running", lastPosition: request.position ? clone(request.position) : state.lastPosition, sequence: state.sequence + 1 };
+      }
+
+      const applyPenalty = (id, seconds, kind, extra = {}) => {
+        const penaltyId = String(id);
+        if (state.penaltyLedger[penaltyId]) return false;
+        const amount = Math.max(0, number(seconds));
+        const record = { id: penaltyId, seconds: amount, kind: String(kind), at: state.rawTime, ...clone(extra) };
+        state = {
+          ...state,
+          penaltyLedger: { ...state.penaltyLedger, [penaltyId]: record },
+          penaltyTotal: state.penaltyTotal + amount,
+          lastPenalty: record,
+          sequence: state.sequence + 1
+        };
+        return true;
+      };
+
+      if (state.status === "running") {
+        state = { ...state, rawTime: state.rawTime + delta, remaining: Math.max(0, state.remaining - delta), sequence: state.sequence + 1 };
+        for (const sample of world.readEvents(RunSampleRequest)) {
+          const position = { x: number(sample.position?.x), y: number(sample.position?.y) };
+          let addition = 0;
+          if (state.lastPosition && sample.teleport !== true) {
+            addition = Math.hypot(position.x - state.lastPosition.x, position.y - state.lastPosition.y);
+            if (!Number.isFinite(addition) || addition > 120) addition = 0;
+          }
+          state = { ...state, distance: state.distance + addition, lastPosition: position, sequence: state.sequence + 1 };
+        }
+      }
+
+      for (const check of world.readEvents(DeliveryRegionChecked)) {
+        if (check.accepted) {
+          state = { ...state, status: "completed", sequence: state.sequence + 1 };
+        } else if (!check.duplicate) {
+          applyPenalty(`wrong-depot:${check.regionId}`, 20, "wrong-depot", { regionId: check.regionId });
+        }
+      }
+
+      for (const collision of world.readEvents(HazardFieldCollision)) {
+        if (state.status !== "running") continue;
+        for (const hazard of collision.hazards ?? []) {
+          const last = number(state.collisionCooldowns[hazard.id], -999);
+          if (state.rawTime - last < 3.5) continue;
+          const id = `wildlife:${hazard.id}:${Math.floor(state.rawTime / 3.5)}`;
+          const added = applyPenalty(id, 5, "wildlife", { hazardId: hazard.id, label: hazard.metadata?.label ?? "Wildlife" });
+          if (added) {
+            state = { ...state, collisionCooldowns: { ...state.collisionCooldowns, [hazard.id]: state.rawTime }, collisions: state.collisions + 1, sequence: state.sequence + 1 };
+            world.emit(ResourcePressureAdjust, { resourceId: "truck", amount: -number(hazard.damage, 6), source: "wildlife-impact" });
+            world.emit(ResourcePressureAdjust, { resourceId: "cargo", amount: -number(hazard.damage, 6) * .62, source: "wildlife-impact" });
+          }
+        }
+      }
+
+      for (const impact of world.readEvents(VehicleImpact)) {
+        if (state.status !== "running") continue;
+        const id = `boundary:${Math.floor(state.rawTime / 2)}`;
+        if (applyPenalty(id, 5, "collision", { speed: number(impact.speed) })) {
+          state = { ...state, collisions: state.collisions + 1, sequence: state.sequence + 1 };
+          world.emit(ResourcePressureAdjust, { resourceId: "truck", amount: -8, source: "boundary-impact" });
+          world.emit(ResourcePressureAdjust, { resourceId: "cargo", amount: -4, source: "boundary-impact" });
+        }
+      }
+
+      for (const impact of world.readEvents(RunImpactRequest)) {
+        if (state.status !== "running") continue;
+        const added = applyPenalty(impact.id, number(impact.penaltySeconds), impact.kind ?? "impact", { label: impact.label ?? "Impact" });
+        if (!added) continue;
+        if (impact.countCollision !== false) state = { ...state, collisions: state.collisions + 1, sequence: state.sequence + 1 };
+        if (impact.kind === "off-road") state = { ...state, offRoadImpacts: state.offRoadImpacts + 1, sequence: state.sequence + 1 };
+        if (number(impact.truckDamage) > 0) world.emit(ResourcePressureAdjust, { resourceId: "truck", amount: -number(impact.truckDamage), source: impact.kind ?? "impact" });
+        if (number(impact.cargoDamage) > 0) world.emit(ResourcePressureAdjust, { resourceId: "cargo", amount: -number(impact.cargoDamage), source: impact.kind ?? "impact" });
+      }
+
+      for (const request of world.readEvents(RunRecoveryRequest)) {
+        if (state.recoveryUsed || state.status !== "running") continue;
+        applyPenalty(`recovery:${state.sequence + 1}`, 30, "recovery");
+        state = { ...state, recoveryUsed: true, lastPosition: request.position ? clone(request.position) : state.lastPosition, sequence: state.sequence + 1 };
+        world.emit(ResourcePressureAdjust, { resourceId: "fuel", amount: 15, source: "roadside-recovery" });
+        world.emit(ResourcePressureAdjust, { resourceId: "truck", amount: 8, source: "roadside-recovery" });
+      }
+
+      for (const request of world.readEvents(RunFailRequest)) {
+        if (!["completed","failed"].includes(state.status)) state = { ...state, status: "failed", failureReason: String(request.reason ?? "The haul could not continue."), sequence: state.sequence + 1 };
+      }
+
+      if (state.status === "running" && state.remaining <= 0) {
+        state = { ...state, status: "failed", remaining: 0, failureReason: "Time ran out before the freight reached its yard.", sequence: state.sequence + 1 };
+      }
+
+      world.setResource(RunSimulationState, state);
+    }
+
+    const coreSimulationKit = createCoreSimulationKit({
+      id: "long-haul-core-simulation-kit",
+      resources: { RunSimulationState },
+      events: { RunResetRequest, RunStartRequest, RunPauseRequest, RunResumeRequest, RunFailRequest, RunSampleRequest, RunImpactRequest, RunRecoveryRequest },
+      systems: [{ phase: "resolve", name: "longHaulSimulationSystem", system: simulationSystem }],
+      initWorld({ world }) { world.setResource(RunSimulationState, initialRunState()); },
+      createApi({ world }) {
+        const get = () => world.getResource(RunSimulationState);
+        return {
+          getRun: () => clone(get()),
+          resetRun(timeLimit = TIME_LIMIT) { world.emit(RunResetRequest, { timeLimit }); return get(); },
+          startRun(position, timeLimit = TIME_LIMIT) { world.emit(RunStartRequest, { position: clone(position), timeLimit }); return get(); },
+          pauseRun() { world.emit(RunPauseRequest, {}); return get(); },
+          resumeRun(position) { world.emit(RunResumeRequest, { position: clone(position) }); return get(); },
+          sample(position, metadata = {}) { world.emit(RunSampleRequest, { position: clone(position), ...clone(metadata) }); return get(); },
+          impact(payload) { world.emit(RunImpactRequest, clone(payload)); return get(); },
+          recover(position) { world.emit(RunRecoveryRequest, { position: clone(position) }); return get(); },
+          fail(reason) { world.emit(RunFailRequest, { reason: String(reason) }); return get(); }
+        };
+      }
+    });
+
+    const coreInputKit = createCoreInputKit({
+      id: "long-haul-core-input-kit",
+      initialState: { intent: { throttle: 0, brake: 0, steer: 0, boost: false, interact: false, reverse: false } },
+      actions: { throttle: {}, brake: {}, steerLeft: {}, steerRight: {}, boost: {}, interact: {}, camera: {}, map: {}, pause: {}, recovery: {} },
+      bindings: { keyboard: { throttle: ["KeyW","ArrowUp"], brake: ["KeyS","ArrowDown"], steerLeft: ["KeyA","ArrowLeft"], steerRight: ["KeyD","ArrowRight"], boost: ["ShiftLeft","ShiftRight"], interact: ["KeyE"], camera: ["KeyC"], map: ["KeyM"], pause: ["Escape"], recovery: ["KeyR"] } },
+      contexts: { driving: { enabled: true }, menu: { enabled: true } },
+      createApi({ baseApi }) {
+        return {
+          setIntent(intent = {}) { return baseApi.update({ intent: clone(intent) }, "updated"); },
+          getIntent() { return clone(baseApi.getState().intent ?? {}); }
+        };
+      }
+    });
+
+    const scenes = {
+      boot: { kind: "web-canvas-scene", exits: { ready: { to: "title" } } },
+      title: { kind: "web-canvas-scene", exits: { start: { to: "generating" }, settings: { to: "settings" }, how: { to: "how-to-play" } } },
+      generating: { kind: "web-canvas-scene", exits: { ready: { to: "driving" }, cancel: { to: "title" } } },
+      driving: { kind: "web-three-scene", exits: { pause: { to: "paused" }, retry: { to: "generating" }, complete: { to: "results" }, fail: { to: "loss" }, title: { to: "title" } } },
+      paused: { kind: "web-three-scene", exits: { resume: { to: "driving" }, settings: { to: "settings" }, retry: { to: "generating" }, title: { to: "title" } } },
+      results: { kind: "web-three-scene", exits: { retry: { to: "generating" }, fresh: { to: "generating" }, title: { to: "title" } } },
+      loss: { kind: "web-three-scene", exits: { retry: { to: "generating" }, fresh: { to: "generating" }, title: { to: "title" } } },
+      settings: { kind: "web-canvas-scene", exits: { title: { to: "title" }, pause: { to: "paused" } } },
+      "how-to-play": { kind: "web-canvas-scene", exits: { back: { to: "title" } } }
+    };
+
+    const engine = createEngine({
+      tick: { maxDelta: 1 / 15, rejectReentry: true },
+      kits: [
+        createCoreSceneKit({ scenes, initialSceneId: "boot" }),
+        createCoreWorldDomain(),
+        coreInputKit,
+        longHaulDeliveryKit,
+        coreSimulationKit,
+        createVehicleDynamicsKit({
+          start: { x: 0, y: 0, heading: -Math.PI / 2 },
+          profile: { type: "heavy-truck", acceleration: 21, maxSpeed: 49, turnRate: 1.55, drag: .48, boostMultiplier: 1.34, boostDrainPerSecond: 20, boostRecoverPerSecond: 9, impactDamping: .18 },
+          boost: { start: 100, max: 100 },
+          bounds: { width: 1, height: 1, padding: 5000 }
+        }),
+        createRouteFieldKit({ id: "long-haul-route", markers: [], corridors: [] }),
+        createResourcePressureKit({
+          id: "long-haul-condition",
+          resources: [
+            { id: "fuel", label: "Fuel", start: 100, min: 0, max: 100 },
+            { id: "truck", label: "Truck condition", start: 100, min: 0, max: 100 },
+            { id: "cargo", label: "Cargo condition", start: 100, min: 0, max: 100 }
+          ]
+        }),
+        createHazardFieldKit({ id: "long-haul-wildlife", seed: "empty", bounds: { width: 1, height: 1, padding: 5000 }, hazards: [], spawnRules: [], maxHazards: 20, baseSpeed: 7 }),
+        createTelemetryKit({
+          id: "long-haul-telemetry",
+          historyLimit: 90,
+          selectors: [
+            { id: "truck", resource: VehicleDynamicsState },
+            { id: "run", resource: RunSimulationState },
+            { id: "condition", resource: ResourcePressureState },
+            { id: "delivery", resource: LongHaulDeliveryState }
+          ]
+        })
+      ]
+    });
+
+    engine.vehicleDynamics.setBounds({ width: 1, height: 1, padding: 5000 });
+    engine.hazardField.setBounds({ width: 1, height: 1, padding: 5000 });
+
+    let transitionSequence = 0;
+    function transition(exitId, payload = {}) {
+      transitionSequence += 1;
+      return engine.n.coreScene.requestTransition({ exitId, payload: clone(payload), transitionId: `long-haul-transition-${transitionSequence}` });
+    }
+
+    const renderer = new THREE.WebGLRenderer({ canvas: $("#game-canvas"), antialias: true, powerPreference: "high-performance", alpha: false });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x9ba99a);
+    scene.fog = new THREE.FogExp2(0xb7aa86, .00185);
+    const camera = new THREE.PerspectiveCamera(58, 1, .1, 1400);
+    camera.position.set(0, 8, 14);
+
+    const worldRoot = new THREE.Group();
+    worldRoot.name = "The Long Haul Country";
+    scene.add(worldRoot);
+    const cellRuntime = new Map();
+    let course = null;
+    let truckRig = null;
+    let wildlifeRig = null;
+    let dustRig = null;
+    let skyMesh = null;
+    let sunlight = null;
+    let generation = null;
+    let lastStreamCell = "";
+    let exploredEdgeIds = [];
+    let exploredDepotIds = [];
+    let mapOpen = false;
+    let cameraMode = 0;
+    let reverseGear = false;
+    let bodyYaw = -Math.PI / 2;
+    let wheelSpin = 0;
+    let lastVehiclePosition = { x: 0, y: 0 };
+    let stuckSeconds = 0;
+    let lastRoadState = true;
+    let lastObstacleHit = "";
+    let lastObstacleAt = -999;
+    let lastPenaltyId = "";
+    let lastCheckSequence = 0;
+    let lastWarningAt = -999;
+    let settingsReturn = "title";
+    let lossTransitioned = false;
+    let resultTransitioned = false;
+    let interactWanted = false;
+    const keys = Object.create(null);
+
+    function activeSeed() {
+      return engine.world.getResource(LongHaulDeliveryState)?.seed ?? generation?.seed ?? course?.seed ?? "";
+    }
+
+    const shared = {
+      box: new THREE.BoxGeometry(1, 1, 1),
+      cylinder: new THREE.CylinderGeometry(1, 1, 1, 10),
+      wheel: new THREE.CylinderGeometry(1, 1, .62, 14),
+      sphere: new THREE.SphereGeometry(1, 10, 7),
+      cone: new THREE.ConeGeometry(1, 1, 8),
+      plane: new THREE.PlaneGeometry(1, 1),
+      circle: new THREE.CircleGeometry(1, 24),
+      road: new THREE.MeshStandardMaterial({ color: 0x353431, roughness: .96, metalness: 0 }),
+      roughRoad: new THREE.MeshStandardMaterial({ color: 0x554737, roughness: 1 }),
+      shoulder: new THREE.MeshStandardMaterial({ color: 0x8c7654, roughness: 1 }),
+      narrowShoulder: new THREE.MeshStandardMaterial({ color: 0x685e48, roughness: 1 }),
+      marking: new THREE.MeshStandardMaterial({ color: 0xe8d8a4, roughness: .8, emissive: 0x211b0d, emissiveIntensity: .18 }),
+      terrain: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 }),
+      water: new THREE.MeshStandardMaterial({ color: 0x416c72, roughness: .28, metalness: .08, transparent: true, opacity: .78 }),
+      trunk: new THREE.MeshStandardMaterial({ color: 0x4a3626, roughness: 1 }),
+      pine: new THREE.MeshStandardMaterial({ color: 0x31533d, roughness: 1 }),
+      pineDark: new THREE.MeshStandardMaterial({ color: 0x233f31, roughness: 1 }),
+      grass: new THREE.MeshStandardMaterial({ color: 0x6f814b, roughness: 1, side: THREE.DoubleSide }),
+      rock: new THREE.MeshStandardMaterial({ color: 0x675f54, roughness: 1 }),
+      depotWall: new THREE.MeshStandardMaterial({ color: 0x8d765b, roughness: .9 }),
+      depotRoof: new THREE.MeshStandardMaterial({ color: 0x533a31, roughness: .85, metalness: .1 }),
+      depotTrim: new THREE.MeshStandardMaterial({ color: 0xd4b36d, roughness: .8 }),
+      asphaltDark: new THREE.MeshStandardMaterial({ color: 0x222323, roughness: 1 }),
+      signPost: new THREE.MeshStandardMaterial({ color: 0x3d3025, roughness: 1 }),
+      truckRed: new THREE.MeshStandardMaterial({ color: 0x9d3e27, roughness: .62, metalness: .12 }),
+      truckCream: new THREE.MeshStandardMaterial({ color: 0xe0c894, roughness: .7 }),
+      truckDark: new THREE.MeshStandardMaterial({ color: 0x191b1b, roughness: .68, metalness: .18 }),
+      chrome: new THREE.MeshStandardMaterial({ color: 0xbcc1bc, roughness: .28, metalness: .78 }),
+      glass: new THREE.MeshStandardMaterial({ color: 0x436267, roughness: .18, metalness: .18 }),
+      wood: new THREE.MeshStandardMaterial({ color: 0x765033, roughness: .92 }),
+      crate: new THREE.MeshStandardMaterial({ color: 0xa3743f, roughness: .94 }),
+      crateDark: new THREE.MeshStandardMaterial({ color: 0x67462f, roughness: .94 }),
+      deer: new THREE.MeshStandardMaterial({ color: 0x8b613c, roughness: 1 }),
+      deerLight: new THREE.MeshStandardMaterial({ color: 0xc5a173, roughness: 1 }),
+      dust: new THREE.PointsMaterial({ color: 0xc8a46c, size: 1.35, transparent: true, opacity: .42, depthWrite: false, sizeAttenuation: true })
+    };
+
+    function makeMesh(geometry, material, position, scale, rotation = null) {
+      const mesh = new THREE.Mesh(geometry, material);
+      if (position) mesh.position.set(position.x ?? 0, position.y ?? 0, position.z ?? 0);
+      if (scale) mesh.scale.set(scale.x ?? 1, scale.y ?? 1, scale.z ?? 1);
+      if (rotation) mesh.rotation.set(rotation.x ?? 0, rotation.y ?? 0, rotation.z ?? 0);
+      return mesh;
+    }
+
+    function createSignTexture(title, subtitle, arrow = "↑", accent = "#d4a34d") {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512; canvas.height = 256;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#2a2419"; ctx.fillRect(0,0,512,256);
+      ctx.strokeStyle = accent; ctx.lineWidth = 12; ctx.strokeRect(12,12,488,232);
+      ctx.fillStyle = "#f0dfb3"; ctx.font = "900 50px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(String(title).toUpperCase().slice(0,18), 256, 82);
+      ctx.fillStyle = accent; ctx.font = "800 27px system-ui"; ctx.fillText(String(subtitle).toUpperCase().slice(0,28), 222, 151);
+      ctx.font = "900 68px system-ui"; ctx.fillText(arrow, 440, 160);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      return texture;
+    }
+
+    function valueNoise(x, y, seed) {
+      const xi = Math.floor(x), yi = Math.floor(y);
+      const fx = x - xi, fy = y - yi;
+      const fade = (t) => t * t * (3 - 2 * t);
+      const sample = (sx, sy) => (hashText(`${seed}:${sx}:${sy}`) & 0xffff) / 0xffff;
+      const a = lerp(sample(xi, yi), sample(xi + 1, yi), fade(fx));
+      const b = lerp(sample(xi, yi + 1), sample(xi + 1, yi + 1), fade(fx));
+      return lerp(a, b, fade(fy));
+    }
+
+    function nearestRoad(point) {
+      if (!course?.edges?.length) return null;
+      let best = null;
+      for (const edge of course.edges) {
+        const info = pointSegmentInfo(point, edge.a, edge.b);
+        if (!best || info.distance < best.distance) best = { ...info, edge };
+      }
+      return best;
+    }
+
+    function terrainHeight(x, z) {
+      if (!course) return 0;
+      const broad = (valueNoise(x * .0018, z * .0018, `${course.seed}:broad`) - .5) * 13;
+      const detail = (valueNoise(x * .009, z * .009, `${course.seed}:detail`) - .5) * 3.4;
+      let height = broad + detail - 1.2;
+      const road = nearestRoad({ x, y: z });
+      if (road) {
+        const flatten = clamp(1 - road.distance / (road.edge.width * 1.6 + 20), 0, 1);
+        height = lerp(height, 0, flatten * flatten);
+      }
+      return height;
+    }
+
+    function createTerrainData(cx, cz) {
+      const segments = 16;
+      const vertices = [];
+      const colors = [];
+      const color = new THREE.Color();
+      for (let iz = 0; iz <= segments; iz += 1) {
+        for (let ix = 0; ix <= segments; ix += 1) {
+          const x = cx * CELL_SIZE + ix / segments * CELL_SIZE;
+          const z = cz * CELL_SIZE + iz / segments * CELL_SIZE;
+          const height = terrainHeight(x, z);
+          vertices.push(height);
+          const moisture = valueNoise(x * .006, z * .006, `${course.seed}:green`);
+          if (height < -1.5) color.setRGB(.27, .36 + moisture * .06, .28);
+          else if (moisture > .58) color.setRGB(.30 + moisture * .06, .43 + moisture * .12, .27);
+          else color.setRGB(.42 + moisture * .08, .43 + moisture * .07, .27 - moisture * .03);
+          colors.push(color.r, color.g, color.b);
+        }
+      }
+      return { cx, cz, segments, heights: vertices, colors };
+    }
+
+    function terrainDataFor(cx, cz) {
+      const key = `${cx},${cz}`;
+      return generation?.terrainCache?.[key] ?? createTerrainData(cx, cz);
+    }
+
+    function disposeCellEntry(entry) {
+      if (!entry) return;
+      if (entry.group?.parent) entry.group.parent.remove(entry.group);
+      for (const geometry of entry.ownedGeometries ?? []) geometry.dispose?.();
+      for (const texture of entry.ownedTextures ?? []) texture.dispose?.();
+      for (const material of entry.ownedMaterials ?? []) material.dispose?.();
+      cellRuntime.delete(entry.key);
+    }
+
+    function roadBox(edge, material, widthScale, height, y) {
+      const dx = edge.b.x - edge.a.x, dz = edge.b.y - edge.a.y;
+      const length = Math.hypot(dx, dz);
+      const mesh = new THREE.Mesh(shared.box, material);
+      mesh.position.set((edge.a.x + edge.b.x) / 2, y, (edge.a.y + edge.b.y) / 2);
+      mesh.scale.set(edge.width * widthScale, height, length + 2);
+      mesh.rotation.y = Math.atan2(dx, dz);
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function edgeTouchesCell(edge, bounds, margin = 20) {
+      const minX = Math.min(edge.a.x, edge.b.x), maxX = Math.max(edge.a.x, edge.b.x);
+      const minZ = Math.min(edge.a.y, edge.b.y), maxZ = Math.max(edge.a.y, edge.b.y);
+      return maxX >= bounds.minX - margin && minX <= bounds.maxX + margin && maxZ >= bounds.minZ - margin && minZ <= bounds.maxZ + margin;
+    }
+
+    function inCell(x, z, bounds) { return x >= bounds.minX && x < bounds.maxX && z >= bounds.minZ && z < bounds.maxZ; }
+
+    function createTerrainCell(command) {
+      const cell = command.cell;
+      const [cx, cz] = cell.coordinates;
+      const key = `terrain:${cell.id}`;
+      const data = terrainDataFor(cx, cz);
+      const geometry = new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE, data.segments, data.segments);
+      geometry.rotateX(-Math.PI / 2);
+      const positions = geometry.attributes.position;
+      for (let i = 0; i < positions.count; i += 1) positions.setY(i, data.heights[i]);
+      geometry.setAttribute("color", new THREE.Float32BufferAttribute(data.colors, 3));
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, shared.terrain);
+      mesh.position.set((cx + .5) * CELL_SIZE, 0, (cz + .5) * CELL_SIZE);
+      mesh.receiveShadow = true;
+      const group = new THREE.Group();
+      group.add(mesh);
+
+      const lowSamples = data.heights.filter((height) => height < -1.7).length;
+      if (lowSamples > data.heights.length * .18) {
+        const water = new THREE.Mesh(shared.plane, shared.water);
+        water.rotation.x = -Math.PI / 2;
+        water.position.set((cx + .5) * CELL_SIZE, -1.8, (cz + .5) * CELL_SIZE);
+        water.scale.set(CELL_SIZE * .98, CELL_SIZE * .98, 1);
+        group.add(water);
+      }
+      worldRoot.add(group);
+      cellRuntime.set(key, { key, kind: "terrain", group, ownedGeometries: [geometry], ownedTextures: [], ownedMaterials: [], obstacles: [] });
+      return { key, lowSamples };
+    }
+
+    function createDepotVisual(depot, ownedTextures, ownedMaterials) {
+      const group = new THREE.Group();
+      group.position.set(depot.x, .2, depot.y);
+      group.rotation.y = -depot.heading - Math.PI / 2;
+
+      const apron = makeMesh(shared.box, shared.asphaltDark, { x: 0, y: .08, z: 0 }, { x: 48, y: .12, z: 42 });
+      apron.receiveShadow = true; group.add(apron);
+      const warehouse = makeMesh(shared.box, shared.depotWall, { x: 0, y: 7, z: -11 }, { x: 31, y: 13, z: 17 });
+      warehouse.castShadow = true; warehouse.receiveShadow = true; group.add(warehouse);
+      const roof = makeMesh(shared.box, shared.depotRoof, { x: 0, y: 14.2, z: -11 }, { x: 34, y: 1.2, z: 20 }, { z: -.04 });
+      roof.castShadow = true; group.add(roof);
+      for (let i = -1; i <= 1; i += 1) {
+        const door = makeMesh(shared.box, shared.truckDark, { x: i * 9, y: 4.2, z: -2.25 }, { x: 6.5, y: 7.2, z: .45 });
+        group.add(door);
+        const stripe = makeMesh(shared.box, shared.depotTrim, { x: i * 9, y: 7.5, z: -1.98 }, { x: 6.7, y: .35, z: .12 });
+        group.add(stripe);
+      }
+      const lampMat = new THREE.MeshStandardMaterial({ color: 0xffd78b, emissive: 0xffad4b, emissiveIntensity: 1.6, roughness: .5 });
+      ownedMaterials.push(lampMat);
+      for (const x of [-13, 13]) {
+        const pole = makeMesh(shared.cylinder, shared.signPost, { x, y: 3.6, z: 8 }, { x: .18, y: 3.5, z: .18 }); group.add(pole);
+        const lamp = makeMesh(shared.sphere, lampMat, { x, y: 7.3, z: 8 }, { x: .42, y: .42, z: .42 }); group.add(lamp);
+      }
+      const texture = createSignTexture(depot.name, "Freight receiving", "↓", "#e2b457");
+      ownedTextures.push(texture);
+      const signMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+      ownedMaterials.push(signMat);
+      const sign = new THREE.Mesh(shared.plane, signMat);
+      sign.position.set(0, 9.5, -2.45); sign.scale.set(13, 6.5, 1); group.add(sign);
+      const gateLine = makeMesh(shared.box, shared.marking, { x: 0, y: .25, z: 13 }, { x: 20, y: .08, z: .65 }); group.add(gateLine);
+      return group;
+    }
+
+    function createRoadSign(sign, ownedTextures, ownedMaterials) {
+      const group = new THREE.Group();
+      group.position.set(sign.x, terrainHeight(sign.x, sign.y), sign.y);
+      group.rotation.y = sign.rotation ?? 0;
+      const postA = makeMesh(shared.box, shared.signPost, { x: -2.1, y: 2.4, z: 0 }, { x: .22, y: 4.8, z: .22 });
+      const postB = makeMesh(shared.box, shared.signPost, { x: 2.1, y: 2.4, z: 0 }, { x: .22, y: 4.8, z: .22 });
+      group.add(postA, postB);
+      const texture = createSignTexture(sign.title, sign.subtitle, sign.arrow ?? "↑", sign.accent ?? "#d4a34d");
+      ownedTextures.push(texture);
+      const boardMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+      ownedMaterials.push(boardMaterial);
+      const board = new THREE.Mesh(shared.plane, boardMaterial);
+      board.position.y = 5.2; board.scale.set(7.6, 3.8, 1); group.add(board);
+      return group;
+    }
+
+    function createCourseCell(command) {
+      const cell = command.cell;
+      const bounds = cell.bounds;
+      const key = `content:${cell.id}`;
+      const group = new THREE.Group();
+      const ownedTextures = [];
+      const ownedMaterials = [];
+      const obstacles = [];
+
+      for (const edge of course.edges) {
+        const midpointX=(edge.a.x+edge.b.x)/2,midpointZ=(edge.a.y+edge.b.y)/2;
+        if (!inCell(midpointX, midpointZ, bounds)) continue;
+        const shoulderMaterial = edge.type === "short-narrow" ? shared.narrowShoulder : shared.shoulder;
+        group.add(roadBox(edge, shoulderMaterial, edge.type === "short-narrow" ? 1.42 : 1.62, .11, .03));
+        group.add(roadBox(edge, edge.type === "rough-shortcut" ? shared.roughRoad : shared.road, 1, .13, .17));
+
+        const length = segmentLength(edge);
+        const count = Math.max(1, Math.floor(length / 18));
+        for (let i = 0; i < count; i += 1) {
+          if ((i + edge.markingOffset) % 2 !== 0) continue;
+          const t = (i + .5) / count;
+          const x = lerp(edge.a.x, edge.b.x, t), z = lerp(edge.a.y, edge.b.y, t);
+          if (!inCell(x, z, bounds)) continue;
+          const dash = makeMesh(shared.box, shared.marking, { x, y: .31, z }, { x: .24, y: .045, z: 6 });
+          dash.rotation.y = Math.atan2(edge.b.x - edge.a.x, edge.b.y - edge.a.y);
+          group.add(dash);
+        }
+      }
+
+      const localNodes = course.nodes.filter((node) => inCell(node.x, node.y, bounds) && node.degree > 2);
+      for (const node of localNodes) {
+        const junction = new THREE.Mesh(shared.circle, shared.road);
+        junction.rotation.x = -Math.PI / 2; junction.position.set(node.x, .25, node.y); junction.scale.set(20,20,1); junction.receiveShadow = true; group.add(junction);
+      }
+
+      for (const depot of course.depots) if (inCell(depot.x, depot.y, bounds)) group.add(createDepotVisual(depot, ownedTextures, ownedMaterials));
+      for (const sign of course.signs) if (inCell(sign.x, sign.y, bounds)) group.add(createRoadSign(sign, ownedTextures, ownedMaterials));
+
+      const rng = makeRng(`${course.seed}:cell:${cell.coordinates.join(":")}`);
+      const treeMatrices = [];
+      const crownMatrices = [];
+      const grassMatrices = [];
+      const dummy = new THREE.Object3D();
+      const treeCount = 26 + Math.floor(rng() * 18);
+      for (let i = 0; i < treeCount; i += 1) {
+        const x = lerp(bounds.minX + 6, bounds.maxX - 6, rng());
+        const z = lerp(bounds.minZ + 6, bounds.maxZ - 6, rng());
+        const road = nearestRoad({ x, y: z });
+        const depotNear = course.depots.some((depot) => Math.hypot(depot.x - x, depot.y - z) < 38);
+        if (!road || road.distance < road.edge.width * .72 + 9 || depotNear) continue;
+        const h = 7 + rng() * 9;
+        const y = terrainHeight(x, z);
+        dummy.position.set(x, y + h * .32, z); dummy.rotation.set(0,rng()*Math.PI,0); dummy.scale.set(.55 + rng()*.35, h*.64, .55 + rng()*.35); dummy.updateMatrix(); treeMatrices.push(dummy.matrix.clone());
+        dummy.position.set(x, y + h * .82, z); dummy.rotation.set(0,rng()*Math.PI,0); dummy.scale.set(2.5 + rng()*1.7, h*.72, 2.5 + rng()*1.7); dummy.updateMatrix(); crownMatrices.push(dummy.matrix.clone());
+        obstacles.push({ id: `${cell.id}:tree:${i}`, x, y: z, radius: 2.5, kind: "tree" });
+      }
+      if (treeMatrices.length) {
+        const trunks = new THREE.InstancedMesh(shared.cylinder, shared.trunk, treeMatrices.length);
+        const crowns = new THREE.InstancedMesh(shared.cone, rng()>.5 ? shared.pine : shared.pineDark, crownMatrices.length);
+        treeMatrices.forEach((matrix,index) => trunks.setMatrixAt(index,matrix)); crownMatrices.forEach((matrix,index) => crowns.setMatrixAt(index,matrix));
+        trunks.receiveShadow = true; crowns.castShadow = true; crowns.receiveShadow = true; group.add(trunks,crowns);
+      }
+
+      for (let i = 0; i < 75; i += 1) {
+        const x = lerp(bounds.minX, bounds.maxX, rng()), z = lerp(bounds.minZ, bounds.maxZ, rng());
+        const road = nearestRoad({ x, y: z });
+        if (road && road.distance < road.edge.width * .55 + 3) continue;
+        const y = terrainHeight(x,z);
+        dummy.position.set(x,y+.55,z); dummy.rotation.set(0,rng()*Math.PI,0); dummy.scale.set(.35+rng()*.4,1+rng()*.8,.35+rng()*.4); dummy.updateMatrix(); grassMatrices.push(dummy.matrix.clone());
+      }
+      if (grassMatrices.length) {
+        const grass = new THREE.InstancedMesh(shared.cone, shared.grass, grassMatrices.length);
+        grassMatrices.forEach((matrix,index) => grass.setMatrixAt(index,matrix)); group.add(grass);
+      }
+
+      for (const edge of course.edges.filter((entry) => entry.type === "rough-shortcut" && edgeTouchesCell(entry,bounds,10))) {
+        const length = segmentLength(edge);
+        const rockCount = Math.max(1,Math.floor(length/90));
+        for (let i=0;i<rockCount;i+=1) {
+          const t=(i+1)/(rockCount+1); const side=i%2?1:-1;
+          const heading=Math.atan2(edge.b.y-edge.a.y,edge.b.x-edge.a.x);
+          const x=lerp(edge.a.x,edge.b.x,t)+Math.cos(heading+Math.PI/2)*(edge.width*.35*side);
+          const z=lerp(edge.a.y,edge.b.y,t)+Math.sin(heading+Math.PI/2)*(edge.width*.35*side);
+          if(!inCell(x,z,bounds)) continue;
+          const rock=makeMesh(shared.sphere,shared.rock,{x,y:.8,z},{x:1.5,y:.75,z:1.3},{y:rng()*Math.PI}); group.add(rock);
+          obstacles.push({id:`${cell.id}:rock:${i}`,x,y:z,radius:1.7,kind:"rock"});
+        }
+      }
+
+      worldRoot.add(group);
+      cellRuntime.set(key, { key, kind: "content", group, ownedGeometries: [], ownedTextures, ownedMaterials, obstacles });
+      return { key, roads: course.edges.filter((edge) => inCell((edge.a.x+edge.b.x)/2,(edge.a.y+edge.b.y)/2,bounds)).length, obstacles: obstacles.length };
+    }
+
+    function createWorldProviders() {
+      const terrainEffects = Object.create(null);
+      const contentEffects = Object.create(null);
+      const terrainProvider = defineWorldEffectProvider({
+        id: "long-haul-terrain-provider",
+        phase: "foundation",
+        provides: ["terrain:surface"],
+        critical: true,
+        prepareCell(command) { const built = createTerrainCell(command); terrainEffects[command.cell.id] = built; return built; },
+        updateCell(command) { return terrainEffects[command.cell.id] ?? createTerrainCell(command); },
+        releaseCell(command) { disposeCellEntry(cellRuntime.get(`terrain:${command.cell.id}`)); delete terrainEffects[command.cell.id]; },
+        getEffectDescriptor(cellId, context) { const built=terrainEffects[cellId]; return built ? { id:`${cellId}:terrain`, kind:"terrain-surface", capabilities:["terrain:surface"], descriptor:{cellId,lowSamples:built.lowSamples} } : null; },
+        snapshot() { return { activeCellIds:Object.keys(terrainEffects).sort() }; },
+        restoreSnapshot() {},
+        reset() { for(const id of Object.keys(terrainEffects)) disposeCellEntry(cellRuntime.get(`terrain:${id}`)); for(const id of Object.keys(terrainEffects)) delete terrainEffects[id]; }
+      });
+      const contentProvider = defineWorldEffectProvider({
+        id: "long-haul-course-provider",
+        phase: "population",
+        provides: ["route:content"],
+        requires: ["terrain:surface"],
+        critical: true,
+        prepareCell(command) { const built=createCourseCell(command); contentEffects[command.cell.id]=built; return built; },
+        updateCell(command) { return contentEffects[command.cell.id] ?? createCourseCell(command); },
+        releaseCell(command) { disposeCellEntry(cellRuntime.get(`content:${command.cell.id}`)); delete contentEffects[command.cell.id]; },
+        getEffectDescriptor(cellId) { const built=contentEffects[cellId]; return built ? {id:`${cellId}:course`,kind:"course-content",capabilities:["route:content"],descriptor:{cellId,roads:built.roads,obstacles:built.obstacles}} : null; },
+        snapshot() { return { activeCellIds:Object.keys(contentEffects).sort() }; },
+        restoreSnapshot() {},
+        reset() { for(const id of Object.keys(contentEffects)) disposeCellEntry(cellRuntime.get(`content:${id}`)); for(const id of Object.keys(contentEffects)) delete contentEffects[id]; }
+      });
+      return [terrainProvider, contentProvider];
+    }
+
+    const branchDefinitions = [
+      { id:"short-narrow", name:"Pine Pass", depot:"Mile 9 Freight", angle:-2.55, steps:8, width:13.5, step:112, color:"#d9a441", subtitle:"Narrow · Short", offsets:[0,0,0,-1,1,-1,1] },
+      { id:"long-safe", name:"Easy Miles", depot:"Coldwater Yard", angle:-2.05, steps:13, width:27, step:111, color:"#79a66f", subtitle:"Wide · Long", offsets:[0,0,0,0,-1,1] },
+      { id:"rough-shortcut", name:"Old Cut", depot:"Red Cedar Co-op", angle:-1.57, steps:10, width:18, step:102, color:"#bb7144", subtitle:"Rough · Direct", offsets:[0,0,-1,1,-1,1,2,-2] },
+      { id:"wildlife-heavy", name:"Deer Run", depot:"Hollow Creek", angle:-1.08, steps:11, width:21, step:111, color:"#77905a", subtitle:"Wildlife crossing", offsets:[0,0,0,-1,1,-1,1] },
+      { id:"confusing-junction", name:"Five Forks", depot:"Bramble Transfer", angle:-.56, steps:12, width:20, step:108, color:"#b98b4e", subtitle:"Many turns", offsets:[0,0,-1,1,-2,2,-1,1] }
+    ];
+
+    function nodeId(branchId,index) { return `${branchId}:node:${index}`; }
+
+    function addEdge(target, a, b, branch, suffix = "") {
+      const edge={
+        id:`${branch.id}:edge:${target.edges.filter((entry)=>entry.branchId===branch.id).length}${suffix}`,
+        from:a.id,to:b.id,a:{x:a.x,y:a.y},b:{x:b.x,y:b.y},width:branch.width,type:branch.id,branchId:branch.id,branchName:branch.name,roughness:branch.id==="rough-shortcut" ? .82 : branch.id==="long-safe" ? .06 : .22,markingOffset:hashText(`${branch.id}:${a.id}`)%2
+      };
+      target.edges.push(edge); a.degree=(a.degree??0)+1; b.degree=(b.degree??0)+1; return edge;
+    }
+
+    function buildTrunk(target) {
+      const trunk={id:"trunk",name:"Dispatch Road",width:24};
+      const points=[[0,0],[0,-115],[13,-230],[-7,-345]];
+      points.forEach(([x,y],index)=>target.nodes.push({id:nodeId("trunk",index),x,y,branchId:"trunk",degree:0}));
+      for(let i=0;i<points.length-1;i+=1) addEdge(target,target.nodes[i],target.nodes[i+1],trunk);
+      target.origin=target.nodes[0]; target.hub=target.nodes[3];
+      for(const node of target.nodes) target.usedRegions.push(`${Math.round(node.x/72)},${Math.round(node.y/72)}`);
+    }
+
+    function angleDelta(a,b) { return Math.atan2(Math.sin(a-b),Math.cos(a-b)); }
+
+    function segmentsIntersect(a,b,c,d) {
+      const orient=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
+      const ab1=orient(a,b,c),ab2=orient(a,b,d),cd1=orient(c,d,a),cd2=orient(c,d,b);
+      return ab1*ab2<-.0001&&cd1*cd2<-.0001;
+    }
+
+    function roadCandidateAllowed(target,current,candidate,branch) {
+      if(Math.abs(candidate.x)>2500||candidate.y>400||candidate.y<-2800)return null;
+      const region=`${Math.round(candidate.x/72)},${Math.round(candidate.y/72)}`;
+      if(target.usedRegions.includes(region))return null;
+      const radialHeading=Math.atan2(candidate.y-target.hub.y,candidate.x-target.hub.x);
+      if(Math.abs(angleDelta(radialHeading,branch.angle))>.205)return null;
+      for(const edge of target.edges) {
+        if(edge.from===current.id||edge.to===current.id)continue;
+        if(edge.branchId===branch.id&&segmentsIntersect(current,candidate,edge.a,edge.b))return null;
+      }
+      return {...candidate,region};
+    }
+
+    function buildBranch(target, branch, branchIndex, rng) {
+      const nodes=[];
+      let current=target.hub;
+      let heading=branch.angle;
+      for(let stepIndex=0;stepIndex<branch.steps;stepIndex+=1) {
+        let chosen=null;
+        for(let attempt=0;attempt<36;attempt+=1) {
+          const turnUnit=branch.offsets[Math.floor(rng()*branch.offsets.length)] ?? 0;
+          const turn=turnUnit*Math.PI/7.2;
+          const candidateHeading=heading+turn;
+          if(Math.abs(angleDelta(candidateHeading,heading))>Math.PI*.54) continue;
+          const distance=branch.step*(.86+rng()*.27);
+          const candidate={x:current.x+Math.cos(candidateHeading)*distance,y:current.y+Math.sin(candidateHeading)*distance,heading:candidateHeading};
+          chosen=roadCandidateAllowed(target,current,candidate,branch);
+          if(chosen)break;
+        }
+        if(!chosen) {
+          const turns=[0,-.16,.16,-.32,.32,-.48,.48,-.68,.68,-.9,.9,-1.15,1.15,-1.48,1.48];
+          for(const distanceScale of [1,.84,.68,.55,1.16,1.3]) {
+            for(const turn of turns) {
+              const candidateHeading=heading+turn;
+              if(Math.abs(angleDelta(candidateHeading,heading))>Math.PI*.54)continue;
+              const candidate={x:current.x+Math.cos(candidateHeading)*branch.step*distanceScale,y:current.y+Math.sin(candidateHeading)*branch.step*distanceScale,heading:candidateHeading};
+              chosen=roadCandidateAllowed(target,current,candidate,branch);
+              if(chosen)break;
+            }
+            if(chosen)break;
+          }
+          if(!chosen) {
+            for(let scale=.36;scale<=1.7&&!chosen;scale+=.07) {
+              for(let turnStep=-16;turnStep<=16;turnStep+=1) {
+                const candidateHeading=heading+turnStep*.1;
+                if(Math.abs(angleDelta(candidateHeading,heading))>Math.PI*.54)continue;
+                const candidate={x:current.x+Math.cos(candidateHeading)*branch.step*scale,y:current.y+Math.sin(candidateHeading)*branch.step*scale,heading:candidateHeading};
+                chosen=roadCandidateAllowed(target,current,candidate,branch);
+                if(chosen)break;
+              }
+            }
+          }
+          if(!chosen)throw new Error(`No safe road continuation for ${branch.id}.`);
+        }
+        const node={id:nodeId(branch.id,stepIndex+1),x:chosen.x,y:chosen.y,branchId:branch.id,degree:0};
+        target.nodes.push(node); nodes.push(node); target.usedRegions.push(chosen.region); addEdge(target,current,node,branch); current=node; heading=chosen.heading;
+      }
+      target.branches.push({...branch,nodeIds:nodes.map((node)=>node.id),endNodeId:current.id,length:target.edges.filter((edge)=>edge.branchId===branch.id).reduce((sum,edge)=>sum+segmentLength(edge),0)});
+    }
+
+    function addConfusingFork(target) {
+      const branch=target.branches.find((entry)=>entry.id==="confusing-junction");
+      if(!branch) return;
+      const nodes=branch.nodeIds.map((id)=>target.nodes.find((node)=>node.id===id));
+      if(nodes.length<7) return;
+      let midpointA=null,midpointB=null;
+      let a=null,b=null;
+      const anchorPairs=[];
+      for(let gap=2;gap<=5;gap+=1)for(let startIndex=0;startIndex+gap<nodes.length;startIndex+=1)anchorPairs.push([startIndex,startIndex+gap]);
+      const offsets=[];for(let offset=48;offset<=138;offset+=15)offsets.push(offset,-offset);
+      for(const [startIndex,endIndex] of anchorPairs) {
+        a=nodes[startIndex];b=nodes[endIndex];if(!a||!b)continue;
+        const heading=Math.atan2(b.y-a.y,b.x-a.x);
+        for(const offset of offsets) {
+          const first={id:"confusing-junction:fork:1",x:lerp(a.x,b.x,.34)+Math.cos(heading+Math.PI/2)*offset,y:lerp(a.y,b.y,.34)+Math.sin(heading+Math.PI/2)*offset,branchId:branch.id,degree:0};
+          const second={id:"confusing-junction:fork:2",x:lerp(a.x,b.x,.67)+Math.cos(heading+Math.PI/2)*offset,y:lerp(a.y,b.y,.67)+Math.sin(heading+Math.PI/2)*offset,branchId:branch.id,degree:0};
+          const regions=[first,second].map((node)=>`${Math.round(node.x/72)},${Math.round(node.y/72)}`);
+          const proposed=[[a,first,a.id],[first,second,null],[second,b,b.id]];
+          const crosses=target.edges.some((edge)=>proposed.some(([from,to,sharedId])=>!(sharedId&&(edge.from===sharedId||edge.to===sharedId))&&segmentsIntersect(from,to,edge.a,edge.b)));
+          if(!crosses&&regions[0]!==regions[1]&&regions.every((region)=>!target.usedRegions.includes(region))){midpointA=first;midpointB=second;target.usedRegions.push(...regions);break;}
+        }
+        if(midpointA)break;
+      }
+      if(!midpointA||!midpointB)return;
+      target.nodes.push(midpointA,midpointB);
+      const def=branchDefinitions.find((entry)=>entry.id===branch.id);
+      addEdge(target,a,midpointA,def,"a"); addEdge(target,midpointA,midpointB,def,"b"); addEdge(target,midpointB,b,def,"c");
+    }
+
+    function placeDepots(target) {
+      target.depots=[]; target.signs=[];
+      for(let index=0;index<target.branches.length;index+=1) {
+        const branch=target.branches[index];
+        const end=target.nodes.find((node)=>node.id===branch.endNodeId);
+        const incoming=target.edges.filter((edge)=>edge.branchId===branch.id&&edge.to===end.id).at(-1);
+        const heading=incoming?Math.atan2(incoming.b.y-incoming.a.y,incoming.b.x-incoming.a.x):branch.angle;
+        const depot={id:`depot-${index+1}`,name:branch.depot,x:end.x+Math.cos(heading)*22,y:end.y+Math.sin(heading)*22,heading,branchId:branch.id,radius:31};
+        target.depots.push(depot);
+        const firstEdge=target.edges.find((edge)=>edge.branchId===branch.id);
+        if(firstEdge) {
+          const info=pointSegmentInfo({x:lerp(firstEdge.a.x,firstEdge.b.x,.5),y:lerp(firstEdge.a.y,firstEdge.b.y,.5)},firstEdge.a,firstEdge.b);
+          const side=index%2?1:-1;
+          target.signs.push({id:`sign-${branch.id}`,x:info.x+Math.cos(info.heading+Math.PI/2)*(branch.width*.8*side),y:info.y+Math.sin(info.heading+Math.PI/2)*(branch.width*.8*side),rotation:-info.heading-Math.PI/2,title:branch.name,subtitle:branch.subtitle,arrow:"↑",accent:branch.color});
+        }
+      }
+      target.signs.push({id:"dispatch-sign",x:-13,y:-86,rotation:0,title:"Dispatch",subtitle:"All freight roads",arrow:"↑",accent:"#e1ae55"});
+      target.parTime=PAR_TIME;
+      const branchTotal=target.branches.reduce((sum,branch)=>sum+branch.length,0);
+      const trunkLength=target.edges.filter((edge)=>edge.branchId==="trunk").reduce((sum,edge)=>sum+segmentLength(edge),0);
+      target.parDistance=Math.round((trunkLength+branchTotal*1.28)/100)*100;
+      const xs=target.nodes.map((node)=>node.x).concat(target.depots.map((depot)=>depot.x));
+      const ys=target.nodes.map((node)=>node.y).concat(target.depots.map((depot)=>depot.y));
+      target.bounds={minX:Math.min(...xs)-100,maxX:Math.max(...xs)+100,minY:Math.min(...ys)-100,maxY:Math.max(...ys)+100};
+    }
+
+    function updateRouteField(target) {
+      const markers=[
+        ...target.nodes.map((node)=>({id:node.id,kind:node===target.origin?"origin":"route-node",x:node.x,y:node.y,radius:node===target.origin?20:10,active:true,metadata:{branchId:node.branchId,degree:node.degree}})),
+        ...target.depots.map((depot)=>({id:depot.id,kind:"depot",x:depot.x,y:depot.y,radius:depot.radius,active:true,metadata:{name:depot.name,branchId:depot.branchId}}))
+      ];
+      const corridors=target.edges.map((edge)=>({id:edge.id,from:edge.from,to:edge.to,width:edge.width,active:true,metadata:{branchId:edge.branchId,branchName:edge.branchName,type:edge.type,a:edge.a,b:edge.b}}));
+      engine.world.setResource(RouteFieldState,{id:"long-haul-route",markers,corridors,lastQuery:null});
+    }
+
+    function validateCourse(target) {
+      const issues=[];
+      if(target.branches.length!==5) issues.push("five-branches");
+      if(target.depots.length!==5) issues.push("five-depots");
+      if(new Set(target.depots.map((depot)=>depot.id)).size!==5) issues.push("unique-depots");
+      const adjacency=Object.create(null);
+      for(const node of target.nodes) adjacency[node.id]=[];
+      for(const edge of target.edges) { if(!adjacency[edge.from]||!adjacency[edge.to]){issues.push("missing-node");continue;} adjacency[edge.from].push(edge.to); adjacency[edge.to].push(edge.from); }
+      const queue=[target.origin.id],visited=[];
+      while(queue.length){const id=queue.shift();if(visited.includes(id))continue;visited.push(id);for(const next of adjacency[id]??[])if(!visited.includes(next))queue.push(next);}
+      for(const branch of target.branches) if(!visited.includes(branch.endNodeId)) issues.push(`unreachable:${branch.id}`);
+      for(const edge of target.edges) {
+        const length=segmentLength(edge); if(length<35||length>190) issues.push(`undrivable:${edge.id}`);
+        if(edge.from===edge.to) issues.push(`reversal:${edge.id}`);
+      }
+      for(let left=0;left<target.edges.length;left+=1)for(let right=left+1;right<target.edges.length;right+=1) {
+        const a=target.edges[left],b=target.edges[right];
+        if(a.from===b.from||a.from===b.to||a.to===b.from||a.to===b.to)continue;
+        if(segmentsIntersect(a.a,a.b,b.a,b.b))issues.push(`bad-overlap:${a.id}:${b.id}`);
+      }
+      const regions=target.nodes.map((node)=>`${Math.round(node.x/72)},${Math.round(node.y/72)}`);
+      if(new Set(regions).size!==regions.length)issues.push("duplicate-region");
+      if(target.nodes.some((node)=>Math.abs(node.x)>2500||node.y>400||node.y<-2800))issues.push("world-escape");
+      if(target.depots.some((depot)=>Math.abs(depot.x)>2545||depot.y>445||depot.y<-2845))issues.push("depot-world-escape");
+      return {valid:issues.length===0,issues,visitedCount:visited.length};
+    }
+
+    function buildAtmosphere() {
+      scene.background.set(0xa9ac96);
+      scene.fog = new THREE.FogExp2(0xb6a98a, .00165);
+      const skyGeometry = new THREE.SphereGeometry(760, 24, 14);
+      const skyMaterial = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: { topColor: { value: new THREE.Color(0x547b8a) }, horizonColor: { value: new THREE.Color(0xf1bd70) }, groundColor: { value: new THREE.Color(0xb98b5d) } },
+        vertexShader: "varying vec3 vWorld; void main(){ vec4 world=modelMatrix*vec4(position,1.0); vWorld=position; gl_Position=projectionMatrix*viewMatrix*world; }",
+        fragmentShader: "uniform vec3 topColor; uniform vec3 horizonColor; uniform vec3 groundColor; varying vec3 vWorld; void main(){ float h=normalize(vWorld).y; vec3 c=mix(groundColor,horizonColor,smoothstep(-.18,.08,h)); c=mix(c,topColor,smoothstep(.02,.72,h)); gl_FragColor=vec4(c,1.0); }"
+      });
+      skyMesh = new THREE.Mesh(skyGeometry, skyMaterial);
+      skyMesh.renderOrder = -100;
+      worldRoot.add(skyMesh);
+
+      const hemisphere = new THREE.HemisphereLight(0xffdca0, 0x34443c, 2.1);
+      worldRoot.add(hemisphere);
+      sunlight = new THREE.DirectionalLight(0xffcf88, 3.1);
+      sunlight.position.set(-140, 220, 90);
+      sunlight.castShadow = true;
+      sunlight.shadow.mapSize.set(1024,1024);
+      sunlight.shadow.camera.near = 20; sunlight.shadow.camera.far = 520;
+      sunlight.shadow.camera.left = -115; sunlight.shadow.camera.right = 115; sunlight.shadow.camera.top = 115; sunlight.shadow.camera.bottom = -115;
+      sunlight.shadow.bias = -.00025;
+      worldRoot.add(sunlight, sunlight.target);
+    }
+
+    function createTruckRig() {
+      if (truckRig?.root?.parent) truckRig.root.parent.remove(truckRig.root);
+      const root = new THREE.Group();
+      const suspension = new THREE.Group();
+      root.add(suspension);
+      const wheels = [];
+      const steerPivots = [];
+
+      const frame = makeMesh(shared.box, shared.truckDark, {x:0,y:1.45,z:.3},{x:3.5,y:.5,z:8.8}); frame.castShadow=true; suspension.add(frame);
+      const cab = makeMesh(shared.box, shared.truckRed, {x:0,y:3.35,z:-2.5},{x:3.65,y:3.7,z:3.3}); cab.castShadow=true; suspension.add(cab);
+      const hood = makeMesh(shared.box, shared.truckRed, {x:0,y:2.65,z:-4.5},{x:3.45,y:1.9,z:1.7}); hood.castShadow=true; suspension.add(hood);
+      const grille = makeMesh(shared.box, shared.chrome, {x:0,y:2.55,z:-5.38},{x:2.7,y:1.1,z:.16}); suspension.add(grille);
+      const windshield = makeMesh(shared.box, shared.glass, {x:0,y:4.15,z:-4.18},{x:3.1,y:1.35,z:.12},{x:-.13}); suspension.add(windshield);
+      const bumper = makeMesh(shared.box, shared.chrome, {x:0,y:1.62,z:-5.38},{x:3.8,y:.35,z:.35}); suspension.add(bumper);
+      const bed = makeMesh(shared.box, shared.wood, {x:0,y:2.02,z:2.35},{x:3.7,y:.38,z:6.1}); bed.castShadow=true; suspension.add(bed);
+      for(const x of [-1.78,1.78]) { const rail=makeMesh(shared.box,shared.chrome,{x,y:2.65,z:2.4},{x:.12,y:1.25,z:6.2}); suspension.add(rail); }
+      const crates=[];
+      for(let row=0;row<2;row+=1) for(let col=0;col<3;col+=1) {
+        const crate=makeMesh(shared.box,(row+col)%2?shared.crate:shared.crateDark,{x:(row-.5)*1.65,y:2.9,z:.4+col*1.75},{x:1.42,y:1.35,z:1.45},{y:(col%2-.5)*.05});
+        crate.castShadow=true; suspension.add(crate); crates.push(crate);
+        const band=makeMesh(shared.box,shared.chrome,{x:(row-.5)*1.65,y:2.9,z:.4+col*1.75},{x:1.48,y:.12,z:1.51}); suspension.add(band);
+      }
+      for(const [x,z,front] of [[-1.9,-3.45,true],[1.9,-3.45,true],[-1.9,1.2,false],[1.9,1.2,false],[-1.9,3.85,false],[1.9,3.85,false]]) {
+        const pivot=new THREE.Group(); pivot.position.set(x,1.15,z); suspension.add(pivot);
+        const wheel=new THREE.Mesh(shared.wheel,shared.truckDark); wheel.rotation.z=Math.PI/2; wheel.scale.set(.92,.92,.92); wheel.castShadow=true; pivot.add(wheel);
+        wheels.push(wheel); if(front) steerPivots.push(pivot);
+      }
+      for(const x of [-1.2,1.2]) { const light=makeMesh(shared.sphere,shared.depotTrim,{x,y:2.82,z:-5.38},{x:.22,y:.22,z:.14}); suspension.add(light); }
+      root.position.set(0,.05,0); root.rotation.y=0;
+      worldRoot.add(root);
+      truckRig={root,suspension,wheels,steerPivots,crates};
+      lastVehiclePosition={x:0,y:0}; bodyYaw=-Math.PI/2; reverseGear=false; wheelSpin=0;
+      createDustRig();
+      return truckRig;
+    }
+
+    function createDustRig() {
+      if(dustRig?.points?.parent) dustRig.points.parent.remove(dustRig.points);
+      const count=84;
+      const positions=new Float32Array(count*3);
+      const life=new Float32Array(count);
+      const velocity=Array.from({length:count},()=>({x:0,y:0,z:0}));
+      const geometry=new THREE.BufferGeometry(); geometry.setAttribute("position",new THREE.BufferAttribute(positions,3));
+      const points=new THREE.Points(geometry,shared.dust); points.frustumCulled=false; worldRoot.add(points);
+      dustRig={points,positions,life,velocity,cursor:0};
+    }
+
+    function spawnDust(x,y,z,heading,amount) {
+      if(!dustRig) return;
+      const rng=makeRng(`${Math.floor(x*4)}:${Math.floor(z*4)}:${dustRig.cursor}`);
+      for(let n=0;n<amount;n+=1) {
+        const i=dustRig.cursor++%dustRig.life.length;
+        const side=(rng()-.5)*3.2;
+        dustRig.positions[i*3]=x+Math.cos(heading+Math.PI/2)*side+Math.cos(heading+Math.PI)*3;
+        dustRig.positions[i*3+1]=y+.25+rng()*.5;
+        dustRig.positions[i*3+2]=z+Math.sin(heading+Math.PI/2)*side+Math.sin(heading+Math.PI)*3;
+        dustRig.velocity[i]={x:(rng()-.5)*1.8-Math.cos(heading)*1.2,y:.8+rng()*1.6,z:(rng()-.5)*1.8-Math.sin(heading)*1.2};
+        dustRig.life[i]=.8+rng()*.7;
+      }
+    }
+
+    function updateDust(dt) {
+      if(!dustRig) return;
+      for(let i=0;i<dustRig.life.length;i+=1) {
+        if(dustRig.life[i]<=0) { dustRig.positions[i*3+1]=-1000; continue; }
+        dustRig.life[i]-=dt;
+        dustRig.positions[i*3]+=dustRig.velocity[i].x*dt;
+        dustRig.positions[i*3+1]+=dustRig.velocity[i].y*dt;
+        dustRig.positions[i*3+2]+=dustRig.velocity[i].z*dt;
+        dustRig.velocity[i].y+=.25*dt;
+      }
+      dustRig.points.geometry.attributes.position.needsUpdate=true;
+    }
+
+    function createWildlifeRig() {
+      if(wildlifeRig?.root?.parent) wildlifeRig.root.parent.remove(wildlifeRig.root);
+      const root=new THREE.Group(); const animals=[];
+      const hazards=engine.hazardField.getState().hazards;
+      for(const hazard of hazards) {
+        const animal=new THREE.Group();
+        const large=hazard.kind==="elk"?1.25:1;
+        const body=makeMesh(shared.box,shared.deer,{x:0,y:1.55*large,z:0},{x:1.1*large,y:1.3*large,z:2.45*large}); body.castShadow=true; animal.add(body);
+        const neck=makeMesh(shared.box,shared.deer,{x:0,y:2.25*large,z:-1.1*large},{x:.56*large,y:1.25*large,z:.52*large},{x:-.28}); animal.add(neck);
+        const head=makeMesh(shared.box,shared.deerLight,{x:0,y:2.85*large,z:-1.58*large},{x:.7*large,y:.7*large,z:1.05*large}); animal.add(head);
+        const legs=[];
+        for(const x of [-.42,.42]) for(const z of [-.72,.72]) { const leg=makeMesh(shared.box,shared.deer,{x:x*large,y:.64*large,z:z*large},{x:.22*large,y:1.25*large,z:.22*large}); animal.add(leg); legs.push(leg); }
+        animal.userData={id:hazard.id,legs,phase:hashText(hazard.id)%100/100*Math.PI*2}; root.add(animal); animals.push(animal);
+      }
+      worldRoot.add(root); wildlifeRig={root,animals};
+    }
+
+    function updateWildlife(time) {
+      if(!wildlifeRig) return;
+      const hazards=engine.hazardField.getState().hazards;
+      for(const animal of wildlifeRig.animals) {
+        const hazard=hazards.find((entry)=>entry.id===animal.userData.id); if(!hazard){animal.visible=false;continue;}
+        animal.visible=true; animal.position.set(hazard.x,terrainHeight(hazard.x,hazard.y),hazard.y); animal.rotation.y=-Math.atan2(hazard.vy,hazard.vx)+Math.PI/2;
+        const speed=Math.hypot(hazard.vx,hazard.vy); const stride=time*speed*.7+animal.userData.phase;
+        animal.userData.legs.forEach((leg,index)=>leg.rotation.x=Math.sin(stride+(index%2?Math.PI:0))*.48);
+        animal.position.y+=Math.abs(Math.sin(stride))*0.08;
+      }
+    }
+
+    const audio = {
+      context:null, master:null, engineOsc:null, engineGain:null, windSource:null, windGain:null, enabled:true,
+      ensure() {
+        if(!this.enabled||this.context) { try{this.context?.resume();}catch{} return; }
+        try {
+          const Context=window.AudioContext||window.webkitAudioContext; if(!Context)return;
+          this.context=new Context(); this.master=this.context.createGain(); this.master.gain.value=.58; this.master.connect(this.context.destination);
+          this.engineOsc=this.context.createOscillator(); this.engineOsc.type="sawtooth";
+          const filter=this.context.createBiquadFilter(); filter.type="lowpass"; filter.frequency.value=340;
+          this.engineGain=this.context.createGain(); this.engineGain.gain.value=0;
+          this.engineOsc.connect(filter).connect(this.engineGain).connect(this.master); this.engineOsc.start();
+          const length=this.context.sampleRate*2; const buffer=this.context.createBuffer(1,length,this.context.sampleRate); const data=buffer.getChannelData(0); const rng=makeRng("long-haul-wind");
+          for(let i=0;i<length;i+=1)data[i]=(rng()*2-1)*.35;
+          this.windSource=this.context.createBufferSource(); this.windSource.buffer=buffer; this.windSource.loop=true;
+          const windFilter=this.context.createBiquadFilter(); windFilter.type="lowpass"; windFilter.frequency.value=700;
+          this.windGain=this.context.createGain(); this.windGain.gain.value=.015; this.windSource.connect(windFilter).connect(this.windGain).connect(this.master); this.windSource.start();
+        } catch { this.context=null; }
+      },
+      update(speed,throttle,active) {
+        if(!this.context||!this.engineGain)return;
+        const now=this.context.currentTime; const gain=(this.enabled&&active) ? .022+clamp(speed/55,0,1)*.045 : 0;
+        this.engineGain.gain.setTargetAtTime(gain,now,.08); this.engineOsc.frequency.setTargetAtTime(48+speed*2.15+Math.abs(throttle)*14,now,.06);
+        this.windGain?.gain.setTargetAtTime((this.enabled&&active) ? .008+clamp(speed/50,0,1)*.035 : 0,now,.12);
+      },
+      tone(frequency=440,duration=.12,type="sine",gain=.12,delay=0) {
+        if(!this.enabled)return; this.ensure(); if(!this.context||!this.master)return;
+        try { const osc=this.context.createOscillator(),amp=this.context.createGain(),now=this.context.currentTime+delay; osc.type=type; osc.frequency.setValueAtTime(frequency,now); amp.gain.setValueAtTime(.0001,now); amp.gain.exponentialRampToValueAtTime(gain,now+.015); amp.gain.exponentialRampToValueAtTime(.0001,now+duration); osc.connect(amp).connect(this.master); osc.start(now); osc.stop(now+duration+.03); } catch {}
+      },
+      wrong(){this.tone(150,.22,"square",.09);this.tone(112,.3,"square",.08,.14);},
+      good(){this.tone(330,.32,"sine",.13);this.tone(440,.4,"sine",.12,.1);this.tone(660,.55,"sine",.11,.2);},
+      hit(){this.tone(74,.18,"sawtooth",.16);},
+      click(){this.tone(260,.06,"square",.04);}
+    };
+
+    function clearWorld() {
+      try { if(engine.n.coreWorld.getWorld(WORLD_ID)) engine.n.coreWorld.removeWorld(WORLD_ID); } catch {}
+      for(const entry of Array.from(cellRuntime.values())) disposeCellEntry(entry);
+      cellRuntime.clear();
+      while(worldRoot.children.length) worldRoot.remove(worldRoot.children[0]);
+      if(skyMesh){skyMesh.geometry.dispose();skyMesh.material.dispose();}
+      skyMesh=null; sunlight=null; truckRig=null; wildlifeRig=null;
+      if(dustRig?.points?.geometry)dustRig.points.geometry.dispose(); dustRig=null;
+      course=null; lastStreamCell=""; exploredEdgeIds=[]; exploredDepotIds=[]; mapOpen=false; updateMapPanel();
+      document.body.classList.remove("world-visible","driving","final-minute");
+    }
+
+    function makeGenerationPlan() {
+      const plan=[{id:"choose",phase:"Choosing course"},{id:"roads-trunk",phase:"Building roads"}];
+      for(let i=0;i<5;i+=1)plan.push({id:`roads-branch-${i}`,phase:"Building roads"});
+      plan.push({id:"depots",phase:"Placing depots"});
+      for(let z=-1;z<=1;z+=1)for(let x=-1;x<=1;x+=1)plan.push({id:`terrain-${x}-${z}`,phase:"Growing terrain"});
+      for(let i=0;i<10;i+=1)plan.push({id:`wildlife-${i}`,phase:"Adding hazards"});
+      plan.push({id:"truck",phase:"Preparing truck"},{id:"check-route",phase:"Checking course"},{id:"check-world",phase:"Checking course"},{id:"ready",phase:"Ready"});
+      return plan;
+    }
+
+    function configureWildlife(hazards) {
+      const previous=engine.world.getResource(HazardFieldState);
+      engine.world.setResource(HazardFieldState,{
+        ...previous,
+        seed:activeSeed(),
+        elapsedSeconds:0,
+        bounds:{width:1,height:1,padding:5000},
+        hazards:clone(hazards),
+        spawnRules:[],
+        nextSequence:hazards.length+1,
+        lastSpawn:null,
+        lastCollision:null
+      });
+      createWildlifeRig();
+    }
+
+    function buildGenerationUnits(targetGeneration) {
+      const units=[];
+      units.push({id:"choose",run(){
+        targetGeneration.rng=makeRng(targetGeneration.seed);
+        targetGeneration.target={seed:targetGeneration.seed,nodes:[],edges:[],branches:[],depots:[],signs:[],usedRegions:[]};
+        course=targetGeneration.target;
+      }});
+      units.push({id:"roads-trunk",run(){buildTrunk(targetGeneration.target);}});
+      branchDefinitions.forEach((branch,index)=>units.push({id:`roads-branch-${index}`,run(){buildBranch(targetGeneration.target,branch,index,targetGeneration.rng);}}));
+      units.push({id:"depots",run(){
+        addConfusingFork(targetGeneration.target); placeDepots(targetGeneration.target); updateRouteField(targetGeneration.target);
+        engine.n.longHaulDelivery.setCandidateRegions(targetGeneration.target.depots.map((depot)=>depot.id));
+        engine.n.longHaulDelivery.chooseValidDestination();
+      }});
+      for(let z=-1;z<=1;z+=1)for(let x=-1;x<=1;x+=1)units.push({id:`terrain-${x}-${z}`,run(){
+        targetGeneration.terrainCache[`${x},${z}`]=createTerrainData(x,z);
+        if(x===1&&z===1) {
+          buildAtmosphere();
+          engine.n.coreWorld.registerWorld({id:WORLD_ID,seed:targetGeneration.seed,partition:createUniformGridPartition({cellSize:CELL_SIZE,radius:1}),surface:createFlatWorldSurface(),providers:createWorldProviders()});
+          engine.n.coreWorld.setFocus(WORLD_ID,{position:{x:0,y:0,z:0}});
+          engine.n.coreWorld.updateWorld(WORLD_ID);
+          document.body.classList.add("world-visible");
+        }
+      }});
+      const wildlifeEdges=()=>targetGeneration.target.edges.filter((edge)=>edge.branchId==="wildlife-heavy");
+      for(let i=0;i<10;i+=1)units.push({id:`wildlife-${i}`,run(){
+        const edges=wildlifeEdges(); const edge=edges[i%edges.length]; const t=.18+((i*37)%70)/100;
+        const x=lerp(edge.a.x,edge.b.x,t),y=lerp(edge.a.y,edge.b.y,t); const heading=Math.atan2(edge.b.y-edge.a.y,edge.b.x-edge.a.x); const side=i%2?1:-1;
+        const px=x+Math.cos(heading+Math.PI/2)*(edge.width*.32*side),py=y+Math.sin(heading+Math.PI/2)*(edge.width*.32*side);
+        const crossing=heading+Math.PI/2*(side);
+        const wildlifeSpeed=.22+(i%3)*.11;
+        targetGeneration.hazards.push({id:`wildlife-${i+1}`,x:px,y:py,vx:Math.cos(crossing)*wildlifeSpeed,vy:Math.sin(crossing)*wildlifeSpeed,radius:i===7?3.2:2.25,mass:i===7?2:1,damage:i===7?10:5+(i%3),kind:i===7?"elk":"deer",metadata:{label:i===7?"Elk":"Deer",branchId:"wildlife-heavy"}});
+        if(i===9)configureWildlife(targetGeneration.hazards);
+      }});
+      units.push({id:"truck",run(){
+        engine.vehicleDynamics.reset(); engine.vehicleDynamics.setBounds({width:1,height:1,padding:5000}); engine.resourcePressure.reset(); createTruckRig();
+      }});
+      units.push({id:"check-route",run(){
+        const validation=validateCourse(targetGeneration.target); if(!validation.valid)throw new Error(`Course rejected: ${validation.issues.join(",")}`); targetGeneration.validation=validation;
+      }});
+      units.push({id:"check-world",run(){
+        const worldValidation=engine.n.coreWorld.validateWorldState();
+        const depots=engine.routeField.getState().markers.filter((marker)=>marker.kind==="depot");
+        const delivery=engine.world.getResource(LongHaulDeliveryState);
+        if(!worldValidation.valid||engine.n.coreWorld.getActiveCells(WORLD_ID).length!==9||depots.length!==5||!delivery.validRegionId)throw new Error("Course preparation did not finish cleanly.");
+      }});
+      units.push({id:"ready",run(){ targetGeneration.ready=true; }});
+      return units;
+    }
+
+    function startGeneration(seed, exitId) {
+      const fromScene=engine.n.coreScene.getCurrentScene()?.id;
+      if(!["title","driving","paused","results","loss"].includes(fromScene))return;
+      clearWorld();
+      lossTransitioned=false; resultTransitioned=false; lastPenaltyId=""; lastCheckSequence=0; stuckSeconds=0; lastRoadState=true;
+      engine.n.longHaulDelivery.reset(); engine.n.coreSimulation.resetRun(TIME_LIMIT); engine.n.coreInput.reset(); engine.routeField.reset(); engine.resourcePressure.reset(); engine.vehicleDynamics.reset(); engine.hazardField.reset(); engine.telemetry.reset();
+      transition(exitId,{seed,courseCode:seedCode(seed)});
+      const plan=makeGenerationPlan();
+      generation={seed,plan,cursor:0,terrainCache:Object.create(null),hazards:[],target:null,rng:null,error:null,units:null,ready:false,entered:false};
+      generation.units=buildGenerationUnits(generation);
+      engine.n.longHaulDelivery.beginGeneration(seed,plan);
+      $("#course-code").textContent=`Course ${seedCode(seed)}`;
+    }
+
+    function stepGeneration() {
+      if(!generation||generation.error)return;
+      if(generation.cursor>=generation.units.length) {
+        if(generation.ready&&!generation.entered) {
+          generation.entered=true;
+          const start=engine.vehicleDynamics.getState().position;
+          engine.n.coreSimulation.startRun(start,TIME_LIMIT);
+          transition("ready",{seed:generation.seed,courseCode:seedCode(generation.seed)});
+          audio.ensure(); toast("Freight loaded · Find the receiving yard","good",2600);
+        }
+        return;
+      }
+      const unit=generation.units[generation.cursor];
+      try {
+        unit.run();
+        engine.n.longHaulDelivery.recordGenerationStep(unit.id);
+        generation.cursor+=1;
+      } catch(error) {
+        generation.error=error;
+        console.error(error);
+        $("#boot-failure").style.display="grid";
+      }
+    }
+
+    function activeObstacles() {
+      const result=[];
+      for(const entry of cellRuntime.values()) if(entry.kind==="content") result.push(...(entry.obstacles??[]));
+      return result;
+    }
+
+    function setVehicleState(patch) {
+      const state=engine.world.getResource(VehicleDynamicsState);
+      engine.world.setResource(VehicleDynamicsState,{...state,...clone(patch)});
+    }
+
+    function currentCondition() {
+      const state=engine.resourcePressure.getState();
+      return {
+        fuel:number(state.resources.fuel?.value),
+        truck:number(state.resources.truck?.value),
+        cargo:number(state.resources.cargo?.value)
+      };
+    }
+
+    function requestRecovery(road) {
+      const run=engine.n.coreSimulation.getRun();
+      if(run.recoveryUsed) { toast("Roadside recovery already used","bad"); audio.wrong(); return false; }
+      const nearest=road??nearestRoad(engine.vehicleDynamics.getState().position);
+      if(!nearest) return false;
+      const nextPosition={x:nearest.x,y:nearest.y};
+      const state=engine.vehicleDynamics.getState();
+      engine.world.setResource(VehicleDynamicsState,{
+        ...state,
+        position:nextPosition,
+        velocity:{x:0,y:0},
+        heading:nearest.heading,
+        lastInput:{x:0,y:0,boost:false},
+        lastImpact:null
+      });
+      bodyYaw=nearest.heading; reverseGear=false; stuckSeconds=0;
+      engine.vehicleDynamics.input({x:0,y:0,boost:false});
+      engine.n.coreSimulation.recover(nextPosition);
+      engine.n.coreSimulation.sample(nextPosition,{teleport:true});
+      toast("Roadside recovery · +30s","bad",2500); audio.tone(190,.25,"triangle",.1);
+      return true;
+    }
+
+    function processDrivingBeforeTick(dt) {
+      const state=engine.vehicleDynamics.getState();
+      const run=engine.n.coreSimulation.getRun();
+      const condition=currentCondition();
+      const speed=Math.hypot(state.velocity.x,state.velocity.y);
+      const road=nearestRoad(state.position);
+      const onRoad=Boolean(road&&road.distance<=road.edge.width*.56+1.6);
+      const onShoulder=Boolean(road&&road.distance<=road.edge.width*.86+4);
+      const outside=course&&(state.position.x<course.bounds.minX-350||state.position.x>course.bounds.maxX+350||state.position.y<course.bounds.minY-350||state.position.y>course.bounds.maxY+350);
+      const throttle=(keys.KeyW||keys.ArrowUp)?1:0;
+      const brake=(keys.KeyS||keys.ArrowDown)?1:0;
+      const steer=((keys.KeyA||keys.ArrowLeft)?1:0)-((keys.KeyD||keys.ArrowRight)?1:0);
+      const boost=Boolean((keys.ShiftLeft||keys.ShiftRight)&&throttle&&condition.fuel>0);
+
+      if(throttle) reverseGear=false;
+      if(brake&&speed<2.2) reverseGear=true;
+      const steerResponse=number(settings.steering,100)/100;
+      const steerRate=lerp(1.12,.44,clamp(speed/49,0,1))*steerResponse;
+      if(Math.abs(steer)>0&&(speed>.3||throttle||brake)) bodyYaw+=steer*steerRate*dt*(reverseGear?-1:1);
+
+      let axis={x:0,y:0};
+      const fuelEmpty=condition.fuel<=0.001;
+      if(!fuelEmpty) {
+        if(throttle) axis={x:Math.cos(bodyYaw),y:Math.sin(bodyYaw)};
+        else if(brake) {
+          if(!reverseGear&&speed>1.5) axis={x:-state.velocity.x/(speed||1),y:-state.velocity.y/(speed||1)};
+          else axis={x:Math.cos(bodyYaw+Math.PI),y:Math.sin(bodyYaw+Math.PI)};
+        }
+      }
+
+      const baseDrag=onRoad ? (road.edge.type==="rough-shortcut" ? .74 : .48) : onShoulder ? 1.15 : 2.25;
+      if(Math.abs(state.profile.drag-baseDrag)>.01) engine.world.setResource(VehicleDynamicsState,{...state,profile:{...state.profile,drag:baseDrag}});
+      engine.n.coreInput.setIntent({throttle,brake,steer,boost,interact:interactWanted,reverse:reverseGear});
+      engine.vehicleDynamics.input({x:axis.x,y:axis.y,boost});
+      engine.n.coreSimulation.sample(state.position,{onRoad,speed});
+
+      if(run.status==="running") {
+        const fuelRate=.032+((throttle||brake) ? .048 : 0)+(boost ? .19 : 0)+(speed/49)*.025;
+        if(fuelRate>0) engine.world.emit(ResourcePressureAdjust,{resourceId:"fuel",amount:-fuelRate*dt,source:"driving"});
+      }
+
+      if(speed>2.5) engine.hazardField.checkCircle({x:state.position.x,y:state.position.y,radius:2.35});
+
+      const elapsed=run.rawTime;
+      if(!onShoulder&&lastRoadState&&speed>22) {
+        const impactId=`off-road:${Math.floor(state.position.x/45)}:${Math.floor(state.position.y/45)}`;
+        engine.n.coreSimulation.impact({id:impactId,kind:"off-road",label:"Hard shoulder impact",penaltySeconds:8,truckDamage:6,cargoDamage:4,countCollision:true});
+      }
+      lastRoadState=onShoulder;
+
+      if(road?.edge.type==="rough-shortcut"&&speed>25) {
+        const bumpCell=Math.floor((state.position.x+state.position.y)/34);
+        if(Math.abs(Math.sin(bumpCell*12.73+hashText(activeSeed())%31))>.965) {
+          engine.n.coreSimulation.impact({id:`rough:${road.edge.id}:${bumpCell}`,kind:"rough-road",label:"Rough road hit",penaltySeconds:0,truckDamage:1.1,cargoDamage:1.7,countCollision:false});
+        }
+      }
+
+      for(const obstacle of activeObstacles()) {
+        const distance=Math.hypot(obstacle.x-state.position.x,obstacle.y-state.position.y);
+        if(distance>obstacle.radius+2.15||speed<4) continue;
+        if(lastObstacleHit===obstacle.id&&elapsed-lastObstacleAt<2.4) break;
+        lastObstacleHit=obstacle.id; lastObstacleAt=elapsed;
+        engine.n.coreSimulation.impact({id:`obstacle:${obstacle.id}:${Math.floor(elapsed/2.4)}`,kind:"collision",label:obstacle.kind==="rock"?"Rock strike":"Tree strike",penaltySeconds:5,truckDamage:obstacle.kind==="rock"?7:11,cargoDamage:obstacle.kind==="rock"?5:8,countCollision:true});
+        const length=speed||1;
+        setVehicleState({velocity:{x:-state.velocity.x/length*3,y:-state.velocity.y/length*3}});
+        break;
+      }
+
+      if((throttle||brake)&&speed<.65)stuckSeconds+=dt; else stuckSeconds=Math.max(0,stuckSeconds-dt*1.6);
+      if(outside)stuckSeconds=Math.max(stuckSeconds,4);
+
+      if(interactWanted) {
+        const needsRecovery=stuckSeconds>2.5||fuelEmpty||(!onShoulder&&speed<3)||outside;
+        const nearest=engine.routeField.nearestMarker(state.position,(marker)=>marker.kind==="depot");
+        if(needsRecovery&&!run.recoveryUsed) requestRecovery(road);
+        else if(nearest&&nearest.distance<=nearest.marker.radius+5) {
+          if(speed>1.25) { toast("Stop the truck at the gate","bad",1600); audio.wrong(); }
+          else {
+            engine.n.longHaulDelivery.checkRegion(nearest.marker.id,{
+              rawTime:run.rawTime,
+              distance:run.distance,
+              collisions:run.collisions,
+              cargoCondition:condition.cargo,
+              penaltyTotal:run.penaltyTotal,
+              parTime:course.parTime,
+              parDistance:course.parDistance
+            });
+          }
+        } else toast("No receiving gate in range","bad",1300);
+        interactWanted=false;
+      }
+
+      if(run.status==="running") {
+        if(condition.cargo<=0) engine.n.coreSimulation.fail("The freight was destroyed before delivery.");
+        else if(condition.truck<=0) engine.n.coreSimulation.fail("The truck could not continue after the damage.");
+        else if(fuelEmpty&&run.recoveryUsed) engine.n.coreSimulation.fail("The truck ran dry after roadside recovery.");
+        else if(stuckSeconds>9&&run.recoveryUsed) engine.n.coreSimulation.fail("The truck is stuck with no recovery remaining.");
+      }
+      return {state,run,condition,speed,road,onRoad,onShoulder,throttle,brake,steer,boost,fuelEmpty,outside};
+    }
+
+    function processIdleBeforeTick() {
+      engine.n.coreInput.setIntent({throttle:0,brake:0,steer:0,boost:false,interact:false,reverse:reverseGear});
+      engine.vehicleDynamics.input({x:0,y:0,boost:false});
+    }
+
+    function streamWorld(position) {
+      if(!course||!engine.n.coreWorld.getWorld(WORLD_ID))return;
+      const key=`${Math.floor(position.x/CELL_SIZE)},${Math.floor(position.y/CELL_SIZE)}`;
+      if(key===lastStreamCell)return;
+      lastStreamCell=key;
+      engine.n.coreWorld.setFocus(WORLD_ID,{position:{x:position.x,y:0,z:position.y}});
+      engine.n.coreWorld.updateWorld(WORLD_ID);
+    }
+
+    function updateExploration(position) {
+      if(!course)return;
+      for(const edge of course.edges) {
+        if(exploredEdgeIds.includes(edge.id))continue;
+        if(pointSegmentInfo(position,edge.a,edge.b).distance<90)exploredEdgeIds.push(edge.id);
+      }
+      for(const depot of course.depots) if(!exploredDepotIds.includes(depot.id)&&Math.hypot(position.x-depot.x,position.y-depot.y)<110)exploredDepotIds.push(depot.id);
+    }
+
+    function updateTruckVisual(dt,time,driveInfo) {
+      if(!truckRig)return;
+      const state=engine.vehicleDynamics.getState();
+      const speed=Math.hypot(state.velocity.x,state.velocity.y);
+      const targetYaw=state.heading+(reverseGear?Math.PI:0);
+      bodyYaw+=angleDelta(targetYaw,bodyYaw)*(1-Math.exp(-dt*(speed>2?3.4:1.2)));
+      const ground=driveInfo?.onRoad ? .08 : terrainHeight(state.position.x,state.position.y)+.03;
+      truckRig.root.position.x=smooth(truckRig.root.position.x,state.position.x,18,dt);
+      truckRig.root.position.z=smooth(truckRig.root.position.z,state.position.y,18,dt);
+      truckRig.root.position.y=smooth(truckRig.root.position.y,ground,13,dt);
+      truckRig.root.rotation.y=bodyYaw+Math.PI/2;
+      const moved=Math.hypot(state.position.x-lastVehiclePosition.x,state.position.y-lastVehiclePosition.y);
+      wheelSpin+=moved*.92*(reverseGear?-1:1);
+      lastVehiclePosition={x:state.position.x,y:state.position.y};
+      for(const wheel of truckRig.wheels)wheel.rotation.x=wheelSpin;
+      for(const pivot of truckRig.steerPivots)pivot.rotation.y=-(driveInfo?.steer??0)*.34;
+      const roll=-(driveInfo?.steer??0)*clamp(speed/38,0,1)*.075;
+      const rough=driveInfo?.road?.edge?.type==="rough-shortcut"&&settings.motion?Math.sin(time*18+state.position.x*.1)*.035*clamp(speed/35,0,1):0;
+      truckRig.suspension.rotation.z=smooth(truckRig.suspension.rotation.z,roll,5,dt);
+      truckRig.suspension.rotation.x=smooth(truckRig.suspension.rotation.x,rough+(driveInfo?.brake ? -.025 : driveInfo?.throttle ? .018 : 0),7,dt);
+      const cargoScale=clamp(currentCondition().cargo/100,.15,1);
+      for(const crate of truckRig.crates)crate.rotation.z=Math.sin(time*2+crate.position.z)*(.012+(1-cargoScale)*.08);
+      if(speed>8&&(!driveInfo?.onRoad||driveInfo?.road?.edge?.type==="rough-shortcut"))spawnDust(truckRig.root.position.x,truckRig.root.position.y,truckRig.root.position.z,bodyYaw,Math.min(3,Math.ceil(speed/22)));
+      if(skyMesh)skyMesh.position.set(state.position.x,0,state.position.y);
+      if(sunlight){sunlight.position.set(state.position.x-140,220,state.position.y+90);sunlight.target.position.set(state.position.x,0,state.position.y);sunlight.target.updateMatrixWorld();}
+    }
+
+    const cameraLook=new THREE.Vector3();
+    function updateCamera(dt,time,driveInfo) {
+      if(!truckRig)return;
+      const state=engine.vehicleDynamics.getState();
+      const speed=Math.hypot(state.velocity.x,state.velocity.y);
+      const fx=Math.cos(bodyYaw),fz=Math.sin(bodyYaw);
+      const desired=new THREE.Vector3(); const look=new THREE.Vector3();
+      if(cameraMode===0) {
+        desired.set(state.position.x-fx*(13.5+speed*.055),truckRig.root.position.y+6.8,state.position.y-fz*(13.5+speed*.055));
+        look.set(state.position.x+fx*5,truckRig.root.position.y+2.25,state.position.y+fz*5);
+      } else {
+        desired.set(state.position.x+fx*1.15,truckRig.root.position.y+4.05,state.position.y+fz*1.15);
+        look.set(state.position.x+fx*28,truckRig.root.position.y+3.2,state.position.y+fz*28);
+      }
+      if(settings.motion&&driveInfo?.road?.edge?.type==="rough-shortcut")desired.y+=Math.sin(time*22)*.055*clamp(speed/30,0,1);
+      camera.position.lerp(desired,1-Math.exp(-dt*(cameraMode===0?5.2:10)));
+      cameraLook.lerp(look,1-Math.exp(-dt*8));
+      camera.lookAt(cameraLook);
+      camera.fov=smooth(camera.fov,cameraMode===0?58+clamp(speed/49,0,1)*5:67,4,dt); camera.updateProjectionMatrix();
+    }
+
+    function updateWildlifeCollisionResponse(run) {
+      const penalty=run.lastPenalty;
+      if(!penalty||penalty.id===lastPenaltyId)return;
+      lastPenaltyId=penalty.id;
+      if(penalty.kind==="wrong-depot") { toast("Wrong yard · +20s","bad",2800); audio.wrong(); }
+      else if(penalty.kind==="wildlife") { toast(`${penalty.label??"Wildlife"} hit · +5s`,"bad",2300); audio.hit(); }
+      else if(penalty.kind==="off-road") { toast("Major off-road impact · +8s","bad",2300); audio.hit(); }
+      else if(penalty.kind==="collision") { toast(`${penalty.label??"Collision"} · +${Math.round(penalty.seconds)}s`,"bad",2200); audio.hit(); }
+      else if(penalty.kind==="recovery") { audio.tone(180,.2,"triangle",.08); }
+      else if(penalty.kind==="rough-road"&&performance.now()/1000-lastWarningAt>1.5) { lastWarningAt=performance.now()/1000; toast("Cargo took a rough hit","bad",1300); audio.hit(); }
+    }
+
+    function handleRunOutcome() {
+      const run=engine.n.coreSimulation.getRun();
+      const delivery=engine.world.getResource(LongHaulDeliveryState);
+      if(delivery.lastCheck&&delivery.lastCheck.sequence!==lastCheckSequence) {
+        lastCheckSequence=delivery.lastCheck.sequence;
+        if(delivery.lastCheck.accepted) { toast("Delivery accepted","good",3000); audio.good(); }
+        else if(delivery.lastCheck.duplicate) toast("This yard already rejected the load","bad",1800);
+      }
+      updateWildlifeCollisionResponse(run);
+      if(run.status==="completed"&&delivery.runResult&&!resultTransitioned) {
+        resultTransitioned=true; mapOpen=false; updateMapPanel();
+        setVehicleState({velocity:{x:0,y:0},lastInput:{x:0,y:0,boost:false}});
+        transition("complete",{result:delivery.runResult}); showResults(delivery.runResult);
+      }
+      if(run.status==="failed"&&!lossTransitioned) {
+        lossTransitioned=true; mapOpen=false; updateMapPanel();
+        setVehicleState({velocity:{x:0,y:0},lastInput:{x:0,y:0,boost:false}});
+        transition("fail",{reason:run.failureReason}); $("#loss-reason").textContent=run.failureReason??"The road won this round."; audio.wrong();
+      }
+    }
+
+    function interactionMessage(state,speed,run,condition) {
+      if(condition.fuel<=0&&!run.recoveryUsed)return "E · Call roadside recovery";
+      if(stuckSeconds>2.5&&!run.recoveryUsed)return "E · Recover to the road";
+      const nearest=engine.routeField.nearestMarker(state.position,(marker)=>marker.kind==="depot");
+      if(nearest&&nearest.distance<=nearest.marker.radius+7)return speed>1.25?"Brake to a full stop":`E · Check ${nearest.marker.metadata.name}`;
+      return "";
+    }
+
+    function setMeter(element,value,warning=30) {
+      const safe=clamp(value,0,100); element.style.width=`${safe}%`; element.style.background=safe<warning?"var(--red)":safe<55?"var(--amber)":"var(--green)";
+    }
+
+    function updateHud(driveInfo) {
+      const state=engine.vehicleDynamics.getState(); const run=engine.n.coreSimulation.getRun(); const condition=currentCondition(); const delivery=engine.world.getResource(LongHaulDeliveryState);
+      const mph=Math.round(Math.hypot(state.velocity.x,state.velocity.y)*2.237);
+      $("#timer").textContent=formatTime(run.remaining); $("#map-time").textContent=formatTime(run.remaining); $("#speed").textContent=String(mph);
+      $("#road-name").textContent=driveInfo?.onRoad?(driveInfo.road.edge.branchName??"Freight Road"):driveInfo?.onShoulder?"Road shoulder":"Off road";
+      $("#fuel-num").textContent=`${Math.ceil(condition.fuel)}%`; $("#truck-num").textContent=`${Math.floor(100-condition.truck)}% damage`; $("#cargo-num").textContent=`${Math.ceil(condition.cargo)}%`;
+      setMeter($("#fuel-meter"),condition.fuel,22); setMeter($("#truck-meter"),condition.truck,35); setMeter($("#cargo-meter"),condition.cargo,40);
+      $("#checked-num").textContent=`${delivery.checkedRegionIds.length} / 5`; $("#penalty-num").textContent=`+${Math.round(run.penaltyTotal)}s`; $("#recovery-num").textContent=run.recoveryUsed?"Used":"Ready";
+      document.body.classList.toggle("final-minute",run.remaining<=60&&run.status==="running");
+      const prompt=interactionMessage(state,Math.hypot(state.velocity.x,state.velocity.y),run,condition); const interact=$("#interact"); interact.textContent=prompt; interact.classList.toggle("show",Boolean(prompt));
+    }
+
+    function updateMapPanel() {
+      const panel=$("#map-panel"); panel.classList.toggle("open",mapOpen); panel.setAttribute("aria-hidden",String(!mapOpen));
+    }
+
+    function drawMap() {
+      if(!mapOpen||!course)return;
+      const canvas=$("#map-canvas"); const rect=canvas.getBoundingClientRect(); if(rect.width<2||rect.height<2)return;
+      const ratio=Math.min(window.devicePixelRatio||1,1.5); const width=Math.floor(rect.width*ratio),height=Math.floor(rect.height*ratio);
+      if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+      const ctx=canvas.getContext("2d"); ctx.setTransform(ratio,0,0,ratio,0,0); const w=rect.width,h=rect.height; ctx.clearRect(0,0,w,h);
+      const pad=34; const bounds=course.bounds; const worldW=bounds.maxX-bounds.minX,worldH=bounds.maxY-bounds.minY; const scale=Math.min((w-pad*2)/worldW,(h-pad*2)/worldH);
+      const ox=(w-worldW*scale)/2,oy=(h-worldH*scale)/2;
+      const project=(x,y)=>({x:ox+(x-bounds.minX)*scale,y:oy+(y-bounds.minY)*scale});
+
+      ctx.save(); ctx.globalAlpha=.1; ctx.strokeStyle="#6f4b28"; ctx.lineWidth=1;
+      for(let x=pad;x<w-pad;x+=28){ctx.beginPath();ctx.moveTo(x,pad);ctx.lineTo(x,h-pad);ctx.stroke();}
+      for(let y=pad;y<h-pad;y+=28){ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke();}
+      ctx.restore();
+
+      ctx.lineCap="round"; ctx.lineJoin="round";
+      for(const edge of course.edges) {
+        if(!exploredEdgeIds.includes(edge.id))continue;
+        const a=project(edge.a.x,edge.a.y),b=project(edge.b.x,edge.b.y);
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle="rgba(65,45,25,.24)";ctx.lineWidth=Math.max(5,edge.width*scale*.8);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=edge.type==="rough-shortcut"?"#7c5636":"#4d4437";ctx.lineWidth=Math.max(1.7,edge.width*scale*.32);ctx.stroke();
+      }
+
+      const labeled=[];
+      ctx.font="700 10px Georgia,serif";ctx.fillStyle="#5a3c22";ctx.textAlign="center";ctx.textBaseline="middle";
+      for(const branch of course.branches) {
+        const edge=course.edges.find((entry)=>entry.branchId===branch.id&&exploredEdgeIds.includes(entry.id));
+        if(!edge||labeled.includes(branch.id))continue; labeled.push(branch.id);
+        const p=project(lerp(edge.a.x,edge.b.x,.65),lerp(edge.a.y,edge.b.y,.65)); ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.atan2((edge.b.y-edge.a.y)*scale,(edge.b.x-edge.a.x)*scale));ctx.fillText(branch.name.toUpperCase(),0,-9);ctx.restore();
+      }
+
+      const delivery=engine.world.getResource(LongHaulDeliveryState); const checked=delivery.checkedRegionIds;
+      for(const depot of course.depots) {
+        if(!exploredDepotIds.includes(depot.id)&&!checked.includes(depot.id))continue;
+        const p=project(depot.x,depot.y); const rejected=checked.includes(depot.id)&&depot.id!==delivery.validRegionId;
+        ctx.beginPath();ctx.arc(p.x,p.y,6,0,Math.PI*2);ctx.fillStyle=rejected?"#9b3828":"#7d4a26";ctx.fill();ctx.strokeStyle="#f0d69a";ctx.lineWidth=1.5;ctx.stroke();
+        if(rejected){ctx.beginPath();ctx.moveTo(p.x-3,p.y-3);ctx.lineTo(p.x+3,p.y+3);ctx.moveTo(p.x+3,p.y-3);ctx.lineTo(p.x-3,p.y+3);ctx.strokeStyle="#f4ddac";ctx.stroke();}
+        ctx.fillStyle="#4c311d";ctx.font="700 9px Georgia,serif";ctx.fillText(depot.name.toUpperCase(),p.x,p.y+15);
+      }
+
+      const origin=project(course.origin.x,course.origin.y); ctx.fillStyle="#b17832";ctx.beginPath();
+      for(let i=0;i<10;i+=1){const r=i%2?4:8,a=-Math.PI/2+i*Math.PI/5;const x=origin.x+Math.cos(a)*r,y=origin.y+Math.sin(a)*r;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();
+      ctx.font="700 9px Georgia,serif";ctx.fillStyle="#4c311d";ctx.fillText("DISPATCH",origin.x,origin.y+16);
+
+      const state=engine.vehicleDynamics.getState(); const truck=project(state.position.x,state.position.y); const heading=bodyYaw;
+      ctx.save();ctx.translate(truck.x,truck.y);ctx.rotate(heading+Math.PI/2);ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(6,7);ctx.lineTo(0,4);ctx.lineTo(-6,7);ctx.closePath();ctx.fillStyle="#1f4a47";ctx.fill();ctx.strokeStyle="#f0d69a";ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+    }
+
+    function showResults(result) {
+      $("#score-name").textContent=result.score;
+      const versus=result.versusPar;
+      const cells=[
+        ["Par",`${formatTime(result.parTime)} · ${formatDistance(result.parDistance)}`],
+        ["Raw time",formatTime(result.rawTime)],
+        ["Distance",formatDistance(result.distance)],
+        ["Depots checked",`${result.depotsChecked} / 5`],
+        ["Collisions",String(result.collisions)],
+        ["Cargo condition",`${Math.round(result.cargoCondition)}%`],
+        ["Penalty total",`+${Math.round(result.penaltyTotal)}s`],
+        ["Adjusted time",formatTime(result.adjustedTime),true],
+        [versus<=0?"Under par":"Over par",`${versus<=0?"−":"+"}${formatTime(Math.abs(versus))}`,true]
+      ];
+      $("#score-grid").innerHTML=cells.map(([label,value,major])=>`<div class="score-cell${major?" major":""}"><span>${label}</span><b>${value}</b></div>`).join("");
+      try {
+        const key="the-long-haul-best"; const prior=JSON.parse(localStorage.getItem(key)||"null");
+        if(!prior||result.adjustedTime<number(prior.adjustedTime,Infinity))localStorage.setItem(key,JSON.stringify({adjustedTime:result.adjustedTime,score:result.score,courseCode:seedCode(activeSeed())}));
+      } catch {}
+    }
+
+    let toastTimer=0;
+    function toast(message,tone="",duration=1800) {
+      const element=$("#toast"); element.textContent=message; element.className=`show ${tone}`.trim(); clearTimeout(toastTimer); toastTimer=setTimeout(()=>{element.className="";},duration);
+    }
+
+    function updateGeneratingUi() {
+      const progress=engine.n.longHaulDelivery.getGenerationProgress();
+      const percent=Math.round(clamp(progress.ratio,0,1)*100); $("#progress-fill").style.width=`${percent}%`; $("#progress-percent").textContent=`${percent}%`; $("#phase-detail").textContent=progress.phase;
+      for(const element of $$(".phase")) {
+        const phase=element.dataset.phase; const records=progress.plan.filter((entry)=>entry.phase===phase); const complete=records.length>0&&records.every((entry)=>progress.completedStepIds.includes(entry.id));
+        element.classList.toggle("done",complete); element.classList.toggle("active",!complete&&phase===progress.phase);
+      }
+    }
+
+    const screenByScene={title:"#title-screen",generating:"#generating-screen",paused:"#pause-screen",results:"#results-screen",loss:"#loss-screen",settings:"#settings-screen","how-to-play":"#how-screen"};
+    function updateSceneUi() {
+      const id=engine.n.coreScene.getCurrentScene()?.id??"boot";
+      for(const element of $$(".screen"))element.classList.remove("active");
+      const selector=screenByScene[id]; if(selector)$(selector).classList.add("active");
+      document.body.classList.toggle("driving",id==="driving");
+      if(id==="generating")updateGeneratingUi();
+      return id;
+    }
+
+    function pauseGame() {
+      if(engine.n.coreScene.getCurrentScene()?.id!=="driving")return;
+      engine.n.coreSimulation.pauseRun(); setVehicleState({velocity:{x:0,y:0},lastInput:{x:0,y:0,boost:false}}); mapOpen=false;updateMapPanel();transition("pause");audio.click();
+    }
+
+    function resumeGame() {
+      if(engine.n.coreScene.getCurrentScene()?.id!=="paused")return;
+      engine.n.coreSimulation.resumeRun(engine.vehicleDynamics.getState().position);transition("resume");audio.click();
+    }
+
+    function retrySeed(exitId) {
+      const seed=activeSeed();
+      const retryId=engine.n.longHaulDelivery.setRetry({retryId:`same-${seedCode(seed)}-${Date.now()}`,seed});
+      const retry=engine.n.longHaulDelivery.consumeRetry(); if(!retry||retry.retryId!==retryId)return;
+      startGeneration(retry.seed,exitId);
+    }
+
+    function goTitle() {
+      const id=engine.n.coreScene.getCurrentScene()?.id;
+      if(id==="driving")transition("title"); else if(["paused","results","loss"].includes(id))transition("title"); else return;
+      clearWorld(); engine.n.longHaulDelivery.reset(); engine.n.coreSimulation.resetRun(TIME_LIMIT); audio.update(0,0,false);
+    }
+
+    const settings={sound:true,steering:100,quality:true,motion:true};
+    function loadSettings() {
+      try { Object.assign(settings,JSON.parse(localStorage.getItem("the-long-haul-settings")||"{}")); } catch {}
+      settings.sound=settings.sound!==false; settings.quality=settings.quality!==false; settings.motion=settings.motion!==false; settings.steering=clamp(number(settings.steering,100),70,130);
+      audio.enabled=settings.sound;
+      $("#sound-switch").classList.toggle("on",settings.sound);$("#sound-switch").setAttribute("aria-pressed",String(settings.sound));
+      $("#quality-switch").classList.toggle("on",settings.quality);$("#quality-switch").setAttribute("aria-pressed",String(settings.quality));
+      $("#motion-switch").classList.toggle("on",settings.motion);$("#motion-switch").setAttribute("aria-pressed",String(settings.motion));
+      $("#steer-range").value=String(settings.steering); applyRenderQuality();
+    }
+
+    function saveSettings() { try{localStorage.setItem("the-long-haul-settings",JSON.stringify(settings));}catch{} }
+    function applyRenderQuality(){renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,settings.quality?1.5:1));resize();}
+    function toggleSetting(name,button){settings[name]=!settings[name];button.classList.toggle("on",settings[name]);button.setAttribute("aria-pressed",String(settings[name]));if(name==="sound"){audio.enabled=settings.sound;if(settings.sound)audio.ensure();}if(name==="quality")applyRenderQuality();saveSettings();audio.click();}
+
+    function resize() {
+      const width=Math.max(1,innerWidth),height=Math.max(1,innerHeight);renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();
+    }
+
+    function openSettings(from) { settingsReturn=from; transition("settings"); audio.click(); }
+    function closeSettings() { transition(settingsReturn==="pause"?"pause":"title"); audio.click(); }
+
+    $("#start-btn").addEventListener("click",()=>{audio.ensure();startGeneration(newSeed(activeSeed()),"start");});
+    $("#how-btn").addEventListener("click",()=>{transition("how");audio.click();});
+    $("#settings-btn").addEventListener("click",()=>openSettings("title"));
+    $("#how-back-btn").addEventListener("click",()=>{transition("back");audio.click();});
+    $("#settings-back-btn").addEventListener("click",closeSettings);
+    $("#sound-switch").addEventListener("click",(event)=>toggleSetting("sound",event.currentTarget));
+    $("#quality-switch").addEventListener("click",(event)=>toggleSetting("quality",event.currentTarget));
+    $("#motion-switch").addEventListener("click",(event)=>toggleSetting("motion",event.currentTarget));
+    $("#steer-range").addEventListener("input",(event)=>{settings.steering=number(event.target.value,100);saveSettings();});
+    $("#resume-btn").addEventListener("click",resumeGame);
+    $("#pause-settings-btn").addEventListener("click",()=>openSettings("pause"));
+    $("#pause-retry-btn").addEventListener("click",()=>retrySeed("retry"));
+    $("#pause-title-btn").addEventListener("click",goTitle);
+    $("#result-retry-btn").addEventListener("click",()=>retrySeed("retry"));
+    $("#result-new-btn").addEventListener("click",()=>startGeneration(newSeed(activeSeed()),"fresh"));
+    $("#result-title-btn").addEventListener("click",goTitle);
+    $("#loss-retry-btn").addEventListener("click",()=>retrySeed("retry"));
+    $("#loss-new-btn").addEventListener("click",()=>startGeneration(newSeed(activeSeed()),"fresh"));
+    $("#loss-title-btn").addEventListener("click",goTitle);
+    $("#reload-btn").addEventListener("click",()=>location.reload());
+
+    window.addEventListener("keydown",(event)=>{
+      if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(event.code))event.preventDefault();
+      keys[event.code]=true; if(event.repeat)return;
+      const sceneId=engine.n.coreScene.getCurrentScene()?.id;
+      if(event.code==="Escape") {
+        if(sceneId==="driving")pauseGame(); else if(sceneId==="paused")resumeGame(); else if(sceneId==="settings")closeSettings(); else if(sceneId==="how-to-play")transition("back");
+      } else if(sceneId==="driving"&&event.code==="KeyC") { cameraMode=(cameraMode+1)%2;toast(cameraMode?"Cab camera":"Chase camera","good",1100);audio.click(); }
+      else if(sceneId==="driving"&&event.code==="KeyM") { mapOpen=!mapOpen;updateMapPanel();audio.click(); }
+      else if(sceneId==="driving"&&event.code==="KeyE") interactWanted=true;
+      else if(sceneId==="driving"&&event.code==="KeyR") retrySeed("retry");
+      else if(["results","loss"].includes(sceneId)&&event.code==="KeyR")retrySeed("retry");
+    },{passive:false});
+    window.addEventListener("keyup",(event)=>{keys[event.code]=false;});
+    window.addEventListener("blur",()=>{for(const key of Object.keys(keys))keys[key]=false;if(engine.n.coreScene.getCurrentScene()?.id==="driving")pauseGame();});
+    window.addEventListener("resize",resize);
+
+    let previousTime=performance.now();
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const rawDelta=Math.max(.001,(now-previousTime)/1000); previousTime=now; const dt=Math.min(rawDelta,1/15);
+      let sceneId=engine.n.coreScene.getCurrentScene()?.id??"boot";
+      if(sceneId==="generating")stepGeneration();
+      let driveInfo=null;
+      if(sceneId==="driving")driveInfo=processDrivingBeforeTick(dt); else processIdleBeforeTick();
+
+      engine.tick(dt);
+
+      sceneId=updateSceneUi();
+      if(sceneId==="driving") {
+        const state=engine.vehicleDynamics.getState(); const road=nearestRoad(state.position); const onRoad=Boolean(road&&road.distance<=road.edge.width*.56+1.6); const onShoulder=Boolean(road&&road.distance<=road.edge.width*.86+4);
+        driveInfo={...(driveInfo??{}),state,road,onRoad,onShoulder,speed:Math.hypot(state.velocity.x,state.velocity.y)};
+        streamWorld(state.position);updateExploration(state.position);updateHud(driveInfo);handleRunOutcome();
+        audio.update(driveInfo.speed,driveInfo.throttle,true);
+      } else audio.update(0,0,false);
+
+      if(truckRig){updateTruckVisual(dt,now/1000,driveInfo);updateCamera(dt,now/1000,driveInfo);}
+      updateWildlife(now/1000);updateDust(dt);drawMap();
+      renderer.render(scene,camera);
+    }
+
+    loadSettings(); resize();
+    transition("ready");
+    updateSceneUi();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
