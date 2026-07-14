@@ -2,38 +2,41 @@
 
 ## Plan ledger
 
-**Goal:** keep the current gameplay and domain ownership intact while making procedural generation atomic, recoverable, testable, and visible only after admission.
+**Goal:** keep the existing gameplay and kit ownership intact while making terminal delivery, failure, scoring, persistence, presentation and retry one deterministic settlement transaction.
 
-- [ ] Add `CourseGenerationCommand` with attempt ID, seed, predecessor generation, and expected provider revisions.
-- [ ] Move route graph and depot creation into a detached candidate object.
-- [ ] Keep candidate route and destination data out of live engine resources until validation succeeds.
-- [ ] Prepare terrain, provider descriptors, hazards, and truck spawn under the same candidate generation.
-- [ ] Add one complete candidate resource and disposal manifest.
-- [ ] Validate exactly five branches, five unique depots, one destination, reachability, bounds, provider order, active cells, hazards, and truck spawn.
-- [ ] Render one offscreen probe frame before adding `world-visible`.
-- [ ] Atomically adopt delivery, route, world, hazards, truck, scene, and render revisions.
-- [ ] Preserve the accepted predecessor until the first admitted course frame is acknowledged.
-- [ ] Roll back every candidate participant on failure or supersession.
-- [ ] Replace reload-only failure with same-seed retry, new-seed retry, and title actions.
-- [ ] Add deterministic same-seed and different-seed course fixtures.
-- [ ] Add generation-unit fault injection for route, terrain, provider, hazard, truck, and probe failures.
-- [ ] Add browser proof for startup, generation, rollback, driving entry, result, loss, and retry.
+- [ ] Add `RunId`, `StepId`, `TerminalProposalId` and immutable policy revision fields.
+- [ ] Collect accepted-delivery, timeout, collision, impact and explicit-failure proposals before terminal mutation.
+- [ ] Define and document one precedence policy for conflicting proposals in the same step.
+- [ ] Reject duplicate, stale and predecessor-generation proposals.
+- [ ] Apply resource pressure and penalty effects before final metric capture.
+- [ ] Move `buildRunResult()` behind terminal settlement instead of delivery-check admission.
+- [ ] Add `RunOutcomeArtifact` with result ID, seed, route fingerprint, destination, final metrics, score-policy revision and content fingerprint.
+- [ ] Store a bounded immutable result journal.
+- [ ] Version the score formula and best-score storage document.
+- [ ] Return typed persistence receipts for accepted, unchanged, rejected and failed writes.
+- [ ] Make results UI consume only an accepted outcome artifact.
+- [ ] Add `FirstTerminalResultFrameAck` binding outcome, scene, DOM and renderer frame revisions.
+- [ ] Require retry to cite the accepted predecessor outcome and allocate a successor RunId.
+- [ ] Preserve predecessor result evidence after same-seed and new-seed retry.
+- [ ] Add same-step delivery-plus-impact, delivery-plus-timeout and delivery-plus-failure fixtures.
+- [ ] Add duplicate-check, duplicate-persistence and late-predecessor fixtures.
+- [ ] Add browser proof for terminal UI, best-score readback, retry lineage and visible-frame convergence.
 - [ ] Add a package manifest with explicit check and test commands.
-- [ ] Restrict the Pages artifact to declared product and audit files.
-- [ ] Add source-to-Pages fingerprint and live-route smoke evidence.
+- [ ] Add source, artifact and Pages result-parity evidence.
 
 ## Preserve
 
 ```txt
 existing 10-kit Nexus Engine composition
 existing delivery and simulation ownership
-five-branch and five-depot game structure
+five-branch and five-depot structure
 wrong-depot penalty loop
-fuel, truck, cargo, hazard, and recovery risk
+fuel, truck, cargo, hazard and recovery risk
 same-seed and new-seed retry options
-Three.js, DOM, Canvas2D, audio, and storage as host adapters
+current golf-style score presentation
+Three.js, DOM, Canvas2D, audio and storage as host adapters
 ```
 
 ## First implementation slice
 
-Introduce a detached `GenerationCandidate` and `CourseGenerationResult` around the existing generation-unit array. Do not restructure Nexus Engine or replace the existing kits.
+Introduce a terminal proposal buffer and `DeliveryTerminalSettlementResult` between the current delivery `simulate` system and simulation `resolve` system. Keep every existing kit, but stop constructing or presenting a score until all terminal proposals and metric effects for that StepId are finalized.
