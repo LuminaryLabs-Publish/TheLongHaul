@@ -1,15 +1,15 @@
-# Current audit: delivery terminal result settlement
+# Current audit: pause scheduler, input and world suspension
 
-**Timestamp:** `2026-07-14T14-39-54-04-00`  
+**Timestamp:** `2026-07-14T19-39-36-04-00`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `ed31f1903e0400200688465abfc124268eeadd9e`  
-**Status:** `delivery-terminal-result-settlement-authority-audited`
+**Reviewed pre-audit repository head:** `9e76011ec6ab4acc665f99c08067e3a758833865`  
+**Status:** `pause-scheduler-input-world-suspension-authority-audited`
 
 ## Summary
 
-The repository contains a complete single-file Nexus Engine browser game with procedural generation, freight driving, depot discovery, condition pressure, scoring, retry, WebGL rendering, a Canvas2D map, DOM UI, audio, persistence and Pages deployment.
+The repository contains a complete single-file Nexus Engine browser freight game with procedural generation, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, audio, persistence and Pages deployment.
 
-The current audit isolates the exact step where an accepted delivery becomes terminal truth.
+The current audit isolates pause and resume ownership.
 
 ## Source-backed inventory
 
@@ -28,29 +28,27 @@ test suite: absent
 build command: absent
 ```
 
-## Complete interaction loop
+## Interaction loop
 
 ```txt
-boot -> title
-  -> start seeded generation
-  -> build trunk and five branches
-  -> place five depots and choose one destination
-  -> prepare terrain, streamed content, hazards and truck
-  -> validate route and world
-  -> enter timed driving
-  -> explore roads and candidate depots
-  -> wrong depot adds 20 seconds
-  -> correct depot emits an accepted delivery check
-  -> same engine step can also contain collision, impact, resource failure or timeout proposals
-  -> current system order marks delivery completed first
-  -> score result is projected and optionally persisted
-  -> retry same seed, generate a new seed or return to title
+boot -> title -> generated course -> driving
+  -> Escape calls pauseGame
+  -> Core Simulation pauseRun
+  -> vehicle velocity and last input are zeroed
+  -> map closes and Core Scene enters paused
+  -> RAF continues
+  -> non-driving input writes zero intent
+  -> engine.tick(dt) still executes
+  -> truck, camera, wildlife, dust and renderer update calls continue
+  -> Escape or button resumes Core Simulation
+  -> browser key map was not cleared by pause
+  -> next driving frame can immediately consume a held key
 ```
 
 ## Domains in use
 
 ```txt
-browser and import-map lifecycle
+browser lifecycle and keyboard state
 Core Scene
 Core World
 Core Input
@@ -61,90 +59,71 @@ Route Field
 Resource Pressure
 Hazard Field
 Telemetry
-procedural course generation
-streamed terrain and course content
-terminal proposal ordering and outcome settlement
-score policy, result persistence and retry lineage
+procedural generation
+world streaming
+pause scheduler and command admission
+stale-input settlement
 WebGL presentation
 DOM UI and HUD
 Canvas2D map
 WebAudio
 localStorage
-GitHub Pages deployment
+Pages deployment
 audit governance
 ```
 
 ## Kits and services
 
 ```txt
-10 engine kits
-  Core Scene: scene registry, current scene, transitions, exit validation, snapshots
-  Core World: world registry, grid partition, focus, active cells, provider ordering, validation
-  Core Input: action manifest, keyboard bindings, contexts, intent, reset
-  Long Haul Delivery: seed, generation progress, depots, destination, checks, retry, result, snapshot, reset
-  Core Simulation: run reset/start/pause/resume, timer, distance, penalties, collisions, recovery, failure, completion
-  Vehicle Dynamics: truck state, input, kinematics, boost, bounds, impacts, reset
-  Route Field: markers, corridors, nearest marker, state, reset
-  Resource Pressure: fuel, truck, cargo, bounded adjustment, state, reset
-  Hazard Field: hazard state, motion, bounds, circle collision, collision events, reset
-  Telemetry: truck, run, condition and delivery histories
-
-2 world providers
-  terrain cell preparation, update, release, descriptor and snapshot
-  road, depot, sign, vegetation and obstacle cell preparation, update, release, descriptor and snapshot
-
-6 browser/product adapters
-  procedural course generation
-  Three.js presentation
-  DOM UI and HUD
-  Canvas2D map
-  WebAudio
-  localStorage
+Core Scene: registry, current scene, transitions, exit validation, snapshots
+Core World: registry, partition, focus, active cells, provider ordering, validation
+Core Input: actions, bindings, contexts, driving intent, reset
+Long Haul Delivery: seed, generation, depots, checks, retry, result, snapshot, reset
+Core Simulation: reset, start, pause, resume, timer, distance, penalties, recovery, failure, completion
+Vehicle Dynamics: truck state, input, kinematics, boost, bounds, impacts, reset
+Route Field: markers, corridors, nearest marker, state, reset
+Resource Pressure: fuel, truck, cargo, adjustments, state, reset
+Hazard Field: hazard state, motion, bounds, collision, events, reset
+Telemetry: truck, run, condition and delivery histories
+terrain provider: prepare, update, release, descriptor, snapshot, reset
+course provider: roads, depots, signs, vegetation, obstacles, prepare, update, release, snapshot, reset
+adapters: course generation, Three.js, DOM/HUD, Canvas map, WebAudio, storage, Pages
 ```
 
 ## Main finding
 
-`processDrivingBeforeTick()` captures delivery metrics and emits `DeliveryRegionCheck` before `engine.tick()`. The delivery system runs in `simulate`, accepts the destination and immediately builds `runResult` from that pre-tick metric snapshot.
+`pauseGame()` pauses the Core Simulation run, zeroes the vehicle and transitions to the pause scene. It does not clear the browser `keys` map, publish a pause generation, or gate the engine scheduler.
 
-The simulation system runs later in `resolve`. It processes `DeliveryRegionChecked` first and changes the run to `completed`. Collision and impact handlers then skip because the run is no longer `running`; explicit failure requests are ignored because the run is already completed; timeout also applies only while running.
+The recursive frame loop continues for all scenes. It calls `processIdleBeforeTick()`, `engine.tick(dt)`, truck/camera updates, wildlife updates, dust updates and `renderer.render()`. The source therefore proves only that the Core Simulation timer is paused. It does not prove that Hazard Field, Resource Pressure, Telemetry, world providers or other gameplay-mutating systems are suspended.
 
-The effective policy is therefore:
+The keydown handler records `keys[event.code] = true` before scene-specific handling. Escape does not clear already-held throttle or steer keys. Resume can therefore admit pre-pause browser state on the first driving frame.
 
-```txt
-accepted delivery
-  > same-step wildlife collision
-  > same-step boundary or obstacle impact
-  > same-step resource failure
-  > same-step timeout
-```
-
-That precedence is not declared, versioned or tested. Same-step damage, penalties and condition changes can be absent from the score. The stored result has no RunId, StepId, ResultId, score-policy revision or fingerprint. Results UI and localStorage update have no participant receipts or first matching frame acknowledgement. Retry immediately consumes a transient `Date.now()` ID and does not cite an immutable predecessor outcome.
+This is a source-level authority gap. It is not a claim that visible wildlife movement or stale-input acceleration was reproduced in a browser.
 
 ## Required authority
 
 ```txt
-the-long-haul-delivery-terminal-result-settlement-authority-domain
+the-long-haul-pause-scheduler-input-world-suspension-authority-domain
 ```
 
 ```txt
-DeliveryTerminalSettlementCommand
-  -> bind RunId, StepId, seed, route, destination and score-policy revisions
-  -> collect delivery, collision, impact, failure and timeout proposals
-  -> classify duplicate and conflicting proposals
-  -> apply one explicit precedence policy
-  -> finalize distance, time, penalties, cargo, truck and fuel
-  -> create one immutable RunOutcomeArtifact
-  -> publish DeliveryTerminalSettlementResult
-  -> persist only the accepted best-score document
-  -> project the same artifact into results UI
-  -> acknowledge FirstTerminalResultFrameAck
+PauseRunCommand
+  -> bind RunId, PauseCommandId, scheduler and input revisions
+  -> clear or journal held browser and Core Input state
+  -> classify strict pause versus explicitly allowed presentation work
+  -> gate Vehicle, Hazard, Pressure, Telemetry, Delivery and streaming mutation
+  -> publish PauseRevision and participant receipts
+  -> acknowledge FirstPausedFrameAck
 
-RunRetryCommand
-  -> cite the accepted predecessor outcome
-  -> allocate successor RunId and retry lineage
-  -> reject duplicate, stale and late predecessor work
+ResumeRunCommand
+  -> bind the accepted PauseRevision
+  -> reject stale pre-pause input and work
+  -> require fresh post-resume driving intent
+  -> restore admitted scheduler participants atomically
+  -> publish ResumeResult
+  -> acknowledge FirstResumedFrameAck
 ```
 
 ## Audit boundary
 
-This run changes documentation only. It does not alter runtime source, gameplay, scoring, rendering, storage, imports, workflow or deployment behavior.
+Documentation only. Runtime source, gameplay, rendering, storage, imports, workflow and deployment behavior were not changed or executed.
