@@ -1,66 +1,37 @@
 # Known gaps
 
-## Terminal outcome authority
+## Pause authority
 
-- Delivery acceptance constructs `runResult` before the current engine step finishes.
-- Accepted delivery implicitly wins over same-step collision, impact, failure and timeout through system order.
-- Terminal precedence is not declared, versioned or tested.
-- Same-step penalties, damage and resource changes can be absent from the score.
-- Terminal proposals have no RunId, StepId, proposal ID or conflict classification.
-- Duplicate, stale and predecessor-generation terminal work is not explicitly rejected.
-- The run result has no immutable ResultId, policy revision or content fingerprint.
-- There is no bounded outcome journal.
+- `pauseGame()` pauses only the Core Simulation run.
+- The global RAF continues while paused.
+- `engine.tick(dt)` continues for every installed kit and scene.
+- No versioned pause policy states which systems must stop and which presentation systems may continue.
+- Hazard Field, Resource Pressure, Telemetry, Delivery and Core World do not publish pause receipts.
+- No scheduler generation rejects late pre-pause work.
 
-## Score and persistence
+## Input settlement
 
-- The score formula is code-only and has no policy version.
-- Best-score persistence is an unversioned localStorage document.
-- Best-score writes silently ignore parse, quota and storage failures.
-- Stored best score does not retain the complete accepted outcome artifact.
-- Persistence has no expected-base revision, readback or write receipt.
+- The browser `keys` map is not cleared when pause is accepted.
+- Escape is recorded in the same mutable key map before pause handling.
+- Held throttle, brake or steer state can survive until resume.
+- Resume does not require fresh post-pause input.
+- No stale-input rejection result exists.
 
-## Interaction and retry
+## Presentation coherence
 
-- Results presentation is driven by mutable delivery and simulation resources rather than one accepted outcome artifact.
-- Results transition and DOM projection have no matching renderer-frame acknowledgement.
-- Same-seed retry uses `Date.now()` for identity and consumes the retry immediately.
-- Retry does not cite an immutable predecessor outcome or preserve explicit lineage.
-- Late predecessor events have no terminal-generation rejection rule.
+- Truck, camera, wildlife, dust and rendering update calls continue during paused scenes.
+- The pause overlay says the clock is stopped but does not identify whether the world is frozen.
+- No `FirstPausedFrameAck` binds UI, world, input and scheduler state.
+- No `FirstResumedFrameAck` proves fresh-input adoption.
 
-## Course generation authority
+## Validation
 
-- Generation has no attempt ID or supersession policy.
-- The predecessor world is cleared before the candidate is validated.
-- Route, delivery, Core World, hazards, vehicle, render and DOM state are mutated live during preparation.
-- Final validation happens after the candidate has become partially live.
-- Failure has no atomic rollback or predecessor restoration.
+- No package manifest or executable test command exists.
+- No headless pause matrix exists.
+- No browser held-input fixture exists.
+- No hazard/world suspension fixture exists.
+- No source-to-Pages pause parity proof exists.
 
-## Domains, kits and services
+## Retained gaps
 
-- Ten engine kits are composed, but terminal settlement is split implicitly between Delivery, Simulation, Resource Pressure and the browser host.
-- Host code captures score metrics and directly coordinates transitions, result UI and storage.
-- World provider snapshots record active cell IDs but `restoreSnapshot()` is empty.
-- Candidate ownership and disposal are not revisioned across engine and Three.js resources.
-- The single `index.html` combines simulation, generation, rendering, UI, audio, storage and lifecycle code.
-
-## Rendering and presentation
-
-- No first terminal-result frame binds outcome, results scene, DOM and renderer revisions.
-- The renderer continues across title, generation, pause, results, loss and settings without a route-level lifecycle receipt.
-- Shared geometry and material lifetime is process-wide and not represented in a resource manifest.
-- Context-loss and renderer-recovery behavior is undocumented and untested.
-
-## Validation and deployment
-
-- No package manifest or executable validation command exists.
-- No syntax, unit, deterministic terminal, headless or browser fixtures exist.
-- No same-step terminal conflict test exists.
-- No result-persistence or retry-lineage fixture exists.
-- No artifact allowlist prevents unrelated root files from being published.
-- No source, artifact or Pages fingerprint parity result exists.
-- No live Pages smoke was recorded for this audit.
-
-## Governance
-
-- No automated check rejects runtime changes that leave `.agent/kit-registry.json` or the central ledger stale.
-- Planned authority surfaces remain documentation until backed by source and executable proof.
+The prior delivery terminal settlement gaps remain valid and are retained in the timestamped `2026-07-14T14-39-54-04-00` audit family.
