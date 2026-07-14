@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "repository": "LuminaryLabs-Publish/TheLongHaul",
+  "branch": "main",
+  "auditTimestamp": "2026-07-14T02-40-58-04-00",
+  "reviewedSourceRevision": "54f2367040c84f7517ad43579f3344fcdb0d9988",
+  "status": "repository-bootstrap-admission-audited",
+  "implementedDomains": [
+    "repository-identity",
+    "readme-documentation",
+    "repo-local-audit-tracking"
+  ],
+  "implementedKits": [],
+  "implementedAdapters": [],
+  "implementedServices": [],
+  "renderSurfaces": [],
+  "counts": {
+    "implementedKits": 0,
+    "implementedAdapters": 0,
+    "implementedRuntimeServices": 0,
+    "renderSurfaces": 0
+  },
+  "plannedAuthority": {
+    "domain": "the-long-haul-project-bootstrap-admission-authority-domain",
+    "status": "planned-not-implemented",
+    "surfaces": [
+      "product-manifest-kit",
+      "repository-revision-kit",
+      "provider-identity-kit",
+      "entry-point-manifest-kit",
+      "domain-composition-manifest-kit",
+      "kit-service-inventory-kit",
+      "interaction-loop-contract-kit",
+      "validation-command-manifest-kit",
+      "deployment-policy-kit",
+      "implementation-admission-result-kit"
+    ]
+  },
+  "validation": {
+    "executableCommands": [],
+    "runtimeClaims": false,
+    "renderClaims": false,
+    "deploymentClaims": false
+  }
+}
