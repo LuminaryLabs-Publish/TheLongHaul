@@ -1,15 +1,15 @@
-# Current audit: pause scheduler, input and world suspension
+# Current audit: motion preference and presentation adoption
 
-**Timestamp:** `2026-07-14T19-39-36-04-00`  
+**Timestamp:** `2026-07-15T00-38-54-04-00`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `9e76011ec6ab4acc665f99c08067e3a758833865`  
-**Status:** `pause-scheduler-input-world-suspension-authority-audited`
+**Reviewed pre-audit repository head:** `826395baa5b3aa82e48ab8037c277f3c5b2bc63c`  
+**Status:** `motion-preference-camera-body-effect-admission-authority-audited`
 
 ## Summary
 
-The repository contains a complete single-file Nexus Engine browser freight game with procedural generation, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, audio, persistence and Pages deployment.
+The repository contains a complete single-file Nexus Engine browser freight game with procedural generation, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, audio, persistence, and Pages deployment.
 
-The current audit isolates pause and resume ownership.
+The current audit isolates the `Camera movement` preference and its adoption by visible camera and truck-body effects.
 
 ## Source-backed inventory
 
@@ -31,24 +31,34 @@ build command: absent
 ## Interaction loop
 
 ```txt
-boot -> title -> generated course -> driving
-  -> Escape calls pauseGame
-  -> Core Simulation pauseRun
-  -> vehicle velocity and last input are zeroed
-  -> map closes and Core Scene enters paused
-  -> RAF continues
-  -> non-driving input writes zero intent
-  -> engine.tick(dt) still executes
-  -> truck, camera, wildlife, dust and renderer update calls continue
-  -> Escape or button resumes Core Simulation
-  -> browser key map was not cleared by pause
-  -> next driving frame can immediately consume a held key
+startup
+  -> load the-long-haul-settings from localStorage
+  -> normalize settings.motion
+  -> project aria-pressed and switch class
+
+title or paused
+  -> enter settings scene
+  -> toggle Camera movement
+  -> invert settings.motion
+  -> persist settings document
+  -> return to title or paused
+
+driving frame
+  -> update simulation and vehicle truth
+  -> updateTruckVisual
+     rough-road oscillation obeys settings.motion
+     steering roll, throttle/brake pitch, and cargo sway do not
+  -> updateCamera
+     rough-road bob obeys settings.motion
+     speed FOV and interpolation do not
+  -> render scene
 ```
 
 ## Domains in use
 
 ```txt
-browser lifecycle and keyboard state
+browser lifecycle, DOM events, localStorage, resize, RAF
+provider resolution
 Core Scene
 Core World
 Core Input
@@ -59,15 +69,17 @@ Route Field
 Resource Pressure
 Hazard Field
 Telemetry
-procedural generation
-world streaming
-pause scheduler and command admission
-stale-input settlement
-WebGL presentation
+procedural course generation
+streamed world effects
+settings document normalization and persistence
+motion preference and effect policy
+truck suspension, steering roll, pitch, and cargo sway
+camera chase/cab placement, rough-road bob, dynamic FOV, interpolation
+Three.js WebGL presentation
 DOM UI and HUD
 Canvas2D map
 WebAudio
-localStorage
+best-score persistence
 Pages deployment
 audit governance
 ```
@@ -84,7 +96,7 @@ Vehicle Dynamics: truck state, input, kinematics, boost, bounds, impacts, reset
 Route Field: markers, corridors, nearest marker, state, reset
 Resource Pressure: fuel, truck, cargo, adjustments, state, reset
 Hazard Field: hazard state, motion, bounds, collision, events, reset
-Telemetry: truck, run, condition and delivery histories
+Telemetry: truck, run, condition, and delivery histories
 terrain provider: prepare, update, release, descriptor, snapshot, reset
 course provider: roads, depots, signs, vegetation, obstacles, prepare, update, release, snapshot, reset
 adapters: course generation, Three.js, DOM/HUD, Canvas map, WebAudio, storage, Pages
@@ -92,38 +104,44 @@ adapters: course generation, Three.js, DOM/HUD, Canvas map, WebAudio, storage, P
 
 ## Main finding
 
-`pauseGame()` pauses the Core Simulation run, zeroes the vehicle and transitions to the pause scene. It does not clear the browser `keys` map, publish a pause generation, or gate the engine scheduler.
+The UI describes `Camera movement` as `Road shake and body motion`. The persisted boolean currently gates only rough-road truck oscillation and rough-road camera bob.
 
-The recursive frame loop continues for all scenes. It calls `processIdleBeforeTick()`, `engine.tick(dt)`, truck/camera updates, wildlife updates, dust updates and `renderer.render()`. The source therefore proves only that the Core Simulation timer is paused. It does not prove that Hazard Field, Resource Pressure, Telemetry, world providers or other gameplay-mutating systems are suspended.
+The following presentation effects remain active when the boolean is false:
 
-The keydown handler records `keys[event.code] = true` before scene-specific handling. Escape does not clear already-held throttle or steer keys. Resume can therefore admit pre-pause browser state on the first driving frame.
+```txt
+steering-driven truck roll
+throttle/brake suspension pitch
+cargo-crate sway
+speed-driven FOV expansion
+camera position and look interpolation
+```
 
-This is a source-level authority gap. It is not a claim that visible wildlife movement or stale-input acceleration was reproduced in a browser.
+No authority defines whether those effects belong to Full, Reduced, or Static motion. The setting produces no typed adoption result, storage receipt, participant receipt, or first matching frame acknowledgement.
+
+This is a source-level contract gap. It is not a claim that a browser defect or accessibility outcome was reproduced.
 
 ## Required authority
 
 ```txt
-the-long-haul-pause-scheduler-input-world-suspension-authority-domain
+the-long-haul-motion-preference-camera-body-effect-admission-authority-domain
 ```
 
 ```txt
-PauseRunCommand
-  -> bind RunId, PauseCommandId, scheduler and input revisions
-  -> clear or journal held browser and Core Input state
-  -> classify strict pause versus explicitly allowed presentation work
-  -> gate Vehicle, Hazard, Pressure, Telemetry, Delivery and streaming mutation
-  -> publish PauseRevision and participant receipts
-  -> acknowledge FirstPausedFrameAck
+MotionPreferenceCommand
+  -> bind settings, run, scene, and requested-profile revisions
+  -> classify Full, Reduced, or Static policy
+  -> prepare camera, truck, cargo, and storage participants
+  -> atomically publish MotionPreferenceRevision
+  -> publish MotionPreferenceResult and receipts
 
-ResumeRunCommand
-  -> bind the accepted PauseRevision
-  -> reject stale pre-pause input and work
-  -> require fresh post-resume driving intent
-  -> restore admitted scheduler participants atomically
-  -> publish ResumeResult
-  -> acknowledge FirstResumedFrameAck
+MotionFrameAdmissionCommand
+  -> bind MotionPreferenceRevision, frame, vehicle, camera, and renderer revisions
+  -> classify every effect
+  -> execute the admitted policy
+  -> publish MotionFrameResult
+  -> acknowledge FirstMotionPreferenceFrameAck
 ```
 
 ## Audit boundary
 
-Documentation only. Runtime source, gameplay, rendering, storage, imports, workflow and deployment behavior were not changed or executed.
+Documentation only. Runtime source, gameplay, settings behavior, rendering, storage, imports, workflow, and deployment behavior were not changed or executed.
