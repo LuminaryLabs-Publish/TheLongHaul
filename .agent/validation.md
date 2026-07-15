@@ -1,12 +1,12 @@
 # Validation
 
-**Audit timestamp:** `2026-07-15T14-40-11-04-00`
+**Audit timestamp:** `2026-07-15T19-38-38-04-00`
 
 ## Repository evidence
 
 ```txt
 reviewed implementation revision: 4ab7591224f23f3cb84450f0aa101bd78fe95d25
-reviewed pre-audit repository head: e2796634445e63b5cd0ee7ea34f7ab50078755f2
+reviewed pre-audit repository head: cc4ec1d7ad16e6aa29e7719203d5411217142f25
 runtime entry: index.html
 branch: main
 ```
@@ -22,61 +22,51 @@ new or missing repositories: 0
 runtime-ahead repositories: 0
 selected repository: TheLongHaul
 selection rule: oldest synchronized eligible timestamp
+prior timestamp: 2026-07-15T14-40-11-04-00
+next oldest: MyCozyIsland at 2026-07-15T15-01-22-04-00
 ```
 
 ## Source inspection
 
 ```txt
-RAF callback inspected: yes
-previousTime mutation inspected: yes
-rawDelta derivation inspected: yes
-1 / 15 delta cap inspected: yes
-processDrivingBeforeTick inspected: yes
-engine.tick invocation inspected: yes
-run timer consumer inspected: yes
-vehicle and condition consumers inspected: yes
-truck/camera/dust presentation consumers inspected: yes
-Canvas2D map path inspected: yes
-Three.js render submission inspected: yes
-Pages workflow inspected: yes
+Core Input action manifest inspected: yes
+Core Input keyboard bindings inspected: yes
+Core Input contexts inspected: yes
+browser keydown listener inspected: yes
+browser keyup listener inspected: yes
+browser blur listener inspected: yes
+mutable keys owner inspected: yes
+per-frame intent derivation inspected: yes
+Core Input intent publication inspected: yes
+camera, map, pause and retry consumers inspected: yes
+contextual interact and recovery consumer inspected: yes
+WebGL, Canvas2D, DOM and audio effects inspected: yes
 kit and service census preserved: yes
 ```
 
 ## Source-backed observations
 
 ```txt
-simulation ticks per RAF callback: 1
-fixed simulation quantum: no
-accumulator: no
-residual time: no
-maximum substeps: no
-explicit overload classification: no
-discarded-time receipt: no
-visibility clock owner: no
-simulation revision: no
-render interpolation alpha: no
-HostFrameResult: no
-FirstClockBoundFrameAck: no
+browser event admission through Core Input: no
+one executable action-map revision: no
+explicit route-context admission: no
+held-action generation: no
+one-shot InputActionResult: no
+KeyR declared behavior: recovery
+KeyR executable behavior: retry
+recovery executable binding: contextual KeyE
+retry action in Core Input manifest: no
+FirstInputActionAck: no
+FirstInputEffectFrameAck: no
 ```
-
-## Static rate derivation
-
-```txt
-admitted dt per callback <= 1 / 15 second
-15 callbacks/sec -> <= 1.000 simulated sec/sec
-10 callbacks/sec -> <= 0.667 simulated sec/sec
- 5 callbacks/sec -> <= 0.333 simulated sec/sec
-```
-
-This is a mathematical consequence of the source clamp and one-step-per-callback path. It is not a measured browser result.
 
 ## Changes
 
 ```txt
 documentation changed: yes
 runtime JavaScript changed: no
-gameplay timing changed: no
-generation changed: no
+input behavior changed: no
+gameplay changed: no
 rendering changed: no
 audio changed: no
 storage changed: no
@@ -90,17 +80,18 @@ pull request created: no
 
 ```txt
 package test command: unavailable
-controlled RAF fixture: unavailable
-multi-cadence same-seed fixture: unavailable
-low-FPS fixture: unavailable
-long-stall and overload fixture: unavailable
-pause/visibility clock fixture: unavailable
-render interpolation fixture: unavailable
-first clock-bound frame fixture: unavailable
-root artifact clock fixture: unavailable
-Pages clock fixture: unavailable
+browser keyboard fixture: unavailable
+action-map parity fixture: unavailable
+route-context fixture: unavailable
+focus-target fixture: unavailable
+held-action lifecycle fixture: unavailable
+retry/recovery fixture: unavailable
+first input action fixture: unavailable
+first input effect frame fixture: unavailable
+root artifact input fixture: unavailable
+Pages input fixture: unavailable
 ```
 
 ## Claims not made
 
-No claim is made for cadence independence, deterministic stepping, wall-time accuracy, overload correctness, pause/visibility correctness, interpolation correctness, visible-frame convergence, artifact parity, Pages parity or production readiness.
+No claim is made for input-contract convergence, binding correctness, context enforcement, held-action lifecycle safety, retry/recovery correctness, Core Input authority, visible-frame convergence, artifact parity, Pages parity or production readiness.
