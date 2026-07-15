@@ -1,15 +1,15 @@
-# Current audit: motion preference and presentation adoption
+# Current audit: generation work scheduling and ready adoption
 
-**Timestamp:** `2026-07-15T00-38-54-04-00`  
+**Timestamp:** `2026-07-15T04-40-29-04-00`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `826395baa5b3aa82e48ab8037c277f3c5b2bc63c`  
-**Status:** `motion-preference-camera-body-effect-admission-authority-audited`
+**Reviewed pre-audit repository head:** `fdfb89f3c6339f408d5861899d4ec201bf4e8c75`  
+**Status:** `generation-work-budget-readiness-authority-audited`
 
 ## Summary
 
-The repository contains a complete single-file Nexus Engine browser freight game with procedural generation, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, audio, persistence, and Pages deployment.
+The repository contains a complete single-file Nexus Engine browser freight game with deterministic generation, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, audio, persistence and Pages deployment.
 
-The current audit isolates the `Camera movement` preference and its adoption by visible camera and truck-body effects.
+The current audit isolates how the browser host schedules generation work and decides that a course is playable.
 
 ## Source-backed inventory
 
@@ -31,33 +31,31 @@ build command: absent
 ## Interaction loop
 
 ```txt
-startup
-  -> load the-long-haul-settings from localStorage
-  -> normalize settings.motion
-  -> project aria-pressed and switch class
+Start or Retry
+  -> clearWorld
+  -> reset Delivery, Simulation, Input, Route, Resource, Vehicle, Hazard and Telemetry
+  -> transition to generating
+  -> build 31 generation units
 
-title or paused
-  -> enter settings scene
-  -> toggle Camera movement
-  -> invert settings.motion
-  -> persist settings document
-  -> return to title or paused
+RAF while generating
+  -> stepGeneration once
+  -> execute one unit closure
+  -> record one completed step in Long Haul Delivery
+  -> tick engine
+  -> update unit-count progress
+  -> render partial state
 
-driving frame
-  -> update simulation and vehicle truth
-  -> updateTruckVisual
-     rough-road oscillation obeys settings.motion
-     steering roll, throttle/brake pitch, and cargo sway do not
-  -> updateCamera
-     rough-road bob obeys settings.motion
-     speed FOV and interpolation do not
-  -> render scene
+queue exhausted
+  -> wait for generation.ready
+  -> start Core Simulation
+  -> transition through ready exit
+  -> render driving state
 ```
 
 ## Domains in use
 
 ```txt
-browser lifecycle, DOM events, localStorage, resize, RAF
+browser lifecycle, DOM events, resize, blur, RAF and wall-clock delta
 provider resolution
 Core Scene
 Core World
@@ -69,18 +67,17 @@ Route Field
 Resource Pressure
 Hazard Field
 Telemetry
-procedural course generation
-streamed world effects
-settings document normalization and persistence
-motion preference and effect policy
-truck suspension, steering roll, pitch, and cargo sway
-camera chase/cab placement, rough-road bob, dynamic FOV, interpolation
+seeded course graph and depot generation
+generation queue construction and execution
+route and world validation
+streamed terrain and course providers
+truck, wildlife, dust and exploration
+settings, motion, pause, retry, terminal result and persistence
 Three.js WebGL presentation
 DOM UI and HUD
 Canvas2D map
 WebAudio
-best-score persistence
-Pages deployment
+GitHub Pages deployment
 audit governance
 ```
 
@@ -90,58 +87,61 @@ audit governance
 Core Scene: registry, current scene, transitions, exit validation, snapshots
 Core World: registry, partition, focus, active cells, provider ordering, validation
 Core Input: actions, bindings, contexts, driving intent, reset
-Long Haul Delivery: seed, generation, depots, checks, retry, result, snapshot, reset
+Long Haul Delivery: seed, generation plan/progress, depots, checks, retry, result, snapshot, reset
 Core Simulation: reset, start, pause, resume, timer, distance, penalties, recovery, failure, completion
 Vehicle Dynamics: truck state, input, kinematics, boost, bounds, impacts, reset
 Route Field: markers, corridors, nearest marker, state, reset
-Resource Pressure: fuel, truck, cargo, adjustments, state, reset
-Hazard Field: hazard state, motion, bounds, collision, events, reset
-Telemetry: truck, run, condition, and delivery histories
-terrain provider: prepare, update, release, descriptor, snapshot, reset
-course provider: roads, depots, signs, vegetation, obstacles, prepare, update, release, snapshot, reset
-adapters: course generation, Three.js, DOM/HUD, Canvas map, WebAudio, storage, Pages
+Resource Pressure: fuel, truck, cargo, bounded adjustments, state, reset
+Hazard Field: hazard state, motion, bounds, collisions, events, reset
+Telemetry: truck, run, condition and delivery histories
+terrain provider: prepare, update, release, descriptor, snapshots, reset
+course provider: roads, depots, signs, vegetation, obstacles, prepare, update, release, snapshots, reset
+procedural generator: seed/RNG, graph, fork, depots, par, validation, 31-unit plan
+Three.js adapter: scene, renderer, camera, atmosphere, rigs, streamed meshes, resize, RAF
+DOM adapter: title, help, settings, loading, HUD, pause, results, loss, toast, failure
+Canvas adapter: explored route, depots, rejections, truck and resize
+WebAudio adapter: engine, wind and event cues
+storage adapter: settings, motion and best score
+Pages adapter: main-triggered static deployment
 ```
 
 ## Main finding
 
-The UI describes `Camera movement` as `Road shake and body motion`. The persisted boolean currently gates only rough-road truck oscillation and rough-road camera bob.
+`makeGenerationPlan()` creates 31 stable unit IDs. The animation loop calls `stepGeneration()` once per callback while the scene is `generating`. `stepGeneration()` runs one unit and increments the cursor. Delivery progress is `completedStepIds.length / plan.length`.
 
-The following presentation effects remain active when the boolean is false:
+The units have unequal cost. Terrain generation, atmosphere/Core World registration, hazard adoption, rig creation and validation are counted the same as lightweight state steps. The host has no millisecond budget, weighted progress, per-unit elapsed receipt, yield contract, cancellation token, visibility result, partial-attempt retirement result or first playable-frame acknowledgement.
 
-```txt
-steering-driven truck roll
-throttle/brake suspension pitch
-cargo-crate sway
-speed-driven FOV expansion
-camera position and look interpolation
-```
-
-No authority defines whether those effects belong to Full, Reduced, or Static motion. The setting produces no typed adoption result, storage receipt, participant receipt, or first matching frame acknowledgement.
-
-This is a source-level contract gap. It is not a claim that a browser defect or accessibility outcome was reproduced.
+This is a source-level scheduling and evidence gap. It is not a measured performance defect.
 
 ## Required authority
 
 ```txt
-the-long-haul-motion-preference-camera-body-effect-admission-authority-domain
+the-long-haul-generation-work-budget-readiness-authority-domain
 ```
 
 ```txt
-MotionPreferenceCommand
-  -> bind settings, run, scene, and requested-profile revisions
-  -> classify Full, Reduced, or Static policy
-  -> prepare camera, truck, cargo, and storage participants
-  -> atomically publish MotionPreferenceRevision
-  -> publish MotionPreferenceResult and receipts
+GenerationAttemptCommand
+  -> bind seed, plan and provider revisions
+  -> allocate attempt and queue revisions
 
-MotionFrameAdmissionCommand
-  -> bind MotionPreferenceRevision, frame, vehicle, camera, and renderer revisions
-  -> classify every effect
-  -> execute the admitted policy
-  -> publish MotionFrameResult
-  -> acknowledge FirstMotionPreferenceFrameAck
+GenerationHostFrameCommand
+  -> admit zero or more ready units under a frame budget
+  -> publish unit cost/results and weighted progress
+  -> suspend, resume, defer or cancel explicitly
+
+GenerationReadyCommand
+  -> require route, world, depot, hazard and truck receipts
+  -> atomically adopt the candidate
+  -> start Simulation once
+  -> publish GenerationReadyResult
+  -> acknowledge FirstPlayableGenerationFrameAck
+
+GenerationFailureCommand
+  -> retire partial world and presentation resources
+  -> reject late attempt work
+  -> publish rollback receipts
 ```
 
 ## Audit boundary
 
-Documentation only. Runtime source, gameplay, settings behavior, rendering, storage, imports, workflow, and deployment behavior were not changed or executed.
+Documentation only. Runtime source, generation behavior, gameplay, rendering, storage, imports, workflow and deployment were not changed or executed.
