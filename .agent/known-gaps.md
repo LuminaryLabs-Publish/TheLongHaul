@@ -1,37 +1,48 @@
 # Known gaps
 
-## Pause authority
+## Motion preference semantics
 
-- `pauseGame()` pauses only the Core Simulation run.
-- The global RAF continues while paused.
-- `engine.tick(dt)` continues for every installed kit and scene.
-- No versioned pause policy states which systems must stop and which presentation systems may continue.
-- Hazard Field, Resource Pressure, Telemetry, Delivery and Core World do not publish pause receipts.
-- No scheduler generation rejects late pre-pause work.
+- `settings.motion` is an unversioned browser boolean.
+- The UI promise `Camera movement` / `Road shake and body motion` has no authoritative effect registry.
+- Full, Reduced, and Static profiles are not defined.
+- No system `prefers-reduced-motion` adapter exists.
+- No migration or rejection result exists for malformed persisted values.
 
-## Input settlement
+## Partial effect adoption
 
-- The browser `keys` map is not cleared when pause is accepted.
-- Escape is recorded in the same mutable key map before pause handling.
-- Held throttle, brake or steer state can survive until resume.
-- Resume does not require fresh post-pause input.
-- No stale-input rejection result exists.
+- Rough-road suspension oscillation reads `settings.motion`.
+- Rough-road camera bob reads `settings.motion`.
+- Steering-driven truck roll does not read it.
+- Throttle and brake suspension pitch do not read it.
+- Cargo-crate sway does not read it.
+- Speed-driven camera FOV does not read it.
+- Camera transform interpolation does not cite a motion profile.
+
+## Persistence and results
+
+- Storage writes silently ignore failure.
+- No settings-document revision exists.
+- No `MotionPreferenceResult` distinguishes accepted, partial, rejected, or failed adoption.
+- No participant receipts identify which effects adopted the preference.
+- No restore result proves the profile was accepted before first frame.
 
 ## Presentation coherence
 
-- Truck, camera, wildlife, dust and rendering update calls continue during paused scenes.
-- The pause overlay says the clock is stopped but does not identify whether the world is frozen.
-- No `FirstPausedFrameAck` binds UI, world, input and scheduler state.
-- No `FirstResumedFrameAck` proves fresh-input adoption.
+- Frames do not cite a motion-preference revision.
+- No per-effect execution receipt exists.
+- No `FirstMotionPreferenceFrameAck` exists.
+- No browser transform or pixel fixture covers full versus reduced motion.
+- No source-to-Pages motion parity proof exists.
 
 ## Validation
 
 - No package manifest or executable test command exists.
-- No headless pause matrix exists.
-- No browser held-input fixture exists.
-- No hazard/world suspension fixture exists.
-- No source-to-Pages pause parity proof exists.
+- No browser settings fixture exists.
+- No reload-persistence fixture exists.
+- No malformed-document fixture exists.
+- No motion-effect matrix fixture exists.
+- No built artifact or Pages fixture exists.
 
 ## Retained gaps
 
-The prior delivery terminal settlement gaps remain valid and are retained in the timestamped `2026-07-14T14-39-54-04-00` audit family.
+The earlier pause-suspension, delivery terminal-settlement, and course-generation admission gaps remain valid in their timestamped audit families.
