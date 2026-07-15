@@ -1,12 +1,12 @@
 # Validation
 
-**Audit timestamp:** `2026-07-15T04-40-29-04-00`
+**Audit timestamp:** `2026-07-15T09-40-51-04-00`
 
 ## Repository evidence
 
 ```txt
 reviewed implementation revision: 4ab7591224f23f3cb84450f0aa101bd78fe95d25
-reviewed pre-audit repository head: fdfb89f3c6339f408d5861899d4ec201bf4e8c75
+reviewed pre-audit repository head: 1724e6ca5ec2f18303431a3d8c40c017903759e3
 runtime entry: index.html
 branch: main
 ```
@@ -14,15 +14,16 @@ branch: main
 ## Source inspection
 
 ```txt
-makeGenerationPlan inspected: yes
-buildGenerationUnits inspected: yes
-startGeneration inspected: yes
-stepGeneration inspected: yes
-generation failure path inspected: yes
-frame loop inspected: yes
-generation progress UI inspected: yes
-Core World validation path inspected: yes
-run-start transition inspected: yes
+audio.ensure inspected: yes
+audio.update inspected: yes
+audio.tone and cue helpers inspected: yes
+sound preference load/toggle inspected: yes
+pause and resume inspected: yes
+goTitle inspected: yes
+blur handler inspected: yes
+RAF loop inspected: yes
+visibilitychange handler present: no
+pagehide handler present: no
 kit and service census preserved: yes
 Pages workflow presence retained: yes
 ```
@@ -30,18 +31,19 @@ Pages workflow presence retained: yes
 ## Source-backed observations
 
 ```txt
-generation plan unit count: 31
-stepGeneration calls per generating RAF callback: 1
-work units executed per stepGeneration call: 1
-progress basis: completed unit IDs / total unit IDs
-frame-time budget exists: no
-weighted progress exists: no
-unit elapsed receipt exists: no
-visibility lifecycle result exists: no
-cancellation result exists: no
-partial-attempt retirement receipt exists: no
-GenerationReadyResult exists: no
-FirstPlayableGenerationFrameAck exists: no
+persistent engine oscillator starts: 1 per created audio object generation
+persistent looping wind source starts: 1 per created audio object generation
+loop gain owner: RAF-driven audio.update
+pause direct gain settlement: no
+blur direct gain settlement: no
+hidden-document policy: no
+AudioContext suspend result: no
+AudioContext close result: no
+source stop/disconnect receipt: no
+context/source generation: no
+stale cue rejection: no
+FirstSilentAudioAck: no
+FirstResumedAudibleFrameAck: no
 ```
 
 ## Changes
@@ -49,7 +51,7 @@ FirstPlayableGenerationFrameAck exists: no
 ```txt
 documentation changed: yes
 runtime JavaScript changed: no
-generation behavior changed: no
+audio behavior changed: no
 gameplay changed: no
 rendering changed: no
 storage changed: no
@@ -63,17 +65,16 @@ pull request created: no
 
 ```txt
 package test command: unavailable
-browser cadence fixture: unavailable
-CPU-throttling fixture: unavailable
-PerformanceObserver long-task fixture: unavailable
-visibility fixture: unavailable
-cancellation fixture: unavailable
-resource-retirement fixture: unavailable
-first playable-frame fixture: unavailable
-built artifact fixture: unavailable
-Pages generation fixture: unavailable
+browser audio unlock fixture: unavailable
+pause/blur immediate-silence fixture: unavailable
+visibility suspend/resume fixture: unavailable
+stale cue rejection fixture: unavailable
+source retirement fixture: unavailable
+AudioContext close fixture: unavailable
+root artifact audio fixture: unavailable
+Pages audio fixture: unavailable
 ```
 
 ## Claims not made
 
-No claim is made for frame-budget compliance, performance improvement, cadence independence, progress accuracy, cancellation correctness, resource retirement, ready-state atomicity, first-frame convergence, artifact parity, Pages parity or production readiness.
+No claim is made for reproduced audible leakage, immediate silence, suspension correctness, resume correctness, cue admission, source retirement, context closure, audiovisual convergence, artifact parity, Pages parity or production readiness.
