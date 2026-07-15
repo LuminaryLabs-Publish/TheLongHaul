@@ -1,48 +1,50 @@
 # Known gaps
 
-## Motion preference semantics
+## Generation scheduling
 
-- `settings.motion` is an unversioned browser boolean.
-- The UI promise `Camera movement` / `Road shake and body motion` has no authoritative effect registry.
-- Full, Reduced, and Static profiles are not defined.
-- No system `prefers-reduced-motion` adapter exists.
-- No migration or rejection result exists for malformed persisted values.
+- The browser host owns generation queue execution directly.
+- `frame()` calls `stepGeneration()` once per animation callback.
+- `stepGeneration()` executes exactly one unit regardless of available frame time.
+- No frame-budget policy or elapsed-cost receipt exists.
+- No unit can explicitly yield partway through expensive work.
+- No worker-eligibility classification exists.
 
-## Partial effect adoption
+## Progress semantics
 
-- Rough-road suspension oscillation reads `settings.motion`.
-- Rough-road camera bob reads `settings.motion`.
-- Steering-driven truck roll does not read it.
-- Throttle and brake suspension pitch do not read it.
-- Cargo-crate sway does not read it.
-- Speed-driven camera FOV does not read it.
-- Camera transform interpolation does not cite a motion profile.
+- The plan contains 31 unit IDs with unequal work cost.
+- Progress is completed-unit count divided by total-unit count.
+- Terrain creation, Core World registration and validation count the same as lightweight state steps.
+- No weighted-progress revision exists.
+- No deferred, running, cancelled, failed or rolled-back progress states exist.
 
-## Persistence and results
+## Lifecycle and retirement
 
-- Storage writes silently ignore failure.
-- No settings-document revision exists.
-- No `MotionPreferenceResult` distinguishes accepted, partial, rejected, or failed adoption.
-- No participant receipts identify which effects adopted the preference.
-- No restore result proves the profile was accepted before first frame.
+- Generation has no durable attempt identity or generation revision.
+- Hidden-tab behavior is not owned by a generation lifecycle policy.
+- No explicit cancellation result exists.
+- A failed attempt can retain partial world and presentation resources.
+- Late work from a retired or superseded attempt has no rejection contract.
+- Retry and replacement attempts have no predecessor-retirement receipt.
 
-## Presentation coherence
+## Ready adoption
 
-- Frames do not cite a motion-preference revision.
-- No per-effect execution receipt exists.
-- No `FirstMotionPreferenceFrameAck` exists.
-- No browser transform or pixel fixture covers full versus reduced motion.
-- No source-to-Pages motion parity proof exists.
+- `generation.ready` is a host-local boolean.
+- Core Simulation starts from host cursor state rather than an immutable ready result.
+- Route, world, depot, hazard and truck validation are not collected into one adoption artifact.
+- No `GenerationReadyResult` exists.
+- No `FirstPlayableGenerationFrameAck` exists.
+- The first driving frame does not cite a generation revision.
 
 ## Validation
 
 - No package manifest or executable test command exists.
-- No browser settings fixture exists.
-- No reload-persistence fixture exists.
-- No malformed-document fixture exists.
-- No motion-effect matrix fixture exists.
-- No built artifact or Pages fixture exists.
+- No 30/60/120 Hz cadence fixture exists.
+- No CPU-throttling or long-task fixture exists.
+- No hidden-tab suspend/resume fixture exists.
+- No cancellation or partial-resource retirement fixture exists.
+- No first playable-frame fingerprint exists.
+- No source-to-Pages generation parity proof exists.
 
 ## Retained gaps
 
-The earlier pause-suspension, delivery terminal-settlement, and course-generation admission gaps remain valid in their timestamped audit families.
+The earlier motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback gaps remain valid in their timestamped audit families.
