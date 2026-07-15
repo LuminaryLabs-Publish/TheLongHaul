@@ -2,26 +2,24 @@
 
 ## Plan ledger
 
-**Goal:** preserve deterministic course content while moving generation execution behind a bounded, receipt-backed scheduler and one atomic ready transition.
+**Goal:** give the browser audio graph one revision-bound lifecycle from accepted unlock through exactly-once retirement.
 
-- [ ] Add `GenerationAttemptId`, `GenerationRevision` and `QueueRevision`.
-- [ ] Replace host-local closure ownership with typed work-unit descriptors and dependency IDs.
-- [ ] Classify each of the 31 units as lightweight, bounded-main-thread, internally-yielding or worker-eligible.
-- [ ] Add a versioned frame-budget policy.
-- [ ] Execute zero or more eligible units per host frame within the admitted budget.
-- [ ] Publish actual unit elapsed cost and deferred-work receipts.
-- [ ] Replace equal unit-count progress with accepted weighted progress.
-- [ ] Add hidden-tab suspend/resume and explicit cancellation results.
-- [ ] Reject stale work from retired or superseded attempts.
-- [ ] Track and release every partial world, geometry, material, texture, hazard and presentation resource.
-- [ ] Require route, Core World, depot, hazard and truck validation receipts before ready adoption.
-- [ ] Start Core Simulation exactly once from an accepted `GenerationReadyResult`.
-- [ ] Add `FirstPlayableGenerationFrameAck`.
-- [ ] Add 30/60/120 Hz cadence and CPU-throttling browser fixtures.
-- [ ] Add PerformanceObserver long-task evidence.
-- [ ] Add generation failure, cancellation, retry and visibility fixtures.
-- [ ] Verify source, root artifact and Pages fingerprints against one generation revision.
+- [ ] Add `AudioContextGeneration`, `AudioPolicyRevision`, `AudioRouteRevision` and `AudioVisibilityRevision`.
+- [ ] Replace ambient `audio.ensure()` ownership with an admitted unlock command and typed capability result.
+- [ ] Represent the engine and wind loops as persistent source leases owned by one context generation.
+- [ ] Settle loop gains immediately on pause, blur, mute and route exit instead of waiting for RAF.
+- [ ] Add an explicit hidden-document policy: silent, suspended or retired.
+- [ ] Add `visibilitychange`, `pagehide` and runtime-retirement command handling.
+- [ ] Resume only when the document is visible, sound is enabled and the accepted route permits audio.
+- [ ] Bind every transient cue to expected run, route and context revisions.
+- [ ] Reject stale, duplicate, muted, hidden or retired cue requests.
+- [ ] Stop and disconnect persistent sources exactly once.
+- [ ] Close or deliberately retain the AudioContext under a versioned retirement policy.
+- [ ] Publish gain, suspension, resume and source-disposal receipts.
+- [ ] Add `FirstSilentAudioAck` and `FirstResumedAudibleFrameAck`.
+- [ ] Add browser fixtures for unlock, repeat ensure, mute, pause, blur, hidden/visible transitions and pagehide.
+- [ ] Add source, root-artifact and deployed Pages audio-lifecycle parity proof.
 
 ## Retained work
 
-Motion preference, pause suspension, delivery terminal settlement and earlier course-generation admission/rollback remain open in their timestamped audit families.
+Generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback remain open in their timestamped audit families.
