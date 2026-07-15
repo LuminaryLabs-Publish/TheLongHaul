@@ -1,15 +1,15 @@
-# Current audit: browser audio lifecycle suspension and retirement
+# Current audit: host clock fixed-step simulation and frame authority
 
-**Timestamp:** `2026-07-15T09-40-51-04-00`  
+**Timestamp:** `2026-07-15T14-40-11-04-00`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `1724e6ca5ec2f18303431a3d8c40c017903759e3`  
-**Status:** `browser-audio-lifecycle-suspension-retirement-authority-audited`
+**Reviewed pre-audit repository head:** `e2796634445e63b5cd0ee7ea34f7ab50078755f2`  
+**Status:** `host-clock-fixed-step-simulation-frame-authority-audited`
 
 ## Summary
 
-The repository contains a complete single-file Nexus Engine browser freight game with deterministic generation, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, WebAudio, persistence and Pages deployment.
+The repository contains a complete single-file Nexus Engine browser freight game with deterministic course generation, streamed world content, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, WebAudio, persistence and Pages deployment.
 
-This audit isolates the long-lived browser audio graph and its relationship to route, run, preference and document lifecycle.
+This audit isolates the browser callback clock and its relationship to gameplay stepping and visible frames.
 
 ## Source-backed inventory
 
@@ -27,44 +27,49 @@ test suite: absent
 build command: absent
 ```
 
-## Interaction loop
+## Complete interaction loop
 
 ```txt
-user starts or triggers a cue
-  -> audio.ensure()
-  -> create AudioContext and master gain
-  -> create/start persistent engine oscillator
-  -> create/start looping wind source
+boot
+  -> install kits and providers
+  -> initialize renderer, UI, audio and settings
+  -> enter title
+
+start
+  -> choose seed
+  -> reset domains and presentation
+  -> execute 31 generation units over RAF callbacks
+  -> validate course and world
+  -> start run and enter driving
 
 driving RAF
-  -> calculate speed/throttle
-  -> schedule engine/wind gains and engine frequency
-  -> create transient cue oscillators for UI and gameplay outcomes
+  -> derive rawDelta from callback timestamp
+  -> cap dt at 1 / 15
+  -> process driving input, road state, collisions and interactions once
+  -> engine.tick(dt) once
+  -> update streaming, exploration, HUD, outcome and audio
+  -> update truck, camera, wildlife, dust and map
+  -> render once
 
-pause or non-driving route
-  -> accepted scene/run state changes
-  -> later RAF normally schedules zero loop gains
-
-window blur
-  -> clear keys and request pause
-  -> no direct context suspend or immediate audio result
-
-visibility loss/pagehide/retirement
-  -> no owned lifecycle command or source/context retirement receipt
+terminal
+  -> settle completion or failure
+  -> persist best score
+  -> retry or return to title
 ```
 
 ## Domains in use
 
 ```txt
-browser document lifecycle, focus/blur, visibility, RAF and wall clock
-provider resolution
+browser document lifecycle, focus, blur, resize, RAF and monotonic wall clock
+provider resolution and pinned module imports
 Core Scene, Core World, Core Input and Core Simulation
 Long Haul Delivery, Vehicle Dynamics, Route Field, Resource Pressure, Hazard Field and Telemetry
-seeded course generation, validation and streamed terrain/course providers
+seeded course generation, validation, scheduling and readiness
+streamed terrain and course-content ownership
 truck, wildlife, dust, exploration, depot discovery, scoring and retry
-settings, motion, pause and browser persistence
+settings, motion, pause, audio and browser persistence
 Three.js WebGL, Canvas2D map and DOM UI/HUD
-WebAudio capability, unlock, context, master bus, loops and transient cues
+host-frame scheduling, variable-delta admission and render submission
 GitHub Pages deployment and audit governance
 ```
 
@@ -84,42 +89,59 @@ Telemetry: truck, run, condition and delivery histories
 terrain provider: prepare, update, release, descriptors, snapshots, reset
 course provider: roads, depots, signs, vegetation, obstacles, lifecycle and snapshots
 procedural generator: seed/RNG, graph, fork, depots, par, validation and generation plan
-Three.js adapter: renderer, scene, camera, atmosphere, rigs, meshes, resize and RAF
+Three.js adapter: renderer, scene, camera, atmosphere, rigs, meshes, resize, RAF and render
 DOM adapter: title, help, settings, generation, HUD, pause, results, loss, toast and failure
 Canvas adapter: explored routes, depots, rejections, truck and DPR-aware resize
-WebAudio adapter: context unlock, master bus, engine loop, wind loop and event cues
+WebAudio adapter: context unlock, master bus, loops, cues and RAF gain updates
 storage adapter: settings, motion and best score
 Pages adapter: main-triggered static deployment
 ```
 
 ## Main finding
 
-`audio.ensure()` creates and starts one persistent engine oscillator and one looping wind `AudioBufferSourceNode`. `audio.update()` changes their gains and frequency from RAF. The host clears held keys and requests pause on `blur`, but it does not directly settle the audio graph. There are no `visibilitychange`, `pagehide` or explicit runtime-retirement handlers for audio.
+The RAF loop records `previousTime`, derives `rawDelta`, caps the admitted `dt` at `1/15`, executes one driving update and one `engine.tick(dt)`, and renders once. No residual time is retained and no fixed simulation quantum is used.
 
-If a browser throttles or stops RAF during backgrounding before the next zero-gain update, the last admitted loop gains can remain active. Sources are never explicitly stopped or disconnected and the context is never closed. No context/source generation, stale-cue rejection, lifecycle result or audible/silent acknowledgement exists.
+```txt
+callback timestamp source: requestAnimationFrame
+raw delta floor: 0.001 seconds
+admitted delta cap: 1 / 15 second
+simulation steps per callback: 1
+fixed-step accumulator: absent
+maximum substeps: absent
+residual time: absent
+overload classification: absent
+discarded-time receipt: absent
+visibility resume baseline: absent
+simulation revision: absent
+render interpolation: absent
+HostFrameResult: absent
+FirstClockBoundFrameAck: absent
+```
 
-This is a source-level ownership and evidence gap. It is not a reproduced audible defect.
+At sustained callback rates below 15 FPS, admitted gameplay time can advance slower than wall time. At other rates, variable-step vehicle, timer, hazard and presentation updates can depend on callback cadence. Long stalls are capped, but the source does not report whether excess time was deferred, discarded or suspended.
+
+This is a source-level timing and evidence gap. It is not a reproduced gameplay-speed or visual defect.
 
 ## Required authority
 
 ```txt
-the-long-haul-browser-audio-lifecycle-suspension-retirement-authority-domain
+the-long-haul-host-clock-fixed-step-simulation-frame-authority-domain
 ```
 
 ```txt
-AudioLifecycleCommand
-  -> bind document, route, run, visibility, preference and policy revisions
-  -> allocate or adopt one context generation after accepted unlock
-  -> own engine and wind source generations
-  -> settle silence immediately for pause, blur and route exit
-  -> apply explicit hidden-document suspend/silent policy
-  -> resume only from accepted visible and enabled state
-  -> reject stale, muted or retired cues
-  -> stop, disconnect and close resources exactly once
-  -> publish lifecycle and retirement receipts
-  -> acknowledge FirstSilentAudioAck and FirstResumedAudibleFrameAck
+HostFrameCommand
+  -> bind host frame, clock, callback timestamp, route, run and visibility revisions
+  -> normalize wall delta and establish boot/resume baselines
+  -> accumulate admitted wall time
+  -> execute bounded fixed simulation steps
+  -> publish ordered SimulationStepResult receipts
+  -> retain residual time
+  -> report deferred or discarded time explicitly
+  -> render once from accepted simulation revisions and interpolation alpha
+  -> publish HostFrameResult
+  -> acknowledge FirstClockBoundFrameAck
 ```
 
 ## Audit boundary
 
-Documentation only. Runtime JavaScript, audio behavior, gameplay, rendering, storage, imports, workflows and deployment were not changed or executed.
+Documentation only. Runtime JavaScript, gameplay timing, generation, rendering, audio, storage, imports, workflows and deployment were not changed or executed.
