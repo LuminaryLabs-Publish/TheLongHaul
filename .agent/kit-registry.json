@@ -2,10 +2,10 @@
   "schemaVersion": 2,
   "repository": "LuminaryLabs-Publish/TheLongHaul",
   "branch": "main",
-  "auditTimestamp": "2026-07-14T19-39-36-04-00",
+  "auditTimestamp": "2026-07-15T00-38-54-04-00",
   "reviewedImplementationRevision": "4ab7591224f23f3cb84450f0aa101bd78fe95d25",
-  "reviewedPreAuditRepositoryHead": "9e76011ec6ab4acc665f99c08067e3a758833865",
-  "status": "pause-scheduler-input-world-suspension-authority-audited",
+  "reviewedPreAuditRepositoryHead": "826395baa5b3aa82e48ab8037c277f3c5b2bc63c",
+  "status": "motion-preference-camera-body-effect-admission-authority-audited",
   "implementationClassification": "executable-static-browser-game",
   "providers": {
     "nexusEngine": "c5548de504072bf09eb68986b98aca0292903803",
@@ -30,6 +30,8 @@
     "score-and-result-persistence",
     "pause-scheduler-admission",
     "stale-input-settlement",
+    "settings-document-persistence",
+    "motion-preference-presentation",
     "webgl-presentation",
     "dom-ui-hud",
     "canvas-map",
@@ -57,11 +59,11 @@
   ],
   "implementedAdapters": [
     {"id":"procedural-course-generator","services":["seed-hash","deterministic-rng","five-branch-graph","confusing-fork","depot-placement","par-calculation","course-validation","generation-plan"]},
-    {"id":"three-webgl-presentation-adapter","services":["renderer","scene","camera","lighting","atmosphere","streamed-meshes","truck-rig","wildlife-rig","dust","shadows","resize","raf"]},
+    {"id":"three-webgl-presentation-adapter","services":["renderer","scene","camera","lighting","atmosphere","streamed-meshes","truck-rig","wildlife-rig","dust","shadows","motion-effects","resize","raf"]},
     {"id":"dom-scene-hud-adapter","services":["title","help","settings","generation-progress","hud","pause","results","loss","toast","failure-overlay"]},
     {"id":"canvas-map-adapter","services":["explored-road-map","depot-map","rejected-yard-map","truck-map","map-resize"]},
     {"id":"web-audio-adapter","services":["engine-loop","wind-loop","click-cue","wrong-yard-cue","impact-cue","delivery-cue"]},
-    {"id":"browser-storage-adapter","services":["settings-document","best-score-document"]}
+    {"id":"browser-storage-adapter","services":["settings-document","motion-boolean","best-score-document"]}
   ],
   "deploymentAdapters": [
     {"id":"github-pages-workflow","services":["main-push-trigger","pages-configure","root-artifact-upload","pages-deploy"]}
@@ -69,7 +71,7 @@
   "renderSurfaces": ["webgl-game-canvas","canvas2d-paper-map","dom-menu-hud-overlay"],
   "validationCommands": [],
   "counts": {
-    "implementedRuntimeDomains": 24,
+    "implementedRuntimeDomains": 28,
     "implementedKits": 10,
     "implementedWorldProviders": 2,
     "implementedAdapters": 6,
@@ -79,32 +81,27 @@
     "executableValidationCommands": 0
   },
   "plannedAuthority": {
-    "domain": "the-long-haul-pause-scheduler-input-world-suspension-authority-domain",
+    "domain": "the-long-haul-motion-preference-camera-body-effect-admission-authority-domain",
     "status": "planned-not-implemented",
     "surfaces": [
-      "pause-command-kit",
-      "pause-revision-kit",
-      "pause-policy-revision-kit",
-      "scheduler-admission-gate-kit",
-      "system-suspension-participant-kit",
-      "core-simulation-pause-receipt-kit",
-      "vehicle-pause-receipt-kit",
-      "hazard-pause-receipt-kit",
-      "resource-pressure-pause-receipt-kit",
-      "telemetry-pause-receipt-kit",
-      "delivery-pause-receipt-kit",
-      "world-streaming-pause-receipt-kit",
-      "browser-key-settlement-kit",
-      "core-input-settlement-kit",
-      "stale-input-rejection-kit",
-      "presentation-pause-policy-kit",
-      "pause-result-kit",
-      "resume-result-kit",
-      "first-paused-frame-kit",
-      "first-resumed-frame-kit",
-      "pause-domain-matrix-fixture-kit",
-      "held-input-browser-fixture-kit",
-      "source-pages-pause-parity-kit"
+      "motion-preference-command-kit",
+      "motion-preference-revision-kit",
+      "motion-profile-policy-kit",
+      "settings-document-admission-kit",
+      "camera-motion-participant-kit",
+      "truck-suspension-motion-participant-kit",
+      "cargo-sway-participant-kit",
+      "dynamic-fov-participant-kit",
+      "rough-road-shake-participant-kit",
+      "motion-effect-classification-kit",
+      "motion-adoption-result-kit",
+      "motion-participant-receipt-kit",
+      "first-motion-preference-frame-kit",
+      "preference-persistence-receipt-kit",
+      "preference-restore-result-kit",
+      "browser-motion-matrix-fixture-kit",
+      "source-artifact-pages-motion-parity-kit",
+      "system-motion-preference-adapter-kit"
     ]
   },
   "validation": {
@@ -114,10 +111,10 @@
     "buildClaims": false,
     "deploymentConfigured": true,
     "deploymentSmokeClaim": false,
-    "wholeWorldPauseClaim": false,
-    "hazardSuspensionClaim": false,
-    "staleInputRejectionClaim": false,
-    "pausedFrameClaim": false,
-    "resumedFrameClaim": false
+    "completeMotionPreferenceClaim": false,
+    "persistenceDurabilityClaim": false,
+    "participantReceiptClaim": false,
+    "firstMotionFrameClaim": false,
+    "pagesParityClaim": false
   }
 }
