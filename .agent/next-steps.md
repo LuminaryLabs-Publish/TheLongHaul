@@ -2,24 +2,31 @@
 
 ## Plan ledger
 
-**Goal:** give the browser audio graph one revision-bound lifecycle from accepted unlock through exactly-once retirement.
+**Goal:** replace one variable simulation tick per RAF callback with bounded fixed-step admission and revision-bound rendering.
 
-- [ ] Add `AudioContextGeneration`, `AudioPolicyRevision`, `AudioRouteRevision` and `AudioVisibilityRevision`.
-- [ ] Replace ambient `audio.ensure()` ownership with an admitted unlock command and typed capability result.
-- [ ] Represent the engine and wind loops as persistent source leases owned by one context generation.
-- [ ] Settle loop gains immediately on pause, blur, mute and route exit instead of waiting for RAF.
-- [ ] Add an explicit hidden-document policy: silent, suspended or retired.
-- [ ] Add `visibilitychange`, `pagehide` and runtime-retirement command handling.
-- [ ] Resume only when the document is visible, sound is enabled and the accepted route permits audio.
-- [ ] Bind every transient cue to expected run, route and context revisions.
-- [ ] Reject stale, duplicate, muted, hidden or retired cue requests.
-- [ ] Stop and disconnect persistent sources exactly once.
-- [ ] Close or deliberately retain the AudioContext under a versioned retirement policy.
-- [ ] Publish gain, suspension, resume and source-disposal receipts.
-- [ ] Add `FirstSilentAudioAck` and `FirstResumedAudibleFrameAck`.
-- [ ] Add browser fixtures for unlock, repeat ensure, mute, pause, blur, hidden/visible transitions and pagehide.
-- [ ] Add source, root-artifact and deployed Pages audio-lifecycle parity proof.
+- [ ] Add `ClockRevision`, `HostFrameId`, `SimulationRevision` and `VisibilityRevision`.
+- [ ] Introduce one monotonic clock adapter that owns first-frame and resume baselines.
+- [ ] Replace direct variable `engine.tick(dt)` with a fixed-step accumulator.
+- [ ] Select and version `fixedStepSeconds`.
+- [ ] Add a finite `maxSubstepsPerHostFrame` budget.
+- [ ] Retain residual accumulator time between callbacks.
+- [ ] Define maximum accumulated debt and overload behavior.
+- [ ] Publish a receipt whenever time is intentionally discarded.
+- [ ] Keep pause and non-driving routes from accumulating gameplay debt.
+- [ ] Add explicit `visibilitychange` settlement and resume-baseline behavior.
+- [ ] Bind input sampling to an accepted host frame and fixed-step sequence.
+- [ ] Publish one `SimulationStepResult` per accepted engine tick.
+- [ ] Publish `HostFrameResult` with step count, residual, interpolation and overload state.
+- [ ] Add previous/current simulation snapshots for presentation interpolation.
+- [ ] Bind Three.js, Canvas2D, DOM and audio projections to accepted revisions.
+- [ ] Add `FirstClockBoundFrameAck`.
+- [ ] Add controlled 30, 60, 90 and 120 Hz fixtures.
+- [ ] Add 20, 15, 10 and 5 Hz low-cadence fixtures.
+- [ ] Add long-stall, substep-budget and discarded-time fixtures.
+- [ ] Add pause, blur, hidden, visible, retry and title-transition clock fixtures.
+- [ ] Compare same-seed scripted run snapshots across callback rates.
+- [ ] Add source, root-artifact and deployed Pages clock parity proof.
 
 ## Retained work
 
-Generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback remain open in their timestamped audit families.
+Browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback remain open in their timestamped audit families.
