@@ -1,80 +1,75 @@
-# START HERE: The Long Haul host clock and fixed-step simulation
+# START HERE: The Long Haul input action contract convergence
 
-**Last updated:** `2026-07-15T14-40-11-04-00`  
+**Last updated:** `2026-07-15T19-38-38-04-00`  
 **Repository:** `LuminaryLabs-Publish/TheLongHaul`  
 **Branch:** `main`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `e2796634445e63b5cd0ee7ea34f7ab50078755f2`  
-**Status:** `host-clock-fixed-step-simulation-frame-authority-audited`
+**Reviewed pre-audit repository head:** `cc4ec1d7ad16e6aa29e7719203d5411217142f25`  
+**Status:** `input-action-contract-context-convergence-authority-audited`
 
 ## Summary
 
-TheLongHaul is a static Nexus Engine freight game with ten engine kits, two Core World providers, Three.js, Canvas2D, DOM UI, WebAudio, browser storage and Pages deployment.
+TheLongHaul is a static Nexus Engine freight game with ten engine kits, two Core World providers, seven browser/product adapters, Three.js, Canvas2D, DOM UI, WebAudio, browser storage and Pages deployment.
 
-The current audit isolates host-clock admission. The RAF loop derives one variable `dt`, caps it at `1/15`, executes one driving update and one `engine.tick(dt)`, then renders once. There is no fixed-step accumulator, retained residual time, bounded catch-up result, explicit dropped-time policy, render interpolation revision or first clock-bound visible-frame acknowledgement.
+The current audit isolates input-action ownership. Core Input declares actions, keyboard bindings and `driving`/`menu` contexts, but the browser host keeps a separate mutable key-state owner and directly executes camera, map, pause, retry and interaction commands. The declared map says `KeyR` means recovery; the executable path uses `KeyR` for retry and reaches recovery through contextual `KeyE`.
 
 ## Plan ledger
 
-**Goal:** separate browser callback cadence from deterministic gameplay time while keeping catch-up work bounded and visible-frame ownership explicit.
+**Goal:** make every browser event settle through one versioned action map and context authority before gameplay or presentation consumes it.
 
 - [x] Compare all 11 accessible Publish repositories with the central ledger.
 - [x] Exclude `LuminaryLabs-Publish/TheCavalryOfRome`.
 - [x] Confirm ten synchronized eligible ledgers and root `.agent` states.
 - [x] Select only `TheLongHaul` by the oldest synchronized timestamp.
-- [x] Trace callback time, driving preparation, Nexus Engine ticking and render submission.
-- [x] Preserve all 19 source-backed surfaces and their services.
-- [x] Add the timestamped host-clock audit family.
+- [x] Trace Core Input descriptors, browser event capture, held keys, one-shot commands and effect projection.
+- [x] Preserve and refine the complete source-backed inventory to 20 surfaces.
+- [x] Add the timestamped input-action audit family.
 - [ ] Implement the authority and execute browser, artifact and Pages fixtures.
 
 ## Interaction loop
 
 ```txt
-start or retry
-  -> generate and validate a five-branch course
-  -> start one run
+browser key event
+  -> mutate host-local keys or execute direct route/presentation command
+  -> RAF derives held driving intent
+  -> copy intent into Core Input
+  -> submit vehicle and simulation work
+  -> render DOM, Canvas2D, WebGL and audio effects
+```
 
-RAF callback
-  -> raw callback delta
-  -> cap dt at 1 / 15
-  -> process input driving interactions and collisions once
-  -> engine.tick(dt) once
-  -> update streamed world HUD audio truck camera wildlife dust and map
-  -> render one Three.js frame
-
-terminal
-  -> valid depot settles result
-  -> failure settles loss
-  -> persist best score
-  -> retry same seed, generate new seed or return to title
+```txt
+KeyR declared: recovery
+KeyR executed: retry same seed
+KeyE executed: interact, depot check or contextual recovery
 ```
 
 ## Main finding
 
 ```txt
-clock source: RAF timestamp
-steps per callback: 1
-maximum admitted step: 1 / 15 second
-fixed step: absent
-accumulator: absent
-residual time: absent
-substep budget: absent
-overload/discard receipt: absent
-visibility clock baseline: absent
-render interpolation revision: absent
-FirstClockBoundFrameAck: absent
+Core Input action manifest: present
+Core Input bindings: present
+Core Input contexts: present
+browser event admission into Core Input: absent
+runtime context enforcement: absent
+one-shot action results: absent
+declared/executable KeyR agreement: absent
+held-action lifecycle generation: absent
+FirstInputActionAck: absent
+FirstInputEffectFrameAck: absent
 ```
 
-At sustained callback rates below 15 FPS, gameplay time can advance slower than wall time. At other callback rates, vehicle, timer, hazard and presentation integration remain variable-step and cadence-dependent. This is a source-backed gap, not a reproduced timing measurement.
+The descriptor and executable browser path can diverge without a typed rejection or proof result. This is a source-backed contract gap, not a reproduced input failure.
 
 ## Domains
 
 ```txt
-browser lifecycle, RAF and monotonic wall clock
+browser lifecycle, keyboard evidence and focus
 Core Scene, Core World, Core Input and Core Simulation
 Delivery, Vehicle Dynamics, Route Field, Resource Pressure, Hazard Field and Telemetry
-course generation, streaming, exploration, scoring and persistence
-Three.js, Canvas2D, DOM UI/HUD and WebAudio
-host-frame scheduling, variable-delta admission and render submission
+browser event capture, action maps, contexts and held-action lifecycle
+course generation, streaming, exploration, recovery, retry and scoring
+Three.js, Canvas2D, DOM UI/HUD, WebAudio and storage
+input-effect visible-frame convergence
 Pages deployment and audit governance
 ```
 
@@ -83,36 +78,36 @@ Pages deployment and audit governance
 ```txt
 engine-installed kits: 10
 world effect providers: 2
-browser/product adapters: 6
+browser/product adapters: 7
 deployment adapters: 1
-total source-backed surfaces: 19
+total source-backed surfaces: 20
 render surfaces: 3
-planned host-clock authority surfaces: 19
+planned input-action authority surfaces: 20
 ```
 
 ## Required authority
 
 ```txt
-the-long-haul-host-clock-fixed-step-simulation-frame-authority-domain
+the-long-haul-input-action-contract-context-convergence-authority-domain
 ```
 
-It must own monotonic timestamp admission, first/resume baselines, a fixed-step accumulator, bounded substeps, residual time, explicit overload and discarded-time receipts, simulation revisions, render interpolation, `HostFrameResult` and `FirstClockBoundFrameAck`.
+It must own browser-event admission, one executable binding table, route-bound contexts, held-action generations, Core Input publication, typed action results, lifecycle cancellation, `FirstInputActionAck` and `FirstInputEffectFrameAck`.
 
 ## Read this run first
 
 1. `current-audit.md`
 2. `known-gaps.md`
-3. `trackers/2026-07-15T14-40-11-04-00/project-breakdown.md`
-4. `architecture-audit/2026-07-15T14-40-11-04-00-host-clock-fixed-step-dsk-map.md`
-5. `clock-audit/2026-07-15T14-40-11-04-00-fixed-step-accumulator-overload-contract.md`
-6. `render-audit/2026-07-15T14-40-11-04-00-variable-delta-visible-frame-gap.md`
-7. `gameplay-audit/2026-07-15T14-40-11-04-00-callback-cadence-gameplay-time-loop.md`
-8. `interaction-audit/2026-07-15T14-40-11-04-00-host-frame-command-result-map.md`
-9. `deploy-audit/2026-07-15T14-40-11-04-00-clock-cadence-browser-fixture-gate.md`
-10. `central-sync-audit/2026-07-15T14-40-11-04-00-oldest-selection-host-clock-reconciliation.md`
+3. `trackers/2026-07-15T19-38-38-04-00/project-breakdown.md`
+4. `architecture-audit/2026-07-15T19-38-38-04-00-input-action-contract-convergence-dsk-map.md`
+5. `input-audit/2026-07-15T19-38-38-04-00-browser-core-input-context-contract.md`
+6. `gameplay-audit/2026-07-15T19-38-38-04-00-retry-recovery-action-divergence-loop.md`
+7. `interaction-audit/2026-07-15T19-38-38-04-00-input-action-command-result-map.md`
+8. `render-audit/2026-07-15T19-38-38-04-00-input-effect-visible-frame-gap.md`
+9. `deploy-audit/2026-07-15T19-38-38-04-00-input-context-browser-fixture-gate.md`
+10. `central-sync-audit/2026-07-15T19-38-38-04-00-oldest-selection-input-action-reconciliation.md`
 11. `next-steps.md`
 12. `validation.md`
 
 ## Retained audits
 
-Browser audio lifecycle, generation scheduling, motion preference, pause suspension, terminal settlement and course-generation admission/rollback remain valid and unchanged.
+Host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, terminal settlement and course-generation admission/rollback remain valid and unchanged.
