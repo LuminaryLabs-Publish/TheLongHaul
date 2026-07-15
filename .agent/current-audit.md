@@ -1,15 +1,15 @@
-# Current audit: generation work scheduling and ready adoption
+# Current audit: browser audio lifecycle suspension and retirement
 
-**Timestamp:** `2026-07-15T04-40-29-04-00`  
+**Timestamp:** `2026-07-15T09-40-51-04-00`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `fdfb89f3c6339f408d5861899d4ec201bf4e8c75`  
-**Status:** `generation-work-budget-readiness-authority-audited`
+**Reviewed pre-audit repository head:** `1724e6ca5ec2f18303431a3d8c40c017903759e3`  
+**Status:** `browser-audio-lifecycle-suspension-retirement-authority-audited`
 
 ## Summary
 
-The repository contains a complete single-file Nexus Engine browser freight game with deterministic generation, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, audio, persistence and Pages deployment.
+The repository contains a complete single-file Nexus Engine browser freight game with deterministic generation, driving, depot discovery, condition pressure, scoring, retry, WebGL, Canvas2D, DOM UI, WebAudio, persistence and Pages deployment.
 
-The current audit isolates how the browser host schedules generation work and decides that a course is playable.
+This audit isolates the long-lived browser audio graph and its relationship to route, run, preference and document lifecycle.
 
 ## Source-backed inventory
 
@@ -22,7 +22,6 @@ world effect providers: 2
 browser/product adapters: 6
 deployment adapters: 1
 render surfaces: 3
-Pages workflow: present
 package manifest: absent
 test suite: absent
 build command: absent
@@ -31,117 +30,96 @@ build command: absent
 ## Interaction loop
 
 ```txt
-Start or Retry
-  -> clearWorld
-  -> reset Delivery, Simulation, Input, Route, Resource, Vehicle, Hazard and Telemetry
-  -> transition to generating
-  -> build 31 generation units
+user starts or triggers a cue
+  -> audio.ensure()
+  -> create AudioContext and master gain
+  -> create/start persistent engine oscillator
+  -> create/start looping wind source
 
-RAF while generating
-  -> stepGeneration once
-  -> execute one unit closure
-  -> record one completed step in Long Haul Delivery
-  -> tick engine
-  -> update unit-count progress
-  -> render partial state
+driving RAF
+  -> calculate speed/throttle
+  -> schedule engine/wind gains and engine frequency
+  -> create transient cue oscillators for UI and gameplay outcomes
 
-queue exhausted
-  -> wait for generation.ready
-  -> start Core Simulation
-  -> transition through ready exit
-  -> render driving state
+pause or non-driving route
+  -> accepted scene/run state changes
+  -> later RAF normally schedules zero loop gains
+
+window blur
+  -> clear keys and request pause
+  -> no direct context suspend or immediate audio result
+
+visibility loss/pagehide/retirement
+  -> no owned lifecycle command or source/context retirement receipt
 ```
 
 ## Domains in use
 
 ```txt
-browser lifecycle, DOM events, resize, blur, RAF and wall-clock delta
+browser document lifecycle, focus/blur, visibility, RAF and wall clock
 provider resolution
-Core Scene
-Core World
-Core Input
-Long Haul Delivery
-Core Simulation
-Vehicle Dynamics
-Route Field
-Resource Pressure
-Hazard Field
-Telemetry
-seeded course graph and depot generation
-generation queue construction and execution
-route and world validation
-streamed terrain and course providers
-truck, wildlife, dust and exploration
-settings, motion, pause, retry, terminal result and persistence
-Three.js WebGL presentation
-DOM UI and HUD
-Canvas2D map
-WebAudio
-GitHub Pages deployment
-audit governance
+Core Scene, Core World, Core Input and Core Simulation
+Long Haul Delivery, Vehicle Dynamics, Route Field, Resource Pressure, Hazard Field and Telemetry
+seeded course generation, validation and streamed terrain/course providers
+truck, wildlife, dust, exploration, depot discovery, scoring and retry
+settings, motion, pause and browser persistence
+Three.js WebGL, Canvas2D map and DOM UI/HUD
+WebAudio capability, unlock, context, master bus, loops and transient cues
+GitHub Pages deployment and audit governance
 ```
 
 ## Kits and services
 
 ```txt
 Core Scene: registry, current scene, transitions, exit validation, snapshots
-Core World: registry, partition, focus, active cells, provider ordering, validation
+Core World: registry, partition, focus, cells, provider ordering, validation
 Core Input: actions, bindings, contexts, driving intent, reset
-Long Haul Delivery: seed, generation plan/progress, depots, checks, retry, result, snapshot, reset
-Core Simulation: reset, start, pause, resume, timer, distance, penalties, recovery, failure, completion
+Long Haul Delivery: seed, progress, depots, checks, retry, result, snapshot, reset
+Core Simulation: reset, start, pause, resume, timer, penalties, recovery, failure, completion
 Vehicle Dynamics: truck state, input, kinematics, boost, bounds, impacts, reset
 Route Field: markers, corridors, nearest marker, state, reset
 Resource Pressure: fuel, truck, cargo, bounded adjustments, state, reset
-Hazard Field: hazard state, motion, bounds, collisions, events, reset
+Hazard Field: state, motion, bounds, collisions, events, reset
 Telemetry: truck, run, condition and delivery histories
-terrain provider: prepare, update, release, descriptor, snapshots, reset
-course provider: roads, depots, signs, vegetation, obstacles, prepare, update, release, snapshots, reset
-procedural generator: seed/RNG, graph, fork, depots, par, validation, 31-unit plan
-Three.js adapter: scene, renderer, camera, atmosphere, rigs, streamed meshes, resize, RAF
-DOM adapter: title, help, settings, loading, HUD, pause, results, loss, toast, failure
-Canvas adapter: explored route, depots, rejections, truck and resize
-WebAudio adapter: engine, wind and event cues
+terrain provider: prepare, update, release, descriptors, snapshots, reset
+course provider: roads, depots, signs, vegetation, obstacles, lifecycle and snapshots
+procedural generator: seed/RNG, graph, fork, depots, par, validation and generation plan
+Three.js adapter: renderer, scene, camera, atmosphere, rigs, meshes, resize and RAF
+DOM adapter: title, help, settings, generation, HUD, pause, results, loss, toast and failure
+Canvas adapter: explored routes, depots, rejections, truck and DPR-aware resize
+WebAudio adapter: context unlock, master bus, engine loop, wind loop and event cues
 storage adapter: settings, motion and best score
 Pages adapter: main-triggered static deployment
 ```
 
 ## Main finding
 
-`makeGenerationPlan()` creates 31 stable unit IDs. The animation loop calls `stepGeneration()` once per callback while the scene is `generating`. `stepGeneration()` runs one unit and increments the cursor. Delivery progress is `completedStepIds.length / plan.length`.
+`audio.ensure()` creates and starts one persistent engine oscillator and one looping wind `AudioBufferSourceNode`. `audio.update()` changes their gains and frequency from RAF. The host clears held keys and requests pause on `blur`, but it does not directly settle the audio graph. There are no `visibilitychange`, `pagehide` or explicit runtime-retirement handlers for audio.
 
-The units have unequal cost. Terrain generation, atmosphere/Core World registration, hazard adoption, rig creation and validation are counted the same as lightweight state steps. The host has no millisecond budget, weighted progress, per-unit elapsed receipt, yield contract, cancellation token, visibility result, partial-attempt retirement result or first playable-frame acknowledgement.
+If a browser throttles or stops RAF during backgrounding before the next zero-gain update, the last admitted loop gains can remain active. Sources are never explicitly stopped or disconnected and the context is never closed. No context/source generation, stale-cue rejection, lifecycle result or audible/silent acknowledgement exists.
 
-This is a source-level scheduling and evidence gap. It is not a measured performance defect.
+This is a source-level ownership and evidence gap. It is not a reproduced audible defect.
 
 ## Required authority
 
 ```txt
-the-long-haul-generation-work-budget-readiness-authority-domain
+the-long-haul-browser-audio-lifecycle-suspension-retirement-authority-domain
 ```
 
 ```txt
-GenerationAttemptCommand
-  -> bind seed, plan and provider revisions
-  -> allocate attempt and queue revisions
-
-GenerationHostFrameCommand
-  -> admit zero or more ready units under a frame budget
-  -> publish unit cost/results and weighted progress
-  -> suspend, resume, defer or cancel explicitly
-
-GenerationReadyCommand
-  -> require route, world, depot, hazard and truck receipts
-  -> atomically adopt the candidate
-  -> start Simulation once
-  -> publish GenerationReadyResult
-  -> acknowledge FirstPlayableGenerationFrameAck
-
-GenerationFailureCommand
-  -> retire partial world and presentation resources
-  -> reject late attempt work
-  -> publish rollback receipts
+AudioLifecycleCommand
+  -> bind document, route, run, visibility, preference and policy revisions
+  -> allocate or adopt one context generation after accepted unlock
+  -> own engine and wind source generations
+  -> settle silence immediately for pause, blur and route exit
+  -> apply explicit hidden-document suspend/silent policy
+  -> resume only from accepted visible and enabled state
+  -> reject stale, muted or retired cues
+  -> stop, disconnect and close resources exactly once
+  -> publish lifecycle and retirement receipts
+  -> acknowledge FirstSilentAudioAck and FirstResumedAudibleFrameAck
 ```
 
 ## Audit boundary
 
-Documentation only. Runtime source, generation behavior, gameplay, rendering, storage, imports, workflow and deployment were not changed or executed.
+Documentation only. Runtime JavaScript, audio behavior, gameplay, rendering, storage, imports, workflows and deployment were not changed or executed.
