@@ -1,50 +1,46 @@
 # Known gaps
 
-## Generation scheduling
+## Audio capability and generation
 
-- The browser host owns generation queue execution directly.
-- `frame()` calls `stepGeneration()` once per animation callback.
-- `stepGeneration()` executes exactly one unit regardless of available frame time.
-- No frame-budget policy or elapsed-cost receipt exists.
-- No unit can explicitly yield partway through expensive work.
-- No worker-eligibility classification exists.
+- Audio capability discovery and user-gesture unlock have no typed admission result.
+- The active `AudioContext` has no stable context ID or generation.
+- Repeated `audio.ensure()` relies on host-local object presence rather than a published lease.
+- Persistent engine and wind sources have no source generation or ownership receipt.
 
-## Progress semantics
+## Silence and suspension
 
-- The plan contains 31 unit IDs with unequal work cost.
-- Progress is completed-unit count divided by total-unit count.
-- Terrain creation, Core World registration and validation count the same as lightweight state steps.
-- No weighted-progress revision exists.
-- No deferred, running, cancelled, failed or rolled-back progress states exist.
+- Loop silence is normally scheduled from RAF through `audio.update()`.
+- Pause and blur do not directly settle loop gains.
+- No `visibilitychange` lifecycle owner exists.
+- No hidden-document silent-versus-suspended policy exists.
+- No `AudioContext.suspend()` result exists.
+- No `FirstSilentAudioAck` exists.
 
-## Lifecycle and retirement
+## Resume and cue admission
 
-- Generation has no durable attempt identity or generation revision.
-- Hidden-tab behavior is not owned by a generation lifecycle policy.
-- No explicit cancellation result exists.
-- A failed attempt can retain partial world and presentation resources.
-- Late work from a retired or superseded attempt has no rejection contract.
-- Retry and replacement attempts have no predecessor-retirement receipt.
+- `audio.ensure()` opportunistically calls `context.resume()` without route, visibility or preference admission.
+- Transient cues are not bound to run, route or context revisions.
+- Stale, duplicate, hidden, muted or retired cue rejection is absent.
+- No `FirstResumedAudibleFrameAck` exists.
 
-## Ready adoption
+## Retirement
 
-- `generation.ready` is a host-local boolean.
-- Core Simulation starts from host cursor state rather than an immutable ready result.
-- Route, world, depot, hazard and truck validation are not collected into one adoption artifact.
-- No `GenerationReadyResult` exists.
-- No `FirstPlayableGenerationFrameAck` exists.
-- The first driving frame does not cite a generation revision.
+- Persistent oscillator and wind sources are never explicitly stopped.
+- Audio nodes are not explicitly disconnected.
+- The `AudioContext` is never explicitly closed.
+- No `pagehide` or runtime-retirement command exists.
+- No exactly-once source-disposal or context-close receipt exists.
+- Late cue calls after route or generation retirement have no rejection contract.
 
 ## Validation
 
 - No package manifest or executable test command exists.
-- No 30/60/120 Hz cadence fixture exists.
-- No CPU-throttling or long-task fixture exists.
-- No hidden-tab suspend/resume fixture exists.
-- No cancellation or partial-resource retirement fixture exists.
-- No first playable-frame fingerprint exists.
-- No source-to-Pages generation parity proof exists.
+- No browser audio lifecycle fixture exists.
+- No AudioContext state trace is retained.
+- No loop-gain transition trace is retained.
+- No source duplication or retirement fixture exists.
+- No source-to-artifact-to-Pages audio parity proof exists.
 
 ## Retained gaps
 
-The earlier motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback gaps remain valid in their timestamped audit families.
+The earlier generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback gaps remain valid in their timestamped audit families.
