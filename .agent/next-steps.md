@@ -2,17 +2,23 @@
 
 ## Plan ledger
 
-**Goal:** keep the existing kits and game loop intact while making pause and resume one explicit scheduler, input and presentation transaction.
+**Goal:** keep the existing game and presentation adapters while making motion preference adoption complete, versioned, persistent, and visibly provable.
 
-- [ ] Add `RunId`, `PauseCommandId`, `PauseRevision` and `ResumeCommandId`.
-- [ ] Define a versioned pause policy: strict suspension or named tactical/presentation exceptions.
-- [ ] Gate every gameplay-mutating kit during pause, not only Core Simulation.
-- [ ] Classify Core World streaming, Hazard Field, Resource Pressure, Telemetry and Delivery behavior under pause.
-- [ ] Clear or journal browser `keys`, Core Input intent, interaction intent and vehicle input when pause is accepted.
-- [ ] Reject pre-pause held input on resume until a fresh key transition is observed.
-- [ ] Preserve intentional camera, dust, wildlife-animation and renderer behavior only through explicit presentation policy.
-- [ ] Publish participant pause and resume receipts.
-- [ ] Add `FirstPausedFrameAck` and `FirstResumedFrameAck`.
-- [ ] Add headless fixtures for timer, hazards, pressure, telemetry, streaming and input state.
-- [ ] Add browser fixtures for held throttle, held steer, map state, pause overlay and first resumed frame.
-- [ ] Verify source, deployed Pages output and browser behavior against one revision.
+- [ ] Replace the raw `motion` boolean contract with a versioned `motionProfile` while migrating legacy values.
+- [ ] Define explicit `Full`, `Reduced`, and optional `Static` profiles.
+- [ ] Register every camera, truck-body, cargo, and related presentation-motion effect by stable ID.
+- [ ] Classify rough-road shake, steering roll, input pitch, cargo sway, dynamic FOV, and camera convergence under each profile.
+- [ ] Add `MotionPreferenceCommand`, `MotionPreferenceRevision`, and `MotionPreferenceResult`.
+- [ ] Prepare all mandatory presentation participants before adopting a successor revision.
+- [ ] Preserve the prior profile if validation, persistence, or participant preparation fails.
+- [ ] Publish a durable settings-document receipt instead of silently swallowing storage failure.
+- [ ] Restore and validate the accepted profile before the first game frame after reload.
+- [ ] Add per-effect execution receipts to the render result.
+- [ ] Add `FirstMotionPreferenceFrameAck`.
+- [ ] Add a browser transform matrix for full and reduced profiles.
+- [ ] Add title, paused-run, reload, malformed-document, and stale-command fixtures.
+- [ ] Verify source, deployed Pages output, and visible-frame fingerprints against one revision.
+
+## Retained work
+
+Pause suspension, terminal settlement, and course-generation admission remain open in their earlier timestamped audit families.
