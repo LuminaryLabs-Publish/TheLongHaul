@@ -1,60 +1,65 @@
 # Known gaps
 
-## Clock identity and admission
+## Action-map authority
 
-- RAF callback timestamps have no `HostFrameId` or `ClockRevision`.
-- `previousTime` is a host-local mutable number rather than published clock state.
-- First-frame and resume baselines are implicit.
-- Negative, duplicated, stale or retired timestamps have no typed rejection result.
-- The 1 ms floor and 1/15 second cap are not versioned policies.
+- Core Input declares an action manifest, keyboard bindings and contexts but does not admit browser events.
+- The host maintains a separate mutable `keys` object as the executable held-input owner.
+- No `ActionMapRevision` binds the descriptor and executable browser path.
+- No typed result proves which binding resolved an event.
+- The host can change key behavior without invalidating the Core Input contract.
 
-## Fixed-step simulation
+## Declared and executable divergence
 
-- The host executes exactly one variable engine tick per callback.
-- No fixed simulation quantum is declared.
-- No accumulator retains wall time between callbacks.
-- No residual time is published.
-- No maximum substep budget exists.
-- No ordered `SimulationStepResult` receipts exist.
-- Same seed and input timeline are not proven cadence-independent.
+- Core Input declares `KeyR` as `recovery`.
+- The browser keydown path executes `KeyR` as retry-same-seed.
+- Recovery is reached through contextual `KeyE` interaction logic.
+- `retry` is not declared in the Core Input action manifest.
+- Camera, map, pause and retry bypass Core Input action publication.
 
-## Overload and lost time
+## Context admission
 
-- Callback intervals above 1/15 second are capped.
-- Excess time is not classified as deferred, discarded, suspended or failed.
-- No accumulated-debt limit exists.
-- No overload state or recovery result exists.
-- No discarded-time receipt exists.
-- Sustained callback rates below 15 FPS can admit less than one simulation second per wall second.
+- `driving` and `menu` contexts are declared but not explicitly activated or retired.
+- Title, generating, paused, settings, results and loss have no versioned context result.
+- Direct key handlers use scene checks instead of one accepted context policy.
+- Focused controls have no explicit input-leak guard.
+- No out-of-context rejection result exists.
 
-## Pause and visibility
+## Held-action lifecycle
 
-- Pause behavior does not share an explicit clock settlement result.
-- The host has no `visibilitychange` clock owner.
-- Hidden time has no explicit accumulate, discard or suspend policy.
-- Resume does not publish a new baseline receipt.
-- Late callbacks after retirement have no clock rejection contract.
+- Held state has no `InputGeneration`.
+- Keydown, repeat, keyup and blur events have no stable event identity.
+- Blur clears raw keys but publishes no cancellation receipt.
+- Visibility loss has no input settlement owner.
+- Retry and title transitions have no held-action retirement receipt.
+- Late keyup from a superseded run or route is not classified.
 
-## Render coherence
+## Command and result settlement
 
-- Rendered frames do not identify accepted simulation revisions.
-- No previous/current simulation snapshot pair exists for interpolation.
-- No interpolation alpha is published.
-- Truck and camera smoothing use callback-dependent variable `dt`.
-- WebGL, Canvas2D, DOM and audio projections do not publish one shared host-frame result.
-- No `FirstClockBoundFrameAck` exists.
+- Raw browser listeners directly mutate camera, map, pause, retry and interaction state.
+- Core Input receives a derived intent mirror after raw key state has already been interpreted.
+- No `InputEventAdmissionResult` exists.
+- No `InputActionResult` exists.
+- Retry and recovery lack distinct typed results and expected run generations.
+- Duplicate and stale one-shot actions have no idempotency contract.
+
+## Visible-frame coherence
+
+- WebGL, Canvas2D, DOM and audio effects do not cite accepted input revisions.
+- Camera and map changes can render without an accepted Core Input action.
+- Retry can replace the world without a matching input settlement receipt.
+- No `FirstInputActionAck` exists.
+- No `FirstInputEffectFrameAck` exists.
 
 ## Validation
 
 - No package manifest or executable test command exists.
-- No controlled RAF harness exists.
-- No multi-cadence same-seed gameplay trace exists.
-- No low-FPS or long-stall fixture exists.
-- No pause/visibility clock fixture exists.
-- No overload or discarded-time trace exists.
-- No simulation-to-visible-frame revision fixture exists.
-- No source-to-artifact-to-Pages clock parity proof exists.
+- No browser keyboard event harness exists.
+- No action-map descriptor/runtime parity fixture exists.
+- No route-context or focus-target fixture exists.
+- No held-key cancellation or stale-event fixture exists.
+- No retry/recovery binding fixture exists.
+- No source-to-artifact-to-Pages input parity proof exists.
 
 ## Retained gaps
 
-The earlier browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback gaps remain valid in their timestamped audit families.
+The earlier host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback gaps remain valid in their timestamped audit families.
