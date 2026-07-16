@@ -1,63 +1,66 @@
 # Next steps
 
-**Timestamp:** `2026-07-16T05-01-43-04-00`
+**Timestamp:** `2026-07-16T07-39-04-04-00`
 
 ## Plan ledger
 
-**Goal:** implement one renderer/context generation authority that pauses stale presentation, reconstructs resources from accepted state and proves one recovered frame or an actionable fallback.
+**Goal:** move the promoted Core capabilities from an isolated proof engine into the playable game through one explicit profile, migration, and parity sequence.
 
-- [ ] Add `DocumentGeneration`, `RuntimeGeneration`, `RendererGeneration`, `ContextGeneration`, `ResourceManifestRevision`, `ActiveCellRevision` and `FrameRevision`.
-- [ ] Register `webglcontextlost` and `webglcontextrestored` through one owned adapter.
-- [ ] Deduplicate repeated browser events for the same context generation.
-- [ ] Publish `RenderLossResult` before recovery work begins.
-- [ ] Stop RAF render submission for the retired renderer generation.
-- [ ] Guard resize, stream and provider callbacks with the target renderer generation.
-- [ ] Choose and document the simulation policy during visual loss.
-- [ ] Neutralize held driving input before any invisible interval.
-- [ ] Add a CPU-side `GpuResourceManifest` with dependency ordering.
-- [ ] Describe all shared geometry and materials as reconstructable resources.
-- [ ] Describe sky, lighting, fog and shadow configuration as reconstructable resources.
-- [ ] Rebuild active terrain/content cells from accepted Core World state.
-- [ ] Rebuild truck and wildlife rigs from accepted engine state.
-- [ ] Declare dust particles as reconstructed or intentionally reset transient state.
-- [ ] Construct and configure one replacement `THREE.WebGLRenderer`.
-- [ ] Reapply pixel ratio, size, color space, tone mapping and shadow policy.
-- [ ] Reject callbacks and results from retired renderer generations.
-- [ ] Enforce a bounded recovery deadline and retry budget.
-- [ ] Publish `RenderRecoveryResult` or `RenderFallbackResult`.
-- [ ] Present and publish `FirstRecoveredFrameAck` before resuming normal interaction.
-- [ ] Add forced `WEBGL_lose_context` fixtures.
-- [ ] Add duplicate-loss and stale-callback fixtures.
-- [ ] Add active-cell and persistent-rig rehydration fixtures.
-- [ ] Add failed-recovery fallback fixtures.
-- [ ] Compare source, root artifact and deployed Pages evidence.
+- [ ] Pin one Nexus Engine revision for `index.html` and `core-integration.html`.
+- [ ] Publish a versioned `CoreCapabilityAdoptionManifest` with a stable digest.
+- [ ] Classify each new Core capability as `authoritative`, `bridge`, `proof-only`, or `retired`.
+- [ ] Import the accepted Core profile into the playable bootstrap.
+- [ ] Admit and verify one course envelope before world construction.
+- [ ] Replace inline generation randomness with named streams.
+- [ ] Snapshot and restore stream cursors for retry and replay.
+- [ ] Choose one canonical meter schema for fuel, truck, cargo, and remaining time.
+- [ ] Resolve the current 360-second playable and 300-second smoke difference explicitly.
+- [ ] Add an atomic migration from custom run/Resource Pressure state to the accepted meter schema.
+- [ ] Bridge Core Camera descriptors to the Three.js camera.
+- [ ] Prohibit host-only camera mutations after the bridge becomes authoritative.
+- [ ] Bridge Core Graphics batch descriptors to Three.js instances.
+- [ ] Consume cell release receipts exactly once.
+- [ ] Bridge patch-preparation ready results to Core World provider activation.
+- [ ] Preserve existing streamed-world behavior during adoption.
+- [ ] Move depot checks, penalties, recovery, and terminal operations to stable transaction IDs.
+- [ ] Migrate or retire the custom penalty ledger and duplicate flags.
+- [ ] Reject simultaneous mutation by legacy and adopted truth owners.
+- [ ] Run the seven Core checks inside both smoke and playable contexts.
+- [ ] Run a full same-seed gameplay equivalence fixture.
+- [ ] Publish `CoreCapabilityAdoptionResult`.
+- [ ] Present and publish `FirstCoreBoundPlayableFrameAck`.
+- [ ] Compare source, root Pages artifact, and deployed Pages evidence.
 
 ## Ordered implementation
 
-### 1. Generations and browser admission
+### 1. Provider and manifest
 
-Create stable renderer/context identities and route browser loss/restoration evidence through typed commands and terminal results.
+Use one pinned Nexus Engine revision and one immutable capability manifest. Include profile module digest, course schema, random streams, meter schema, camera controller, instance batches, patch policy, transaction schema, and consumer map.
 
-### 2. Submission and gameplay policy
+### 2. Course and randomness
 
-Suspend old-generation rendering, clear or neutralize held input and explicitly pause or continue simulation. For this timed driving game, pause-on-loss is the safer default.
+Adopt Core Data first because generation precedes every other gameplay subsystem. Verify the course package before world creation and move each deterministic concern to its named stream.
 
-### 3. Resource manifest
+### 3. Gameplay state migration
 
-Move GPU construction descriptors into a manifest independent of live Three.js objects. Record dependencies, source revisions, reconstruct, verify and retire behavior.
+Choose canonical meter IDs and values. Migrate the active run, condition values, remaining time, penalty records, recovery state, and delivery operation IDs atomically at a safe route boundary.
 
-### 4. Ordered rehydration
+### 4. Presentation bridges
 
-Rebuild renderer, shared resources, atmosphere, active cells and persistent rigs in dependency order. Reconstruct active world cells from Core World state rather than stale visual caches.
+Keep Three.js renderer ownership in the product adapter. Feed it accepted Core Camera descriptors and Core Graphics instance-batch deltas, and bind visible cells to accepted patch/Core World revisions.
 
-### 5. Result and frame proof
+### 5. Idempotent settlement
 
-Publish recovery or fallback, then require one visible frame from the accepted renderer generation before restoring normal interaction.
+Assign stable transaction IDs to depot checks, wrong-depot penalties, collisions, recovery, and terminal delivery. Retire parallel duplicate logic after equivalence proof.
 
-### 6. Proof
+### 6. Parity and retirement
 
-Run loss, restoration, duplicate event, stale generation, active-cell, fallback and source/artifact/Pages parity fixtures.
+Execute the same semantic fixtures in smoke and playable contexts. Retire legacy owners only when the accepted profile has matching canonical snapshots and a Core-bound gameplay frame.
+
+### 7. Release proof
+
+Repeat parity against source, uploaded artifact, and deployed Pages. Fail release admission on provider, profile, semantic, or frame divergence.
 
 ## Retained work
 
-Accessibility projection, input-action convergence, host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback remain open in their timestamped audit families.
+WebGL recovery, accessibility, input-action convergence, host clock, audio lifecycle, generation scheduling, motion preference, pause suspension, delivery settlement, and generation rollback remain open in their timestamped audit families.
