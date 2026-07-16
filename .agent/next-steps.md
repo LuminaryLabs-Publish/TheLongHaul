@@ -1,60 +1,72 @@
 # Next steps
 
-**Timestamp:** `2026-07-16T18-58-24-04-00`
+**Timestamp:** `2026-07-16T19-39-24-04-00`
 
-## Intent
+## Goal
 
-Turn runtime exceptions into one bounded terminal transition instead of a continuing RAF error loop.
+Adopt macro-sector atlas truth into the existing streamed gameplay-cell pipeline without creating a second world, patch or renderer owner.
 
-## What needs to happen
+## Plan ledger
 
-### 1. Define frame and scheduler identity
+### 1. Bind one extent manifest
 
-- [ ] Add `RuntimeSchedulerGeneration`, `RuntimeFrameId` and `FramePhaseId`.
-- [ ] Bind document, session, run and scene revisions.
-- [ ] Reject callbacks from retired generations.
-- [ ] Queue the next RAF only after the current frame is accepted, or guard the callback with the active generation.
+- [ ] Add `InfiniteWorldManifest` containing product release, profile revision, package digest, world seed, generator version, cell size and macro-sector size.
+- [ ] Validate profile and package extent agreement before world registration.
+- [ ] Reject a bounded profile paired with an infinite package, or vice versa.
+- [ ] Record whether horizon policy is active, proof-only or deferred.
 
-### 2. Add phase receipts
+### 2. Add deterministic sector demand
 
-- [ ] Name generation, pre-tick, engine tick, gameplay, streaming, visual, HUD, audio, map and render phases.
-- [ ] Publish accepted/failed phase receipts.
-- [ ] Record whether each phase may have mutated authoritative or presentation state.
-- [ ] Avoid exposing stack traces or implementation jargon in player UI.
+- [ ] Derive all macro sectors overlapping each desired gameplay cell.
+- [ ] Add stable sector demand identity and duplicate suppression.
+- [ ] Generate or retrieve immutable sector results through `long-haul-world-atlas-kit`.
+- [ ] Publish sector digests.
+- [ ] Reject results from retired run/provider generations.
 
-### 3. Settle terminal faults
+### 3. Define course-versus-atlas ownership
 
-- [ ] Publish `RuntimeFrameFaultResult`.
-- [ ] Retire the failed scheduler generation exactly once.
-- [ ] Clear held and one-shot input.
-- [ ] Mute/suspend active engine and wind audio.
-- [ ] Cancel or retire generation, patch preparation and world-provider work.
-- [ ] Freeze further run mutations when partial application is indeterminate.
+- [ ] Preserve the finite five-branch course as the delivery challenge owner.
+- [ ] Define deterministic overlap priority for course roads, depots and signs.
+- [ ] Define atlas road generation from paired sector-edge portals.
+- [ ] Define settlement exclusion/composition around course depots.
+- [ ] Ensure surface queries and recovery poses consume the same accepted road plan.
 
-### 4. Project one stable fault state
+### 4. Build one gameplay-cell content plan
 
-- [ ] Focus the failure panel and announce the fault once.
-- [ ] Prevent repeated text changes and repeated console spam for the same fault.
-- [ ] Publish `FirstFaultFrameAck`.
-- [ ] Keep the fault surface renderable without running normal gameplay phases.
+- [ ] Enumerate every overlapping macro sector geometrically; 1024 and 192 are not integer multiples.
+- [ ] Clip/deduplicate roads, settlements and portals by explicit cell ownership.
+- [ ] Bind terrain, biome, density, vegetation and obstacle policies.
+- [ ] Sort contributions deterministically.
+- [ ] Compute `WorldCellGenerationKey` and `WorldCellContentDigest`.
+- [ ] Preserve exact terrain-edge sampling.
 
-### 5. Define restart policy
+### 5. Commit through existing world infrastructure
 
-- [ ] Classify recoverable startup/generation failures separately from runtime simulation/render failures.
-- [ ] Permit in-process retry only after a clean retirement receipt.
-- [ ] Require reload when renderer, engine or state integrity is indeterminate.
-- [ ] Create a fresh runtime generation on restart.
+- [ ] Extend `createCourseCellDescriptor` or replace it with one semantic content-plan adapter; do not bypass patch preparation.
+- [ ] Bind patch cache identity to sector digests and content-policy revisions.
+- [ ] Commit through the existing Core World provider.
+- [ ] Reject late or duplicate patch work.
+- [ ] Release both course- and atlas-owned graphics writes with the cell.
 
-### 6. Add executable fixtures
+### 6. Project matching WebGL and map state
 
-- [ ] Inject one failure into each named phase.
-- [ ] Prove one fault result and one terminal UI acknowledgement.
-- [ ] Prove RAF count stops advancing product work.
-- [ ] Prove stale input and stale callbacks are rejected.
-- [ ] Prove audio and world work retire.
+- [ ] Render atlas roads, settlements and portals from the committed content plan.
+- [ ] Extend map projection from finite-course-only data to accepted atlas content.
+- [ ] Keep LOD representation separate from semantic identity.
+- [ ] Publish `FirstAtlasBoundWorldFrameAck` with sector, cell, content and frame IDs.
+
+### 7. Add executable fixtures
+
+- [ ] Test one, two and four-sector cell overlap.
+- [ ] Test positive and negative distant coordinates.
+- [ ] Test course/atlas road overlap and portal continuity.
+- [ ] Test settlement ownership across cell boundaries.
+- [ ] Test cache reuse and stale-generation rejection.
+- [ ] Test surface classification on a visible atlas road.
 - [ ] Run `npm test`.
-- [ ] Compare source, built artifact and deployed Pages behavior.
+- [ ] Run deterministic far-drive browser fixtures.
+- [ ] Compare source, built artifact and deployed Pages receipts.
 
 ## Retained work
 
-Product-policy adoption remains open. The fault authority should not silently implement policy adoption, WebGL recovery, input lifecycle, audio lifecycle or world recovery; it should coordinate their existing retirement hooks through one terminal result.
+Runtime-frame fault containment remains the next independent lifecycle risk. Do not fold its scheduler-retirement behavior into the infinite-world content authority; only bind its existing run/provider generation retirement once that authority is implemented.
