@@ -9,9 +9,9 @@
 
 ## Summary
 
-The current Publish inventory contains 11 repositories. Ten are eligible after excluding `LuminaryLabs-Publish/TheCavalryOfRome`. All ten have central ledger records and root `.agent` state. TheLongHaul is the only eligible repository ahead of its documented head, so this run selected only TheLongHaul.
+The current Publish inventory contains 11 repositories. Ten are eligible after excluding `LuminaryLabs-Publish/TheCavalryOfRome`. All ten have central ledger records and root `.agent` state. TheLongHaul was the sole eligible repository ahead of its documented head and was the only selected project.
 
-The new runtime commit promotes the world profile and course envelope from a bounded disk to an infinite extent. Far course cells are now tested for deterministic finite terrain and seamless adjacent edges, and macro sectors are valid at arbitrarily distant coordinates. The playable patch path still builds each cell from the original finite course graph. It does not bind the installed macro-sector atlas, its settlements, its portals or an atlas-derived road plan into the accepted cell descriptor or rendered patch.
+The new runtime commit promotes the world profile and verified course package from a bounded disk to infinite extent. Far cells are tested for deterministic finite terrain and seamless adjacent edges, and macro sectors are valid at arbitrarily distant coordinates. The playable patch path still builds each cell from the original finite course graph and does not bind atlas settlements, portals or atlas-derived roads into the accepted cell descriptor or rendered patch.
 
 ## Plan ledger
 
@@ -25,7 +25,7 @@ The new runtime commit promotes the world profile and course envelope from a bou
 - [x] Inspect the one-commit infinite-world delta and affected tests.
 - [x] Identify the complete interaction loop and every active domain.
 - [x] Identify all 20 engine-installed kits and their offered services.
-- [x] Identify the world provider, controller, browser adapters and proof/deployment surfaces.
+- [x] Identify the provider, controller, browser adapters and four proof/deployment surfaces.
 - [x] Define one infinite-world atlas/cell adoption authority and 18 coordinating surfaces.
 - [x] Add a new timestamped tracker, turn ledger and focused audit family.
 - [x] Keep runtime, tests, workflow and deployment behavior unchanged.
@@ -100,7 +100,7 @@ Start the Haul
   -> generate one finite five-branch course graph
   -> create and verify an infinite-extent course envelope
   -> prepare and prime the initial 3x3 gameplay-cell window
-  -> reset Truck, Run, Delivery, Wildlife and meters
+  -> reset Truck, Course, Run, Delivery, Wildlife and meters
   -> register the Core World course provider
   -> enter driving
 
@@ -109,7 +109,7 @@ Driving frame
   -> submit Core Input and Truck input
   -> tick simulation, run, delivery and wildlife
   -> move Core World focus with the truck
-  -> request/prepare newly desired gameplay cells
+  -> request and prepare newly desired gameplay cells
   -> create each cell descriptor from the finite course graph
   -> commit terrain, course roads, signs, depots, vegetation, grass and rocks
   -> update truck, camera, HUD, map and audio
@@ -134,26 +134,11 @@ Outcome
 ```txt
 browser startup and ordered module loading
 browser document, RAF, resize, keyboard and storage lifecycle
-Core Scene
-Core World
-Core Input
-Core Data
-Core Simulation
-Core Camera
-Core Graphics
-Core Transaction Ledger
-Long Haul World Profile
-Long Haul World Atlas
-Long Haul Horizon LOD Policy
-Long Haul Road Class Catalog
-Long Haul Terrain Policy
-Long Haul Truck Dynamics Profile
+Core Scene, World, Input, Data, Simulation, Camera, Graphics and Transaction Ledger
+Long Haul World Profile, World Atlas and Horizon LOD Policy
+Long Haul Road Class Catalog, Terrain Policy and Truck Dynamics Profile
 Long Haul Delivery Contract Catalog
-Long Haul Truck
-Long Haul Course
-Long Haul Run
-Long Haul Delivery
-Long Haul Wildlife
+Long Haul Truck, Course, Run, Delivery and Wildlife
 procedural finite-course generation
 infinite gameplay-cell terrain generation
 macro-sector generation
@@ -161,59 +146,62 @@ world patch preparation and provider lifecycle
 Three.js WebGL presentation
 Canvas2D map projection
 DOM menu, HUD, outcome and failure projection
-WebAudio
-browser storage
-Node smoke validation
-GitHub Actions and Pages deployment
+WebAudio and browser storage
+Node smoke validation, GitHub Actions and Pages deployment
 repo-local and central audit governance
 planned infinite-world atlas/cell-content adoption authority
 ```
 
 ## Kit and service inventory
 
-### Core and product kits installed into the playable engine
+### Core kits
 
-| Kit | Domain | Offered services |
-|---|---|---|
-| `core-scene-kit` | Core Scene | Scene registry, current scene, exit validation, transition requests, transition identity and snapshots. |
-| `core-world-domain` | Core World | World register/remove, uniform-grid partition, focus, active-cell lifecycle, provider ordering, validation and snapshots. |
-| `long-haul-input` | Core Input | Semantic actions, keyboard bindings, contexts, driving intent and reset. |
-| `core-data-kit` | Core Data | Course schema, envelopes, digest verification, named random streams and random snapshot/restore. |
-| `core-simulation-kit` | Core Simulation | Fuel, truck condition, cargo condition and remaining-time meters; bounds, rates, locks, thresholds and reset. |
-| `core-camera-kit` | Core Camera | Camera target, position/look/FOV smoothing, snap, mode and portable descriptors. |
-| `core-graphics-kit` | Core Graphics | Instance-batch registration, cell replacement/removal, matrix writes, flush, bounds and release receipts. |
-| `core-transaction-ledger-kit` | Core Transaction Ledger | Apply-once operations, duplicate classification, metadata and snapshots. |
-| `long-haul-world-profile-kit` | Long Haul World Profile | World profile, infinite/bounded extent policy, gameplay-cell policy, horizon/atlas policy, configure, snapshot and reset. |
-| `long-haul-world-atlas-kit` | Long Haul World Atlas | Macro-sector generation, biome/density descriptors, settlements, edge portals, road registry state, list/query, snapshot and reset. |
-| `long-haul-horizon-lod-policy-kit` | Long Haul Horizon LOD | Per-level terrain resolution, forest mode, road mode, settlement mode, collision policy, configure, snapshot and reset. |
-| `long-haul-road-class-catalog-kit` | Long Haul Road Classes | Width, grip, grade, curvature, jump weights, get/list/register and snapshot/reset. |
-| `long-haul-terrain-policy-kit` | Long Haul Terrain Policy | Terrain octaves, landform density, road flatten/smoothing, jump profiles, configure and snapshot/reset. |
-| `long-haul-truck-dynamics-profile-kit` | Long Haul Truck Dynamics | Powertrain, drag, resistance, steering, grip, suspension, air control, boost, configure and snapshot/reset. |
-| `long-haul-delivery-contract-catalog-kit` | Long Haul Delivery Contracts | Seven job policies, get/list/register and snapshot/reset. |
-| `long-haul-truck-kit` | Long Haul Truck | Truck state, input, kinematics, drift, ground contact, suspension, air control, impulse, teleport, recovery pose and snapshot/load. |
-| `long-haul-course-kit` | Long Haul Course | Course package, exploration, depot discovery, nearest-road/depot queries, sampling and snapshot/load. |
-| `long-haul-run-kit` | Long Haul Run | Clock, distance, max speed, off-road time, penalties, collisions, stuck/recovery, outcomes and snapshot/load. |
-| `long-haul-delivery-kit` | Long Haul Delivery | Candidate/valid depots, duplicate checks, accepted/rejected results and snapshot/load. |
-| `long-haul-wildlife-kit` | Long Haul Wildlife | Hazard load, deterministic crossing motion, direction and snapshot/load. |
+| Kit | Offered services |
+|---|---|
+| `core-scene-kit` | Scene registry, current scene, exits, transitions, identity and snapshots. |
+| `core-world-domain` | World registration/removal, grid partition, focus, active cells, providers, validation and snapshots. |
+| `long-haul-input` | Semantic actions, keyboard bindings, contexts, driving intent and reset. |
+| `core-data-kit` | Course schema, envelopes, digest verification, named random streams and restore. |
+| `core-simulation-kit` | Fuel, truck/cargo condition and remaining-time meters. |
+| `core-camera-kit` | Camera target, position/look/FOV smoothing, snap, mode and descriptors. |
+| `core-graphics-kit` | Instance batches, cell writes/removals, flush, bounds and release receipts. |
+| `core-transaction-ledger-kit` | Apply-once operations, duplicate classification, metadata and snapshots. |
+
+### Product DSKs
+
+| Kit | Offered services |
+|---|---|
+| `long-haul-world-profile-kit` | Infinite/bounded extent, cell, horizon and atlas policy; configure, snapshot and reset. |
+| `long-haul-world-atlas-kit` | Macro sectors, biome/density descriptors, settlements, edge portals, road registry and snapshots. |
+| `long-haul-horizon-lod-policy-kit` | Terrain resolution, forest/road/settlement modes and collision policy. |
+| `long-haul-road-class-catalog-kit` | Road width, grip, grade, curvature, jump weights and catalog lifecycle. |
+| `long-haul-terrain-policy-kit` | Terrain octaves, landform density, road shaping and jump profiles. |
+| `long-haul-truck-dynamics-profile-kit` | Powertrain, drag, steering, grip, suspension, air control and boost. |
+| `long-haul-delivery-contract-catalog-kit` | Seven contract types and job policy. |
+| `long-haul-truck-kit` | Truck state, input, kinematics, drift, contact, suspension, air control, impulse, teleport and recovery. |
+| `long-haul-course-kit` | Course package, exploration, depot discovery, route queries and snapshot/load. |
+| `long-haul-run-kit` | Clock, distance, telemetry, penalties, collisions, recovery and outcomes. |
+| `long-haul-delivery-kit` | Candidate/valid depots, duplicate checks and accepted/rejected results. |
+| `long-haul-wildlife-kit` | Deterministic crossing-hazard state and motion. |
 
 ### Providers, controllers, adapters and proof
 
 | Surface | Offered services |
 |---|---|
-| `long-haul-course-provider` | Prepared-cell admission, update/release, course-cell effect descriptor and patch snapshot/restore/reset. |
-| `long-haul-world-patch-preparation-controller` | Focus, desired/prefetch sets, generation/activation budgets, cache, prime, ready-patch release and snapshot/reset. |
-| `ordered-module-bootstrap-adapter` | Import-map startup, global dependency publication, ordered eleven-chunk loading and boot-failure projection. |
+| `long-haul-course-provider` | Prepared-cell admission, update/release, effect descriptor and patch state lifecycle. |
+| `long-haul-world-patch-preparation-controller` | Focus, desired/prefetch sets, budgets, cache, prime, ready patches and release. |
+| `ordered-module-bootstrap-adapter` | Import-map startup, global dependency publication, eleven-chunk loading and failure projection. |
 | `procedural-course-generator` | Seeded five-branch graph, five depots, wildlife, scoring and validation. |
-| `course-cell-descriptor-generator` | Deterministic terrain, finite-course roads/signs/depots, vegetation, grass, rocks and obstacles. |
-| `browser-keyboard-input-adapter` | Keydown/up, held state, one-shot state and per-frame clearing. |
-| `three-webgl-presentation-adapter` | Renderer, scene, camera, streamed cells, instance batches, truck/wildlife rigs, resize, RAF and render. |
-| `dom-scene-hud-adapter` | Title, help, settings, generation, HUD, pause, outcomes, toast and failure overlay. |
-| `canvas-map-adapter` | Explored finite-course roads, candidate depots, rejected yards, truck marker and DPR resizing. |
-| `web-audio-adapter` | Context unlock, engine/wind loops, cues and gain updates. |
-| `browser-storage-adapter` | Settings and best-score persistence. |
-| `atomic-domain-kits-smoke` | Product-kit composition, profile/catalog policy, distant macro-sector and truck dynamics checks. |
-| `long-haul-game-smoke` | 100-seed course generation, local and far cell determinism/seams, truck motion and delivery evaluation. |
-| `static-shell-smoke-and-ci` | Provider pin, single-tick, syntax and source-pattern checks. |
+| `course-cell-descriptor-generator` | Deterministic terrain, finite-course content, vegetation, grass, rocks and obstacles. |
+| `browser-keyboard-input-adapter` | Keydown/up, held state, one-shot state and frame clearing. |
+| `three-webgl-presentation-adapter` | Renderer, scene, streamed cells, instances, rigs, resize, RAF and render. |
+| `dom-scene-hud-adapter` | Menu, generation, HUD, pause, outcomes, toast and failure overlay. |
+| `canvas-map-adapter` | Finite-course roads, depots, rejected yards, truck marker and DPR resizing. |
+| `web-audio-adapter` | Context unlock, engine/wind loops, cues and gain. |
+| `browser-storage-adapter` | Settings and best score. |
+| `atomic-domain-kits-smoke` | Product composition, policy, distant sector and truck checks. |
+| `long-haul-game-smoke` | 100-seed course, far terrain/seams, truck and delivery checks. |
+| `static-shell-smoke-and-ci` | Provider pin, tick, syntax and source checks. |
 | `github-pages-deployment` | Static-root publication from `main`. |
 
 ## Implementation census
@@ -225,17 +213,15 @@ engine-installed kits:               20
 Core World effect providers:          1
 standalone controllers:               1
 browser/product adapters:             9
-proof/deployment adapters:            3
-total source-backed surfaces:        34
+proof/deployment adapters:            4
+total source-backed surfaces:        35
 render surfaces:                      3
 planned adoption surfaces:           18
 ```
 
 ## Source-backed finding
 
-The commit makes the world contract infinite at three boundaries: the profile, the Core Data course envelope and macro-sector admission. The playable cell provider still receives `createCourseCellDescriptor(course, cell)`. That function derives roads, depots and signs only from `course.edges`, `course.depots` and `course.signs`. Its distant cells can always produce terrain, trees and grass, but they do not consume the installed `long-haul-world-atlas-kit` sector result.
-
-The result is a split authority:
+The commit makes the world contract infinite at the profile, Core Data course-envelope and macro-sector boundaries. The playable provider still receives `createCourseCellDescriptor(course, cell)`. That function derives roads, depots and signs only from `course.edges`, `course.depots` and `course.signs`. Distant cells can produce terrain, vegetation and grass, but they do not consume the installed atlas sector result.
 
 ```txt
 infinite extent truth
@@ -250,7 +236,7 @@ far-world semantic content truth
   -> finite course remains the only road/depot/sign source
 ```
 
-The horizon LOD policy likewise exists as a product DSK, but the active patch path uses one fixed `terrainSegments = 24` descriptor and does not bind a horizon level to cell construction. No exact sector digest, sector/cell revision, content ownership result or first atlas-bound frame acknowledgement exists.
+The horizon LOD policy exists as a product DSK, but the active descriptor uses fixed 24-segment terrain and does not bind a horizon level to cell construction. No sector digest, course/atlas ownership result, cell-content commit result or first atlas-bound frame acknowledgement exists.
 
 This is an adoption and executable-proof gap. It does not claim that distant terrain generation is non-deterministic or that a specific player-visible failure was reproduced.
 
@@ -260,28 +246,28 @@ This is an adoption and executable-proof gap. It does not claim that distant ter
 
 ```txt
 InfiniteWorldSectorAdmissionCommand
-  -> bind product release, world profile, course package,
-     course, atlas, sector, cell, provider and run revisions
+  -> bind product release, profile, package, course, atlas,
+     sector, cell, provider and run revisions
   -> prove profile/package extent agreement
   -> ensure one macro sector exactly once
-  -> publish a sector digest and immutable sector result
+  -> publish a sector digest and immutable result
   -> reject stale, mismatched or retired generations
   -> publish InfiniteWorldSectorAdmissionResult
 
 InfiniteWorldCellContentPlanCommand
-  -> bind the accepted sector result and exact gameplay cell
-  -> classify finite-course and atlas content ownership
-  -> derive terrain, atlas roads, settlements, portals,
+  -> enumerate overlapping macro sectors
+  -> classify finite-course and atlas ownership
+  -> derive terrain, roads, settlements, portals,
      vegetation, obstacles and horizon representation
-  -> apply deterministic overlap and seam policy
+  -> publish one content digest
   -> publish InfiniteWorldCellContentPlanResult
 
 InfiniteWorldCellCommitCommand
-  -> bind patch-preparation and Core World provider generations
+  -> bind patch-preparation and provider generations
   -> commit one exact cell plan
   -> reject late or duplicate work
   -> publish WorldCellContentResult
-  -> render the matching far-world content
+  -> render matching WebGL/map semantics
   -> publish FirstAtlasBoundWorldFrameAck
 ```
 
@@ -310,4 +296,4 @@ pages-infinite-world-fixture-kit
 
 ## Validation boundary
 
-Documentation changed only. Runtime JavaScript, HTML, CSS, tests, package scripts, workflows and deployment were not changed. The newly committed runtime tests were inspected but not executed during this audit. No atlas-backed road/settlement continuity, horizon-policy adoption, first atlas-bound frame, artifact parity, Pages parity or production readiness is claimed.
+Documentation changed only. Runtime JavaScript, HTML, CSS, tests, package scripts, workflows and deployment were not changed. The new runtime tests were inspected but not executed. No atlas-backed road/settlement continuity, horizon-policy adoption, first atlas-bound frame, artifact parity, Pages parity or production readiness is claimed.
