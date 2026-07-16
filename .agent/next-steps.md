@@ -1,63 +1,65 @@
 # Next steps
 
-**Timestamp:** `2026-07-16T08-44-21-04-00`
+**Timestamp:** `2026-07-16T14-01-02-04-00`
 
-## Plan ledger
+## Intent
 
-**Goal:** retire browser-held driving evidence deterministically whenever the document, route, run, or input adapter loses ownership, before any later simulation step can consume stale intent.
+Turn the five installed policy DSKs into one exact product-policy generation consumed by the playable runtime.
 
-- [ ] Introduce an `InputFocusGeneration` owned by the browser keyboard adapter.
-- [ ] Give every accepted key event the active document, route, input, and run generation.
-- [ ] Add `window.blur` handling.
-- [ ] Add `document.visibilitychange` handling for `hidden`.
-- [ ] Add `pagehide` handling, including persisted back/forward-cache cases.
-- [ ] Add `freeze`/`resume` handling where supported.
-- [ ] Retire the input generation on route changes away from `driving`.
-- [ ] Retire the input generation when a run is cleared, retried, failed, or completed.
-- [ ] Clear both `keys` and `pressed` exactly once per retirement.
-- [ ] Submit neutral intent through `engine.n.coreInput.setIntent()`.
-- [ ] Submit neutral input through `engine.n.longHaulTruck.input()`.
-- [ ] Decide whether focus loss also requests a safe pause; document the policy.
-- [ ] Reject delayed `keyup`, `keydown`, or one-shot evidence from retired generations.
-- [ ] Publish `HeldInputRetirementResult` with reason and affected action IDs.
-- [ ] Publish `FirstNeutralInputFrameAck` after a matching frame renders.
-- [ ] Add a real-browser fixture for held throttle followed by blur without keyup.
-- [ ] Add hidden-tab, pagehide, freeze, route-change, retry, completion, and loss fixtures.
-- [ ] Add a fixture proving stale one-shot `R`, `E`, `M`, `C`, and `Escape` evidence cannot fire after restoration.
-- [ ] Add a fixture proving a fresh post-restore keydown is accepted normally.
-- [ ] Run `npm test` and keep static-shell assertions aligned with the lifecycle contract.
+## What needs to happen
+
+### 1. Define policy identity
+
+- [ ] Add `ProductPolicyGeneration` and `ProductPolicyDigest`.
+- [ ] Include world, road, terrain, truck, and delivery revisions.
+- [ ] Reject duplicate IDs, invalid ranges, missing references, and unsupported features.
+- [ ] Publish `ProductPolicyAdmissionResult` before run creation.
+
+### 2. Bind run and cache identity
+
+- [ ] Add the policy digest to course package identity.
+- [ ] Add it to run, cell, patch-preparation, provider, and snapshot identity.
+- [ ] Reject cells, caches, callbacks, and results from retired policy generations.
+- [ ] Rebuild or invalidate derived data after an accepted policy change.
+
+### 3. Adopt truck dynamics first
+
+- [ ] Change `createLongHaulTruckKit(N, options)` to accept the profile resource intentionally.
+- [ ] Read one immutable profile snapshot per simulation step or admitted run.
+- [ ] Replace hardcoded speed, acceleration, braking, drag, rolling resistance, steering, grip, suspension, and air-control constants.
+- [ ] Preserve deterministic bounded substeps.
+- [ ] Add default-profile parity and modified-profile behavior fixtures.
+
+### 4. Adopt world, roads, and terrain
+
+- [ ] Make course generation consume world radius and road-class records.
+- [ ] Replace literal road widths, roughness, grade, curvature, and jump weighting.
+- [ ] Make terrain generation consume octave, density, flattening, smoothing, and jump-profile policy.
+- [ ] Make cell size, active radius, horizon bounds, LOD policy, and visual radius consume the world profile.
+- [ ] Keep course validation bounded and deterministic.
+
+### 5. Adopt delivery contracts
+
+- [ ] Add `contractTypeId` and contract revision to delivery/run state.
+- [ ] Support standard, fragile, express, lost-manifest, rough-road bonus, cross-region, and multi-stop semantics.
+- [ ] Resolve candidate depots, distance, time, damage, road-class, and stop requirements from the accepted contract.
+- [ ] Publish typed accepted/rejected contract results.
+
+### 6. Publish proof
+
+- [ ] Publish `FirstPolicyBoundRunAck` after course/run state uses one digest.
+- [ ] Publish `FirstPolicyBoundFrameAck` after world, truck, HUD, map, and result projection use the same digest.
+- [ ] Surface the digest in diagnostics without exposing implementation jargon in player UI.
+
+### 7. Validation and deployment
+
+- [ ] Add source tests proving every policy resource has a runtime consumer.
+- [ ] Add deterministic default-policy parity fixtures.
+- [ ] Add modified-policy fixtures that visibly and semantically change each subsystem.
+- [ ] Add stale/mixed-generation rejection fixtures.
+- [ ] Run `npm test`.
 - [ ] Compare source, workflow artifact, and deployed Pages behavior.
-
-## Ordered implementation
-
-### 1. Lifecycle policy
-
-Define which browser and route signals retire input, whether the run auto-pauses, and which results are observable. Treat focus loss as an ownership transition, not as a direct mutation scattered across listeners.
-
-### 2. Generation-bound adapter
-
-Wrap `keys` and `pressed` in one adapter state object containing `generation`, `status`, and `lastRetirement`. Key handlers must reject evidence whose generation is no longer active.
-
-### 3. Neutral settlement
-
-On retirement, clear held and one-shot evidence, submit neutral Core Input intent, submit neutral Truck Input, and record a single typed result. This should happen before the next simulation tick after restoration.
-
-### 4. Route and run integration
-
-Retire input when leaving `driving`, before world clearing, and before retry/new-course generation. Create a fresh input generation only when the driving route is admitted.
-
-### 5. Frame proof
-
-Bind the retirement result to the simulation revision and visible frame. The acknowledgement should prove zero throttle, brake, steer, and boost were presented before accepting new input.
-
-### 6. Browser fixtures
-
-Use Playwright or an equivalent real-browser harness. Synthetic Node source checks cannot prove lost-keyup, visibility, bfcache, or browser event ordering.
-
-### 7. Release gate
-
-Require source, CI artifact, and Pages fixtures to agree on the input lifecycle policy and first neutral frame.
 
 ## Retained work
 
-The modular rewrite materially adopts the prior promoted-Core profile. Earlier WebGL recovery, accessibility, host-clock, audio lifecycle, generation scheduling, motion preference, pause suspension, delivery settlement, and generation rollback work remains open in its timestamped audit families.
+The browser-focus held-input retirement audit remains open and should be implemented before control tuning. WebGL recovery, accessibility, clock, audio, motion, pause, delivery settlement, and rollback findings remain preserved in prior timestamped audit families.
