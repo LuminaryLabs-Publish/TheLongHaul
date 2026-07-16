@@ -1,0 +1,46 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const index = readFileSync(join(root, "index.html"), "utf8");
+const bootstrap = readFileSync(join(root, "src/app/bootstrap.mjs"), "utf8");
+const chunks = Array.from({ length: 11 }, (_, index) => readFileSync(join(root, `src/app/app-chunk-${index + 1}.js`), "utf8"));
+const combined = chunks.join("\n");
+
+assert.match(index, /NexusEngine@b941c9b2995e3449c6987908657753e2cf2df242/);
+assert.match(index, /src\/app\/bootstrap\.mjs/);
+assert.match(index, />5:00</);
+assert.equal((combined.match(/engine\.tick\(/g) ?? []).length, 1, "one engine tick call exists in the visible frame loop");
+assert.equal(/tick\s*\(\s*0\s*\)/.test(combined), false, "no tick-zero helper exists");
+assert.equal(/engine\.n\s*=/.test(combined), false, "host never replaces engine.n");
+assert.match(combined, /distance=20\+/);
+assert.match(combined, /ctx\.rotate\(-state\.heading\)/);
+assert.match(combined, /updateDesired\(desired\.map/);
+assert.match(combined, /speedDelta:-state\.speed\*\.8/);
+assert.match(bootstrap, /app-chunk-11\.js/);
+new Function(combined);
+
+for (const relative of [
+  "src/app/bootstrap.mjs",
+  "src/long-haul-core.mjs",
+  "src/long-haul-game.mjs",
+  "src/game/shared.mjs",
+  "src/game/generator.mjs",
+  "src/game/world-base.mjs",
+  "src/game/cell-descriptor.mjs",
+  "src/game/product-kits.mjs",
+  "src/game/truck-kit.mjs",
+  "src/game/course-kit.mjs",
+  "src/game/run-kit.mjs",
+  "src/game/delivery-kit.mjs",
+  "src/game/wildlife-kit.mjs",
+  "src/game/score.mjs"
+]) {
+  const result = spawnSync(process.execPath, ["--check", join(root, relative)], { encoding: "utf8" });
+  assert.equal(result.status, 0, `${relative} must parse: ${result.stderr}`);
+}
+
+console.log("The Long Haul static shell smoke passed");
