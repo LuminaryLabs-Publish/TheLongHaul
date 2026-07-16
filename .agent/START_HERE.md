@@ -1,121 +1,117 @@
-# START HERE: The Long Haul WebGL context and resource recovery
+# START HERE: The Long Haul Core capability adoption parity
 
-**Last updated:** `2026-07-16T05-01-43-04-00`  
+**Last updated:** `2026-07-16T07-39-04-04-00`  
 **Repository:** `LuminaryLabs-Publish/TheLongHaul`  
 **Branch:** `main`  
-**Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `48ba7e8938c7edb4a62a0748e60b69ba53820c45`  
-**Status:** `webgl-context-resource-recovery-authority-audited`
+**Reviewed pre-audit repository head:** `5367c558a8e77164631c62747f9e7bd1e0aa9ca5`  
+**Status:** `core-capability-adoption-parity-authority-audited`
 
 ## Summary
 
-TheLongHaul is a static Nexus Engine freight game with ten engine kits, two Core World providers, seven browser/product adapters, Three.js WebGL, Canvas2D, DOM UI, WebAudio, browser storage and Pages deployment.
+TheLongHaul was selected because it was the only eligible Publish repository ahead of its central documented head. Three commits added `src/long-haul-core.mjs`, `core-integration.html`, and README ownership claims.
 
-The active audit isolates renderer loss. The product constructs one renderer and a large shared/streamed GPU-resource graph, submits through a recursive RAF and supports ordinary streamed-cell disposal. It has no product-owned WebGL context-loss/restoration admission, renderer generation, ordered resource reconstruction, stale-generation rejection, fallback or first recovered frame acknowledgement.
+The new Core profile proves named random streams, package digests, bounded meters, camera descriptors, instance-batch release, patch prefetch, and transaction idempotency in a separate smoke engine. The playable `index.html` does not import that profile, remains on a different Nexus Engine revision, and retains parallel owners for the same responsibilities.
 
 ## Plan ledger
 
-**Goal:** make renderer loss settle as one bounded recovery or fallback transaction while preserving accepted gameplay and world state.
+**Goal:** make one accepted Core capability profile authoritative across the playable game, smoke, state migration, artifacts, Pages, and the first matching gameplay frame.
 
 - [x] Compare all 11 accessible Publish repositories with central tracking.
 - [x] Exclude `LuminaryLabs-Publish/TheCavalryOfRome`.
-- [x] Confirm ten eligible ledgers and synchronized root `.agent` state.
-- [x] Select only TheLongHaul by the oldest synchronized timestamp.
-- [x] Trace renderer construction, resource ownership, streaming, release, resize, listeners and RAF.
-- [x] Preserve the complete 20-surface implementation inventory.
-- [x] Define 20 renderer-recovery authority surfaces.
-- [x] Add the timestamped audit family.
+- [x] Compare all ten eligible documented heads with `main`.
+- [x] Select only TheLongHaul as the sole runtime-ahead repository.
+- [x] Inspect the new Core profile, smoke, playable host, README, and retained audits.
+- [x] Identify all domains, kits, controllers, adapters, and services.
+- [x] Add the timestamped Core adoption audit family.
 - [x] Keep runtime and deployment unchanged.
-- [ ] Implement and execute forced-loss, recovery, fallback, artifact and Pages fixtures.
-
-## Interaction loop
-
-```txt
-accepted route/run/world state
-  -> update simulation and world streaming
-  -> update Three.js projection
-  -> draw Canvas2D map and DOM HUD
-  -> renderer.render(scene, camera)
-  -> next RAF
-
-WebGL context loss
-  -> no typed loss result
-  -> no old-generation submission suspension
-  -> no simulation/input policy
-  -> no resource-manifest reconstruction
-  -> no fallback
-  -> no FirstRecoveredFrameAck
-```
+- [ ] Pin one Nexus Engine provider revision for both entry points.
+- [ ] Admit one Core capability manifest in the playable host.
+- [ ] Migrate or retire parallel truth owners.
+- [ ] Execute playable/smoke, artifact, and Pages parity fixtures.
 
 ## Main finding
 
 ```txt
-single renderer generation owner: absent
-webglcontextlost observer: absent
-webglcontextrestored observer: absent
-presentation suspension result: absent
-GPU resource manifest: absent
-ordered shared/streamed reconstruction: absent
-stale renderer callback rejection: absent
-recovery deadline and retry budget: absent
-RenderLossResult: absent
-RenderRecoveryResult: absent
-RenderFallbackResult: absent
-FirstRecoveredFrameAck: absent
+new Core profile: present
+browser Core smoke: present
+playable import of profile: absent
+shared Nexus Engine pin: absent
+shared RNG owner: absent
+shared course-package admission: absent
+shared meter schema: absent
+shared camera descriptor owner: absent
+shared instance-batch owner: absent
+shared patch-preparation owner: absent
+shared transaction ledger: absent
+state migration result: absent
+smoke/playable parity result: absent
+FirstCoreBoundPlayableFrameAck: absent
 ```
 
-This is a source-backed lifecycle and evidence gap. No production context-loss incident was reproduced.
+Concrete divergence:
+
+```txt
+playable provider: c5548de504072bf09eb68986b98aca0292903803
+smoke provider:    b941c9b2995e3449c6987908657753e2cf2df242
+playable time limit: 360 seconds
+Core smoke time limit: 300 seconds
+playable meters: fuel, truck, cargo
+Core meters: fuel, truck-condition, cargo-condition, remaining-time
+```
 
 ## Required authority
 
-`the-long-haul-webgl-context-resource-recovery-authority-domain`
+`the-long-haul-core-capability-adoption-parity-authority-domain`
 
 ```txt
-RenderRecoveryAdmissionCommand
-  -> bind document route runtime renderer context
-     resource manifest world cell and frame generations
-  -> observe and deduplicate context loss
-  -> suspend stale submissions
-  -> apply simulation and input policy
-  -> rebuild renderer and resources in dependency order
-  -> reject retired-generation callbacks
-  -> publish RenderLossResult
-  -> publish RenderRecoveryResult or RenderFallbackResult
-  -> publish FirstRecoveredFrameAck
+CoreCapabilityAdmissionCommand
+  -> bind playable, smoke, provider, profile, schema,
+     RNG, meter, camera, batch, patch, ledger,
+     artifact, deployment, and frame revisions
+  -> resolve one CoreCapabilityAdoptionManifest
+  -> classify each capability as authoritative, bridge, proof-only, or retired
+  -> reject duplicate or incompatible truth owners
+  -> stage migration and initialize the playable profile
+  -> run shared smoke/playable semantic fixtures
+  -> publish CoreCapabilityAdoptionResult
+  -> publish FirstCoreBoundPlayableFrameAck
 ```
 
 ## Census
 
 ```txt
-engine-installed kits: 10
-world effect providers: 2
+playable engine kits: 10
+Core World providers: 2
 browser/product adapters: 7
+isolated Core profile kits: 5
+standalone Core controller: 1
+browser proof adapters: 1
 deployment adapters: 1
-total source-backed surfaces: 20
-render surfaces: 3
-planned renderer-recovery surfaces: 20
+total source-backed surfaces: 27
+product render surfaces: 3
+planned adoption surfaces: 20
 ```
 
 ## Read this run first
 
 1. `current-audit.md`
 2. `known-gaps.md`
-3. `trackers/2026-07-16T05-01-43-04-00/project-breakdown.md`
-4. `architecture-audit/2026-07-16T05-01-43-04-00-webgl-context-resource-recovery-dsk-map.md`
-5. `renderer-recovery-audit/2026-07-16T05-01-43-04-00-webgl-resource-rehydration-contract.md`
-6. `gameplay-audit/2026-07-16T05-01-43-04-00-render-loss-noninteractive-haul-loop.md`
-7. `interaction-audit/2026-07-16T05-01-43-04-00-render-recovery-command-result-map.md`
-8. `render-audit/2026-07-16T05-01-43-04-00-context-loss-first-recovered-frame-gap.md`
-9. `deploy-audit/2026-07-16T05-01-43-04-00-context-loss-browser-fixture-gate.md`
-10. `central-sync-audit/2026-07-16T05-01-43-04-00-oldest-selection-renderer-recovery-reconciliation.md`
-11. `turn-ledger/2026-07-16T05-01-43-04-00.md`
+3. `trackers/2026-07-16T07-39-04-04-00/project-breakdown.md`
+4. `architecture-audit/2026-07-16T07-39-04-04-00-core-capability-adoption-dsk-map.md`
+5. `core-adoption-audit/2026-07-16T07-39-04-04-00-playable-smoke-parity-contract.md`
+6. `gameplay-audit/2026-07-16T07-39-04-04-00-dual-core-gameplay-truth-loop.md`
+7. `interaction-audit/2026-07-16T07-39-04-04-00-core-adoption-command-result-map.md`
+8. `render-audit/2026-07-16T07-39-04-04-00-core-descriptor-visible-frame-gap.md`
+9. `deploy-audit/2026-07-16T07-39-04-04-00-core-profile-release-parity-gate.md`
+10. `central-sync-audit/2026-07-16T07-39-04-04-00-runtime-ahead-core-adoption-reconciliation.md`
+11. `turn-ledger/2026-07-16T07-39-04-04-00.md`
 12. `next-steps.md`
 13. `validation.md`
 
 ## Retained audits
 
-Accessibility projection, input-action convergence, host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback remain valid and unchanged.
+WebGL recovery, accessibility, input-action convergence, host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery settlement, and course-generation rollback remain valid in their timestamped audit families.
 
 ## Next safe ledge
 
-Implement renderer-generation identity, context-loss admission and a resource manifest before claiming context restoration or recovered-frame readiness.
+Publish one immutable capability manifest and pin one Nexus Engine revision before changing gameplay ownership. Adopt Core Data course/RNG services first, then meters, camera, batches, patches, and transaction receipts with explicit migration and parity proof.
