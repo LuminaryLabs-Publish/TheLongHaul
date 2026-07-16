@@ -5,15 +5,13 @@ export function createCourseCellDescriptor(course, cell) {
   const bounds = cell.bounds;
   const [cx, cz] = cell.coordinates;
   const terrainSegments = 24;
-  const nearbyRoadSegments = [];
+  const terrainRoadSegments = [];
+  const ownedRoadSegments = [];
   for (const edge of course.edges) {
     for (let index = 1; index < edge.samples.length; index += 1) {
       const a = edge.samples[index - 1];
       const b = edge.samples[index];
-      const midpointX = (a.x + b.x) * 0.5;
-      const midpointZ = (a.z + b.z) * 0.5;
-      if (midpointX < bounds.minX - 1 || midpointX >= bounds.maxX + 1 || midpointZ < bounds.minZ - 1 || midpointZ >= bounds.maxZ + 1) continue;
-      nearbyRoadSegments.push({
+      const segment = {
         id: `${edge.id}:${index - 1}`,
         edgeId: edge.id,
         branchId: edge.branchId,
@@ -23,13 +21,21 @@ export function createCourseCellDescriptor(course, cell) {
         roughness: edge.roughness,
         a: { x: a.x, y: 0.08, z: a.z },
         b: { x: b.x, y: 0.08, z: b.z }
-      });
+      };
+      const minX = Math.min(a.x, b.x);
+      const maxX = Math.max(a.x, b.x);
+      const minZ = Math.min(a.z, b.z);
+      const maxZ = Math.max(a.z, b.z);
+      if (maxX >= bounds.minX - 32 && minX <= bounds.maxX + 32 && maxZ >= bounds.minZ - 32 && minZ <= bounds.maxZ + 32) terrainRoadSegments.push(segment);
+      const midpointX = (a.x + b.x) * 0.5;
+      const midpointZ = (a.z + b.z) * 0.5;
+      if (midpointX >= bounds.minX && midpointX < bounds.maxX && midpointZ >= bounds.minZ && midpointZ < bounds.maxZ) ownedRoadSegments.push(segment);
     }
   }
 
   function localNearestRoad(point) {
     let best = null;
-    for (const road of nearbyRoadSegments) {
+    for (const road of terrainRoadSegments) {
       const info = segmentInfo(point, road.a, road.b);
       if (!best || info.distance < best.distance) best = { ...info, edge: road };
     }
@@ -64,8 +70,8 @@ export function createCourseCellDescriptor(course, cell) {
     }
   }
 
-  const roads = nearbyRoadSegments;
-  const depots = course.depots.filter((depot) => depot.x >= bounds.minX - 60 && depot.x <= bounds.maxX + 60 && depot.z >= bounds.minZ - 60 && depot.z <= bounds.maxZ + 60);
+  const roads = ownedRoadSegments;
+  const depots = course.depots.filter((depot) => depot.x >= bounds.minX && depot.x < bounds.maxX && depot.z >= bounds.minZ && depot.z < bounds.maxZ);
   const signs = course.signs.filter((sign) => sign.x >= bounds.minX && sign.x < bounds.maxX && sign.z >= bounds.minZ && sign.z < bounds.maxZ);
 
   const vegetation = [];
