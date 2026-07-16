@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>The Long Haul Core Integration</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#11100c;color:#f4ead1}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}.panel{width:min(760px,100%);background:#1c1a14;border:1px solid #5b4a31;padding:28px;box-shadow:0 24px 80px #0008}h1{margin:0 0 8px;text-transform:uppercase}p{color:#b8ad95}.checks{display:grid;gap:8px;margin-top:24px}.check{padding:12px;border:1px solid #3b3529;background:#15140f}.ok{border-color:#557451;color:#bfe0af}.bad{border-color:#874333;color:#ffc0b3}code{color:#ffd477}a{color:#ffd477}
+  </style>
+  <script type="importmap">
+    {"imports":{"nexusengine":"https://cdn.jsdelivr.net/gh/LuminaryLabs-Dev/NexusEngine@b941c9b2995e3449c6987908657753e2cf2df242/src/index.js"}}
+  </script>
+</head>
+<body>
+  <main class="panel">
+    <h1>Core Integration</h1>
+    <p>Browser smoke for deterministic data packages simulation meters camera smoothing instance batches world patch preparation and idempotent operations.</p>
+    <div id="checks" class="checks"></div>
+    <p><a href="./index.html">Return to The Long Haul</a></p>
+  </main>
+  <script type="module">
+    import * as NexusEngine from "nexusengine";
+    import {
+      applyLongHaulOperationOnce,
+      createLongHaulCoreKits,
+      createLongHaulCourseEnvelope,
+      createLongHaulPatchPreparation,
+      verifyLongHaulCourseEnvelope
+    } from "./src/long-haul-core.mjs";
+
+    const checks = document.querySelector("#checks");
+    const report = (label, run) => {
+      const row = document.createElement("div");
+      row.className = "check";
+      try {
+        const detail = run();
+        row.classList.add("ok");
+        row.textContent = `✓ ${label}${detail ? ` · ${detail}` : ""}`;
+      } catch (error) {
+        row.classList.add("bad");
+        row.textContent = `✕ ${label} · ${error?.message ?? error}`;
+      }
+      checks.append(row);
+    };
+
+    const profile = createLongHaulCoreKits(NexusEngine, { seed: "smoke-course", timeLimitSeconds: 300 });
+    const engine = NexusEngine.createEngine({ kits: profile.kits });
+
+    report("Named random streams replay", () => {
+      const random = engine.n.coreData.random;
+      random.nextUint32("course-layout");
+      const snapshot = random.getSnapshot();
+      const expected = random.nextUint32("course-layout");
+      random.loadSnapshot(snapshot);
+      if (random.nextUint32("course-layout") !== expected) throw new Error("stream replay diverged");
+      return expected;
+    });
+
+    const coursePackage = {
+      schema: "long-haul.course-package/1",
+      packageId: "smoke-course",
+      seed: "smoke-course",
+      generatorVersion: "smoke-v1",
+      routeField: { markers: [], corridors: [] },
+      world: { cellSize: 192, activeRadius: 1, bounds: { minX: -192, maxX: 192, minZ: -192, maxZ: 192 }, recipes: {}, initialPatches: [] },
+      delivery: { candidateDepotIds: ["a", "b", "c", "d", "e"], validDepotId: "c" },
+      scoring: { parTimeSeconds: 240, parDistance: 2600 }
+    };
+
+    report("Course package digest verifies", () => {
+      const envelope = createLongHaulCourseEnvelope(engine, coursePackage, { source: "browser-smoke" });
+      const receipt = verifyLongHaulCourseEnvelope(engine, envelope);
+      if (!receipt.valid) throw new Error("package verification failed");
+      return envelope.digest;
+    });
+
+    report("Core Simulation meters clamp and tick", () => {
+      const meters = engine.n.coreSimulation.resources;
+      meters.spend("fuel", 12, "smoke");
+      meters.setLocked("remaining-time", false, "start");
+      meters.tick(1);
+      if (meters.get("fuel").value !== 88 || meters.get("remaining-time").value !== 299) throw new Error("meter state mismatch");
+      return "fuel 88 · time 299";
+    });
+
+    report("Core Camera produces a portable pose", () => {
+      const smoothing = engine.n.coreCamera.smoothing;
+      smoothing.setTarget("player-camera", { position: [12, 8, 18], lookPoint: [4, 2, 0], fov: 62, mode: "chase" });
+      smoothing.update("player-camera", 1 / 60);
+      const descriptor = smoothing.getDescriptor("player-camera");
+      structuredClone(descriptor);
+      return descriptor.kind;
+    });
+
+    report("Core Graphics releases cell instances", () => {
+      const batches = engine.n.coreGraphics.instanceBatches;
+      batches.replaceCell("course-trees", "0:0", [{ id: "tree-a", position: [0, 0, 0] }, { id: "tree-b", position: [2, 0, 0] }]);
+      batches.flush("course-trees");
+      batches.removeCell("course-trees", "0:0");
+      const released = batches.flush("course-trees").releasedInstanceIds;
+      if (released.join(",") !== "tree-a,tree-b") throw new Error("released instances mismatch");
+      return released.join(" ");
+    });
+
+    report("Core World patch preparation separates prefetch", () => {
+      const preparation = createLongHaulPatchPreparation(NexusEngine, {
+        id: "smoke-world",
+        prefetchDistance: 1,
+        generatePatch: request => ({ id: request.patchId, x: request.x, z: request.z })
+      });
+      preparation.setFocus({ position: { x: 0, z: 0 }, forward: { x: 0, z: 1 } });
+      preparation.updateDesired([{ x: 0, z: 0 }]);
+      preparation.pump();
+      const ready = preparation.takeReady();
+      if (ready.length !== 1 || ready[0].id !== "0:0" || !preparation.hasPatch("0:1")) throw new Error("active and prefetched patches mixed");
+      return "active 0:0 · prefetched 0:1";
+    });
+
+    report("Core Transaction Ledger applies once", () => {
+      let count = 0;
+      applyLongHaulOperationOnce(engine, "smoke-course", "depot:a:check", () => ++count);
+      const duplicate = applyLongHaulOperationOnce(engine, "smoke-course", "depot:a:check", () => ++count);
+      if (count !== 1 || !duplicate.duplicate) throw new Error("operation repeated");
+      return "one application";
+    });
+  </script>
+</body>
+</html>
