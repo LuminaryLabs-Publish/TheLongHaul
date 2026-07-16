@@ -1,64 +1,63 @@
 # Next steps
 
-**Timestamp:** `2026-07-16T00-38-29-04-00`
+**Timestamp:** `2026-07-16T05-01-43-04-00`
 
 ## Plan ledger
 
-**Goal:** implement one accessible read model that keeps continuous telemetry useful but quiet, announces meaningful accepted events, and owns route focus through the first matching visible frame.
+**Goal:** implement one renderer/context generation authority that pauses stale presentation, reconstructs resources from accepted state and proves one recovered frame or an actionable fallback.
 
-- [ ] Add `AccessibleStateRevision`, `RouteRevision`, `RunGeneration`, `FocusRevision` and `VisibleFrameRevision` to the projection boundary.
-- [ ] Derive one immutable `AccessibleReadModel` from accepted Core Scene, simulation, vehicle, delivery, condition and map state.
-- [ ] Remove frame-rate telemetry from the broad live-region contract.
-- [ ] Keep timer, speed, road and condition state queryable through stable labeled groups.
-- [ ] Define timer and condition threshold policies.
-- [ ] Coalesce and throttle semantic telemetry changes.
-- [ ] Add stable `SemanticEventId`, priority and deduplication keys for penalties, depot results, recovery, completion and failure.
-- [ ] Give interaction-availability changes one accepted announcement result.
-- [ ] Give course generation explicit progress role, value and status semantics.
-- [ ] Give toasts a dedicated status/alert adapter rather than relying on arbitrary text mutation.
-- [ ] Make `updateSceneUi()` publish accepted route semantics in addition to visual classes.
-- [ ] Mark inactive route surfaces hidden and inert.
-- [ ] Move focus to one stable route heading or primary action after route acceptance.
-- [ ] Record overlay invokers and restore focus when settings, help or pause closes.
-- [ ] Give results and loss one terminal focus and announcement transaction.
-- [ ] Publish a state-bound game-canvas alternative.
-- [ ] Publish a structured map summary bound to the drawn map revision.
-- [ ] Reject stale, duplicate and retired semantic projections.
-- [ ] Publish `AccessibilityProjectionResult`.
-- [ ] Publish `FirstAccessibleRouteFrameAck` and `FirstVisualAccessibleConvergenceAck`.
-- [ ] Add keyboard-only and focus-order fixtures for every route.
-- [ ] Add accessibility-tree snapshots for title, generation, driving, map, pause, settings, results and loss.
-- [ ] Add live-region cadence fixtures under 60 Hz driving.
-- [ ] Add screen-reader transcripts for penalties, interaction, delivery and failure.
-- [ ] Add 200% text, forced-colors and reduced-motion checks.
-- [ ] Compare source, root artifact and deployed Pages accessibility evidence.
+- [ ] Add `DocumentGeneration`, `RuntimeGeneration`, `RendererGeneration`, `ContextGeneration`, `ResourceManifestRevision`, `ActiveCellRevision` and `FrameRevision`.
+- [ ] Register `webglcontextlost` and `webglcontextrestored` through one owned adapter.
+- [ ] Deduplicate repeated browser events for the same context generation.
+- [ ] Publish `RenderLossResult` before recovery work begins.
+- [ ] Stop RAF render submission for the retired renderer generation.
+- [ ] Guard resize, stream and provider callbacks with the target renderer generation.
+- [ ] Choose and document the simulation policy during visual loss.
+- [ ] Neutralize held driving input before any invisible interval.
+- [ ] Add a CPU-side `GpuResourceManifest` with dependency ordering.
+- [ ] Describe all shared geometry and materials as reconstructable resources.
+- [ ] Describe sky, lighting, fog and shadow configuration as reconstructable resources.
+- [ ] Rebuild active terrain/content cells from accepted Core World state.
+- [ ] Rebuild truck and wildlife rigs from accepted engine state.
+- [ ] Declare dust particles as reconstructed or intentionally reset transient state.
+- [ ] Construct and configure one replacement `THREE.WebGLRenderer`.
+- [ ] Reapply pixel ratio, size, color space, tone mapping and shadow policy.
+- [ ] Reject callbacks and results from retired renderer generations.
+- [ ] Enforce a bounded recovery deadline and retry budget.
+- [ ] Publish `RenderRecoveryResult` or `RenderFallbackResult`.
+- [ ] Present and publish `FirstRecoveredFrameAck` before resuming normal interaction.
+- [ ] Add forced `WEBGL_lose_context` fixtures.
+- [ ] Add duplicate-loss and stale-callback fixtures.
+- [ ] Add active-cell and persistent-rig rehydration fixtures.
+- [ ] Add failed-recovery fallback fixtures.
+- [ ] Compare source, root artifact and deployed Pages evidence.
 
 ## Ordered implementation
 
-### 1. Read model
+### 1. Generations and browser admission
 
-Derive structured semantic state from accepted engine resources and host state. Do not read gameplay meaning back from rendered DOM strings.
+Create stable renderer/context identities and route browser loss/restoration evidence through typed commands and terminal results.
 
-### 2. Route and focus
+### 2. Submission and gameplay policy
 
-Extend route projection with explicit inactive-screen settlement, focus targets, invoker capture and restoration receipts.
+Suspend old-generation rendering, clear or neutralize held input and explicitly pause or continue simulation. For this timed driving game, pause-on-loss is the safer default.
 
-### 3. Telemetry and announcements
+### 3. Resource manifest
 
-Separate queryable telemetry from discrete semantic events. Define thresholds, cadence, priority and deduplication before wiring live regions.
+Move GPU construction descriptors into a manifest independent of live Three.js objects. Record dependencies, source revisions, reconstruct, verify and retire behavior.
 
-### 4. Canvas and map alternatives
+### 4. Ordered rehydration
 
-Publish concise run and map summaries that cite the same revisions as the visible WebGL and Canvas2D frames.
+Rebuild renderer, shared resources, atmosphere, active cells and persistent rigs in dependency order. Reconstruct active world cells from Core World state rather than stale visual caches.
 
-### 5. Acknowledgements
+### 5. Result and frame proof
 
-Acknowledge the first accessible route frame and the first visual/accessible converged frame after each accepted route or run generation.
+Publish recovery or fallback, then require one visible frame from the accepted renderer generation before restoring normal interaction.
 
 ### 6. Proof
 
-Run browser accessibility-tree, keyboard, focus, announcement, text-scale, forced-color and lifecycle fixtures against source, artifact and Pages.
+Run loss, restoration, duplicate event, stale generation, active-cell, fallback and source/artifact/Pages parity fixtures.
 
 ## Retained work
 
-Input-action convergence, host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback remain open in their timestamped audit families.
+Accessibility projection, input-action convergence, host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback remain open in their timestamped audit families.
