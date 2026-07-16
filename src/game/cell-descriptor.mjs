@@ -5,17 +5,14 @@ export function createCourseCellDescriptor(course, cell) {
   const bounds = cell.bounds;
   const [cx, cz] = cell.coordinates;
   const terrainSegments = 24;
-  const margin = 34;
   const nearbyRoadSegments = [];
   for (const edge of course.edges) {
     for (let index = 1; index < edge.samples.length; index += 1) {
       const a = edge.samples[index - 1];
       const b = edge.samples[index];
-      const minX = Math.min(a.x, b.x);
-      const maxX = Math.max(a.x, b.x);
-      const minZ = Math.min(a.z, b.z);
-      const maxZ = Math.max(a.z, b.z);
-      if (maxX < bounds.minX - margin || minX > bounds.maxX + margin || maxZ < bounds.minZ - margin || minZ > bounds.maxZ + margin) continue;
+      const midpointX = (a.x + b.x) * 0.5;
+      const midpointZ = (a.z + b.z) * 0.5;
+      if (midpointX < bounds.minX - 1 || midpointX >= bounds.maxX + 1 || midpointZ < bounds.minZ - 1 || midpointZ >= bounds.maxZ + 1) continue;
       nearbyRoadSegments.push({
         id: `${edge.id}:${index - 1}`,
         edgeId: edge.id,
