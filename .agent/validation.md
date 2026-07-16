@@ -1,35 +1,39 @@
 # Validation
 
-**Audit timestamp:** `2026-07-16T07-39-04-04-00`
+**Audit timestamp:** `2026-07-16T08-44-21-04-00`
 
 ## Summary
 
-The full Publish inventory, central ledgers, documented heads, TheLongHaul runtime-ahead commits, new Core profile, isolated smoke, playable host, and retained `.agent` state were inspected. The audit proves that promoted Core capabilities exist in the repository but are not adopted by the playable game.
+The full Publish inventory, central ledgers, documented heads, TheLongHaul's 44-commit runtime rewrite, current modular host, product DSKs, promoted Core adoption, input path, simulation loop, render path, smoke tests, workflow, and retained `.agent` state were inspected. The audit proves a source-backed absence of focus/document/route lifecycle retirement for held and one-shot keyboard evidence.
 
 ## Plan ledger
 
-**Goal:** state exactly what the Core adoption audit proves and what remains unverified.
+**Goal:** state exactly what the browser-focus input audit proves and what remains unverified.
 
 - [x] Compare all 11 accessible Publish repositories.
 - [x] Exclude `TheCavalryOfRome`.
 - [x] Account for ten eligible central ledgers and root `.agent` states.
-- [x] Compare all ten documented heads with `main`.
-- [x] Identify TheLongHaul as the only runtime-ahead repository.
-- [x] Inspect all three runtime-ahead commits and changed files.
-- [x] Inspect playable and smoke provider revisions and kit compositions.
-- [x] Preserve the complete 27-surface source-backed inventory.
+- [x] identify TheLongHaul as the only runtime-ahead repository.
+- [x] Compare the previous documented head with current `main`.
+- [x] Inspect all changed runtime, test, package, and workflow files.
+- [x] Trace keyboard evidence through Core Input, Truck Input, simulation, gameplay, and rendering.
+- [x] Preserve the complete source-backed kit and service inventory.
 - [x] Change documentation only.
-- [ ] Execute Core smoke and playable parity fixtures after implementation.
+- [ ] Execute real-browser lifecycle fixtures after implementation.
 
 ## Repository evidence
 
 ```txt
-reviewed pre-audit head: 5367c558a8e77164631c62747f9e7bd1e0aa9ca5
-central documented head: 609e8cc9cd933cd1678c22b913eb8cfe450b616b
-runtime ahead by: 3 commits
-playable entry: index.html
-Core proof entry: core-integration.html
-Core profile module: src/long-haul-core.mjs
+previous documented head: f9cf4fa71c2a76cd23202787f63c5ff5b2d1f6be
+reviewed pre-audit head: d46394b3a848d769fac1228731e820990dbeb1f4
+runtime ahead by: 44 commits
+entry: index.html
+bootstrap: src/app/bootstrap.mjs
+application chunks: src/app/app-chunk-1.js ... app-chunk-11.js
+product DSK composition: src/game/product-kits.mjs
+Core profile: src/long-haul-core.mjs
+Node smokes: tests/long-haul-game-smoke.mjs, tests/static-shell-smoke.mjs
+workflow: .github/workflows/smoke.yml
 branch: main
 ```
 
@@ -46,65 +50,64 @@ undocumented: 0
 runtime-ahead: 1
 selected: TheLongHaul
 selection rule: runtime-ahead priority
-oldest fallback not used: TheOpenAbove at 2026-07-16T03-03-22-04-00
-other eligible documented heads versus main: identical
+oldest fallback not used: ZombieOrchard at 2026-07-16T03-41-28-04-00
 ```
 
 ## Source inspection
 
 ```txt
-README ownership claims inspected: yes
-Core profile exports inspected: yes
-Core Data schema/random/package configuration inspected: yes
-Core Simulation meter configuration inspected: yes
-Core Camera controller configuration inspected: yes
-Core Graphics batch configuration inspected: yes
-Core Transaction Ledger helper inspected: yes
-Core World patch-preparation helper inspected: yes
-browser smoke checks inspected: yes
-playable import map inspected: yes
-playable kit composition inspected: yes
-playable RNG and generation ownership inspected: yes
-playable run/resource state ownership inspected: yes
-playable camera and instance ownership inspected: yes
-playable provider and patch lifecycle inspected: yes
-playable duplicate-operation ownership inspected: yes
+import map and bootstrap inspected: yes
+ordered chunk loader inspected: yes
+engine kit composition inspected: yes
+Core Data profile inspected: yes
+Core Simulation meters inspected: yes
+Core Camera smoothing inspected: yes
+Core Graphics batches inspected: yes
+Core Transaction Ledger use inspected: yes
+product truck/course/run/delivery/wildlife kits inspected: yes
+course generation and envelope admission inspected: yes
+patch preparation and world provider inspected: yes
+keyboard listeners inspected: yes
+driving pre-tick and post-tick inspected: yes
+route/retry/clear-world paths inspected: yes
+Three.js, Canvas2D, DOM and audio projections inspected: yes
+Node smoke tests inspected: yes
+GitHub Actions smoke workflow inspected: yes
 ```
 
 ## Source-backed observations
 
 ```txt
-new Core profile exists: yes
-browser Core smoke exists: yes
-playable imports Core profile: no
-playable and smoke provider revisions match: no
-playable course envelope admission: no
-playable named RNG adoption: no
-playable Core meter adoption: no
-playable Core Camera adoption: no
-playable Core Graphics adoption: no
-playable patch-preparation adoption: no
-playable Core Transaction Ledger adoption: no
-state migration result: no
-duplicate truth-owner rejection: no
-smoke/playable semantic parity result: no
-FirstCoreBoundPlayableFrameAck: no
+held key store: present
+one-shot pressed store: present
+keydown handler: present
+keyup handler: present
+ordinary frame-end pressed clear: present
+window blur retirement: absent
+document hidden retirement: absent
+pagehide retirement: absent
+freeze retirement: absent
+route/run generation retirement: absent
+neutral Core Input result: absent
+neutral Truck Input result: absent
+stale evidence rejection: absent
+HeldInputRetirementResult: absent
+FirstNeutralInputFrameAck: absent
+browser focus-loss fixtures: absent
 ```
 
 ## Inventory evidence
 
 ```txt
-playable engine kits: 10
-Core World providers: 2
-browser/product adapters: 7
-isolated Core profile kits: 5
-standalone Core controller: 1
-browser proof adapters: 1
-deployment adapters: 1
+engine-installed kits: 13
+Core World effect providers: 1
+standalone controllers: 1
+browser/product adapters: 9
+proof and workflow adapters: 3
 total source-backed surfaces: 27
-product render surfaces: 3
-proof surfaces: 1
-planned adoption surfaces: 20
+render surfaces: 3
+planned input-lifecycle surfaces: 16
+executable project validation command: npm test
 ```
 
 ## Documentation changed
@@ -115,8 +118,8 @@ new architecture audit
 new render audit
 new gameplay audit
 new interaction audit
-new Core adoption contract audit
-new deployment parity gate
+new input-lifecycle contract audit
+new deployment fixture gate
 new central-sync audit
 START_HERE.md refreshed
 current-audit.md refreshed
@@ -131,16 +134,14 @@ kit-registry.json refreshed
 ```txt
 runtime JavaScript: no
 HTML or CSS: no
-Nexus Engine pins: no
-Core profile configuration: no
-course schema: no
-randomness behavior: no
-meter values or IDs: no
-gameplay or scoring: no
+input behavior: no
+simulation or gameplay: no
+Core kit configuration: no
+course generation: no
 camera or rendering: no
 world streaming: no
-transaction behavior: no
 audio or storage: no
+tests or package scripts: no
 workflow or deployment: no
 branch created: no
 pull request created: no
@@ -149,23 +150,17 @@ pull request created: no
 ## Not executed
 
 ```txt
-project test command: unavailable
-core-integration browser smoke: not run
-playable Core profile bootstrap fixture: unavailable
-provider convergence fixture: unavailable
-course envelope admission fixture: unavailable
-named RNG same-seed fixture: unavailable
-meter migration fixture: unavailable
-camera descriptor adoption fixture: unavailable
-instance-batch adoption fixture: unavailable
-patch-provider bridge fixture: unavailable
-transaction migration fixture: unavailable
-full gameplay parity fixture: unavailable
-FirstCoreBoundPlayableFrameAck fixture: unavailable
-root artifact parity fixture: unavailable
-Pages parity fixture: unavailable
+npm test: not run in this documentation-only audit
+real-browser blur fixture: unavailable
+hidden-tab fixture: unavailable
+pagehide/bfcache fixture: unavailable
+freeze/resume fixture: unavailable
+route-retirement fixture: unavailable
+stale one-shot fixture: unavailable
+FirstNeutralInputFrameAck fixture: unavailable
+source/artifact/Pages parity: not run
 ```
 
 ## Claims not made
 
-No Core capability adoption, provider convergence, gameplay-state migration, deterministic replay equivalence, camera or instance descriptor adoption, patch lifecycle adoption, transaction idempotency adoption, smoke/playable parity, artifact parity, Pages parity, or production readiness is claimed.
+No focus-safe input, lost-keyup recovery, automatic pause policy, stale one-shot rejection, neutral Core/Truck convergence, first-neutral-frame acknowledgement, artifact parity, Pages parity, or production readiness is claimed.
