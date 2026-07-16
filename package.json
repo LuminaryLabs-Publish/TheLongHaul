@@ -1,0 +1,8 @@
+{
+  "name": "the-long-haul",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/long-haul-game-smoke.mjs && node tests/static-shell-smoke.mjs"
+  }
+}
