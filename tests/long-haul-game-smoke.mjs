@@ -51,6 +51,40 @@ for (let index = 0; index < 100; index += 1) {
     bounds: { minX: 0, minZ: 0, maxX: CELL_SIZE, maxZ: CELL_SIZE }
   });
   assert.equal(structuredClone(patch).schema, "long-haul.course-cell/2");
+
+  const farCell = {
+    id: `${WORLD_ID}:uniform-grid:0:100000:-100000`,
+    coordinates: [100000, -100000],
+    bounds: {
+      minX: 100000 * CELL_SIZE,
+      minZ: -100000 * CELL_SIZE,
+      maxX: 100001 * CELL_SIZE,
+      maxZ: -99999 * CELL_SIZE
+    }
+  };
+  const farPatch = createCourseCellDescriptor(course, farCell);
+  assert.deepEqual(farPatch, createCourseCellDescriptor(course, farCell), "far terrain is deterministic");
+  assert.equal(farPatch.terrain.heights.every(Number.isFinite), true, "far terrain remains finite");
+
+  const eastCell = {
+    id: `${WORLD_ID}:uniform-grid:0:100001:-100000`,
+    coordinates: [100001, -100000],
+    bounds: {
+      minX: 100001 * CELL_SIZE,
+      minZ: -100000 * CELL_SIZE,
+      maxX: 100002 * CELL_SIZE,
+      maxZ: -99999 * CELL_SIZE
+    }
+  };
+  const eastPatch = createCourseCellDescriptor(course, eastCell);
+  const rowSize = farPatch.terrain.segments + 1;
+  for (let row = 0; row < rowSize; row += 1) {
+    assert.equal(
+      farPatch.terrain.heights[row * rowSize + farPatch.terrain.segments],
+      eastPatch.terrain.heights[row * rowSize],
+      "neighboring terrain cells share a seamless edge"
+    );
+  }
 }
 
 const N = {

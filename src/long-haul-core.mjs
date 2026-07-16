@@ -39,10 +39,11 @@ export function createLongHaulCourseSchema(NexusEngine) {
       },
       world: {
         type: "object",
-        required: ["cellSize", "activeRadius", "bounds"],
+        required: ["cellSize", "activeRadius", "extent", "bounds"],
         properties: {
           cellSize: { type: "number", minimum: 1 },
           activeRadius: { type: "integer", minimum: 0 },
+          extent: { type: "string", const: "infinite" },
           bounds: { type: "object" },
           recipes: { type: "object" },
           initialPatches: { type: "array" }

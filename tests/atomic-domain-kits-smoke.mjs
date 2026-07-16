@@ -19,7 +19,8 @@ assert.equal(product.domains.world.length, 6);
 assert.equal(product.domains.truck.length, 2);
 assert.equal(product.domains.delivery.length, 2);
 assert.equal(product.kits.length, 12);
-assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.playableRadius, 22000);
+assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.extent, "infinite");
+assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.playableRadius, null);
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.gameplayActiveRadius, 2);
 assert.equal(DEFAULT_HORIZON_LOD_POLICY.collision[0], false);
 assert.equal(DEFAULT_ROAD_CLASSES.length, 4);
@@ -43,7 +44,8 @@ for (const kit of product.kits) {
 }
 const tick = () => { for (const system of product.kits.flatMap((kit) => kit.systems ?? [])) system.system(world); };
 tick();
-assert.equal(engine.n.longHaulWorldProfile.getState().playableRadius, 22000);
+assert.equal(engine.n.longHaulWorldProfile.getState().extent, "infinite");
+assert.equal(engine.n.longHaulWorldProfile.getState().playableRadius, null);
 assert.equal(engine.n.longHaulRoadClasses.get("forest-trail").id, "forest-trail");
 assert.ok(engine.n.longHaulTerrainPolicy.getJumpProfile("softCrest"));
 assert.equal(engine.n.longHaulDeliveryContracts.get("lost-manifest").candidateDepots, 5);
@@ -53,7 +55,13 @@ tick();
 const sector = engine.n.longHaulWorldAtlas.getSector(0, 0);
 assert.equal(sector.id, "sector:0:0");
 assert.equal(sector.insideDisk, true);
+assert.equal(sector.extent, "infinite");
 assert.equal(sector.portals.length, 4);
+engine.n.longHaulWorldAtlas.ensureSector(100000, -100000);
+tick();
+const farSector = engine.n.longHaulWorldAtlas.getSector(100000, -100000);
+assert.equal(farSector.insideDisk, true, "far sectors remain valid in the infinite world");
+assert.equal(farSector.extent, "infinite");
 assert.doesNotThrow(() => structuredClone(engine.n.longHaulWorldAtlas.snapshot()));
 
 engine.n.longHaulTruck.reset({ x: 0, y: 0, z: 0, heading: 0 });

@@ -12,7 +12,8 @@ export function generateMacroSector(profile, x, z, seed = profile.worldSeed) {
   const size = Number(profile.macroSectorSize ?? 1024);
   const center = { x: (x + 0.5) * size, z: (z + 0.5) * size };
   const distance = Math.hypot(center.x, center.z);
-  const insideDisk = distance <= Number(profile.playableRadius ?? 22000);
+  const infinite = profile.extent !== "bounded";
+  const insideDisk = infinite || distance <= Number(profile.playableRadius ?? 22000);
   const settlementCount = insideDisk && unit(seed, `${x}:${z}:settlements`) > 0.55 ? 1 + (unit(seed, `${x}:${z}:settlement-count`) > 0.86 ? 1 : 0) : 0;
   const settlements = Array.from({ length: settlementCount }, (_, index) => ({
     id: `settlement:${x}:${z}:${index}`,
@@ -32,6 +33,7 @@ export function generateMacroSector(profile, x, z, seed = profile.worldSeed) {
     coordinates: [x, z],
     bounds: { minX: x * size, minZ: z * size, maxX: (x + 1) * size, maxZ: (z + 1) * size },
     insideDisk,
+    extent: infinite ? "infinite" : "bounded",
     biome: ["meadow", "pine-forest", "rolling-farmland", "rocky-highland", "wetland"][hashText(`${seed}:${x}:${z}:biome`) % 5],
     hillDensity: 0.35 + unit(seed, `${x}:${z}:hills`) * 0.6,
     forestDensity: 0.2 + unit(seed, `${x}:${z}:forest`) * 0.75,
