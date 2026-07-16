@@ -1,88 +1,70 @@
 # Known gaps
 
-**Timestamp:** `2026-07-16T14-01-02-04-00`
+**Timestamp:** `2026-07-16T18-58-24-04-00`
 
 ## Intent
 
-Track where installed policy state and accepted gameplay state can diverge.
+Track every missing contract needed to stop a failed runtime generation safely.
 
-## Product-policy generation
+## Scheduler and callback lifecycle
 
-- No `ProductPolicyGeneration` or digest exists.
-- World, road, terrain, truck, and delivery policy revisions are not admitted atomically.
-- Policy configuration events do not publish typed accepted/rejected results.
-- No validation checks cross-policy references such as delivery road-class preferences.
-- No stale or mixed-policy rejection exists.
-- Course, run, cell, provider, cache, save, and frame identity omit policy revisions.
+- The next RAF is scheduled before current-frame work begins.
+- No scheduler generation or active-frame token exists.
+- No callback checks whether its generation has been retired.
+- The catch path does not cancel or suppress future product work.
+- Repeated failures can call `showBootError()` and `console.error()` repeatedly.
 
-## World profile adoption
+## Phase execution and partial mutation
 
-- `playableRadius`, `boundaryFadeWidth`, macro-sector size, gameplay-cell size, active radius, horizon bounds, quadtree depth, curve distances, visual radius, and atlas targets are installed but not consumed by the playable world.
-- `CELL_SIZE`, `ACTIVE_RADIUS`, camera far distance, course radial limits, and streamed-cell policy remain independent constants.
-- The current course generator remains a compact five-branch course rather than the declared 22 km disk/atlas policy.
-- No boundary fade, macro-sector, quadtree, settlement atlas, or road-atlas consumer exists.
+- Generation, input, engine tick, gameplay, streaming, visual, HUD, audio, map and render phases have no typed receipts.
+- No phase declares whether it can mutate authoritative state.
+- No journal records the last fully accepted phase.
+- A thrown phase can leave earlier mutations committed and later projections absent.
+- No policy decides whether a partially advanced run must be retired, rolled back or reloaded.
 
-## Road-class catalog adoption
+## Generation failure settlement
 
-- Course generation still uses `BRANCH_PROFILES` and literal trunk/link profiles.
-- Width, grip, grade limit, curvature, and jump weights are not resolved from the catalog.
-- Road records do not carry a catalog revision or exact class snapshot.
-- Unknown road-class IDs are not rejected by a shared admission result.
-- The terrain and truck systems do not agree on one road-class grip policy.
+- `stepGeneration()` stores `generation.error`, but does not transition to a terminal scene.
+- The outer engine tick and render loop remain active after a generation error.
+- Prepared patches and partially registered resources have no fault-generation identity.
+- No clean-retry receipt proves generation resources were retired.
 
-## Terrain and jump policy adoption
+## Input and interaction retirement
 
-- Terrain noise uses hardcoded broad, medium, and detail frequencies/amplitudes.
-- Hill, ridge, and valley density values are not consumed.
-- Road cross-section flatten and longitudinal smoothing are not consumed.
-- Jump profiles are registered but no generated road/cell emits typed jump instances from them.
-- Terrain segment count, vegetation density, grass count, and rock placement remain hardcoded.
-- No terrain-policy revision is bound to cell/cache identity.
+- `pressed.clear()` executes only at the end of a successful frame.
+- A failure can retain one-shot camera, map, pause, retry or interaction evidence.
+- Held keyboard state is not cleared by the runtime fault path.
+- The failure panel has no dedicated focus/announcement settlement.
+- Reload is available, but no typed restart admission distinguishes safe retry from mandatory reload.
 
-## Truck dynamics adoption
+## Audio and world retirement
 
-- `createLongHaulProductKits()` passes a dynamics-profile resource to the truck factory.
-- `createLongHaulTruckKit()` accepts only `N`, so that second argument is ignored.
-- Maximum speed, reverse speed, acceleration, braking, drag, rolling resistance, steering response, steering angle, wheelbase, grip response, boost, and body roll remain hardcoded.
-- Suspension and air-control profile fields have no runtime consumer.
-- No default-profile parity or modified-profile behavior fixture exists.
+- The fault path does not mute the engine or wind loops.
+- It does not call `clearWorld()`.
+- It does not remove the Core World registration or release streamed cells.
+- It does not retire patch-preparation work or reject late ready patches.
+- GPU resources remain governed only by ordinary cell and WebGL lifecycle paths.
 
-## Delivery-contract adoption
+## Result and visible proof
 
-- The catalog defines seven contract types, but delivery state has no `contractTypeId` or contract revision.
-- Fragile, express, lost-manifest, rough-road bonus, cross-region, and multi-stop rules are not evaluated.
-- Delivery checks remain one candidate depot versus one valid depot.
-- Time, distance, penalty, road-class, stop, and cargo-damage requirements are not derived from the contract.
-- No contract-selection loop or typed contract result exists.
-
-## API settlement semantics
-
-- Policy `configure()` and `register()` methods emit events and immediately return current state before the resolve phase processes the request.
-- No request ID, expected revision, accepted result, rejected result, or duplicate classification exists.
-- Callers cannot prove which tick accepted a configuration.
-- Snapshots do not include a shared policy digest.
-
-## Rendering and visible proof
-
-- Three.js world geometry does not cite an accepted world/road/terrain policy generation.
-- Truck presentation does not cite a dynamics-profile generation.
-- HUD, map, results, and audio do not cite a contract/policy generation.
-- No `FirstPolicyBoundRunAck` exists.
-- No `FirstPolicyBoundFrameAck` exists.
-- A policy resource may change while derived world/truck/delivery state remains from an older configuration.
+- No `RuntimeFrameFaultResult` exists.
+- No `RuntimeRetirementResult` exists.
+- No `FirstFaultFrameAck` exists.
+- The visible overlay does not prove the gameplay scheduler has stopped.
+- No diagnostic correlates the fault phase, scheduler generation and terminal frame.
 
 ## Validation and deployment
 
-- Current smoke tests do not prove policy adoption.
-- No fixture changes each policy and verifies a semantic runtime effect.
-- No mixed-generation or stale-cache fixture exists.
-- No source/build/Pages policy-convergence fixture exists.
-- No deployment receipt identifies the accepted policy digest.
+- No phase-failure injection fixture exists.
+- No repeated-error suppression fixture exists.
+- No stale-RAF or stale-input fixture exists.
+- No audio/world retirement fixture exists.
+- No source/build/Pages terminal-fault parity fixture exists.
 
 ## Retained gaps
 
-The browser-focus held-input retirement gap remains current: held and one-shot browser input is not retired on blur, hidden visibility, pagehide, freeze, route retirement, or run retirement. Earlier WebGL recovery, accessibility, host-clock, audio, generation scheduling, motion preference, pause, delivery settlement, and rollback gaps remain preserved in prior timestamped audit families.
+Product-policy runtime adoption remains unresolved. Earlier browser-focus, Core adoption, WebGL recovery, accessibility, input-contract, host-clock, audio, generation-budget, motion, pause, delivery and rollback gaps remain preserved in prior audit families.
 
 ## Completion boundary
 
-Do not claim policy-driven world scale, terrain, roads, truck handling, contracts, cache correctness, frame convergence, or deployment parity until every run is bound to one admitted policy digest, every consumer reads that generation, stale derived work is rejected, and executable fixtures prove default and modified policies across source, artifact, and Pages.
+Do not claim runtime crash containment, clean restart, partial-frame integrity, scheduler retirement, stable fault projection, artifact parity, Pages parity or production readiness until every injected phase failure produces one terminal result, retires the old generation and proves no later callback performs product work.
