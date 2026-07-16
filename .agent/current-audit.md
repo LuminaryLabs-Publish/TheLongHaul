@@ -1,15 +1,26 @@
-# Current audit: input action contract and Core Input convergence
+# Current audit: accessible HUD, route and announcement authority
 
-**Timestamp:** `2026-07-15T19-38-38-04-00`  
+**Timestamp:** `2026-07-16T00-38-29-04-00`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `cc4ec1d7ad16e6aa29e7719203d5411217142f25`  
-**Status:** `input-action-contract-context-convergence-authority-audited`
+**Reviewed pre-audit repository head:** `d3b8c99bf4a8ccb6a5246e81f8cdaa9f1513e1bf`  
+**Status:** `accessible-hud-route-announcement-authority-audited`
 
 ## Summary
 
 The repository contains a complete single-file Nexus Engine browser freight game with deterministic generation, streamed world content, driving, depot discovery, recovery, retry, scoring, WebGL, Canvas2D, DOM UI, WebAudio, persistence and Pages deployment.
 
-This audit isolates the relationship between the declared Core Input contract and the executable browser keyboard path.
+This audit isolates semantic HUD projection, route focus and meaningful announcement ownership.
+
+## Plan ledger
+
+**Goal:** turn accepted route and gameplay revisions into one bounded accessible read model and matching semantic/visible frame evidence.
+
+- [x] Compare all eligible Publish repositories and select TheLongHaul by oldest synchronized timestamp.
+- [x] Inspect route, generation, HUD, map, toast, outcome, keyboard and frame paths.
+- [x] Preserve all existing domains, kits, providers, adapters and services.
+- [x] Define the missing focus, announcement, canvas-alternative and frame-result surfaces.
+- [x] Change documentation only.
+- [ ] Implement and execute browser accessibility fixtures.
 
 ## Source-backed inventory
 
@@ -32,47 +43,48 @@ build command: absent
 
 ```txt
 boot
-  -> install Core Input with action manifest, bindings and contexts
-  -> install separate window keydown, keyup and blur listeners
-  -> enter title
+  -> parse static canvas, route screens, HUD, map and failure shell
+  -> import pinned providers
+  -> install engine kits and providers
+  -> restore settings
+  -> enter title and start RAF
 
-held driving
-  -> browser keydown mutates keys[code]
-  -> RAF derives throttle, brake, steer, boost and reverse
-  -> host copies derived intent into Core Input
-  -> host submits Vehicle Dynamics input directly
-  -> engine tick settles gameplay
-  -> presentation renders effects
+route command
+  -> transition through Core Scene
+  -> updateSceneUi removes and adds .active classes
+  -> body driving class changes
+  -> no explicit focus transfer, restoration or semantic route result
 
-one-shot actions
-  -> Escape directly changes route or pause state
-  -> C directly changes camera mode
-  -> M directly changes map state
-  -> E sets interactWanted
-  -> R directly retries the seed
-  -> no Core Input action result is published
+generation
+  -> bounded work updates visual percent, phase detail and phase classes
+  -> no progressbar state or semantic progress acknowledgement
 
-recovery
-  -> E is consumed contextually
-  -> host checks stuck, fuel, road and bounds state
-  -> recovery may execute
-  -> declared KeyR recovery binding is unused
+driving frame
+  -> input and simulation settle
+  -> updateHud rewrites timer, speed, road, fuel, damage, cargo,
+     checked depots, penalties, recovery and interaction prompt
+  -> all text remains under one aria-live=polite ancestor
+  -> Canvas2D map and Three.js world render
+  -> no semantic-frame revision or convergence acknowledgement
+
+event/outcome
+  -> toast text/class changes or results/loss route activates
+  -> no typed announcement identity, priority, deduplication or focus result
 ```
 
 ## Domains in use
 
 ```txt
-browser document, keyboard, focus, blur, resize and RAF lifecycle
-provider resolution and pinned module imports
+browser lifecycle, route, focus, keyboard, resize and RAF
+provider resolution and pinned imports
 Core Scene, Core World, Core Input and Core Simulation
 Long Haul Delivery, Vehicle Dynamics, Route Field, Resource Pressure, Hazard Field and Telemetry
-browser event capture, action mapping, context admission and held-action lifecycle
-seeded course generation, validation, scheduling and readiness
-streamed terrain and course-content ownership
-truck, wildlife, exploration, depot interaction, recovery, retry and scoring
-settings, motion, pause, audio and storage
+course generation, validation, scheduling, streaming and exploration
+recovery, retry, depot checks, penalties, outcome and scoring
+settings, motion preference, audio and storage
 Three.js WebGL, Canvas2D map and DOM UI/HUD
-input-effect visible-frame convergence
+semantic route projection, focus ownership, telemetry summarization,
+announcement policy, canvas alternatives and accessibility-frame convergence
 GitHub Pages deployment and audit governance
 ```
 
@@ -81,73 +93,70 @@ GitHub Pages deployment and audit governance
 ```txt
 Core Scene: registry, current scene, transitions, exit validation, snapshots
 Core World: registry, partition, focus, cells, provider ordering, validation
-Core Input: action manifest, keyboard bindings, contexts, intent snapshot, reset
+Core Input: action manifest, bindings, contexts, intent snapshot, reset
 Long Haul Delivery: seed, progress, depots, checks, retry, result, snapshot, reset
 Core Simulation: reset, start, pause, resume, timer, penalties, recovery, failure, completion
 Vehicle Dynamics: truck state, input, kinematics, boost, bounds, impacts, reset
 Route Field: markers, corridors, nearest marker, state, reset
-Resource Pressure: fuel, truck, cargo, bounded adjustments, state, reset
+Resource Pressure: fuel, truck, cargo, adjustments, state, reset
 Hazard Field: state, motion, bounds, collisions, events, reset
 Telemetry: truck, run, condition and delivery histories
-terrain provider: prepare, update, release, descriptors, snapshots, reset
-course provider: roads, depots, signs, vegetation, obstacles, lifecycle and snapshots
-procedural generator: seed/RNG, graph, fork, depots, par, validation and generation plan
-browser keyboard adapter: keydown, keyup, held state, repeat filter, route commands and blur clearing
-Three.js adapter: renderer, scene, camera, atmosphere, rigs, meshes, resize, RAF and render
-DOM adapter: title, help, settings, generation, HUD, pause, results, loss, toast and failure
-Canvas adapter: explored routes, depots, rejections, truck and DPR-aware resize
-WebAudio adapter: context unlock, master bus, loops, cues and RAF gain updates
+terrain provider: prepare, update, release, effects, snapshots, reset
+course provider: roads, depots, signs, vegetation, obstacles, lifecycle, snapshots
+procedural generator: seed/RNG, graph, fork, depots, par, validation, plan
+keyboard adapter: key evidence, held state, commands and blur clearing
+Three.js adapter: renderer, scene, camera, atmosphere, rigs, meshes, RAF and render
+DOM adapter: title, help, settings, generation, HUD, pause, results, loss, toast, failure
+Canvas adapter: roads, depots, rejections, truck and resize
+WebAudio adapter: unlock, buses, loops, cues and gain updates
 storage adapter: settings, motion and best score
 Pages adapter: main-triggered static deployment
 ```
 
 ## Main finding
 
-The Core Input descriptor is not the executable input authority. The host owns raw keyboard state and direct commands, then copies only a subset of derived driving intent into Core Input.
+The HUD is semantically live at a much higher cadence than the gameplay decisions that should be announced.
 
 ```txt
-Core Input actions: throttle, brake, steerLeft, steerRight, boost, interact, camera, map, pause, recovery
-Core Input contexts: driving, menu
-Core Input recovery binding: KeyR
-host KeyR behavior: retry same seed
-host recovery behavior: contextual KeyE
-one-shot Core Input publication: absent
-context enforcement: absent
-held-action generation: absent
-InputActionResult: absent
-FirstInputActionAck: absent
-FirstInputEffectFrameAck: absent
+#hud aria-live=polite: yes
+updateHud called while driving every frame: yes
+multiple live descendants rewritten per call: yes
+continuous telemetry semantic policy: no
+announcement thresholds/cadence: no
+stable semantic event identity: no
+discrete toast live policy: no
+route focus owner/restoration: no
+inactive-screen semantic settlement: no
+generation progress role/value result: no
+dynamic game-canvas alternative: no
+map semantic summary: no
+AccessibilityProjectionResult: no
+FirstAccessibleRouteFrameAck: no
+FirstVisualAccessibleConvergenceAck: no
 ```
 
-Camera, map, pause, retry and recovery therefore mutate route, run or presentation state without an accepted semantic input revision. The action descriptor and executable behavior can diverge without rejection.
+Continuous telemetry should remain queryable, but only meaningful thresholds and accepted discrete events should enter an announcement stream. Route changes need explicit focus and inactive-screen settlement. Canvas alternatives need to cite the same accepted run/map revision as the visible frame.
 
-This is a source-level contract and evidence gap. It is not a reproduced stuck-key, misclick or user-visible failure.
+This is a source-level semantic ownership and evidence gap. It is not a reproduced screen-reader failure or conformance claim.
 
 ## Required authority
 
-```txt
-the-long-haul-input-action-contract-context-convergence-authority-domain
-```
+`the-long-haul-accessible-hud-route-announcement-authority-domain`
 
 ```txt
-InputEventAdmissionCommand
-  -> bind document, input generation, device, event,
-     action-map, context and route revisions
-  -> normalize browser evidence through one binding table
-  -> reject stale, repeated, retired or out-of-context evidence
-  -> update one immutable held-action snapshot
-  -> publish InputEventAdmissionResult
-
-InputActionCommand
-  -> resolve one semantic action
-  -> distinguish retry from recovery
-  -> publish InputActionResult exactly once
-  -> update Core Input from the accepted result
-  -> allow gameplay and presentation consumption
-  -> publish FirstInputActionAck
-  -> publish FirstInputEffectFrameAck
+AccessibilityProjectionCommand
+  -> bind document, route, run, simulation, HUD, map,
+     input, focus, policy and visible-frame revisions
+  -> derive immutable AccessibleReadModel
+  -> calculate bounded telemetry and announcement deltas
+  -> settle route focus and restoration
+  -> project state-bound canvas and map alternatives
+  -> reject stale, duplicate and retired work
+  -> publish AccessibilityProjectionResult
+  -> publish FirstAccessibleRouteFrameAck
+  -> publish FirstVisualAccessibleConvergenceAck
 ```
 
 ## Audit boundary
 
-Documentation only. Runtime JavaScript, input behavior, gameplay, rendering, audio, storage, imports, workflows and deployment were not changed or executed.
+Documentation only. Runtime JavaScript, HTML, CSS, input, gameplay, rendering, audio, storage, imports, workflows and deployment were not changed or executed.
