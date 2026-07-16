@@ -1,164 +1,185 @@
-# Current audit: WebGL context and resource recovery authority
+# Current audit: Core capability adoption parity
 
-**Timestamp:** `2026-07-16T05-01-43-04-00`  
-**Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `48ba7e8938c7edb4a62a0748e60b69ba53820c45`  
-**Status:** `webgl-context-resource-recovery-authority-audited`
+**Timestamp:** `2026-07-16T07-39-04-04-00`  
+**Reviewed pre-audit repository head:** `5367c558a8e77164631c62747f9e7bd1e0aa9ca5`  
+**Status:** `core-capability-adoption-parity-authority-audited`
 
 ## Summary
 
-TheLongHaul contains a complete single-file Nexus Engine browser freight game with deterministic generation, streamed world content, driving, depot discovery, recovery, retry, scoring, WebGL, Canvas2D, DOM UI, WebAudio, persistence and Pages deployment.
+TheLongHaul now contains a new Core integration profile and browser smoke in addition to its playable single-file game. The added profile demonstrates promoted Nexus Engine capabilities, but those capabilities are not installed or consumed by `index.html`.
 
-This audit isolates WebGL context-loss admission, renderer generations, GPU-resource reconstruction, gameplay policy during visual loss and first recovered frame proof.
+The active audit isolates provider revision convergence, Core profile admission, migration from existing playable state owners, smoke/playable semantic parity, and first Core-bound gameplay-frame proof.
 
 ## Plan ledger
 
-**Goal:** turn WebGL loss/restoration evidence into one bounded recovery or fallback result while keeping Nexus Engine state authoritative.
+**Goal:** converge the proof-only Core profile and playable runtime into one accepted capability generation without changing game semantics accidentally.
 
-- [x] Compare all eligible Publish repositories and select TheLongHaul by oldest synchronized timestamp.
-- [x] Inspect renderer creation, shared resources, streamed cells, cell release, rigs, resize, listeners and RAF.
-- [x] Preserve all existing domains, kits, providers, adapters and services.
-- [x] Define the missing generation, manifest, reconstruction, stale-rejection, fallback and frame-result surfaces.
-- [x] Change documentation only.
-- [ ] Implement and execute browser context-loss fixtures.
+- [x] Compare all eligible Publish repositories and select the sole runtime-ahead repository.
+- [x] Inspect the three runtime-ahead commits and changed files.
+- [x] Inspect playable kits, providers, adapters, and state ownership.
+- [x] Inspect new Core kits, controller, smoke checks, and README claims.
+- [x] Record semantic and provider divergence.
+- [x] Preserve runtime and deployment unchanged.
+- [ ] Implement one Core capability manifest and provider revision.
+- [ ] Migrate state and retire duplicate owners only after parity proof.
 
 ## Source-backed inventory
 
 ```txt
-runtime entry point: index.html
-Nexus Engine revision: c5548de504072bf09eb68986b98aca0292903803
-Three.js version: 0.165.0
-engine-installed kits: 10
+playable entry: index.html
+Core proof entry: core-integration.html
+Core profile module: src/long-haul-core.mjs
+playable Nexus Engine: c5548de504072bf09eb68986b98aca0292903803
+smoke Nexus Engine: b941c9b2995e3449c6987908657753e2cf2df242
+Three.js: 0.165.0
+playable engine kits: 10
 Core World providers: 2
 browser/product adapters: 7
+isolated Core profile kits: 5
+standalone Core controller: 1
+browser proof adapters: 1
 deployment adapters: 1
-source-backed surfaces: 20
-render surfaces: 3
+total source-backed surfaces: 27
+product render surfaces: 3
 package manifest: absent
-test suite: absent
-build command: absent
+executable project test command: absent
 ```
 
-## Complete interaction loop
+## Interaction loops
+
+### Playable
 
 ```txt
-boot
-  -> import pinned providers
-  -> install engine kits and world providers
-  -> create renderer, scene, camera, lights and shared resources
-  -> restore settings and enter title
-  -> start recursive RAF
+boot and route projection
+  -> create existing playable engine and Three.js host
+  -> generate a course with inline RNG
+  -> stream Core World cells through existing providers
+  -> drive, inspect five depots, settle one delivery
+  -> update custom run state, Resource Pressure, penalties, scoring
+  -> project WebGL, Canvas2D, DOM, audio, and storage
+```
 
-generation and streaming
-  -> create deterministic course
-  -> create active terrain/content cells
-  -> allocate cell geometry, textures, materials and instances
-  -> release ordinary inactive cells through provider disposal
+### Core proof
 
-driving frame
-  -> capture input and update intent
-  -> tick engine state
-  -> stream world around vehicle
-  -> update HUD, map, audio and Three.js objects
-  -> renderer.render(scene, camera)
+```txt
+load core-integration.html
+  -> create separate engine from createLongHaulCoreKits
+  -> test named RNG replay
+  -> test course envelope digest
+  -> test resource meters
+  -> test camera descriptor
+  -> test instance-batch release
+  -> test patch preparation
+  -> test transaction apply-once
+  -> project DOM rows
+```
 
-context loss
-  -> browser evidence has no product-owned admission path
-  -> old renderer generation is not retired
-  -> RAF and callbacks have no generation guard
-  -> shared and active-cell resources have no reconstruction manifest
-  -> gameplay/input policy is undefined
-  -> no fallback or first recovered frame result exists
+### Missing adoption
+
+```txt
+accepted Core proof
+  -> no shared profile digest
+  -> no playable bootstrap result
+  -> no legacy-state migration result
+  -> no duplicate-owner retirement result
+  -> no semantic parity result
+  -> no Core-bound gameplay frame acknowledgement
 ```
 
 ## Domains in use
 
 ```txt
-browser lifecycle, keyboard, blur, resize and RAF
-provider resolution and pinned imports
-Core Scene, Core World, Core Input and Core Simulation
-Long Haul Delivery, Vehicle Dynamics, Route Field, Resource Pressure, Hazard Field and Telemetry
-course generation, validation, staged work, streaming and ordinary cell retirement
-run timing, recovery, depot checks, penalties, outcomes and scoring
-settings, motion preference, audio and storage
-Three.js WebGL, Canvas2D map and DOM UI/HUD
-renderer/context generation, loss admission, GPU-resource manifest,
-ordered rehydration, stale-generation rejection, fallback and recovered-frame convergence
-GitHub Pages deployment and audit governance
+browser lifecycle, keyboard, RAF, DOM smoke reporting
+provider resolution and static release graph
+Core Scene, Core World, Core Input, custom Core Simulation
+Long Haul Delivery, Vehicle Dynamics, Route Field,
+Resource Pressure, Hazard Field, Telemetry
+Core Data schemas/packages/random streams
+Core Simulation resource meters
+Core Camera smoothing
+Core Graphics instance batches
+Core Transaction Ledger
+Core World patch preparation
+course generation, delivery, scoring, retry, world streaming
+Three.js WebGL, Canvas2D map, DOM HUD, WebAudio, storage
+Core profile admission, migration, dual-owner rejection,
+semantic parity, release parity, Core-bound frame proof
+Pages deployment and audit governance
 ```
 
 ## Kits and services
 
 ```txt
-Core Scene: registry, current scene, transitions, exit validation, snapshots
-Core World: registry, partition, focus, cells, provider ordering, validation
-Core Input: action manifest, bindings, contexts, intent snapshot, reset
-Long Haul Delivery: seed, progress, depots, checks, retry, result, snapshot, reset
-Core Simulation: reset, start, pause, resume, timer, penalties, recovery, failure, completion
-Vehicle Dynamics: truck state, input, kinematics, boost, bounds, impacts, reset
-Route Field: markers, corridors, nearest marker, state, reset
-Resource Pressure: fuel, truck, cargo, adjustments, state, reset
-Hazard Field: state, motion, bounds, collisions, events, reset
-Telemetry: truck, run, condition and delivery histories
-terrain provider: prepare, update, release, effects, snapshots, reset
-course provider: roads, depots, signs, vegetation, obstacles, lifecycle, snapshots
-procedural generator: seed/RNG, graph, fork, depots, par, validation, plan
-keyboard adapter: key evidence, held state, commands and blur clearing
-Three.js adapter: renderer, scene, camera, atmosphere, shared resources, streamed meshes, rigs, resize, RAF and render
-DOM adapter: title, help, settings, generation, HUD, pause, results, loss, toast, failure
-Canvas adapter: roads, depots, rejections, truck and resize
-WebAudio adapter: unlock, buses, loops, cues and gain updates
-storage adapter: settings, motion and best score
-Pages adapter: main-triggered static deployment
+Playable Core Scene: registry, transitions, exit validation, snapshots
+Playable Core World: worlds, partition, focus, cells, providers, validation
+Playable Core Input: actions, bindings, contexts, intent, reset
+Long Haul Delivery: generation, depots, checks, retry, result, snapshots
+Playable Core Simulation: timer, distance, penalties, recovery, terminal state
+Vehicle Dynamics: heavy-truck kinematics, boost, impacts, bounds
+Route Field: route markers/corridors and nearest-route queries
+Resource Pressure: fuel, truck, cargo and bounded adjustments
+Hazard Field: wildlife motion and collision
+Telemetry: truck/run/condition/delivery history
+Terrain provider: terrain cell lifecycle and snapshots
+Course provider: roads/depots/signs/vegetation/obstacles lifecycle
+Course generator: inline RNG, graph, par, validation, staged work
+Keyboard adapter: key evidence and one-shot commands
+Three.js adapter: renderer, direct camera/instances/cells/rigs/render
+DOM adapter: routes, progress, HUD, outcomes, errors
+Canvas adapter: map projection
+WebAudio adapter: unlock, loops, cues
+Storage adapter: settings, motion, best score
+Core Data profile: schemas, envelopes, digests, named RNG, snapshots
+Core Simulation meters: bounds, rates, locks, thresholds
+Core Camera profile: smoothed portable pose descriptors
+Core Graphics profile: batch descriptors, cell replacement/release receipts
+Core Transaction Ledger: apply-once and duplicate classification
+Patch preparation controller: desired, active, prefetch, cache, budgets, ready
+Core smoke adapter: independent bootstrap and seven DOM checks
+Pages adapter: static deployment from main
 ```
 
 ## Main finding
 
 ```txt
-one renderer constructed and retained: yes
-recursive RAF render submission: yes
-shared GPU resource graph: yes
-active streamed GPU resource graph: yes
-ordinary cell disposal: yes
-whole renderer-generation owner: no
-webglcontextlost admission: no
-webglcontextrestored admission: no
-presentation suspension result: no
-simulation/input loss policy: no
-GPU resource manifest: no
-ordered reconstruction: no
-active-cell rehydration result: no
-stale callback rejection: no
-recovery deadline/retry budget: no
-RenderLossResult: no
-RenderRecoveryResult: no
-RenderFallbackResult: no
-FirstRecoveredFrameAck: no
+Core capabilities implemented in repository: yes
+Core capabilities exercised in isolated smoke: yes
+Core capabilities adopted by playable engine: no
+provider revision convergence: no
+canonical Core profile manifest: no
+course envelope admission in playable generation: no
+named RNG adoption in playable generation/retry: no
+meter schema convergence: no
+camera descriptor adoption: no
+instance-batch adoption: no
+patch controller/provider adoption: no
+transaction-ledger adoption: no
+legacy state migration: no
+duplicate truth-owner rejection: no
+smoke/playable semantic parity: no
+FirstCoreBoundPlayableFrameAck: no
 ```
 
-A context loss can invalidate the renderer and GPU resources while the recursive frame and engine paths retain no explicit replacement-generation contract. Ordinary cell disposal does not reconstruct shared resources, persistent rigs, atmosphere or active cells.
-
-This is a source-level lifecycle and evidence gap. It is not a reproduced production failure.
+The new proof and playable runtime already disagree on provider revision, time-limit configuration, and meter identifiers. These differences may be intentional scaffolding, but they require one explicit adoption and migration result before Core ownership can be claimed for the playable game.
 
 ## Required authority
 
-`the-long-haul-webgl-context-resource-recovery-authority-domain`
+`the-long-haul-core-capability-adoption-parity-authority-domain`
 
 ```txt
-RenderRecoveryAdmissionCommand
-  -> bind document route runtime renderer context resource-manifest
-     world-cell input simulation and frame revisions
-  -> observe and deduplicate context loss
-  -> retire stale presentation
-  -> apply explicit input and simulation policy
-  -> rebuild renderer, shared resources, atmosphere, active cells and rigs
-  -> reject retired-generation callbacks and results
-  -> enforce a deadline and retry budget
-  -> publish RenderLossResult
-  -> publish RenderRecoveryResult or RenderFallbackResult
-  -> publish FirstRecoveredFrameAck
+CoreCapabilityAdmissionCommand
+  -> bind release, playable, smoke, provider, profile,
+     schema, RNG, meter, camera, batch, patch,
+     ledger, artifact, deployment, and frame revisions
+  -> publish one CoreCapabilityAdoptionManifest
+  -> classify capability ownership
+  -> reject incompatible or duplicate truth owners
+  -> stage and atomically commit migration
+  -> run shared semantic fixtures
+  -> publish CoreCapabilityAdoptionResult
+  -> publish FirstCoreBoundPlayableFrameAck
 ```
 
 ## Audit boundary
 
-Documentation only. Runtime JavaScript, HTML, CSS, input, gameplay, rendering, audio, storage, imports, workflows and deployment were not changed or executed.
+Documentation only. Runtime JavaScript, HTML, CSS, imports, schemas, values, gameplay, rendering, audio, storage, workflows, and deployment were not changed or executed.
