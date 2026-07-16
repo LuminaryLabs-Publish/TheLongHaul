@@ -1,77 +1,63 @@
 # Validation
 
-**Audit timestamp:** `2026-07-16T14-01-02-04-00`
+**Audit timestamp:** `2026-07-16T18-58-24-04-00`
 
 ## Summary
 
-The full Publish inventory, central ledger coverage, TheLongHaul's six new product-domain commits, all five new policy DSKs, semantic product composition, and the existing generation/simulation consumers were inspected. The audit proves that the policy resources are installed but not yet adopted as one exact runtime configuration.
+The full Publish comparison, ten eligible ledger/root-agent states, synchronized repository heads and TheLongHaul runtime-fault path were inspected. The audit proves that runtime exceptions are visibly caught but do not retire the already-scheduled RAF generation.
 
 ## Checklist
 
 - [x] Compare all 11 accessible Publish repositories.
 - [x] Exclude `LuminaryLabs-Publish/TheCavalryOfRome`.
 - [x] Confirm ten eligible central ledgers and root `.agent` states.
-- [x] Select only TheLongHaul for the material undocumented runtime/domain delta.
-- [x] Compare `dbd276e894cf3960d0305cfe46bab95ef01d4253` with `b224a9c181635ee43434900b7f6e48199535f7e9`.
-- [x] Inspect all six changed files.
-- [x] Inspect bootstrap, product composition, course generation, terrain, cells, truck simulation, and delivery evaluation.
-- [x] Reconcile the complete kit and service inventory.
+- [x] Compare all ten documented repository heads with `main`.
+- [x] Select only TheLongHaul by the oldest synchronized timestamp.
+- [x] Inspect bootstrap, frame loop, generation error path, input clearing, world cleanup, audio and failure overlay.
+- [x] Reconcile the complete kit/service inventory.
 - [x] Change documentation only.
-- [ ] Execute product-policy adoption fixtures after runtime implementation.
+- [ ] Execute runtime-fault fixtures after implementation.
 
 ## Repository evidence
 
 ```txt
-previous documented repository head: dbd276e894cf3960d0305cfe46bab95ef01d4253
-reviewed pre-audit repository head: b224a9c181635ee43434900b7f6e48199535f7e9
-ahead by: 6 commits
-changed files: 6
+reviewed repository head: a756b21caee440a818bd23fd6e8556a9b3cb2426
+comparison with main: identical
 branch: main
-
-added:
-  src/game/world-profile-kit.mjs
-  src/game/road-class-catalog-kit.mjs
-  src/game/terrain-policy-kit.mjs
-  src/game/truck-dynamics-profile-kit.mjs
-  src/game/delivery-contract-catalog-kit.mjs
-modified:
-  src/game/product-kits.mjs
+selection class: oldest-synchronized-fallback
 ```
 
 ## Source inspection
 
 ```txt
-world-profile DSK inspected: yes
-road-class catalog DSK inspected: yes
-terrain/jump policy DSK inspected: yes
-truck dynamics profile DSK inspected: yes
-delivery-contract catalog DSK inspected: yes
-product semantic composition inspected: yes
-bootstrap installation inspected: yes
-course generator inspected: yes
-terrain noise/height inspected: yes
-course-cell descriptor inspected: yes
-truck simulation inspected: yes
-delivery evaluation inspected: yes
+ordered bootstrap: inspected
+main RAF: inspected
+outer try/catch: inspected
+showBootError: inspected
+generation-local catch: inspected
+input held/pressed state: inspected
+clearWorld retirement path: inspected
+Core World provider update: inspected
+WebAudio lifecycle: inspected
+DOM fault overlay: inspected
+Three.js render phase: inspected
 ```
 
 ## Source-backed observations
 
 ```txt
-five new DSKs defined: yes
-five new DSKs installed: yes
-semantic world/truck/delivery/run groups: yes
-policy resources and events: yes
+visible failure overlay: yes
+runtime catch: yes
+generation error capture: yes
 
-world profile consumed by generation/streaming: no
-road catalog consumed by course generation: no
-terrain policy consumed by terrain/cells: no
-jump catalog consumed by roads: no
-truck profile consumed by truck simulation: no
-delivery contracts consumed by delivery loop: no
-shared policy generation/digest: no
-mixed-revision rejection: no
-policy-bound run/frame acknowledgements: no
+fault generation: no
+phase receipts: no
+scheduler retirement: no
+stale callback rejection: no
+partial-frame settlement: no
+input/audio/world retirement on fault: no
+RuntimeFrameFaultResult: no
+FirstFaultFrameAck: no
 ```
 
 ## Inventory evidence
@@ -81,12 +67,11 @@ engine-installed kits: 18
 Core World effect providers: 1
 standalone controllers: 1
 browser/product adapters: 9
-proof and workflow adapters: 3
+proof/deployment adapters: 3
 total source-backed surfaces: 32
 render surfaces: 3
-new policy DSKs: 5
-planned policy-adoption surfaces: 18
-executable project validation command: npm test
+planned runtime-fault surfaces: 19
+project validation command: npm test
 ```
 
 ## Documentation changed
@@ -97,7 +82,7 @@ new architecture audit
 new render audit
 new gameplay audit
 new interaction audit
-new product-policy contract audit
+new runtime-fault contract audit
 new deployment fixture gate
 new central-sync audit
 START_HERE.md refreshed
@@ -113,14 +98,14 @@ kit-registry.json refreshed
 ```txt
 runtime JavaScript: no
 HTML or CSS: no
-policy DSK runtime behavior: no
-course/cell generation: no
-truck simulation: no
-delivery behavior: no
+gameplay or simulation: no
+generation or world streaming: no
 rendering: no
-input/audio/storage: no
-tests or package scripts: no
-workflow or deployment: no
+input or audio: no
+storage: no
+packages or dependencies: no
+tests or workflows: no
+deployment: no
 branch created: no
 pull request created: no
 ```
@@ -128,18 +113,15 @@ pull request created: no
 ## Not executed
 
 ```txt
-npm test: not run in this documentation-only audit
-default-policy parity fixture: unavailable
-modified-world-profile fixture: unavailable
-modified-road/terrain fixture: unavailable
-modified-truck-profile fixture: unavailable
-modified-contract fixture: unavailable
-mixed-generation rejection fixture: unavailable
-FirstPolicyBoundRunAck fixture: unavailable
-FirstPolicyBoundFrameAck fixture: unavailable
+npm test: not run
+phase-failure fixtures: unavailable
+scheduler-retirement fixture: unavailable
+stale-callback fixture: unavailable
+input/audio/world retirement fixture: unavailable
+FirstFaultFrameAck fixture: unavailable
 source/artifact/Pages parity: not run
 ```
 
 ## Claims not made
 
-No policy-driven world scale, road generation, terrain/jumps, truck handling, delivery contracts, cache invalidation, mixed-revision safety, visible-frame convergence, artifact parity, Pages parity, or production readiness is claimed.
+No runtime crash recovery, clean in-process restart, partial-frame rollback, scheduler retirement, stale-callback safety, fault-frame convergence, artifact parity, Pages parity or production readiness is claimed.
