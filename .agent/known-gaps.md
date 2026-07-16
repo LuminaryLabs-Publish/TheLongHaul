@@ -1,87 +1,93 @@
 # Known gaps
 
-**Timestamp:** `2026-07-16T00-38-29-04-00`
+**Timestamp:** `2026-07-16T05-01-43-04-00`
 
 ## Plan ledger
 
-**Goal:** keep the accessibility projection boundary explicit until route, focus, telemetry, announcements, alternatives and frame proof are implemented.
+**Goal:** keep renderer/context ownership explicit until loss admission, gameplay policy, resource rehydration, fallback and recovered-frame evidence are implemented.
 
-- [x] Trace the current semantic projection paths.
-- [x] Separate continuous telemetry from discrete gameplay events.
-- [x] Record identity, route, focus, announcement, canvas and proof gaps.
+- [x] Trace the current renderer and GPU-resource lifecycle.
+- [x] Separate ordinary streamed-cell disposal from whole-renderer recovery.
+- [x] Record generation, event, policy, manifest, reconstruction and proof gaps.
 - [ ] Implement and execute the missing authority.
 
-## Accessible-state identity
+## Renderer and context identity
 
-- No `AccessibleStateRevision` identifies the semantic state currently projected.
-- No immutable `AccessibleReadModel` joins route, run, vehicle, delivery, condition and map state.
-- Semantic DOM mutations do not cite accepted engine revisions.
-- No stale or duplicate accessibility projection rejection exists.
-- Retry, new course and title return have no semantic-generation retirement receipt.
+- No `RendererGeneration` identifies the active Three.js renderer.
+- No `ContextGeneration` identifies the WebGL context serving the visible frame.
+- No `ResourceManifestRevision` identifies the GPU graph attached to that generation.
+- No route/runtime/frame revision is bound to context-loss evidence.
+- No explicit retirement result exists for a lost renderer generation.
 
-## Continuous HUD telemetry
+## Browser loss and restoration admission
 
-- `#hud` is one `aria-live="polite"` region.
-- `updateHud()` rewrites multiple descendants during every driving frame.
-- Timer, speed, road, fuel, damage, cargo, depot count, penalties, recovery and prompt share one live policy.
-- No cadence, threshold, coalescing or deduplication policy exists.
-- No explicit distinction exists between queryable telemetry and announceable events.
-- No user-requested telemetry summary command exists.
+- No `webglcontextlost` listener exists.
+- No `webglcontextrestored` listener exists.
+- No owned path decides whether to call `preventDefault()` and attempt restoration.
+- Duplicate loss or restoration callbacks have no deduplication identity.
+- Restoration evidence from a retired document/runtime generation cannot be rejected.
+- No typed `RenderLossResult` exists.
 
-## Route and focus
+## Submission and gameplay policy
 
-- `updateSceneUi()` changes `.active` classes but publishes no semantic route result.
-- Inactive route surfaces have no explicit `inert` settlement.
-- Route entry has no stable focus target.
-- Help, settings and pause do not record an invoker for focus restoration.
-- Closing overlays has no focus-restoration result.
-- Results and loss have no terminal focus transaction.
-- Route focus changes have no first matching visible-frame acknowledgement.
+- Recursive RAF submission is not suspended by a renderer-loss result.
+- Resize callbacks have no renderer-generation guard.
+- World streaming and provider callbacks have no renderer-generation guard.
+- Held keyboard actions are not explicitly neutralized for a visual-loss interval.
+- Run timer, fuel, hazards, penalties and delivery state have no declared loss policy.
+- WebAudio has no declared relationship to renderer loss.
+- No `SimulationLossPolicyResult` or `InputLossPolicyResult` exists.
 
-## Progress and discrete announcements
+## GPU resource manifest
 
-- Course generation has visual percent and phases but no explicit progress role/value result.
-- Toasts mutate text and classes without a dedicated status/alert policy.
-- Penalties have no stable semantic event identity or deduplication key.
-- Interaction eligibility has no transition result.
-- Final-minute and critical-condition thresholds have no announcement policy.
-- Delivery accepted, results and failure have no typed announcement result.
-- Announcement priority and interruption policy are absent.
+- Shared geometries and materials have no CPU-side reconstruction manifest.
+- Sky geometry, shader material, lights and shadow configuration have no reconstruction records.
+- Active terrain geometry has no recovery result tied to Core World cell state.
+- Cell-owned CanvasTextures and materials have no recovery result.
+- Instanced vegetation and grass have no recovery result.
+- Truck, cargo and wheel rigs have no recovery result.
+- Wildlife meshes have no recovery result.
+- Dust BufferGeometry has no declared reconstruct-or-reset policy.
+- Resource dependencies and verification are not encoded.
 
-## Canvas and map alternatives
+## Reconstruction and stale work
 
-- The game canvas has only a static label.
-- No state-bound summary communicates current route, road, objective, interaction or critical condition.
-- The map canvas has no structured semantic summary tied to the drawn map revision.
-- Map exploration, depot discovery and rejection state are visual-only.
-- No `CanvasAlternativeResult` or `MapSemanticSummaryResult` exists.
+- No replacement-renderer construction result exists.
+- Pixel ratio, size, output color space, tone mapping and shadow policy have no recovery acknowledgement.
+- Active streamed cells are not rebuilt from accepted Core World state after loss.
+- Old-generation RAF, resize or provider completions cannot be rejected.
+- No recovery deadline exists.
+- No retry budget exists.
+- No per-resource failure classification exists.
+- No `RenderRecoveryResult` exists.
 
-## Visible-frame coherence
+## Fallback and visible-frame proof
 
-- DOM semantics, Canvas2D map and WebGL world do not share an accessible-frame revision.
-- A route or run change can render without a matching semantic acknowledgement.
-- A semantic mutation can occur without proving the matching visual frame.
-- No `AccessibilityProjectionResult` exists.
-- No `FirstAccessibleRouteFrameAck` exists.
-- No `FirstVisualAccessibleConvergenceAck` exists.
+- No non-WebGL recovery/failure state is owned by the product.
+- No actionable retry or reload result follows recovery-budget exhaustion.
+- No `RenderFallbackResult` exists.
+- A browser restoration callback is not tied to a presented frame.
+- No `FirstRecoveredFrameAck` exists.
+- No visible/engine/world revision convergence result exists for the recovered frame.
 
 ## Validation
 
 - No package manifest or executable test command exists.
-- No keyboard-only route fixture exists.
-- No accessibility-tree snapshot harness exists.
-- No live-region cadence fixture exists.
-- No screen-reader announcement transcript exists.
-- No focus-entry/restoration fixture exists.
-- No progress semantics fixture exists.
-- No game-canvas or map alternative fixture exists.
-- No 200% text, forced-colors or reduced-motion proof exists.
-- No source-to-artifact-to-Pages accessibility parity proof exists.
+- No forced `WEBGL_lose_context` fixture exists.
+- No duplicate-loss fixture exists.
+- No restoration-admission fixture exists.
+- No shared-resource rehydration fixture exists.
+- No active-cell rehydration fixture exists.
+- No persistent-rig rehydration fixture exists.
+- No stale-generation rejection fixture exists.
+- No simulation/input loss-policy fixture exists.
+- No exhausted-retry fallback fixture exists.
+- No source-to-artifact-to-Pages recovery parity proof exists.
 
 ## Retained gaps
 
-The earlier input-action convergence, host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback gaps remain valid in their timestamped audit families.
+The earlier accessibility projection, input-action convergence, host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback gaps remain valid in their timestamped audit families.
 
 ## Completion boundary
 
-Do not claim accessibility readiness until continuous telemetry is bounded, meaningful events announce exactly once, routes own focus and inactive semantics, canvases expose revision-bound alternatives, stale work is rejected, and source, artifact and Pages prove matching accessible and visible frames.
+Do not claim renderer recovery until context loss is admitted exactly once, stale submissions stop, simulation and input policy are explicit, mandatory resources reconstruct from accepted state, retired callbacks are rejected, failure produces an actionable fallback, and a frame from the accepted replacement generation is presented and acknowledged across source, artifact and Pages.
