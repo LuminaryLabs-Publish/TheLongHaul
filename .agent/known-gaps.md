@@ -1,70 +1,74 @@
 # Known gaps
 
-**Timestamp:** `2026-07-16T18-58-24-04-00`
+**Timestamp:** `2026-07-16T19-39-24-04-00`
 
-## Intent
+## Goal
 
-Track every missing contract needed to stop a failed runtime generation safely.
+Track every missing contract between the declared infinite world and the semantic content committed into distant gameplay cells.
 
-## Scheduler and callback lifecycle
+## Extent and revision convergence
 
-- The next RAF is scheduled before current-frame work begins.
-- No scheduler generation or active-frame token exists.
-- No callback checks whether its generation has been retired.
-- The catch path does not cancel or suppress future product work.
-- Repeated failures can call `showBootError()` and `console.error()` repeatedly.
+- World profile and course package both say infinite, but no shared immutable extent manifest binds them at runtime.
+- Profile, package, course, atlas, generator, provider and run revisions are not combined into one admission result.
+- A profile reconfiguration has no migration or cache-invalidation contract.
+- The finite course bounds are retained separately without an explicit semantic role after the world becomes infinite.
 
-## Phase execution and partial mutation
+## Macro-sector demand and identity
 
-- Generation, input, engine tick, gameplay, streaming, visual, HUD, audio, map and render phases have no typed receipts.
-- No phase declares whether it can mutate authoritative state.
-- No journal records the last fully accepted phase.
-- A thrown phase can leave earlier mutations committed and later projections absent.
-- No policy decides whether a partially advanced run must be retired, rolled back or reloaded.
+- The installed atlas is not demanded by the playable patch path.
+- No gameplay-cell request enumerates its overlapping macro sectors.
+- No immutable sector digest is published.
+- No duplicate, stale or retired sector-result classification exists.
+- Macro-sector size 1024 and gameplay-cell size 192 require overlap geometry, but no addressing contract defines it.
 
-## Generation failure settlement
+## Road, settlement and portal ownership
 
-- `stepGeneration()` stores `generation.error`, but does not transition to a terminal scene.
-- The outer engine tick and render loop remain active after a generation error.
-- Prepared patches and partially registered resources have no fault-generation identity.
-- No clean-retry receipt proves generation resources were retired.
+- Distant macro sectors can describe settlements and four edge portals.
+- No atlas road graph is derived from neighboring portal pairs.
+- No course-versus-atlas road priority exists.
+- No deterministic settlement exclusion/composition policy exists around course depots.
+- No gameplay-cell ownership rule prevents duplicate roads or settlements across cell/sector boundaries.
+- The atlas road registry exists as state but has no playable adoption path.
 
-## Input and interaction retirement
+## Gameplay continuity
 
-- `pressed.clear()` executes only at the end of a successful frame.
-- A failure can retain one-shot camera, map, pause, retry or interaction evidence.
-- Held keyboard state is not cleared by the runtime fault path.
-- The failure panel has no dedicated focus/announcement settlement.
-- Reload is available, but no typed restart admission distinguishes safe retry from mandatory reload.
+- `nearestRoad`, surface grip, exploration and map logic use the finite course.
+- Outside-course travel is now allowed, but no atlas road becomes a drivable semantic road.
+- Distant cells can be permanently classified off-road despite future visible atlas road intent.
+- No atlas settlement interaction or discovery result exists.
+- Delivery remains finite-course scoped, with no explicit free-roam/end-of-course policy.
 
-## Audio and world retirement
+## Cell generation and caching
 
-- The fault path does not mute the engine or wind loops.
-- It does not call `clearWorld()`.
-- It does not remove the Core World registration or release streamed cells.
-- It does not retire patch-preparation work or reject late ready patches.
-- GPU resources remain governed only by ordinary cell and WebGL lifecycle paths.
+- `createCourseCellDescriptor` consumes only the finite course and exact cell.
+- Terrain uses fixed 24-segment construction even though a horizon LOD policy is installed.
+- No `WorldCellGenerationKey` binds sector digests, policies and generator version.
+- Cache validity does not prove the same sector/content revisions.
+- No stale patch rejection is bound to atlas generation.
+- No content digest is carried through provider commit and release.
 
-## Result and visible proof
+## Render and map proof
 
-- No `RuntimeFrameFaultResult` exists.
-- No `RuntimeRetirementResult` exists.
-- No `FirstFaultFrameAck` exists.
-- The visible overlay does not prove the gameplay scheduler has stopped.
-- No diagnostic correlates the fault phase, scheduler generation and terminal frame.
+- WebGL can show continuing terrain but not proven atlas-derived roads, settlements or portals.
+- Canvas2D map projects finite-course roads and depots only.
+- No shared WebGL/map content result exists for distant sectors.
+- No horizon representation is bound to accepted atlas semantics.
+- No `FirstAtlasBoundWorldFrameAck` exists.
 
 ## Validation and deployment
 
-- No phase-failure injection fixture exists.
-- No repeated-error suppression fixture exists.
-- No stale-RAF or stale-input fixture exists.
-- No audio/world retirement fixture exists.
-- No source/build/Pages terminal-fault parity fixture exists.
+- Source tests prove distant terrain finiteness, determinism and shared edges only.
+- No atlas-backed cell-content fixture exists.
+- No cross-sector portal/road fixture exists.
+- No course/atlas overlap fixture exists.
+- No far-drive browser fixture exists.
+- No source/artifact/Pages content-digest parity fixture exists.
+- `npm test` was not run during this documentation audit.
 
 ## Retained gaps
 
-Product-policy runtime adoption remains unresolved. Earlier browser-focus, Core adoption, WebGL recovery, accessibility, input-contract, host-clock, audio, generation-budget, motion, pause, delivery and rollback gaps remain preserved in prior audit families.
+Runtime-frame fault containment, product-policy adoption, browser-focus input retirement, Core adoption, WebGL recovery, accessibility, host-clock, audio, generation scheduling, motion preference, pause, delivery settlement and rollback remain preserved in prior audit families.
 
 ## Completion boundary
 
-Do not claim runtime crash containment, clean restart, partial-frame integrity, scheduler retirement, stable fault projection, artifact parity, Pages parity or production readiness until every injected phase failure produces one terminal result, retires the old generation and proves no later callback performs product work.
+Do not claim a populated infinite world, atlas-backed driving continuity, horizon-policy adoption, map/WebGL convergence, artifact parity, Pages parity or production readiness until distant cells consume accepted sector results and publish matching provider and frame receipts.
