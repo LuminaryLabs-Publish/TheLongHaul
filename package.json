@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/long-haul-game-smoke.mjs && node tests/static-shell-smoke.mjs"
+    "test": "node tests/atomic-domain-kits-smoke.mjs && node tests/long-haul-game-smoke.mjs && node tests/static-shell-smoke.mjs"
   }
 }
