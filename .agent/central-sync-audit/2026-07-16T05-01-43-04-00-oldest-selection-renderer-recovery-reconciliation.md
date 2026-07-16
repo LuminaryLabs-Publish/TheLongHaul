@@ -8,7 +8,7 @@ The complete current Publish installation contained 11 repositories. After exclu
 
 ## Plan ledger
 
-**Goal:** record the selection proof and the exact central changes required after the repo-local audit is committed.
+**Goal:** record the selection proof and the exact central reconciliation performed after the repo-local audit was committed.
 
 - [x] Enumerate the current Publish installation.
 - [x] Match ten eligible repositories to central ledger paths.
@@ -16,8 +16,8 @@ The complete current Publish installation contained 11 repositories. After exclu
 - [x] Confirm no new, missing, undocumented or runtime-ahead eligible repository.
 - [x] Select only TheLongHaul by oldest synchronized timestamp.
 - [x] Add the WebGL recovery audit family under root `.agent`.
-- [ ] Bind the final repo-local documentation head in the central ledger.
-- [ ] Add the matching central internal change-log entry.
+- [x] Bind the final repo-local documentation head in the central ledger.
+- [x] Add the matching central internal change-log entry.
 
 ## Current comparison
 
@@ -45,7 +45,7 @@ add:
   internal-change-log/2026-07-16T05-01-43-04-00-the-long-haul-webgl-context-resource-recovery.md
 ```
 
-## Central status target
+## Central status
 
 ```txt
 webgl-context-resource-recovery-authority-central-reconciled
@@ -53,4 +53,4 @@ webgl-context-resource-recovery-authority-central-reconciled
 
 ## Boundary
 
-No other Publish repository is selected or modified by this run.
+No other Publish repository is selected or modified by this run. The central ledger is updated only after the final repo-local documentation head is known.
