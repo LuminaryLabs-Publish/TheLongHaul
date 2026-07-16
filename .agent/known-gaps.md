@@ -1,93 +1,111 @@
 # Known gaps
 
-**Timestamp:** `2026-07-16T05-01-43-04-00`
+**Timestamp:** `2026-07-16T07-39-04-04-00`
 
 ## Plan ledger
 
-**Goal:** keep renderer/context ownership explicit until loss admission, gameplay policy, resource rehydration, fallback and recovered-frame evidence are implemented.
+**Goal:** keep proof-only Core capabilities separate from playable ownership until provider, state, service, render, and release parity are implemented.
 
-- [x] Trace the current renderer and GPU-resource lifecycle.
-- [x] Separate ordinary streamed-cell disposal from whole-renderer recovery.
-- [x] Record generation, event, policy, manifest, reconstruction and proof gaps.
-- [ ] Implement and execute the missing authority.
+- [x] Trace both browser entry points and their Nexus Engine pins.
+- [x] Map all overlapping truth owners.
+- [x] Record semantic, migration, rendering, interaction, and release gaps.
+- [ ] Implement and execute the missing adoption authority.
 
-## Renderer and context identity
+## Provider and profile identity
 
-- No `RendererGeneration` identifies the active Three.js renderer.
-- No `ContextGeneration` identifies the WebGL context serving the visible frame.
-- No `ResourceManifestRevision` identifies the GPU graph attached to that generation.
-- No route/runtime/frame revision is bound to context-loss evidence.
-- No explicit retirement result exists for a lost renderer generation.
+- `index.html` pins Nexus Engine `c5548de504072bf09eb68986b98aca0292903803`.
+- `core-integration.html` pins Nexus Engine `b941c9b2995e3449c6987908657753e2cf2df242`.
+- No `CoreCapabilityAdoptionManifest` identifies the accepted provider and profile.
+- No profile digest is published by both entry points.
+- No release result rejects a mixed provider/profile generation.
+- README ownership claims are not tied to an executable adoption result.
 
-## Browser loss and restoration admission
+## Core Data and course admission
 
-- No `webglcontextlost` listener exists.
-- No `webglcontextrestored` listener exists.
-- No owned path decides whether to call `preventDefault()` and attempt restoration.
-- Duplicate loss or restoration callbacks have no deduplication identity.
-- Restoration evidence from a retired document/runtime generation cannot be rejected.
-- No typed `RenderLossResult` exists.
+- The playable generator does not import the course schema.
+- The playable world is built before any Core Data envelope verification.
+- The package digest is smoke-only.
+- Inline `makeRng` remains the playable randomness owner.
+- Named stream cursors are not stored with playable retry or replay state.
+- No mapping defines which random draws belong to each named stream.
+- No same-seed canonical package parity fixture exists.
 
-## Submission and gameplay policy
+## Gameplay meters and migration
 
-- Recursive RAF submission is not suspended by a renderer-loss result.
-- Resize callbacks have no renderer-generation guard.
-- World streaming and provider callbacks have no renderer-generation guard.
-- Held keyboard actions are not explicitly neutralized for a visual-loss interval.
-- Run timer, fuel, hazards, penalties and delivery state have no declared loss policy.
-- WebAudio has no declared relationship to renderer loss.
-- No `SimulationLossPolicyResult` or `InputLossPolicyResult` exists.
+- Playable remaining time lives in custom run state.
+- Playable fuel/truck/cargo live in Resource Pressure.
+- The Core profile introduces separate resource meters.
+- The playable time limit is 360 seconds; the smoke profile uses 300 seconds.
+- Playable IDs are `fuel`, `truck`, and `cargo`.
+- Core profile IDs are `fuel`, `truck-condition`, `cargo-condition`, and `remaining-time`.
+- No canonical meter schema exists.
+- No state migration or rollback result exists.
+- No threshold parity fixture exists.
+- No duplicate truth-owner rejection exists.
 
-## GPU resource manifest
+## Camera adoption
 
-- Shared geometries and materials have no CPU-side reconstruction manifest.
-- Sky geometry, shader material, lights and shadow configuration have no reconstruction records.
-- Active terrain geometry has no recovery result tied to Core World cell state.
-- Cell-owned CanvasTextures and materials have no recovery result.
-- Instanced vegetation and grass have no recovery result.
-- Truck, cargo and wheel rigs have no recovery result.
-- Wildlife meshes have no recovery result.
-- Dust BufferGeometry has no declared reconstruct-or-reset policy.
-- Resource dependencies and verification are not encoded.
+- Core Camera produces a portable descriptor only in the smoke.
+- The playable host directly smooths and mutates the Three.js camera.
+- No camera descriptor adoption result exists.
+- No descriptor/frame revision binding exists.
+- No retirement rule prevents host-only camera mutation after adoption.
 
-## Reconstruction and stale work
+## Graphics and streamed-instance adoption
 
-- No replacement-renderer construction result exists.
-- Pixel ratio, size, output color space, tone mapping and shadow policy have no recovery acknowledgement.
-- Active streamed cells are not rebuilt from accepted Core World state after loss.
-- Old-generation RAF, resize or provider completions cannot be rejected.
-- No recovery deadline exists.
-- No retry budget exists.
-- No per-resource failure classification exists.
-- No `RenderRecoveryResult` exists.
+- Core Graphics batch descriptors are smoke-only.
+- Playable vegetation, grass, signs, and depot props remain direct Three.js owners.
+- Core release receipts are not consumed by the renderer.
+- No asset/material mapping binds Core batch IDs to Three.js resources.
+- No batch/world-cell/frame convergence result exists.
+- No visible-count or release-parity fixture exists.
 
-## Fallback and visible-frame proof
+## Patch preparation and Core World
 
-- No non-WebGL recovery/failure state is owned by the product.
-- No actionable retry or reload result follows recovery-budget exhaustion.
-- No `RenderFallbackResult` exists.
-- A browser restoration callback is not tied to a presented frame.
-- No `FirstRecoveredFrameAck` exists.
-- No visible/engine/world revision convergence result exists for the recovered frame.
+- The patch-preparation controller is created only in the smoke.
+- Playable Core World providers use their existing generation/activation path.
+- No bridge maps prepared/ready patches to provider activation.
+- No shared generator version or settings hash is admitted by the playable host.
+- No active-versus-prefetch parity result exists.
 
-## Validation
+## Transaction ledger and terminal operations
 
-- No package manifest or executable test command exists.
-- No forced `WEBGL_lose_context` fixture exists.
-- No duplicate-loss fixture exists.
-- No restoration-admission fixture exists.
-- No shared-resource rehydration fixture exists.
-- No active-cell rehydration fixture exists.
-- No persistent-rig rehydration fixture exists.
-- No stale-generation rejection fixture exists.
-- No simulation/input loss-policy fixture exists.
-- No exhausted-retry fallback fixture exists.
-- No source-to-artifact-to-Pages recovery parity proof exists.
+- Core Transaction Ledger is smoke-only.
+- Playable penalties use a custom `penaltyLedger` object.
+- Delivery duplicate checks use separate flags and lists.
+- Recovery, collisions, wrong depots, and terminal delivery have no shared transaction-ID policy.
+- No migration preserves already-applied operations.
+- No fixture proves legacy and Core duplicate classifications agree.
+
+## Smoke/playable parity
+
+- The seven smoke checks do not execute inside the playable engine.
+- No shared fixture ID or manifest digest connects the two results.
+- No full same-seed run comparison exists.
+- No canonical state hash compares the two compositions.
+- No `CoreParityVerificationResult` exists.
+
+## Visible-frame evidence
+
+- No accepted Core Camera revision is bound to the visible camera.
+- No accepted Core Graphics revision is bound to visible instances.
+- No accepted patch-preparation revision is bound to visible cells.
+- No accepted Core profile revision is bound to `renderer.render()`.
+- No `FirstCoreBoundPlayableFrameAck` exists.
+
+## Deployment and validation
+
+- No package manifest or executable project test command exists.
+- No release manifest records both browser entry points and their provider pins.
+- No source-to-artifact-to-Pages Core profile digest comparison exists.
+- No deployed semantic parity fixture exists.
+- No cache-generation rejection fixture exists.
+- The new smoke was not executed during this documentation audit.
 
 ## Retained gaps
 
-The earlier accessibility projection, input-action convergence, host clock, browser audio lifecycle, generation scheduling, motion preference, pause suspension, delivery terminal settlement and course-generation admission/rollback gaps remain valid in their timestamped audit families.
+The earlier WebGL recovery, accessibility, input-action convergence, host clock, audio lifecycle, generation scheduling, motion preference, pause suspension, delivery settlement, and course-generation rollback gaps remain valid in their timestamped audit families.
 
 ## Completion boundary
 
-Do not claim renderer recovery until context loss is admitted exactly once, stale submissions stop, simulation and input policy are explicit, mandatory resources reconstruct from accepted state, retired callbacks are rejected, failure produces an actionable fallback, and a frame from the accepted replacement generation is presented and acknowledged across source, artifact and Pages.
+Do not claim that promoted Core Data, Simulation meters, Camera, Graphics, Transaction Ledger, or patch preparation own TheLongHaul gameplay until both entry points share one accepted provider/profile manifest, playable state migrates atomically, duplicate owners are retired, shared semantic fixtures pass, and a matching gameplay frame is acknowledged across source, artifact, and Pages.
