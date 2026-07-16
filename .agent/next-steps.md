@@ -1,66 +1,63 @@
 # Next steps
 
-**Timestamp:** `2026-07-16T07-39-04-04-00`
+**Timestamp:** `2026-07-16T08-44-21-04-00`
 
 ## Plan ledger
 
-**Goal:** move the promoted Core capabilities from an isolated proof engine into the playable game through one explicit profile, migration, and parity sequence.
+**Goal:** retire browser-held driving evidence deterministically whenever the document, route, run, or input adapter loses ownership, before any later simulation step can consume stale intent.
 
-- [ ] Pin one Nexus Engine revision for `index.html` and `core-integration.html`.
-- [ ] Publish a versioned `CoreCapabilityAdoptionManifest` with a stable digest.
-- [ ] Classify each new Core capability as `authoritative`, `bridge`, `proof-only`, or `retired`.
-- [ ] Import the accepted Core profile into the playable bootstrap.
-- [ ] Admit and verify one course envelope before world construction.
-- [ ] Replace inline generation randomness with named streams.
-- [ ] Snapshot and restore stream cursors for retry and replay.
-- [ ] Choose one canonical meter schema for fuel, truck, cargo, and remaining time.
-- [ ] Resolve the current 360-second playable and 300-second smoke difference explicitly.
-- [ ] Add an atomic migration from custom run/Resource Pressure state to the accepted meter schema.
-- [ ] Bridge Core Camera descriptors to the Three.js camera.
-- [ ] Prohibit host-only camera mutations after the bridge becomes authoritative.
-- [ ] Bridge Core Graphics batch descriptors to Three.js instances.
-- [ ] Consume cell release receipts exactly once.
-- [ ] Bridge patch-preparation ready results to Core World provider activation.
-- [ ] Preserve existing streamed-world behavior during adoption.
-- [ ] Move depot checks, penalties, recovery, and terminal operations to stable transaction IDs.
-- [ ] Migrate or retire the custom penalty ledger and duplicate flags.
-- [ ] Reject simultaneous mutation by legacy and adopted truth owners.
-- [ ] Run the seven Core checks inside both smoke and playable contexts.
-- [ ] Run a full same-seed gameplay equivalence fixture.
-- [ ] Publish `CoreCapabilityAdoptionResult`.
-- [ ] Present and publish `FirstCoreBoundPlayableFrameAck`.
-- [ ] Compare source, root Pages artifact, and deployed Pages evidence.
+- [ ] Introduce an `InputFocusGeneration` owned by the browser keyboard adapter.
+- [ ] Give every accepted key event the active document, route, input, and run generation.
+- [ ] Add `window.blur` handling.
+- [ ] Add `document.visibilitychange` handling for `hidden`.
+- [ ] Add `pagehide` handling, including persisted back/forward-cache cases.
+- [ ] Add `freeze`/`resume` handling where supported.
+- [ ] Retire the input generation on route changes away from `driving`.
+- [ ] Retire the input generation when a run is cleared, retried, failed, or completed.
+- [ ] Clear both `keys` and `pressed` exactly once per retirement.
+- [ ] Submit neutral intent through `engine.n.coreInput.setIntent()`.
+- [ ] Submit neutral input through `engine.n.longHaulTruck.input()`.
+- [ ] Decide whether focus loss also requests a safe pause; document the policy.
+- [ ] Reject delayed `keyup`, `keydown`, or one-shot evidence from retired generations.
+- [ ] Publish `HeldInputRetirementResult` with reason and affected action IDs.
+- [ ] Publish `FirstNeutralInputFrameAck` after a matching frame renders.
+- [ ] Add a real-browser fixture for held throttle followed by blur without keyup.
+- [ ] Add hidden-tab, pagehide, freeze, route-change, retry, completion, and loss fixtures.
+- [ ] Add a fixture proving stale one-shot `R`, `E`, `M`, `C`, and `Escape` evidence cannot fire after restoration.
+- [ ] Add a fixture proving a fresh post-restore keydown is accepted normally.
+- [ ] Run `npm test` and keep static-shell assertions aligned with the lifecycle contract.
+- [ ] Compare source, workflow artifact, and deployed Pages behavior.
 
 ## Ordered implementation
 
-### 1. Provider and manifest
+### 1. Lifecycle policy
 
-Use one pinned Nexus Engine revision and one immutable capability manifest. Include profile module digest, course schema, random streams, meter schema, camera controller, instance batches, patch policy, transaction schema, and consumer map.
+Define which browser and route signals retire input, whether the run auto-pauses, and which results are observable. Treat focus loss as an ownership transition, not as a direct mutation scattered across listeners.
 
-### 2. Course and randomness
+### 2. Generation-bound adapter
 
-Adopt Core Data first because generation precedes every other gameplay subsystem. Verify the course package before world creation and move each deterministic concern to its named stream.
+Wrap `keys` and `pressed` in one adapter state object containing `generation`, `status`, and `lastRetirement`. Key handlers must reject evidence whose generation is no longer active.
 
-### 3. Gameplay state migration
+### 3. Neutral settlement
 
-Choose canonical meter IDs and values. Migrate the active run, condition values, remaining time, penalty records, recovery state, and delivery operation IDs atomically at a safe route boundary.
+On retirement, clear held and one-shot evidence, submit neutral Core Input intent, submit neutral Truck Input, and record a single typed result. This should happen before the next simulation tick after restoration.
 
-### 4. Presentation bridges
+### 4. Route and run integration
 
-Keep Three.js renderer ownership in the product adapter. Feed it accepted Core Camera descriptors and Core Graphics instance-batch deltas, and bind visible cells to accepted patch/Core World revisions.
+Retire input when leaving `driving`, before world clearing, and before retry/new-course generation. Create a fresh input generation only when the driving route is admitted.
 
-### 5. Idempotent settlement
+### 5. Frame proof
 
-Assign stable transaction IDs to depot checks, wrong-depot penalties, collisions, recovery, and terminal delivery. Retire parallel duplicate logic after equivalence proof.
+Bind the retirement result to the simulation revision and visible frame. The acknowledgement should prove zero throttle, brake, steer, and boost were presented before accepting new input.
 
-### 6. Parity and retirement
+### 6. Browser fixtures
 
-Execute the same semantic fixtures in smoke and playable contexts. Retire legacy owners only when the accepted profile has matching canonical snapshots and a Core-bound gameplay frame.
+Use Playwright or an equivalent real-browser harness. Synthetic Node source checks cannot prove lost-keyup, visibility, bfcache, or browser event ordering.
 
-### 7. Release proof
+### 7. Release gate
 
-Repeat parity against source, uploaded artifact, and deployed Pages. Fail release admission on provider, profile, semantic, or frame divergence.
+Require source, CI artifact, and Pages fixtures to agree on the input lifecycle policy and first neutral frame.
 
 ## Retained work
 
-WebGL recovery, accessibility, input-action convergence, host clock, audio lifecycle, generation scheduling, motion preference, pause suspension, delivery settlement, and generation rollback remain open in their timestamped audit families.
+The modular rewrite materially adopts the prior promoted-Core profile. Earlier WebGL recovery, accessibility, host-clock, audio lifecycle, generation scheduling, motion preference, pause suspension, delivery settlement, and generation rollback work remains open in its timestamped audit families.
