@@ -1,30 +1,35 @@
 # Validation
 
-**Audit timestamp:** `2026-07-16T05-01-43-04-00`
+**Audit timestamp:** `2026-07-16T07-39-04-04-00`
 
 ## Summary
 
-Source, central tracking and retained `.agent` state were inspected. The audit establishes that one long-lived WebGL renderer and GPU-resource graph have ordinary streamed-cell disposal but no context-loss/restoration admission, renderer generations, ordered resource reconstruction, gameplay policy, fallback or first recovered frame acknowledgement. Runtime and deployment behavior were not changed or executed.
+The full Publish inventory, central ledgers, documented heads, TheLongHaul runtime-ahead commits, new Core profile, isolated smoke, playable host, and retained `.agent` state were inspected. The audit proves that promoted Core capabilities exist in the repository but are not adopted by the playable game.
 
 ## Plan ledger
 
-**Goal:** state exactly what the renderer-recovery audit proves and what remains unverified.
+**Goal:** state exactly what the Core adoption audit proves and what remains unverified.
 
 - [x] Compare all 11 accessible Publish repositories.
-- [x] Account for ten eligible central ledgers and synchronized root `.agent` states.
-- [x] Confirm TheLongHaul is the oldest synchronized eligible entry.
-- [x] Confirm the current repo head matched its documented head before writing.
-- [x] Inspect renderer construction, shared resources, streamed resources, ordinary release, rigs, resize, listeners and RAF.
-- [x] Preserve all 20 source-backed implementation surfaces and services.
+- [x] Exclude `TheCavalryOfRome`.
+- [x] Account for ten eligible central ledgers and root `.agent` states.
+- [x] Compare all ten documented heads with `main`.
+- [x] Identify TheLongHaul as the only runtime-ahead repository.
+- [x] Inspect all three runtime-ahead commits and changed files.
+- [x] Inspect playable and smoke provider revisions and kit compositions.
+- [x] Preserve the complete 27-surface source-backed inventory.
 - [x] Change documentation only.
-- [ ] Run executable forced-loss, recovery and deployment fixtures after implementation.
+- [ ] Execute Core smoke and playable parity fixtures after implementation.
 
 ## Repository evidence
 
 ```txt
-reviewed implementation revision: 4ab7591224f23f3cb84450f0aa101bd78fe95d25
-reviewed pre-audit repository head: 48ba7e8938c7edb4a62a0748e60b69ba53820c45
-runtime entry: index.html
+reviewed pre-audit head: 5367c558a8e77164631c62747f9e7bd1e0aa9ca5
+central documented head: 609e8cc9cd933cd1678c22b913eb8cfe450b616b
+runtime ahead by: 3 commits
+playable entry: index.html
+Core proof entry: core-integration.html
+Core profile module: src/long-haul-core.mjs
 branch: main
 ```
 
@@ -35,53 +40,71 @@ accessible Publish repositories: 11
 eligible after Cavalry exclusion: 10
 central ledgers: 10
 root .agent states: 10
-new or ledger-missing repositories: 0
-root-agent-missing repositories: 0
-undocumented repositories: 0
-runtime-ahead repositories: 0
-selected repository: TheLongHaul
-selection rule: oldest synchronized eligible timestamp
-prior timestamp: 2026-07-16T00-38-29-04-00
-next oldest: MyCozyIsland at 2026-07-16T00-59-16-04-00
+new or ledger-missing: 0
+root-agent-missing: 0
+undocumented: 0
+runtime-ahead: 1
+selected: TheLongHaul
+selection rule: runtime-ahead priority
+oldest fallback not used: TheOpenAbove at 2026-07-16T03-03-22-04-00
+other eligible documented heads versus main: identical
 ```
 
 ## Source inspection
 
 ```txt
-WebGLRenderer construction inspected: yes
-renderer configuration inspected: yes
-shared geometry/material construction inspected: yes
-atmosphere/light construction inspected: yes
-streamed terrain/content allocation inspected: yes
-cell-owned texture/material allocation inspected: yes
-ordinary cell disposal inspected: yes
-truck/wildlife/dust resource construction inspected: yes
-resize path inspected: yes
-recursive RAF and render submission inspected: yes
-browser event listeners inspected: yes
-kit/provider/adapter service census preserved: yes
+README ownership claims inspected: yes
+Core profile exports inspected: yes
+Core Data schema/random/package configuration inspected: yes
+Core Simulation meter configuration inspected: yes
+Core Camera controller configuration inspected: yes
+Core Graphics batch configuration inspected: yes
+Core Transaction Ledger helper inspected: yes
+Core World patch-preparation helper inspected: yes
+browser smoke checks inspected: yes
+playable import map inspected: yes
+playable kit composition inspected: yes
+playable RNG and generation ownership inspected: yes
+playable run/resource state ownership inspected: yes
+playable camera and instance ownership inspected: yes
+playable provider and patch lifecycle inspected: yes
+playable duplicate-operation ownership inspected: yes
 ```
 
 ## Source-backed observations
 
 ```txt
-single long-lived renderer: yes
-recursive renderer.render submission: yes
-ordinary streamed-cell disposal: yes
-webglcontextlost observer: no
-webglcontextrestored observer: no
-renderer/context generation: no
-submission suspension result: no
-simulation/input loss policy: no
-GPU resource manifest: no
-ordered resource rehydration: no
-active-cell recovery result: no
-stale-generation rejection: no
-recovery deadline/retry budget: no
-RenderLossResult: no
-RenderRecoveryResult: no
-RenderFallbackResult: no
-FirstRecoveredFrameAck: no
+new Core profile exists: yes
+browser Core smoke exists: yes
+playable imports Core profile: no
+playable and smoke provider revisions match: no
+playable course envelope admission: no
+playable named RNG adoption: no
+playable Core meter adoption: no
+playable Core Camera adoption: no
+playable Core Graphics adoption: no
+playable patch-preparation adoption: no
+playable Core Transaction Ledger adoption: no
+state migration result: no
+duplicate truth-owner rejection: no
+smoke/playable semantic parity result: no
+FirstCoreBoundPlayableFrameAck: no
+```
+
+## Inventory evidence
+
+```txt
+playable engine kits: 10
+Core World providers: 2
+browser/product adapters: 7
+isolated Core profile kits: 5
+standalone Core controller: 1
+browser proof adapters: 1
+deployment adapters: 1
+total source-backed surfaces: 27
+product render surfaces: 3
+proof surfaces: 1
+planned adoption surfaces: 20
 ```
 
 ## Documentation changed
@@ -92,8 +115,8 @@ new architecture audit
 new render audit
 new gameplay audit
 new interaction audit
-new renderer-recovery contract audit
-new deployment fixture gate
+new Core adoption contract audit
+new deployment parity gate
 new central-sync audit
 START_HERE.md refreshed
 current-audit.md refreshed
@@ -108,13 +131,16 @@ kit-registry.json refreshed
 ```txt
 runtime JavaScript: no
 HTML or CSS: no
-input behavior: no
-gameplay or simulation behavior: no
-Three.js or Canvas2D behavior: no
-GPU resources: no
-audio behavior: no
-storage behavior: no
-provider imports: no
+Nexus Engine pins: no
+Core profile configuration: no
+course schema: no
+randomness behavior: no
+meter values or IDs: no
+gameplay or scoring: no
+camera or rendering: no
+world streaming: no
+transaction behavior: no
+audio or storage: no
 workflow or deployment: no
 branch created: no
 pull request created: no
@@ -123,23 +149,23 @@ pull request created: no
 ## Not executed
 
 ```txt
-package test command: unavailable
-forced WebGL context-loss fixture: unavailable
-context-restoration fixture: unavailable
-duplicate-loss fixture: unavailable
-RAF suspension fixture: unavailable
-simulation/input loss-policy fixture: unavailable
-shared-resource rehydration fixture: unavailable
-active-cell rehydration fixture: unavailable
-truck/wildlife/dust rehydration fixture: unavailable
-stale-generation fixture: unavailable
-recovery deadline/retry fixture: unavailable
-fallback fixture: unavailable
-first recovered frame fixture: unavailable
-root artifact fixture: unavailable
-Pages recovery fixture: unavailable
+project test command: unavailable
+core-integration browser smoke: not run
+playable Core profile bootstrap fixture: unavailable
+provider convergence fixture: unavailable
+course envelope admission fixture: unavailable
+named RNG same-seed fixture: unavailable
+meter migration fixture: unavailable
+camera descriptor adoption fixture: unavailable
+instance-batch adoption fixture: unavailable
+patch-provider bridge fixture: unavailable
+transaction migration fixture: unavailable
+full gameplay parity fixture: unavailable
+FirstCoreBoundPlayableFrameAck fixture: unavailable
+root artifact parity fixture: unavailable
+Pages parity fixture: unavailable
 ```
 
 ## Claims not made
 
-No context-loss recovery, context restoration, resource reconstruction, gameplay-loss policy, stale-generation rejection, fallback correctness, first-recovered-frame convergence, artifact parity, Pages parity or production readiness is claimed.
+No Core capability adoption, provider convergence, gameplay-state migration, deterministic replay equivalence, camera or instance descriptor adoption, patch lifecycle adoption, transaction idempotency adoption, smoke/playable parity, artifact parity, Pages parity, or production readiness is claimed.
