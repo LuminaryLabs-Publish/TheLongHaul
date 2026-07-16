@@ -1,19 +1,16 @@
-# Current audit: product-policy runtime adoption
+# Current audit: runtime-frame fault containment and retirement
 
-**Timestamp:** `2026-07-16T14-01-02-04-00`  
-**Reviewed pre-audit repository head:** `b224a9c181635ee43434900b7f6e48199535f7e9`  
-**Previous documented repository head:** `dbd276e894cf3960d0305cfe46bab95ef01d4253`  
-**Status:** `product-policy-runtime-adoption-authority-audited`
+**Timestamp:** `2026-07-16T18-58-24-04-00`  
+**Reviewed repository head:** `a756b21caee440a818bd23fd6e8556a9b3cb2426`  
+**Status:** `runtime-frame-fault-containment-retirement-authority-audited`
 
 ## Summary
 
-TheLongHaul gained five game-stable DSKs: world profile, road-class catalog, terrain policy, truck-dynamics profile, and delivery-contract catalog. `createLongHaulProductKits()` installs all five and groups ten product kits into semantic world, truck, delivery, and run families.
-
-The architecture is cleaner, but the product-policy resources are not yet the runtime source of truth. Existing generation and simulation paths continue to use constants embedded in `shared.mjs`, `generator.mjs`, `world-base.mjs`, `cell-descriptor.mjs`, `truck-kit.mjs`, and `delivery-kit.mjs`.
+TheLongHaul has a visible runtime-failure overlay and catches exceptions around its main frame body. The catch does not own lifecycle settlement. The next RAF is queued before phase execution, so an exception can leave the scheduler active, retain input/audio/world state and repeatedly re-enter a failed path.
 
 ## Intent
 
-Establish one immutable, revision-bound product-policy generation and require every run-producing or frame-producing consumer to use it.
+Create one terminal fault transaction that retires the failed frame generation before any successor callback can execute product work.
 
 ## Selection comparison
 
@@ -24,15 +21,20 @@ central ledger entries: 10
 root .agent states: 10
 new or ledger-missing: 0
 root-agent-missing: 0
-undocumented roots: 0
+undocumented: 0
+runtime-ahead: 0
 
-selected: LuminaryLabs-Publish/TheLongHaul
-selection class: material runtime-ahead product-domain expansion
-previous documented head: dbd276e894cf3960d0305cfe46bab95ef01d4253
-reviewed pre-audit head: b224a9c181635ee43434900b7f6e48199535f7e9
-ahead by: 6 commits
-changed files: 6
-excluded: LuminaryLabs-Publish/TheCavalryOfRome
+TheLongHaul       2026-07-16T14-01-02-04-00 selected
+PrehistoricRush   2026-07-16T14-39-29-04-00
+TheOpenAbove      2026-07-16T14-59-39-04-00
+IntoTheMeadow     2026-07-16T15-38-27-04-00
+HorrorCorridor    2026-07-16T16-00-12-04-00
+ZombieOrchard     2026-07-16T16-40-45-04-00
+TheUnmappedHouse  2026-07-16T16-58-39-04-00
+PhantomCommand    2026-07-16T17-40-04-04-00
+AetherVale        2026-07-16T18-00-35-04-00
+MyCozyIsland      2026-07-16T18-41-23-04-00
+TheCavalryOfRome  excluded
 ```
 
 ## Complete interaction loop
@@ -40,46 +42,45 @@ excluded: LuminaryLabs-Publish/TheCavalryOfRome
 ```txt
 page load
   -> import Three.js and pinned Nexus Engine
-  -> load bootstrap and eleven ordered application chunks
-  -> create Core Scene, World, Input, Data, Simulation,
-     Camera, Graphics, and Transaction Ledger
-  -> create five policy DSKs
-  -> create Truck, Course, Run, Delivery, and Wildlife DSKs
-  -> install all 18 kits into one engine
-  -> create Three.js, Canvas2D, DOM, WebAudio, and storage adapters
+  -> load bootstrap plus eleven ordered application chunks
+  -> install 8 Core kits and 10 product DSKs
+  -> create WebGL, Canvas2D, DOM, WebAudio and storage adapters
 
 Start the Haul
-  -> choose seed
-  -> generate the five-branch course from hardcoded generation profiles
-  -> create and verify the Core Data course envelope
-  -> load Course and Delivery state
-  -> create and prime the patch-preparation controller
-  -> generate initial course cells from hardcoded terrain/cell rules
-  -> load Wildlife and reset Truck, Run, and resource meters
-  -> register the Core World provider and active cells
-  -> start run and transition to driving
+  -> choose a seed
+  -> generate and validate a five-branch course
+  -> create/verify the Core Data course envelope
+  -> prepare and prime initial world cells
+  -> reset Truck, Run, Delivery, Wildlife and meters
+  -> register the Core World provider
+  -> enter driving
 
 Driving frame
-  -> derive browser input and submit Core Input + Truck requests
-  -> truck simulation applies hardcoded motion constants
-  -> course/run/delivery/wildlife systems resolve
-  -> Core Simulation and Transaction Ledger settle resources/operations
-  -> engine ticks once
-  -> patch preparation and Core World update active cells
-  -> camera, HUD, map, audio, and Three.js presentation update
-  -> one visible frame is rendered
+  -> schedule the next RAF before current-frame work
+  -> submit browser input and gameplay requests
+  -> advance engine, simulation, delivery and world streaming
+  -> update truck, wildlife, camera, HUD, map and audio
+  -> render one Three.js frame
+  -> clear one-shot input
+
+Fault path
+  -> any phase throws
+  -> catch calls showBootError()
+  -> failure overlay becomes visible
+  -> already-scheduled RAF continues
+  -> no fault generation, scheduler retirement or partial-frame settlement
 
 Outcome
-  -> one valid depot completes the current delivery model
-  -> failure conditions produce loss
-  -> retry same seed or create a fresh run
+  -> valid depot completes the run
+  -> failure routes to loss
+  -> retry same seed, generate a new course or return to title
 ```
 
 ## Domains in use
 
 ```txt
 browser startup and ordered modules
-browser input and focus lifecycle
+browser document, RAF, resize, keyboard and storage lifecycle
 Core Scene
 Core World
 Core Input
@@ -100,174 +101,115 @@ Long Haul Delivery
 Long Haul Wildlife
 procedural course generation
 course-cell and terrain generation
-patch preparation and world provider lifecycle
+patch preparation and world-provider lifecycle
 Three.js WebGL presentation
 Canvas2D map projection
-DOM menu/HUD/outcome projection
+DOM menu, HUD, outcome and fault projection
 WebAudio
 browser storage
+runtime frame scheduling and fault containment
 Node smoke validation
 GitHub Actions and Pages deployment
 repo-local and central audit governance
-planned product-policy adoption authority
 ```
 
 ## Kits and offered services
 
-### Core kits
+### Engine-installed kits
 
-```txt
-core-scene-kit
-  scene registry, current scene, exit validation, transition identity,
-  transition requests, snapshot
+| Kit | Services |
+|---|---|
+| `core-scene-kit` | Scene registry, current-scene state, exit validation, transition requests and transition identity. |
+| `core-world-domain` | World registration/removal, uniform-grid partitioning, focus, active-cell lifecycle, ordered providers, validation and snapshots. |
+| `long-haul-input` | Semantic actions, keyboard bindings, contexts, driving intent and reset. |
+| `core-data-kit` | Course schema, envelopes, digest verification, named random streams and random snapshot/restore. |
+| `core-simulation-kit` | Fuel, truck/cargo condition and remaining-time meters, bounds, rates, locks, thresholds and reset. |
+| `core-camera-kit` | Camera target, position/look/FOV smoothing, snap, mode and portable descriptors. |
+| `core-graphics-kit` | Instance-batch registration, cell replacement/removal, matrix writes, flush, bounds and release receipts. |
+| `core-transaction-ledger-kit` | Apply-once operations, duplicate classification, metadata and snapshots. |
+| `long-haul-world-profile-kit` | World/disk/cell/horizon/atlas policy, configure, snapshot and reset. |
+| `long-haul-road-class-catalog-kit` | Road width, grip, grade, curvature and jump-weight records; get/list/register and snapshot/reset. |
+| `long-haul-terrain-policy-kit` | Terrain octaves, hill/ridge/valley density, road flattening/smoothing and jump profiles. |
+| `long-haul-truck-dynamics-profile-kit` | Powertrain, drag, resistance, steering, grip, suspension, air control and boost policy. |
+| `long-haul-delivery-contract-catalog-kit` | Seven contract types, get/list/register and snapshot/reset. |
+| `long-haul-truck-kit` | Truck state, input, road kinematics, surface grip, impulses, teleport, recovery pose and snapshot/load. |
+| `long-haul-course-kit` | Course package, exploration, depot discovery, nearest-road/depot queries, samples and snapshot/load. |
+| `long-haul-run-kit` | Clock, distance, speed, off-road time, penalties, collisions, stuck/recovery, outcomes and snapshot/load. |
+| `long-haul-delivery-kit` | Candidate/valid depots, depot checks, duplicate classification, accepted/rejected delivery result and snapshot/load. |
+| `long-haul-wildlife-kit` | Deterministic hazards, crossing motion, damage/radius/direction and snapshot/load. |
 
-core-world-domain
-  world registration/removal, uniform-grid partition, focus,
-  active cells, provider ordering, validation, snapshot
+### Providers, controllers, adapters and proof
 
-long-haul-input
-  semantic actions, keyboard bindings, contexts, driving intent, reset
-
-core-data-kit
-  schemas, envelopes, digest verification, named random streams,
-  random snapshot/restore
-
-core-simulation-kit
-  fuel, truck/cargo condition, time meters, bounds, rates,
-  spend/restore, locks, thresholds, reset
-
-core-camera-kit
-  target, position/look/FOV smoothing, snap, mode, portable descriptor
-
-core-graphics-kit
-  batch registration, cell replace/remove, matrix writes,
-  flush, bounds, release receipts
-
-core-transaction-ledger-kit
-  apply-once operations, duplicate classification, metadata, snapshot
-```
-
-### New product-policy DSKs
-
-```txt
-long-haul-world-profile-kit
-  world profile, disk policy, gameplay-cell policy,
-  horizon/quadtree policy, settlement/road atlas targets,
-  configure, snapshot, reset
-
-long-haul-road-class-catalog-kit
-  road-class registry, width/grip/grade/curvature policy,
-  jump weighting, get/list/register, snapshot/reset
-
-long-haul-terrain-policy-kit
-  terrain octave policy, hill/ridge/valley density,
-  road flatten/smoothing, jump-profile catalog,
-  configure, jump lookup, snapshot/reset
-
-long-haul-truck-dynamics-profile-kit
-  powertrain, drag, rolling resistance, steering, grip,
-  suspension, air control, boost, configure, snapshot/reset
-
-long-haul-delivery-contract-catalog-kit
-  standard/fragile/express/lost-manifest/rough-road/
-  cross-region/multi-stop contract types,
-  get/list/register, snapshot/reset
-```
-
-### Existing product DSKs
-
-```txt
-long-haul-truck-kit
-  truck state, input, road kinematics, surface grip,
-  impulse, teleport, recovery pose, reset, snapshot/load
-
-long-haul-course-kit
-  course package, exploration, depot discovery,
-  nearest-road/depot query, sample, reset, snapshot/load
-
-long-haul-run-kit
-  clock, distance, speed, off-road time, penalties,
-  collisions, stuck/recovery, completion/failure, snapshot/load
-
-long-haul-delivery-kit
-  candidate/valid depot state, depot checks,
-  duplicate classification, delivery result, reset, snapshot/load
-
-long-haul-wildlife-kit
-  deterministic hazard load and crossing motion,
-  damage/radius/direction, reset, snapshot/load
-```
-
-### Providers, controllers, adapters, and proof
-
-```txt
-long-haul-course-provider
-  prepared-cell admission, update/release, effect descriptor,
-  patch snapshot/restore/reset
-
-long-haul-world-patch-preparation-controller
-  focus, desired/prefetch sets, generation/activation budgets,
-  cache, prime, ready lookup, release, snapshot/reset
-
-browser/product adapters
-  ordered bootstrap, course generation, cell generation,
-  keyboard capture, Three.js rendering, DOM/HUD, Canvas map,
-  WebAudio, settings and score storage
-
-proof/deployment adapters
-  seeded playability smoke, static-shell/source checks,
-  main-branch CI, static Pages publication
-```
+| Surface | Services |
+|---|---|
+| `long-haul-course-provider` | Prepared-cell admission, update/release, effect descriptor and patch snapshot/restore/reset. |
+| `long-haul-world-patch-preparation-controller` | Focus, desired/prefetch sets, generation/activation budgets, cache, prime, release and snapshot/reset. |
+| `ordered-module-bootstrap-adapter` | Import-map bootstrap, global dependency publication, ordered eleven-chunk loading and boot-failure projection. |
+| `procedural-course-generator` | Seeded five-branch graph, depots, wildlife, scoring and validation. |
+| `course-cell-descriptor-generator` | Terrain, roads, signs, depots, vegetation, grass, rocks and obstacles. |
+| `browser-keyboard-input-adapter` | Keydown/up, held state, one-shot state and per-frame clear. |
+| `three-webgl-presentation-adapter` | Renderer, scene, camera, streamed cells, instance batches, truck/wildlife rigs, resize, RAF and render. |
+| `dom-scene-hud-adapter` | Title, help, settings, generation, HUD, pause, outcomes, toast and failure overlay. |
+| `canvas-map-adapter` | Explored roads, depots, rejected yards, truck marker and DPR resizing. |
+| `web-audio-adapter` | Context unlock, engine/wind loops, cues and gain updates. |
+| `browser-storage-adapter` | Settings and best-score persistence. |
+| `long-haul-game-smoke` | 100-seed generation, cell cloneability, truck motion and delivery evaluation. |
+| `static-shell-smoke-and-ci` | Provider pin, single-tick, syntax and source-pattern checks on main. |
+| `github-pages-deployment` | Static-root publication from main. |
 
 ## Source-backed finding
 
-```txt
-policy kit installed                         yes
-policy resource initialized                  yes
-policy configure/register events             yes
-semantic product grouping                    yes
+The frame function immediately queues its successor and then enters the `try` block. The catch only calls `showBootError(error)`. The overlay text and visibility change, but no runtime-failed state prevents the next callback.
 
-world profile consumed by generator          no
-world profile consumed by streaming/horizon  no
-road catalog consumed by course generator    no
-terrain policy consumed by terrain/cells     no
-jump catalog consumed by generated roads     no
-truck dynamics resource consumed by truck    no
-delivery contracts consumed by delivery      no
-policy digest bound to run/course/cells       no
-mixed-policy revision rejection              no
-FirstPolicyBoundRunAck                        no
-FirstPolicyBoundFrameAck                      no
+`stepGeneration()` catches its own exception, stores `generation.error` and calls the same overlay. Later frames continue because the outer scheduler remains active. The scene remains generating, `engine.tick(dt)` still runs, UI can still update and the renderer still presents frames.
+
+`pressed.clear()` is the last operation in the successful frame body. A failure before that point can retain one-shot input evidence. No fault path calls `clearWorld()`, silences audio, retires the Core World provider or invalidates pending preparation work.
+
+```txt
+terminal fault result: absent
+frame-phase receipt: absent
+scheduler generation: absent
+scheduler cancellation on fault: absent
+stale RAF rejection: absent
+partial-frame settlement: absent
+input retirement: absent
+audio retirement: absent
+world/provider retirement: absent
+stable fault-frame acknowledgement: absent
 ```
 
-`createLongHaulProductKits()` passes `dynamicsProfileResource` to `createLongHaulTruckKit()`, but the truck factory accepts only `N` and hardcodes acceleration, speed, drag, rolling resistance, steering, grip, and wheelbase. The other four policy DSKs are installed but are not passed into course, cell, terrain, world-streaming, or delivery consumers.
-
-This is a source-backed adoption and configuration-coherence gap. It does not mean the current default game is unplayable.
+This is a source-backed failure-containment gap. No repeated crash loop or corrupted run was reproduced during this documentation-only audit.
 
 ## Required authority
 
-`the-long-haul-product-policy-runtime-adoption-authority-domain`
+`the-long-haul-runtime-frame-fault-containment-retirement-authority-domain`
 
 ```txt
-ProductPolicyAdmissionCommand
-  -> bind PolicyGeneration and RunGeneration
-  -> read world, road, terrain, truck, and delivery revisions
-  -> validate IDs, numeric ranges, references, and supported features
-  -> compute ProductPolicyDigest
-  -> publish ProductPolicyAdmissionResult
+RuntimeFrameExecutionCommand
+  -> bind document, session, run, scene, scheduler and frame revisions
+  -> admit one frame generation
+  -> execute named phases with phase receipts
+  -> reject stale or retired callbacks
+  -> publish RuntimeFrameExecutionResult
 
-Policy-bound consumers
-  -> course generation reads world + road policy
-  -> terrain/cell generation reads terrain + road policy
-  -> truck simulation reads truck-dynamics policy
-  -> delivery state reads contract policy
-  -> streaming/horizon reads world profile
-  -> course, run, cell, cache, and snapshot identity include digest
-  -> reject stale or mixed revisions
-  -> publish FirstPolicyBoundRunAck
-  -> publish FirstPolicyBoundFrameAck
+RuntimeFrameFaultCommand
+  -> classify phase, error and partial-mutation evidence
+  -> atomically retire the failed scheduler generation
+  -> clear held and one-shot input
+  -> mute active audio
+  -> cancel or retire generation and world work
+  -> prohibit continuation from indeterminate partial state
+  -> publish RuntimeFrameFaultResult
+  -> project one accessible terminal fault surface
+  -> publish FirstFaultFrameAck
+
+RuntimeRestartAdmissionCommand
+  -> require explicit user action
+  -> choose reload or clean-run restart policy
+  -> create a fresh runtime generation
+  -> reject callbacks and resources from the failed generation
 ```
 
 ## Audit boundary
 
-Documentation only. Runtime JavaScript, HTML, CSS, simulation, generation, rendering, tests, workflow, and deployment were not changed by this audit.
+Documentation only. Runtime source, gameplay, rendering, input, audio, tests, workflows and deployment remain unchanged.
