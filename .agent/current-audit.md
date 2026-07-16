@@ -1,26 +1,26 @@
-# Current audit: accessible HUD, route and announcement authority
+# Current audit: WebGL context and resource recovery authority
 
-**Timestamp:** `2026-07-16T00-38-29-04-00`  
+**Timestamp:** `2026-07-16T05-01-43-04-00`  
 **Reviewed implementation revision:** `4ab7591224f23f3cb84450f0aa101bd78fe95d25`  
-**Reviewed pre-audit repository head:** `d3b8c99bf4a8ccb6a5246e81f8cdaa9f1513e1bf`  
-**Status:** `accessible-hud-route-announcement-authority-audited`
+**Reviewed pre-audit repository head:** `48ba7e8938c7edb4a62a0748e60b69ba53820c45`  
+**Status:** `webgl-context-resource-recovery-authority-audited`
 
 ## Summary
 
-The repository contains a complete single-file Nexus Engine browser freight game with deterministic generation, streamed world content, driving, depot discovery, recovery, retry, scoring, WebGL, Canvas2D, DOM UI, WebAudio, persistence and Pages deployment.
+TheLongHaul contains a complete single-file Nexus Engine browser freight game with deterministic generation, streamed world content, driving, depot discovery, recovery, retry, scoring, WebGL, Canvas2D, DOM UI, WebAudio, persistence and Pages deployment.
 
-This audit isolates semantic HUD projection, route focus and meaningful announcement ownership.
+This audit isolates WebGL context-loss admission, renderer generations, GPU-resource reconstruction, gameplay policy during visual loss and first recovered frame proof.
 
 ## Plan ledger
 
-**Goal:** turn accepted route and gameplay revisions into one bounded accessible read model and matching semantic/visible frame evidence.
+**Goal:** turn WebGL loss/restoration evidence into one bounded recovery or fallback result while keeping Nexus Engine state authoritative.
 
 - [x] Compare all eligible Publish repositories and select TheLongHaul by oldest synchronized timestamp.
-- [x] Inspect route, generation, HUD, map, toast, outcome, keyboard and frame paths.
+- [x] Inspect renderer creation, shared resources, streamed cells, cell release, rigs, resize, listeners and RAF.
 - [x] Preserve all existing domains, kits, providers, adapters and services.
-- [x] Define the missing focus, announcement, canvas-alternative and frame-result surfaces.
+- [x] Define the missing generation, manifest, reconstruction, stale-rejection, fallback and frame-result surfaces.
 - [x] Change documentation only.
-- [ ] Implement and execute browser accessibility fixtures.
+- [ ] Implement and execute browser context-loss fixtures.
 
 ## Source-backed inventory
 
@@ -43,48 +43,47 @@ build command: absent
 
 ```txt
 boot
-  -> parse static canvas, route screens, HUD, map and failure shell
   -> import pinned providers
-  -> install engine kits and providers
-  -> restore settings
-  -> enter title and start RAF
+  -> install engine kits and world providers
+  -> create renderer, scene, camera, lights and shared resources
+  -> restore settings and enter title
+  -> start recursive RAF
 
-route command
-  -> transition through Core Scene
-  -> updateSceneUi removes and adds .active classes
-  -> body driving class changes
-  -> no explicit focus transfer, restoration or semantic route result
-
-generation
-  -> bounded work updates visual percent, phase detail and phase classes
-  -> no progressbar state or semantic progress acknowledgement
+generation and streaming
+  -> create deterministic course
+  -> create active terrain/content cells
+  -> allocate cell geometry, textures, materials and instances
+  -> release ordinary inactive cells through provider disposal
 
 driving frame
-  -> input and simulation settle
-  -> updateHud rewrites timer, speed, road, fuel, damage, cargo,
-     checked depots, penalties, recovery and interaction prompt
-  -> all text remains under one aria-live=polite ancestor
-  -> Canvas2D map and Three.js world render
-  -> no semantic-frame revision or convergence acknowledgement
+  -> capture input and update intent
+  -> tick engine state
+  -> stream world around vehicle
+  -> update HUD, map, audio and Three.js objects
+  -> renderer.render(scene, camera)
 
-event/outcome
-  -> toast text/class changes or results/loss route activates
-  -> no typed announcement identity, priority, deduplication or focus result
+context loss
+  -> browser evidence has no product-owned admission path
+  -> old renderer generation is not retired
+  -> RAF and callbacks have no generation guard
+  -> shared and active-cell resources have no reconstruction manifest
+  -> gameplay/input policy is undefined
+  -> no fallback or first recovered frame result exists
 ```
 
 ## Domains in use
 
 ```txt
-browser lifecycle, route, focus, keyboard, resize and RAF
+browser lifecycle, keyboard, blur, resize and RAF
 provider resolution and pinned imports
 Core Scene, Core World, Core Input and Core Simulation
 Long Haul Delivery, Vehicle Dynamics, Route Field, Resource Pressure, Hazard Field and Telemetry
-course generation, validation, scheduling, streaming and exploration
-recovery, retry, depot checks, penalties, outcome and scoring
+course generation, validation, staged work, streaming and ordinary cell retirement
+run timing, recovery, depot checks, penalties, outcomes and scoring
 settings, motion preference, audio and storage
 Three.js WebGL, Canvas2D map and DOM UI/HUD
-semantic route projection, focus ownership, telemetry summarization,
-announcement policy, canvas alternatives and accessibility-frame convergence
+renderer/context generation, loss admission, GPU-resource manifest,
+ordered rehydration, stale-generation rejection, fallback and recovered-frame convergence
 GitHub Pages deployment and audit governance
 ```
 
@@ -105,7 +104,7 @@ terrain provider: prepare, update, release, effects, snapshots, reset
 course provider: roads, depots, signs, vegetation, obstacles, lifecycle, snapshots
 procedural generator: seed/RNG, graph, fork, depots, par, validation, plan
 keyboard adapter: key evidence, held state, commands and blur clearing
-Three.js adapter: renderer, scene, camera, atmosphere, rigs, meshes, RAF and render
+Three.js adapter: renderer, scene, camera, atmosphere, shared resources, streamed meshes, rigs, resize, RAF and render
 DOM adapter: title, help, settings, generation, HUD, pause, results, loss, toast, failure
 Canvas adapter: roads, depots, rejections, truck and resize
 WebAudio adapter: unlock, buses, loops, cues and gain updates
@@ -115,46 +114,49 @@ Pages adapter: main-triggered static deployment
 
 ## Main finding
 
-The HUD is semantically live at a much higher cadence than the gameplay decisions that should be announced.
-
 ```txt
-#hud aria-live=polite: yes
-updateHud called while driving every frame: yes
-multiple live descendants rewritten per call: yes
-continuous telemetry semantic policy: no
-announcement thresholds/cadence: no
-stable semantic event identity: no
-discrete toast live policy: no
-route focus owner/restoration: no
-inactive-screen semantic settlement: no
-generation progress role/value result: no
-dynamic game-canvas alternative: no
-map semantic summary: no
-AccessibilityProjectionResult: no
-FirstAccessibleRouteFrameAck: no
-FirstVisualAccessibleConvergenceAck: no
+one renderer constructed and retained: yes
+recursive RAF render submission: yes
+shared GPU resource graph: yes
+active streamed GPU resource graph: yes
+ordinary cell disposal: yes
+whole renderer-generation owner: no
+webglcontextlost admission: no
+webglcontextrestored admission: no
+presentation suspension result: no
+simulation/input loss policy: no
+GPU resource manifest: no
+ordered reconstruction: no
+active-cell rehydration result: no
+stale callback rejection: no
+recovery deadline/retry budget: no
+RenderLossResult: no
+RenderRecoveryResult: no
+RenderFallbackResult: no
+FirstRecoveredFrameAck: no
 ```
 
-Continuous telemetry should remain queryable, but only meaningful thresholds and accepted discrete events should enter an announcement stream. Route changes need explicit focus and inactive-screen settlement. Canvas alternatives need to cite the same accepted run/map revision as the visible frame.
+A context loss can invalidate the renderer and GPU resources while the recursive frame and engine paths retain no explicit replacement-generation contract. Ordinary cell disposal does not reconstruct shared resources, persistent rigs, atmosphere or active cells.
 
-This is a source-level semantic ownership and evidence gap. It is not a reproduced screen-reader failure or conformance claim.
+This is a source-level lifecycle and evidence gap. It is not a reproduced production failure.
 
 ## Required authority
 
-`the-long-haul-accessible-hud-route-announcement-authority-domain`
+`the-long-haul-webgl-context-resource-recovery-authority-domain`
 
 ```txt
-AccessibilityProjectionCommand
-  -> bind document, route, run, simulation, HUD, map,
-     input, focus, policy and visible-frame revisions
-  -> derive immutable AccessibleReadModel
-  -> calculate bounded telemetry and announcement deltas
-  -> settle route focus and restoration
-  -> project state-bound canvas and map alternatives
-  -> reject stale, duplicate and retired work
-  -> publish AccessibilityProjectionResult
-  -> publish FirstAccessibleRouteFrameAck
-  -> publish FirstVisualAccessibleConvergenceAck
+RenderRecoveryAdmissionCommand
+  -> bind document route runtime renderer context resource-manifest
+     world-cell input simulation and frame revisions
+  -> observe and deduplicate context loss
+  -> retire stale presentation
+  -> apply explicit input and simulation policy
+  -> rebuild renderer, shared resources, atmosphere, active cells and rigs
+  -> reject retired-generation callbacks and results
+  -> enforce a deadline and retry budget
+  -> publish RenderLossResult
+  -> publish RenderRecoveryResult or RenderFallbackResult
+  -> publish FirstRecoveredFrameAck
 ```
 
 ## Audit boundary
