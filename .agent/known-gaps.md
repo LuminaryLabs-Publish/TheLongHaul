@@ -1,111 +1,102 @@
 # Known gaps
 
-**Timestamp:** `2026-07-16T07-39-04-04-00`
+**Timestamp:** `2026-07-16T08-44-21-04-00`
 
 ## Plan ledger
 
-**Goal:** keep proof-only Core capabilities separate from playable ownership until provider, state, service, render, and release parity are implemented.
+**Goal:** keep lifecycle-sensitive input, simulation, and visible motion from diverging when browser or route ownership changes.
 
-- [x] Trace both browser entry points and their Nexus Engine pins.
-- [x] Map all overlapping truth owners.
-- [x] Record semantic, migration, rendering, interaction, and release gaps.
-- [ ] Implement and execute the missing adoption authority.
+- [x] Trace DOM keyboard evidence into Core Input and Long Haul Truck state.
+- [x] Trace focus, visibility, route, retry, completion, and frame cleanup paths.
+- [x] Record source-backed input lifecycle and proof gaps.
+- [ ] Implement and execute the missing authority.
 
-## Provider and profile identity
+## Held-input ownership
 
-- `index.html` pins Nexus Engine `c5548de504072bf09eb68986b98aca0292903803`.
-- `core-integration.html` pins Nexus Engine `b941c9b2995e3449c6987908657753e2cf2df242`.
-- No `CoreCapabilityAdoptionManifest` identifies the accepted provider and profile.
-- No profile digest is published by both entry points.
-- No release result rejects a mixed provider/profile generation.
-- README ownership claims are not tied to an executable adoption result.
+- `keys` is a mutable object shared by the application chunks.
+- `pressed` is a mutable set for one-shot commands.
+- `keydown` sets `keys[event.code] = true` and may add to `pressed`.
+- `keyup` is the only ordinary held-key release path.
+- `pressed.clear()` runs only after a successful ordinary frame.
+- No generation identifies which document, route, or run owns a key event.
+- No event receipt distinguishes accepted, repeated, stale, or retired evidence.
 
-## Core Data and course admission
+## Focus and document lifecycle
 
-- The playable generator does not import the course schema.
-- The playable world is built before any Core Data envelope verification.
-- The package digest is smoke-only.
-- Inline `makeRng` remains the playable randomness owner.
-- Named stream cursors are not stored with playable retry or replay state.
-- No mapping defines which random draws belong to each named stream.
-- No same-seed canonical package parity fixture exists.
+- No `window.blur` listener clears held state.
+- No `document.visibilitychange` listener clears held state when hidden.
+- No `pagehide` listener retires input for navigation or bfcache.
+- No `freeze` listener retires input before page suspension.
+- No `pageshow` or `resume` result creates a fresh input generation.
+- No lifecycle result defines whether the driving route should pause automatically.
+- No lifecycle result binds a restored document to a neutral input state.
 
-## Gameplay meters and migration
+## Route and run lifecycle
 
-- Playable remaining time lives in custom run state.
-- Playable fuel/truck/cargo live in Resource Pressure.
-- The Core profile introduces separate resource meters.
-- The playable time limit is 360 seconds; the smoke profile uses 300 seconds.
-- Playable IDs are `fuel`, `truck`, and `cargo`.
-- Core profile IDs are `fuel`, `truck-condition`, `cargo-condition`, and `remaining-time`.
-- No canonical meter schema exists.
-- No state migration or rollback result exists.
-- No threshold parity fixture exists.
-- No duplicate truth-owner rejection exists.
+- Leaving `driving` does not explicitly retire the keyboard generation.
+- `clearWorld()` resets game domains but does not clear `keys` or `pressed`.
+- Retry and new-course generation do not create a new input generation.
+- Completion and failure do not reject stale one-shot commands.
+- Returning to title does not publish a held-input retirement receipt.
+- A key held during a route transition can remain represented in the adapter store.
 
-## Camera adoption
+## Core Input and Truck convergence
 
-- Core Camera produces a portable descriptor only in the smoke.
-- The playable host directly smooths and mutates the Three.js camera.
-- No camera descriptor adoption result exists.
-- No descriptor/frame revision binding exists.
-- No retirement rule prevents host-only camera mutation after adoption.
+- Core Input receives a host-derived intent snapshot every driving frame.
+- Long Haul Truck receives a separate host-derived input request every driving frame.
+- No atomic result proves both consumers were neutralized together.
+- No expected input or simulation revision guards neutralization.
+- No stale-event rejection prevents retired key evidence from repopulating intent.
+- No `HeldInputRetirementResult` exists.
 
-## Graphics and streamed-instance adoption
+## One-shot command safety
 
-- Core Graphics batch descriptors are smoke-only.
-- Playable vegetation, grass, signs, and depot props remain direct Three.js owners.
-- Core release receipts are not consumed by the renderer.
-- No asset/material mapping binds Core batch IDs to Three.js resources.
-- No batch/world-cell/frame convergence result exists.
-- No visible-count or release-parity fixture exists.
+- `C`, `M`, `Escape`, `R`, and `E` are consumed from `pressed`.
+- `pressed` is frame-cleared, not lifecycle-cleared.
+- A frame error can prevent the ordinary `pressed.clear()` call.
+- No command generation prevents a stale retry, map, camera, pause, or interaction action after restoration.
+- No typed cancellation result exists for retired one-shot evidence.
 
-## Patch preparation and Core World
+## Simulation and gameplay
 
-- The patch-preparation controller is created only in the smoke.
-- Playable Core World providers use their existing generation/activation path.
-- No bridge maps prepared/ready patches to provider activation.
-- No shared generator version or settings hash is admitted by the playable host.
-- No active-versus-prefetch parity result exists.
-
-## Transaction ledger and terminal operations
-
-- Core Transaction Ledger is smoke-only.
-- Playable penalties use a custom `penaltyLedger` object.
-- Delivery duplicate checks use separate flags and lists.
-- Recovery, collisions, wrong depots, and terminal delivery have no shared transaction-ID policy.
-- No migration preserves already-applied operations.
-- No fixture proves legacy and Core duplicate classifications agree.
-
-## Smoke/playable parity
-
-- The seven smoke checks do not execute inside the playable engine.
-- No shared fixture ID or manifest digest connects the two results.
-- No full same-seed run comparison exists.
-- No canonical state hash compares the two compositions.
-- No `CoreParityVerificationResult` exists.
+- A stale throttle or brake key can continue driving after focus returns.
+- A stale steering key can continue changing heading.
+- A stale boost key can continue increasing fuel consumption.
+- Stale driving can create distance, off-road time, collisions, meter spend, and penalties.
+- RequestAnimationFrame throttling while hidden does not clear the accepted held state.
+- No policy proves the truck is stopped or the run paused before restoration.
+- No gameplay fixture reproduces a lost-keyup transition.
 
 ## Visible-frame evidence
 
-- No accepted Core Camera revision is bound to the visible camera.
-- No accepted Core Graphics revision is bound to visible instances.
-- No accepted patch-preparation revision is bound to visible cells.
-- No accepted Core profile revision is bound to `renderer.render()`.
-- No `FirstCoreBoundPlayableFrameAck` exists.
+- No input retirement revision is bound to the frame loop.
+- No proof binds neutral Core Input to neutral Truck Input.
+- No proof binds neutral simulation input to truck speed/body presentation.
+- No `FirstNeutralInputFrameAck` exists.
+- No map, HUD, WebAudio, or camera result cites the retirement generation.
 
-## Deployment and validation
+## Browser and deployment validation
 
-- No package manifest or executable project test command exists.
-- No release manifest records both browser entry points and their provider pins.
-- No source-to-artifact-to-Pages Core profile digest comparison exists.
-- No deployed semantic parity fixture exists.
-- No cache-generation rejection fixture exists.
-- The new smoke was not executed during this documentation audit.
+- `tests/static-shell-smoke.mjs` checks syntax and selected source patterns only.
+- `tests/long-haul-game-smoke.mjs` checks deterministic courses, truck acceleration, and depot evaluation only.
+- No Playwright or equivalent browser harness exists.
+- No blur-without-keyup fixture exists.
+- No hidden-tab fixture exists.
+- No pagehide/bfcache fixture exists.
+- No freeze/resume fixture exists.
+- No route-retirement or retry-generation fixture exists.
+- No source/artifact/Pages lifecycle parity fixture exists.
+
+## Current Core adoption state
+
+The prior Core adoption gap has materially changed. The current playable bootstrap pins the same Nexus Engine revision as the Core profile, imports `createLongHaulCoreKits`, installs Core Data, Core Simulation meters, Core Camera, Core Graphics and Core Transaction Ledger, creates and verifies course envelopes, uses named random streams through the generator, uses patch preparation, uses Core Graphics batches, and applies idempotent operations through the transaction ledger.
+
+Remaining Core-specific proof gaps include complete release-manifest identity, persisted random-stream cursor replay, full browser parity, and explicit frame acknowledgements, but the earlier claim that the playable host does not adopt these capabilities is no longer current.
 
 ## Retained gaps
 
-The earlier WebGL recovery, accessibility, input-action convergence, host clock, audio lifecycle, generation scheduling, motion preference, pause suspension, delivery settlement, and course-generation rollback gaps remain valid in their timestamped audit families.
+Earlier WebGL recovery, accessibility, host-clock, browser-audio lifecycle, generation-work budgeting, motion preference, pause suspension, delivery settlement, and course-generation rollback gaps remain preserved in their timestamped audit families.
 
 ## Completion boundary
 
-Do not claim that promoted Core Data, Simulation meters, Camera, Graphics, Transaction Ledger, or patch preparation own TheLongHaul gameplay until both entry points share one accepted provider/profile manifest, playable state migrates atomically, duplicate owners are retired, shared semantic fixtures pass, and a matching gameplay frame is acknowledged across source, artifact, and Pages.
+Do not claim focus-safe input, route-safe input retirement, neutral Core/Truck convergence, lost-keyup recovery, bfcache safety, or first-neutral-frame correctness until lifecycle signals retire one generation exactly once, stale evidence is rejected, both input consumers settle neutral state before simulation, and real-browser fixtures pass across source, CI artifact, and deployed Pages.
