@@ -1,29 +1,29 @@
 # Validation
 
-**Audit timestamp:** `2026-07-16T00-38-29-04-00`
+**Audit timestamp:** `2026-07-16T05-01-43-04-00`
 
 ## Summary
 
-Source, central tracking and retained `.agent` state were inspected. The audit establishes that continuous gameplay telemetry shares one frame-rate live region while route focus, progress semantics, discrete announcements, canvas alternatives and accessible-frame acknowledgements have no shared authority. Runtime and deployment behavior were not changed or executed.
+Source, central tracking and retained `.agent` state were inspected. The audit establishes that one long-lived WebGL renderer and GPU-resource graph have ordinary streamed-cell disposal but no context-loss/restoration admission, renderer generations, ordered resource reconstruction, gameplay policy, fallback or first recovered frame acknowledgement. Runtime and deployment behavior were not changed or executed.
 
 ## Plan ledger
 
-**Goal:** state exactly what the accessibility audit proves and what remains unverified.
+**Goal:** state exactly what the renderer-recovery audit proves and what remains unverified.
 
 - [x] Compare all 11 accessible Publish repositories.
-- [x] Account for ten eligible central ledgers and root `.agent` states.
+- [x] Account for ten eligible central ledgers and synchronized root `.agent` states.
 - [x] Confirm TheLongHaul is the oldest synchronized eligible entry.
-- [x] Confirm the current repo head matches its documented head before writing.
-- [x] Inspect static markup, route projection, generation UI, HUD, map, toasts, outcomes, keyboard handling and RAF.
+- [x] Confirm the current repo head matched its documented head before writing.
+- [x] Inspect renderer construction, shared resources, streamed resources, ordinary release, rigs, resize, listeners and RAF.
 - [x] Preserve all 20 source-backed implementation surfaces and services.
 - [x] Change documentation only.
-- [ ] Run executable accessibility and deployment fixtures after implementation.
+- [ ] Run executable forced-loss, recovery and deployment fixtures after implementation.
 
 ## Repository evidence
 
 ```txt
 reviewed implementation revision: 4ab7591224f23f3cb84450f0aa101bd78fe95d25
-reviewed pre-audit repository head: d3b8c99bf4a8ccb6a5246e81f8cdaa9f1513e1bf
+reviewed pre-audit repository head: 48ba7e8938c7edb4a62a0748e60b69ba53820c45
 runtime entry: index.html
 branch: main
 ```
@@ -41,46 +41,47 @@ undocumented repositories: 0
 runtime-ahead repositories: 0
 selected repository: TheLongHaul
 selection rule: oldest synchronized eligible timestamp
-prior timestamp: 2026-07-15T19-38-38-04-00
-next oldest: MyCozyIsland at 2026-07-15T19-58-42-04-00
+prior timestamp: 2026-07-16T00-38-29-04-00
+next oldest: MyCozyIsland at 2026-07-16T00-59-16-04-00
 ```
 
 ## Source inspection
 
 ```txt
-static route screens inspected: yes
-game canvas semantics inspected: yes
-HUD aria-live policy inspected: yes
-per-frame updateHud path inspected: yes
-generation progress projection inspected: yes
-route class projection inspected: yes
-map aria-hidden and Canvas2D path inspected: yes
-toast mutation path inspected: yes
-results and loss projection inspected: yes
-keyboard and focus-related path inspected: yes
-WebGL, Canvas2D and DOM frame path inspected: yes
-kit and service census preserved: yes
+WebGLRenderer construction inspected: yes
+renderer configuration inspected: yes
+shared geometry/material construction inspected: yes
+atmosphere/light construction inspected: yes
+streamed terrain/content allocation inspected: yes
+cell-owned texture/material allocation inspected: yes
+ordinary cell disposal inspected: yes
+truck/wildlife/dust resource construction inspected: yes
+resize path inspected: yes
+recursive RAF and render submission inspected: yes
+browser event listeners inspected: yes
+kit/provider/adapter service census preserved: yes
 ```
 
 ## Source-backed observations
 
 ```txt
-#hud aria-live=polite: yes
-per-driving-frame HUD descendant mutations: yes
-continuous telemetry cadence policy: no
-semantic announcement thresholds: no
-stable semantic event IDs: no
-route focus owner: no
-focus restoration result: no
-inactive-screen inert settlement: no
-generation progress role/value result: no
-dedicated toast status/alert policy: no
-terminal announcement result: no
-state-bound game-canvas alternative: no
-map semantic summary: no
-AccessibilityProjectionResult: no
-FirstAccessibleRouteFrameAck: no
-FirstVisualAccessibleConvergenceAck: no
+single long-lived renderer: yes
+recursive renderer.render submission: yes
+ordinary streamed-cell disposal: yes
+webglcontextlost observer: no
+webglcontextrestored observer: no
+renderer/context generation: no
+submission suspension result: no
+simulation/input loss policy: no
+GPU resource manifest: no
+ordered resource rehydration: no
+active-cell recovery result: no
+stale-generation rejection: no
+recovery deadline/retry budget: no
+RenderLossResult: no
+RenderRecoveryResult: no
+RenderFallbackResult: no
+FirstRecoveredFrameAck: no
 ```
 
 ## Documentation changed
@@ -91,7 +92,7 @@ new architecture audit
 new render audit
 new gameplay audit
 new interaction audit
-new accessibility contract audit
+new renderer-recovery contract audit
 new deployment fixture gate
 new central-sync audit
 START_HERE.md refreshed
@@ -108,8 +109,9 @@ kit-registry.json refreshed
 runtime JavaScript: no
 HTML or CSS: no
 input behavior: no
-gameplay behavior: no
+gameplay or simulation behavior: no
 Three.js or Canvas2D behavior: no
+GPU resources: no
 audio behavior: no
 storage behavior: no
 provider imports: no
@@ -122,20 +124,22 @@ pull request created: no
 
 ```txt
 package test command: unavailable
-keyboard-only route fixture: unavailable
-accessibility-tree fixture: unavailable
-live-region cadence fixture: unavailable
-screen-reader announcement fixture: unavailable
-focus entry/restoration fixture: unavailable
-progress semantics fixture: unavailable
-canvas/map alternative fixture: unavailable
-200% text/reflow fixture: unavailable
-forced-colors fixture: unavailable
-reduced-motion fixture: unavailable
-root artifact accessibility fixture: unavailable
-Pages accessibility fixture: unavailable
+forced WebGL context-loss fixture: unavailable
+context-restoration fixture: unavailable
+duplicate-loss fixture: unavailable
+RAF suspension fixture: unavailable
+simulation/input loss-policy fixture: unavailable
+shared-resource rehydration fixture: unavailable
+active-cell rehydration fixture: unavailable
+truck/wildlife/dust rehydration fixture: unavailable
+stale-generation fixture: unavailable
+recovery deadline/retry fixture: unavailable
+fallback fixture: unavailable
+first recovered frame fixture: unavailable
+root artifact fixture: unavailable
+Pages recovery fixture: unavailable
 ```
 
 ## Claims not made
 
-No accessibility conformance, screen-reader correctness, focus correctness, announcement correctness, progress semantics, canvas/map alternative correctness, visual-accessible convergence, artifact parity, Pages parity or production readiness is claimed.
+No context-loss recovery, context restoration, resource reconstruction, gameplay-loss policy, stale-generation rejection, fallback correctness, first-recovered-frame convergence, artifact parity, Pages parity or production readiness is claimed.
