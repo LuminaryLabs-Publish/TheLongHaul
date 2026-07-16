@@ -56,8 +56,8 @@ engine-installed kits:               20
 Core World effect providers:          1
 standalone controllers:               1
 browser/product adapters:             9
-proof/deployment adapters:            3
-total source-backed surfaces:        34
+proof/deployment adapters:            4
+total source-backed surfaces:        35
 render surfaces:                      3
 planned adoption surfaces:           18
 ```
