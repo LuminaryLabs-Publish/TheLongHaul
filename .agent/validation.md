@@ -19,7 +19,7 @@ The source proves infinite profile/package admission, distant macro-sector valid
 - [x] Select only TheLongHaul as the sole runtime-ahead repository.
 - [x] Inspect all eight files changed by the infinite-world commit.
 - [x] Inspect the profile, atlas, package schema, generation path, cell descriptor and tests.
-- [x] Reconcile the complete 20-kit and 34-surface inventory.
+- [x] Reconcile the complete 20-kit and 35-surface inventory.
 - [x] Change documentation only.
 - [ ] Execute atlas-backed source/browser/artifact/Pages fixtures after implementation.
 
@@ -79,8 +79,8 @@ engine-installed kits: 20
 Core World effect providers: 1
 standalone controllers: 1
 browser/product adapters: 9
-proof/deployment adapters: 3
-total source-backed surfaces: 34
+proof/deployment adapters: 4
+total source-backed surfaces: 35
 render surfaces: 3
 planned adoption surfaces: 18
 project validation command: npm test
