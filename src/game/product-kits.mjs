@@ -1,4 +1,6 @@
 import { createLongHaulWorldProfileKit } from "./world-profile-kit.mjs";
+import { createLongHaulWorldAtlasKit } from "./world-atlas-kit.mjs";
+import { createLongHaulHorizonLodPolicyKit } from "./horizon-lod-policy-kit.mjs";
 import { createLongHaulRoadClassCatalogKit } from "./road-class-catalog-kit.mjs";
 import { createLongHaulTerrainPolicyKit } from "./terrain-policy-kit.mjs";
 import { createLongHaulTruckDynamicsProfileKit } from "./truck-dynamics-profile-kit.mjs";
@@ -15,6 +17,10 @@ export function createLongHaulProductKits(N, options = {}) {
   }
 
   const worldProfile = createLongHaulWorldProfileKit(N, options.world ?? {});
+  const worldAtlas = createLongHaulWorldAtlasKit(N, {
+    profileResource: worldProfile.resources.ProfileState
+  });
+  const horizonLod = createLongHaulHorizonLodPolicyKit(N, options.horizon ?? {});
   const roadClasses = createLongHaulRoadClassCatalogKit(N, options.roads ?? {});
   const terrainPolicy = createLongHaulTerrainPolicyKit(N, options.terrain ?? {});
   const truckDynamicsProfile = createLongHaulTruckDynamicsProfileKit(N, options.truck ?? {});
@@ -30,13 +36,15 @@ export function createLongHaulProductKits(N, options = {}) {
 
   return Object.freeze({
     domains: Object.freeze({
-      world: Object.freeze([worldProfile.kit, roadClasses.kit, terrainPolicy.kit, course.kit]),
+      world: Object.freeze([worldProfile.kit, worldAtlas.kit, horizonLod.kit, roadClasses.kit, terrainPolicy.kit, course.kit]),
       truck: Object.freeze([truckDynamicsProfile.kit, truck.kit]),
       delivery: Object.freeze([deliveryContracts.kit, delivery.kit]),
       run: Object.freeze([run.kit, wildlife.kit])
     }),
     kits: Object.freeze([
       worldProfile.kit,
+      worldAtlas.kit,
+      horizonLod.kit,
       roadClasses.kit,
       terrainPolicy.kit,
       truckDynamicsProfile.kit,
@@ -49,6 +57,8 @@ export function createLongHaulProductKits(N, options = {}) {
     ]),
     resources: Object.freeze({
       ...worldProfile.resources,
+      ...worldAtlas.resources,
+      ...horizonLod.resources,
       ...roadClasses.resources,
       ...terrainPolicy.resources,
       ...truckDynamicsProfile.resources,
