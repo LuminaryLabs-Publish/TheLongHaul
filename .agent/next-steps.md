@@ -1,65 +1,60 @@
 # Next steps
 
-**Timestamp:** `2026-07-16T14-01-02-04-00`
+**Timestamp:** `2026-07-16T18-58-24-04-00`
 
 ## Intent
 
-Turn the five installed policy DSKs into one exact product-policy generation consumed by the playable runtime.
+Turn runtime exceptions into one bounded terminal transition instead of a continuing RAF error loop.
 
 ## What needs to happen
 
-### 1. Define policy identity
+### 1. Define frame and scheduler identity
 
-- [ ] Add `ProductPolicyGeneration` and `ProductPolicyDigest`.
-- [ ] Include world, road, terrain, truck, and delivery revisions.
-- [ ] Reject duplicate IDs, invalid ranges, missing references, and unsupported features.
-- [ ] Publish `ProductPolicyAdmissionResult` before run creation.
+- [ ] Add `RuntimeSchedulerGeneration`, `RuntimeFrameId` and `FramePhaseId`.
+- [ ] Bind document, session, run and scene revisions.
+- [ ] Reject callbacks from retired generations.
+- [ ] Queue the next RAF only after the current frame is accepted, or guard the callback with the active generation.
 
-### 2. Bind run and cache identity
+### 2. Add phase receipts
 
-- [ ] Add the policy digest to course package identity.
-- [ ] Add it to run, cell, patch-preparation, provider, and snapshot identity.
-- [ ] Reject cells, caches, callbacks, and results from retired policy generations.
-- [ ] Rebuild or invalidate derived data after an accepted policy change.
+- [ ] Name generation, pre-tick, engine tick, gameplay, streaming, visual, HUD, audio, map and render phases.
+- [ ] Publish accepted/failed phase receipts.
+- [ ] Record whether each phase may have mutated authoritative or presentation state.
+- [ ] Avoid exposing stack traces or implementation jargon in player UI.
 
-### 3. Adopt truck dynamics first
+### 3. Settle terminal faults
 
-- [ ] Change `createLongHaulTruckKit(N, options)` to accept the profile resource intentionally.
-- [ ] Read one immutable profile snapshot per simulation step or admitted run.
-- [ ] Replace hardcoded speed, acceleration, braking, drag, rolling resistance, steering, grip, suspension, and air-control constants.
-- [ ] Preserve deterministic bounded substeps.
-- [ ] Add default-profile parity and modified-profile behavior fixtures.
+- [ ] Publish `RuntimeFrameFaultResult`.
+- [ ] Retire the failed scheduler generation exactly once.
+- [ ] Clear held and one-shot input.
+- [ ] Mute/suspend active engine and wind audio.
+- [ ] Cancel or retire generation, patch preparation and world-provider work.
+- [ ] Freeze further run mutations when partial application is indeterminate.
 
-### 4. Adopt world, roads, and terrain
+### 4. Project one stable fault state
 
-- [ ] Make course generation consume world radius and road-class records.
-- [ ] Replace literal road widths, roughness, grade, curvature, and jump weighting.
-- [ ] Make terrain generation consume octave, density, flattening, smoothing, and jump-profile policy.
-- [ ] Make cell size, active radius, horizon bounds, LOD policy, and visual radius consume the world profile.
-- [ ] Keep course validation bounded and deterministic.
+- [ ] Focus the failure panel and announce the fault once.
+- [ ] Prevent repeated text changes and repeated console spam for the same fault.
+- [ ] Publish `FirstFaultFrameAck`.
+- [ ] Keep the fault surface renderable without running normal gameplay phases.
 
-### 5. Adopt delivery contracts
+### 5. Define restart policy
 
-- [ ] Add `contractTypeId` and contract revision to delivery/run state.
-- [ ] Support standard, fragile, express, lost-manifest, rough-road bonus, cross-region, and multi-stop semantics.
-- [ ] Resolve candidate depots, distance, time, damage, road-class, and stop requirements from the accepted contract.
-- [ ] Publish typed accepted/rejected contract results.
+- [ ] Classify recoverable startup/generation failures separately from runtime simulation/render failures.
+- [ ] Permit in-process retry only after a clean retirement receipt.
+- [ ] Require reload when renderer, engine or state integrity is indeterminate.
+- [ ] Create a fresh runtime generation on restart.
 
-### 6. Publish proof
+### 6. Add executable fixtures
 
-- [ ] Publish `FirstPolicyBoundRunAck` after course/run state uses one digest.
-- [ ] Publish `FirstPolicyBoundFrameAck` after world, truck, HUD, map, and result projection use the same digest.
-- [ ] Surface the digest in diagnostics without exposing implementation jargon in player UI.
-
-### 7. Validation and deployment
-
-- [ ] Add source tests proving every policy resource has a runtime consumer.
-- [ ] Add deterministic default-policy parity fixtures.
-- [ ] Add modified-policy fixtures that visibly and semantically change each subsystem.
-- [ ] Add stale/mixed-generation rejection fixtures.
+- [ ] Inject one failure into each named phase.
+- [ ] Prove one fault result and one terminal UI acknowledgement.
+- [ ] Prove RAF count stops advancing product work.
+- [ ] Prove stale input and stale callbacks are rejected.
+- [ ] Prove audio and world work retire.
 - [ ] Run `npm test`.
-- [ ] Compare source, workflow artifact, and deployed Pages behavior.
+- [ ] Compare source, built artifact and deployed Pages behavior.
 
 ## Retained work
 
-The browser-focus held-input retirement audit remains open and should be implemented before control tuning. WebGL recovery, accessibility, clock, audio, motion, pause, delivery settlement, and rollback findings remain preserved in prior timestamped audit families.
+Product-policy adoption remains open. The fault authority should not silently implement policy adoption, WebGL recovery, input lifecycle, audio lifecycle or world recovery; it should coordinate their existing retirement hooks through one terminal result.
