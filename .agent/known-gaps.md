@@ -1,102 +1,88 @@
 # Known gaps
 
-**Timestamp:** `2026-07-16T08-44-21-04-00`
+**Timestamp:** `2026-07-16T14-01-02-04-00`
 
-## Plan ledger
+## Intent
 
-**Goal:** keep lifecycle-sensitive input, simulation, and visible motion from diverging when browser or route ownership changes.
+Track where installed policy state and accepted gameplay state can diverge.
 
-- [x] Trace DOM keyboard evidence into Core Input and Long Haul Truck state.
-- [x] Trace focus, visibility, route, retry, completion, and frame cleanup paths.
-- [x] Record source-backed input lifecycle and proof gaps.
-- [ ] Implement and execute the missing authority.
+## Product-policy generation
 
-## Held-input ownership
+- No `ProductPolicyGeneration` or digest exists.
+- World, road, terrain, truck, and delivery policy revisions are not admitted atomically.
+- Policy configuration events do not publish typed accepted/rejected results.
+- No validation checks cross-policy references such as delivery road-class preferences.
+- No stale or mixed-policy rejection exists.
+- Course, run, cell, provider, cache, save, and frame identity omit policy revisions.
 
-- `keys` is a mutable object shared by the application chunks.
-- `pressed` is a mutable set for one-shot commands.
-- `keydown` sets `keys[event.code] = true` and may add to `pressed`.
-- `keyup` is the only ordinary held-key release path.
-- `pressed.clear()` runs only after a successful ordinary frame.
-- No generation identifies which document, route, or run owns a key event.
-- No event receipt distinguishes accepted, repeated, stale, or retired evidence.
+## World profile adoption
 
-## Focus and document lifecycle
+- `playableRadius`, `boundaryFadeWidth`, macro-sector size, gameplay-cell size, active radius, horizon bounds, quadtree depth, curve distances, visual radius, and atlas targets are installed but not consumed by the playable world.
+- `CELL_SIZE`, `ACTIVE_RADIUS`, camera far distance, course radial limits, and streamed-cell policy remain independent constants.
+- The current course generator remains a compact five-branch course rather than the declared 22 km disk/atlas policy.
+- No boundary fade, macro-sector, quadtree, settlement atlas, or road-atlas consumer exists.
 
-- No `window.blur` listener clears held state.
-- No `document.visibilitychange` listener clears held state when hidden.
-- No `pagehide` listener retires input for navigation or bfcache.
-- No `freeze` listener retires input before page suspension.
-- No `pageshow` or `resume` result creates a fresh input generation.
-- No lifecycle result defines whether the driving route should pause automatically.
-- No lifecycle result binds a restored document to a neutral input state.
+## Road-class catalog adoption
 
-## Route and run lifecycle
+- Course generation still uses `BRANCH_PROFILES` and literal trunk/link profiles.
+- Width, grip, grade limit, curvature, and jump weights are not resolved from the catalog.
+- Road records do not carry a catalog revision or exact class snapshot.
+- Unknown road-class IDs are not rejected by a shared admission result.
+- The terrain and truck systems do not agree on one road-class grip policy.
 
-- Leaving `driving` does not explicitly retire the keyboard generation.
-- `clearWorld()` resets game domains but does not clear `keys` or `pressed`.
-- Retry and new-course generation do not create a new input generation.
-- Completion and failure do not reject stale one-shot commands.
-- Returning to title does not publish a held-input retirement receipt.
-- A key held during a route transition can remain represented in the adapter store.
+## Terrain and jump policy adoption
 
-## Core Input and Truck convergence
+- Terrain noise uses hardcoded broad, medium, and detail frequencies/amplitudes.
+- Hill, ridge, and valley density values are not consumed.
+- Road cross-section flatten and longitudinal smoothing are not consumed.
+- Jump profiles are registered but no generated road/cell emits typed jump instances from them.
+- Terrain segment count, vegetation density, grass count, and rock placement remain hardcoded.
+- No terrain-policy revision is bound to cell/cache identity.
 
-- Core Input receives a host-derived intent snapshot every driving frame.
-- Long Haul Truck receives a separate host-derived input request every driving frame.
-- No atomic result proves both consumers were neutralized together.
-- No expected input or simulation revision guards neutralization.
-- No stale-event rejection prevents retired key evidence from repopulating intent.
-- No `HeldInputRetirementResult` exists.
+## Truck dynamics adoption
 
-## One-shot command safety
+- `createLongHaulProductKits()` passes a dynamics-profile resource to the truck factory.
+- `createLongHaulTruckKit()` accepts only `N`, so that second argument is ignored.
+- Maximum speed, reverse speed, acceleration, braking, drag, rolling resistance, steering response, steering angle, wheelbase, grip response, boost, and body roll remain hardcoded.
+- Suspension and air-control profile fields have no runtime consumer.
+- No default-profile parity or modified-profile behavior fixture exists.
 
-- `C`, `M`, `Escape`, `R`, and `E` are consumed from `pressed`.
-- `pressed` is frame-cleared, not lifecycle-cleared.
-- A frame error can prevent the ordinary `pressed.clear()` call.
-- No command generation prevents a stale retry, map, camera, pause, or interaction action after restoration.
-- No typed cancellation result exists for retired one-shot evidence.
+## Delivery-contract adoption
 
-## Simulation and gameplay
+- The catalog defines seven contract types, but delivery state has no `contractTypeId` or contract revision.
+- Fragile, express, lost-manifest, rough-road bonus, cross-region, and multi-stop rules are not evaluated.
+- Delivery checks remain one candidate depot versus one valid depot.
+- Time, distance, penalty, road-class, stop, and cargo-damage requirements are not derived from the contract.
+- No contract-selection loop or typed contract result exists.
 
-- A stale throttle or brake key can continue driving after focus returns.
-- A stale steering key can continue changing heading.
-- A stale boost key can continue increasing fuel consumption.
-- Stale driving can create distance, off-road time, collisions, meter spend, and penalties.
-- RequestAnimationFrame throttling while hidden does not clear the accepted held state.
-- No policy proves the truck is stopped or the run paused before restoration.
-- No gameplay fixture reproduces a lost-keyup transition.
+## API settlement semantics
 
-## Visible-frame evidence
+- Policy `configure()` and `register()` methods emit events and immediately return current state before the resolve phase processes the request.
+- No request ID, expected revision, accepted result, rejected result, or duplicate classification exists.
+- Callers cannot prove which tick accepted a configuration.
+- Snapshots do not include a shared policy digest.
 
-- No input retirement revision is bound to the frame loop.
-- No proof binds neutral Core Input to neutral Truck Input.
-- No proof binds neutral simulation input to truck speed/body presentation.
-- No `FirstNeutralInputFrameAck` exists.
-- No map, HUD, WebAudio, or camera result cites the retirement generation.
+## Rendering and visible proof
 
-## Browser and deployment validation
+- Three.js world geometry does not cite an accepted world/road/terrain policy generation.
+- Truck presentation does not cite a dynamics-profile generation.
+- HUD, map, results, and audio do not cite a contract/policy generation.
+- No `FirstPolicyBoundRunAck` exists.
+- No `FirstPolicyBoundFrameAck` exists.
+- A policy resource may change while derived world/truck/delivery state remains from an older configuration.
 
-- `tests/static-shell-smoke.mjs` checks syntax and selected source patterns only.
-- `tests/long-haul-game-smoke.mjs` checks deterministic courses, truck acceleration, and depot evaluation only.
-- No Playwright or equivalent browser harness exists.
-- No blur-without-keyup fixture exists.
-- No hidden-tab fixture exists.
-- No pagehide/bfcache fixture exists.
-- No freeze/resume fixture exists.
-- No route-retirement or retry-generation fixture exists.
-- No source/artifact/Pages lifecycle parity fixture exists.
+## Validation and deployment
 
-## Current Core adoption state
-
-The prior Core adoption gap has materially changed. The current playable bootstrap pins the same Nexus Engine revision as the Core profile, imports `createLongHaulCoreKits`, installs Core Data, Core Simulation meters, Core Camera, Core Graphics and Core Transaction Ledger, creates and verifies course envelopes, uses named random streams through the generator, uses patch preparation, uses Core Graphics batches, and applies idempotent operations through the transaction ledger.
-
-Remaining Core-specific proof gaps include complete release-manifest identity, persisted random-stream cursor replay, full browser parity, and explicit frame acknowledgements, but the earlier claim that the playable host does not adopt these capabilities is no longer current.
+- Current smoke tests do not prove policy adoption.
+- No fixture changes each policy and verifies a semantic runtime effect.
+- No mixed-generation or stale-cache fixture exists.
+- No source/build/Pages policy-convergence fixture exists.
+- No deployment receipt identifies the accepted policy digest.
 
 ## Retained gaps
 
-Earlier WebGL recovery, accessibility, host-clock, browser-audio lifecycle, generation-work budgeting, motion preference, pause suspension, delivery settlement, and course-generation rollback gaps remain preserved in their timestamped audit families.
+The browser-focus held-input retirement gap remains current: held and one-shot browser input is not retired on blur, hidden visibility, pagehide, freeze, route retirement, or run retirement. Earlier WebGL recovery, accessibility, host-clock, audio, generation scheduling, motion preference, pause, delivery settlement, and rollback gaps remain preserved in prior timestamped audit families.
 
 ## Completion boundary
 
-Do not claim focus-safe input, route-safe input retirement, neutral Core/Truck convergence, lost-keyup recovery, bfcache safety, or first-neutral-frame correctness until lifecycle signals retire one generation exactly once, stale evidence is rejected, both input consumers settle neutral state before simulation, and real-browser fixtures pass across source, CI artifact, and deployed Pages.
+Do not claim policy-driven world scale, terrain, roads, truck handling, contracts, cache correctness, frame convergence, or deployment parity until every run is bound to one admitted policy digest, every consumer reads that generation, stale derived work is rejected, and executable fixtures prove default and modified policies across source, artifact, and Pages.
