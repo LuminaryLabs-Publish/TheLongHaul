@@ -1,1 +1,332 @@
-{"schemaVersion":10,"repository":"LuminaryLabs-Publish/TheLongHaul","branch":"main","auditTimestamp":"2026-07-17T07-38-20-04-00","reviewedRepositoryHead":"d868fdc0758934a9be4fd70cc5ba479deced6398","reviewedRuntimeSourceRevision":"189a586877db2bf3e0b1a7c74ae072b552b6fe9a","status":"map-open-input-context-focus-authority-audited","retainedStatuses":["infinite-world-map-viewport-projection-authority-central-reconciled","infinite-world-atlas-cell-content-adoption-authority-central-reconciled","runtime-frame-fault-containment-retirement-authority-central-reconciled","product-policy-runtime-adoption-authority-central-reconciled","browser-focus-held-input-release-authority-central-reconciled","core-capability-adoption-parity-authority-central-reconciled","webgl-context-resource-recovery-authority-central-reconciled","accessible-hud-route-announcement-authority-central-reconciled","input-action-contract-context-convergence-authority-central-reconciled","host-clock-fixed-step-simulation-frame-authority-central-reconciled","browser-audio-lifecycle-suspension-retirement-authority-central-reconciled","generation-work-budget-readiness-authority-central-reconciled","motion-preference-camera-body-effect-admission-authority-central-reconciled","pause-scheduler-input-world-suspension-authority-central-reconciled","delivery-terminal-result-settlement-authority-central-reconciled","course-generation-admission-rollback-central-reconciled"],"implementationClassification":"modular-nexus-engine-browser-freight-game-with-implicit-live-driving-map-overlay-policy","tracker":".agent/trackers/2026-07-17T07-38-20-04-00/project-breakdown.md","previousTracker":".agent/trackers/2026-07-17T01-01-09-04-00/project-breakdown.md","turnLedger":".agent/turn-ledger/2026-07-17T07-38-20-04-00.md","audits":{"architecture":".agent/architecture-audit/2026-07-17T07-38-20-04-00-map-open-input-context-focus-dsk-map.md","render":".agent/render-audit/2026-07-17T07-38-20-04-00-map-overlay-input-policy-visible-frame-gap.md","gameplay":".agent/gameplay-audit/2026-07-17T07-38-20-04-00-map-open-driving-policy-loop.md","interaction":".agent/interaction-audit/2026-07-17T07-38-20-04-00-map-mode-command-result-map.md","mapMode":".agent/map-mode-audit/2026-07-17T07-38-20-04-00-input-focus-settlement-contract.md","deploy":".agent/deploy-audit/2026-07-17T07-38-20-04-00-map-mode-browser-fixture-gate.md","centralSync":".agent/central-sync-audit/2026-07-17T07-38-20-04-00-oldest-selection-map-mode-reconciliation.md"},"selection":{"accessibleRepositoryCount":11,"eligibleRepositoryCount":10,"excludedRepository":"LuminaryLabs-Publish/TheCavalryOfRome","selectionClass":"oldest-synchronized-documented-timestamp","newOrMissingLedgerCount":0,"rootUndocumentedCount":0,"runtimeAheadCount":0,"selectedPriorTimestamp":"2026-07-17T01-01-09-04-00","allEligibleHeadsMatched":true},"providers":{"nexusEngine":"b941c9b2995e3449c6987908657753e2cf2df242","three":"0.165.0"},"entryPoints":{"playable":"index.html","bootstrap":"src/app/bootstrap.mjs","inputAndMapMode":"src/app/app-chunk-7.js","worldStreaming":"src/app/app-chunk-8.js","mapProjection":"src/app/app-chunk-10.js","frameLoop":"src/app/app-chunk-11.js"},"interactionLoop":["page-load-and-ordered-bootstrap","install-eight-core-and-twelve-product-kits","generate-and-verify-course","prepare-initial-world-cells","enter-driving","admit-held-driving-controls","toggle-map-after-current-frame-driving-admission","continue-simulation-streaming-and-presentation-while-open","close-map-through-M-pause-outcome-or-reset","settle-delivery-outcome-and-retry"],"implementedDomains":["browser-startup-and-ordered-module-loading","browser-document-raf-resize-keyboard-focus-storage-lifecycle","core-scene","core-world","core-input","core-data","core-simulation","core-camera","core-graphics","core-transaction-ledger","long-haul-world-profile","long-haul-world-atlas","long-haul-horizon-lod-policy","long-haul-road-class-catalog","long-haul-terrain-policy","long-haul-truck-dynamics-profile","long-haul-delivery-contract-catalog","long-haul-truck","long-haul-course","long-haul-run","long-haul-delivery","long-haul-wildlife","procedural-finite-course-generation","infinite-gameplay-cell-terrain-generation","macro-sector-generation","world-patch-preparation","world-effect-provider","webgl-presentation","canvas-map","dom-ui-hud-fault-projection","web-audio","browser-storage","node-smoke-validation","github-actions-smoke","github-pages-deployment","map-open-input-context-focus-authority"],"implementedKits":[{"id":"core-scene-kit","services":["scene-registry","current-scene","transition-request","exit-validation","transition-identity","snapshot"]},{"id":"core-world-domain","services":["world-register","world-remove","uniform-grid-partition","focus","active-cell-lifecycle","provider-ordering","validation","snapshot"]},{"id":"long-haul-input","services":["semantic-actions","keyboard-bindings","contexts","driving-intent","reset"]},{"id":"core-data-kit","services":["course-schema","package-envelope","digest-verification","named-random-streams","random-snapshot-restore"]},{"id":"core-simulation-kit","services":["fuel-meter","truck-condition-meter","cargo-condition-meter","remaining-time-meter","bounds","rates","locks","thresholds","reset"]},{"id":"core-camera-kit","services":["camera-target","position-look-fov-smoothing","snap","mode","portable-descriptor"]},{"id":"core-graphics-kit","services":["batch-registration","cell-replace","cell-remove","flush","bounds","release-receipt"]},{"id":"core-transaction-ledger-kit","services":["ledger-id","apply-once","duplicate-classification","metadata","snapshot"]},{"id":"long-haul-world-profile-kit","services":["world-profile","extent-policy","gameplay-cell-policy","horizon-lod-policy","atlas-target-policy","configure","snapshot","reset"]},{"id":"long-haul-world-atlas-kit","services":["macro-sector-generation","biome-density-descriptor","settlement-registry","edge-portals","road-registry","sector-query","snapshot","reset"]},{"id":"long-haul-horizon-lod-policy-kit","services":["quadtree-content-policy","terrain-resolution-policy","forest-mode-policy","road-mode-policy","settlement-mode-policy","collision-policy","configure","snapshot","reset"]},{"id":"long-haul-road-class-catalog-kit","services":["road-class-catalog","surface-policy","grade-curvature-policy","jump-weight-policy","get-list-register","snapshot-reset"]},{"id":"long-haul-terrain-policy-kit","services":["terrain-octave-policy","landform-density-policy","road-flatten-policy","jump-profile-catalog","configure","snapshot-reset"]},{"id":"long-haul-truck-dynamics-profile-kit","services":["powertrain-profile","drag-and-resistance","steering-profile","grip-profile","suspension-profile","air-control-profile","boost-profile","configure","snapshot-reset"]},{"id":"long-haul-delivery-contract-catalog-kit","services":["contract-type-catalog","job-policy","get-list-register","snapshot-reset"]},{"id":"long-haul-truck-kit","services":["truck-state","road-vehicle-kinematics","drift","ground-contact","suspension","air-control","input","impulse","teleport","recovery-pose","snapshot-load"]},{"id":"long-haul-course-kit","services":["course-package-state","exploration","discovered-depots","route-query","sample","reset","snapshot-load"]},{"id":"long-haul-run-kit","services":["run-state","clock","distance","max-speed","off-road-time","penalties","collisions","stuck-detection","recovery","completion","failure","snapshot-load"]},{"id":"long-haul-delivery-kit","services":["candidate-depots","valid-depot","depot-evaluation","duplicate-check","delivery-result","reset","snapshot-load"]},{"id":"long-haul-wildlife-kit","services":["hazard-load","crossing-motion","damage-radius","direction","reset","snapshot-load"]}],"implementedWorldProviders":[{"id":"long-haul-course-provider","phase":"foundation","provides":["course:cell"],"services":["prepared-cell-admission","update-cell","release-cell","effect-descriptor","patch-snapshot-restore","reset"]}],"controllers":[{"id":"long-haul-world-patch-preparation-controller","services":["focus","desired-set","prefetch","generation-budget","activation-budget","cache","prime","ready-patches","release","snapshot-reset"]}],"implementedAdapters":[{"id":"ordered-module-bootstrap-adapter","services":["import-map-bootstrap","global-dependency-publication","ordered-eleven-chunk-load","failure-projection"]},{"id":"procedural-course-generator","services":["seeded-five-branch-graph","depots","wildlife","par","validation"]},{"id":"course-cell-descriptor-generator","services":["world-coordinate-terrain","finite-course-roads","finite-course-signs","finite-course-depots","vegetation","grass","rocks","obstacles"]},{"id":"browser-keyboard-input-adapter","services":["keydown","keyup","held-state","one-shot-state","frame-clear"]},{"id":"three-webgl-presentation-adapter","services":["renderer","scene","camera-descriptor-consumption","instance-batches","streamed-cells","truck-rig","wildlife-rig","resize","raf","render","ordinary-disposal"]},{"id":"dom-scene-hud-adapter","services":["title","help","settings","generation-progress","hud","pause","results","loss","toast","failure-overlay"]},{"id":"canvas-map-adapter","services":["finite-course-bounds-transform","finite-course-roads","depots","rejected-yards","truck-marker","dpr-resize"]},{"id":"web-audio-adapter","services":["context-unlock","engine-loop","wind-loop","cues","gain-update"]},{"id":"browser-storage-adapter","services":["settings","best-score"]}],"proofAndDeploymentAdapters":[{"id":"atomic-domain-kits-smoke","services":["product-composition","profile-policy","catalog-policy","distant-macro-sector","truck-dynamics"]},{"id":"long-haul-game-smoke","services":["100-seed-generation","local-cell-cloneability","distant-terrain-determinism","far-cell-seam-equality","truck-motion","delivery-evaluation"]},{"id":"static-shell-smoke-and-ci","services":["provider-pin-check","single-tick-check","syntax-check","source-pattern-check","main-push-ci"]},{"id":"github-pages-deployment","services":["static-root-publication","main-source-delivery"]}],"renderSurfaces":["webgl-game-canvas","canvas2d-paper-map","dom-menu-hud-fault-overlay"],"counts":{"coreKits":8,"productDomainServiceKits":12,"engineInstalledKits":20,"implementedWorldProviders":1,"controllers":1,"implementedAdapters":9,"proofAndDeploymentAdapters":4,"totalSourceBackedSurfaces":35,"renderSurfaces":3,"plannedMapModeSurfaces":18,"executableProjectValidationCommands":1},"plannedAuthority":{"domain":"the-long-haul-map-open-input-context-focus-authority-domain","status":"planned-not-implemented","mainFinding":"The visible map remains inside the driving scene and has no explicit input, simulation, focus or settlement policy.","surfaces":["map-mode-manifest-kit","map-session-identity-kit","map-mode-admission-kit","map-mode-policy-kit","map-input-context-kit","map-driving-action-mask-kit","map-simulation-policy-kit","map-focus-target-kit","map-announcement-kit","map-close-command-kit","map-mode-settlement-kit","map-focus-restoration-kit","map-route-retirement-kit","map-revision-digest-kit","map-frame-commit-kit","first-map-mode-bound-frame-ack-kit","map-mode-browser-fixture-kit","pages-map-mode-parity-fixture-kit"]},"validation":{"sourceInspected":true,"allEligibleHeadsComparedWithMain":true,"documentationOnly":true,"runtimeSourceChanged":false,"htmlOrCssChanged":false,"gameplayChanged":false,"inputOrFocusChanged":false,"canvasOrWebglChanged":false,"testsChangedByAudit":false,"workflowOrDeploymentChanged":false,"branchCreated":false,"pullRequestCreated":false,"implicitLiveDrivingSourceEvidence":true,"preferredMapPolicyClaim":false,"firstMapModeBoundFrameClaim":false,"pagesParityClaim":false,"projectTestCommand":"npm test","projectTests":"not-run-during-documentation-audit","mapModeFixtures":"unavailable","kitRegistryJson":"valid-json-by-construction"}}
+{
+  "schemaVersion": 11,
+  "repository": "LuminaryLabs-Publish/TheLongHaul",
+  "branch": "main",
+  "auditTimestamp": "2026-07-17T17-39-07-04-00",
+  "reviewedRepositoryHead": "3fb11448580405aaa864b106af5dd73e8f06283a",
+  "reviewedRuntimeSourceRevision": "189a586877db2bf3e0b1a7c74ae072b552b6fe9a",
+  "status": "best-run-scope-durable-record-projection-authority-audited",
+  "retainedStatuses": [
+    "map-open-input-context-focus-authority-central-reconciled",
+    "infinite-world-map-viewport-projection-authority-central-reconciled",
+    "infinite-world-atlas-cell-content-adoption-authority-central-reconciled",
+    "runtime-frame-fault-containment-retirement-authority-central-reconciled",
+    "product-policy-runtime-adoption-authority-central-reconciled",
+    "browser-focus-held-input-release-authority-central-reconciled",
+    "core-capability-adoption-parity-authority-central-reconciled",
+    "webgl-context-resource-recovery-authority-central-reconciled",
+    "accessible-hud-route-announcement-authority-central-reconciled",
+    "input-action-contract-context-convergence-authority-central-reconciled",
+    "host-clock-fixed-step-simulation-frame-authority-central-reconciled",
+    "browser-audio-lifecycle-suspension-retirement-authority-central-reconciled",
+    "generation-work-budget-readiness-authority-central-reconciled",
+    "motion-preference-camera-body-effect-admission-authority-central-reconciled",
+    "pause-scheduler-input-world-suspension-authority-central-reconciled",
+    "delivery-terminal-result-settlement-authority-central-reconciled",
+    "course-generation-admission-rollback-central-reconciled"
+  ],
+  "implementationClassification": "modular-nexus-engine-browser-freight-game-with-unscoped-unprojected-best-run-storage",
+  "tracker": ".agent/trackers/2026-07-17T17-39-07-04-00/project-breakdown.md",
+  "previousTracker": ".agent/trackers/2026-07-17T07-38-20-04-00/project-breakdown.md",
+  "turnLedger": ".agent/turn-ledger/2026-07-17T17-39-07-04-00.md",
+  "audits": {
+    "architecture": ".agent/architecture-audit/2026-07-17T17-39-07-04-00-best-run-scope-durable-record-dsk-map.md",
+    "render": ".agent/render-audit/2026-07-17T17-39-07-04-00-unprojected-best-run-visible-frame-gap.md",
+    "gameplay": ".agent/gameplay-audit/2026-07-17T17-39-07-04-00-run-result-best-record-loop.md",
+    "interaction": ".agent/interaction-audit/2026-07-17T17-39-07-04-00-best-run-command-result-map.md",
+    "bestRun": ".agent/best-run-system-audit/2026-07-17T17-39-07-04-00-scope-durability-projection-contract.md",
+    "deploy": ".agent/deploy-audit/2026-07-17T17-39-07-04-00-best-run-browser-pages-fixture-gate.md",
+    "centralSync": ".agent/central-sync-audit/2026-07-17T17-39-07-04-00-oldest-selection-best-run-reconciliation.md"
+  },
+  "selection": {
+    "accessibleRepositoryCount": 11,
+    "eligibleRepositoryCount": 10,
+    "excludedRepository": "LuminaryLabs-Publish/TheCavalryOfRome",
+    "selectionClass": "oldest-synchronized-documented-timestamp",
+    "newOrMissingLedgerCount": 0,
+    "rootUndocumentedCount": 0,
+    "runtimeAheadCount": 0,
+    "selectedPriorTimestamp": "2026-07-17T07-38-20-04-00",
+    "allEligibleHeadsMatched": true
+  },
+  "providers": {
+    "nexusEngine": "b941c9b2995e3449c6987908657753e2cf2df242",
+    "three": "0.165.0"
+  },
+  "entryPoints": {
+    "playable": "index.html",
+    "bootstrap": "src/app/bootstrap.mjs",
+    "resultScoring": "src/game/score.mjs",
+    "resultProjectionAndStorage": "src/app/app-chunk-10.js",
+    "inputAndMapMode": "src/app/app-chunk-7.js",
+    "worldStreaming": "src/app/app-chunk-8.js",
+    "frameLoop": "src/app/app-chunk-11.js"
+  },
+  "interactionLoop": [
+    "page-load-and-ordered-bootstrap",
+    "install-eight-core-and-twelve-product-kits",
+    "generate-and-verify-course",
+    "prepare-initial-world-cells",
+    "enter-driving",
+    "admit-controls-and-settle-gameplay",
+    "complete-valid-delivery",
+    "build-rich-run-result",
+    "project-current-result",
+    "compare-adjusted-time-against-one-global-record",
+    "optionally-write-reduced-unverified-record",
+    "retry-same-course-generate-new-course-or-return-title"
+  ],
+  "implementedDomains": [
+    "browser-startup-and-ordered-module-loading",
+    "browser-document-raf-resize-keyboard-focus-storage-lifecycle",
+    "core-scene",
+    "core-world",
+    "core-input",
+    "core-data",
+    "core-simulation",
+    "core-camera",
+    "core-graphics",
+    "core-transaction-ledger",
+    "long-haul-world-profile",
+    "long-haul-world-atlas",
+    "long-haul-horizon-lod-policy",
+    "long-haul-road-class-catalog",
+    "long-haul-terrain-policy",
+    "long-haul-truck-dynamics-profile",
+    "long-haul-delivery-contract-catalog",
+    "long-haul-truck",
+    "long-haul-course",
+    "long-haul-run",
+    "long-haul-delivery",
+    "long-haul-wildlife",
+    "procedural-finite-course-generation",
+    "infinite-gameplay-cell-terrain-generation",
+    "macro-sector-generation",
+    "world-patch-preparation",
+    "world-effect-provider",
+    "result-scoring-and-best-run-persistence",
+    "webgl-presentation",
+    "canvas-map",
+    "dom-ui-hud-result-fault-projection",
+    "web-audio",
+    "browser-storage",
+    "node-smoke-validation",
+    "github-actions-smoke",
+    "github-pages-deployment",
+    "best-run-scope-durable-record-projection-authority"
+  ],
+  "implementedKits": [
+    {
+      "id": "core-scene-kit",
+      "services": ["scene-registry", "current-scene", "transition-request", "exit-validation", "transition-identity", "snapshot"]
+    },
+    {
+      "id": "core-world-domain",
+      "services": ["world-register", "world-remove", "uniform-grid-partition", "focus", "active-cell-lifecycle", "provider-ordering", "validation", "snapshot"]
+    },
+    {
+      "id": "long-haul-input",
+      "services": ["semantic-actions", "keyboard-bindings", "contexts", "driving-intent", "reset"]
+    },
+    {
+      "id": "core-data-kit",
+      "services": ["course-schema", "package-envelope", "digest-verification", "named-random-streams", "random-snapshot-restore"]
+    },
+    {
+      "id": "core-simulation-kit",
+      "services": ["fuel-meter", "truck-condition-meter", "cargo-condition-meter", "remaining-time-meter", "bounds", "rates", "locks", "thresholds", "reset"]
+    },
+    {
+      "id": "core-camera-kit",
+      "services": ["camera-target", "position-look-fov-smoothing", "snap", "mode", "portable-descriptor"]
+    },
+    {
+      "id": "core-graphics-kit",
+      "services": ["batch-registration", "cell-replace", "cell-remove", "flush", "bounds", "release-receipt"]
+    },
+    {
+      "id": "core-transaction-ledger-kit",
+      "services": ["ledger-id", "apply-once", "duplicate-classification", "metadata", "snapshot"]
+    },
+    {
+      "id": "long-haul-world-profile-kit",
+      "services": ["world-profile", "extent-policy", "gameplay-cell-policy", "horizon-lod-policy", "atlas-target-policy", "configure", "snapshot", "reset"]
+    },
+    {
+      "id": "long-haul-world-atlas-kit",
+      "services": ["macro-sector-generation", "biome-density-descriptor", "settlement-registry", "edge-portals", "road-registry", "sector-query", "snapshot", "reset"]
+    },
+    {
+      "id": "long-haul-horizon-lod-policy-kit",
+      "services": ["quadtree-content-policy", "terrain-resolution-policy", "forest-mode-policy", "road-mode-policy", "settlement-mode-policy", "collision-policy", "configure", "snapshot", "reset"]
+    },
+    {
+      "id": "long-haul-road-class-catalog-kit",
+      "services": ["road-class-catalog", "surface-policy", "grade-curvature-policy", "jump-weight-policy", "get-list-register", "snapshot-reset"]
+    },
+    {
+      "id": "long-haul-terrain-policy-kit",
+      "services": ["terrain-octave-policy", "landform-density-policy", "road-flatten-policy", "jump-profile-catalog", "configure", "snapshot-reset"]
+    },
+    {
+      "id": "long-haul-truck-dynamics-profile-kit",
+      "services": ["powertrain-profile", "drag-and-resistance", "steering-profile", "grip-profile", "suspension-profile", "air-control-profile", "boost-profile", "configure", "snapshot-reset"]
+    },
+    {
+      "id": "long-haul-delivery-contract-catalog-kit",
+      "services": ["contract-type-catalog", "job-policy", "get-list-register", "snapshot-reset"]
+    },
+    {
+      "id": "long-haul-truck-kit",
+      "services": ["truck-state", "road-vehicle-kinematics", "drift", "ground-contact", "suspension", "air-control", "input", "impulse", "teleport", "recovery-pose", "snapshot-load"]
+    },
+    {
+      "id": "long-haul-course-kit",
+      "services": ["course-package-state", "exploration", "discovered-depots", "route-query", "sample", "reset", "snapshot-load"]
+    },
+    {
+      "id": "long-haul-run-kit",
+      "services": ["run-state", "clock", "distance", "max-speed", "off-road-time", "penalties", "collisions", "stuck-detection", "recovery", "completion", "failure", "snapshot-load"]
+    },
+    {
+      "id": "long-haul-delivery-kit",
+      "services": ["candidate-depots", "valid-depot", "depot-evaluation", "duplicate-check", "delivery-result", "reset", "snapshot-load"]
+    },
+    {
+      "id": "long-haul-wildlife-kit",
+      "services": ["hazard-load", "crossing-motion", "damage-radius", "direction", "reset", "snapshot-load"]
+    }
+  ],
+  "implementedWorldProviders": [
+    {
+      "id": "long-haul-course-provider",
+      "phase": "foundation",
+      "provides": ["course:cell"],
+      "services": ["prepared-cell-admission", "update-cell", "release-cell", "effect-descriptor", "patch-snapshot-restore", "reset"]
+    }
+  ],
+  "controllers": [
+    {
+      "id": "long-haul-world-patch-preparation-controller",
+      "services": ["focus", "desired-set", "prefetch", "generation-budget", "activation-budget", "cache", "prime", "ready-patches", "release", "snapshot-reset"]
+    }
+  ],
+  "implementedAdapters": [
+    {
+      "id": "ordered-module-bootstrap-adapter",
+      "services": ["import-map-bootstrap", "global-dependency-publication", "ordered-eleven-chunk-load", "failure-projection"]
+    },
+    {
+      "id": "procedural-course-generator",
+      "services": ["seeded-five-branch-graph", "depots", "wildlife", "par", "validation"]
+    },
+    {
+      "id": "course-cell-descriptor-generator",
+      "services": ["world-coordinate-terrain", "finite-course-roads", "finite-course-signs", "finite-course-depots", "vegetation", "grass", "rocks", "obstacles"]
+    },
+    {
+      "id": "browser-keyboard-input-adapter",
+      "services": ["keydown", "keyup", "held-state", "one-shot-state", "frame-clear"]
+    },
+    {
+      "id": "three-webgl-presentation-adapter",
+      "services": ["renderer", "scene", "camera-descriptor-consumption", "instance-batches", "streamed-cells", "truck-rig", "wildlife-rig", "resize", "raf", "render", "ordinary-disposal"]
+    },
+    {
+      "id": "dom-scene-hud-adapter",
+      "services": ["title", "help", "settings", "generation-progress", "hud", "pause", "results", "loss", "toast", "failure-overlay"]
+    },
+    {
+      "id": "canvas-map-adapter",
+      "services": ["finite-course-bounds-transform", "finite-course-roads", "depots", "rejected-yards", "truck-marker", "dpr-resize"]
+    },
+    {
+      "id": "web-audio-adapter",
+      "services": ["context-unlock", "engine-loop", "wind-loop", "cues", "gain-update"]
+    },
+    {
+      "id": "browser-storage-adapter",
+      "services": ["settings", "best-score", "global-adjusted-time-comparison", "reduced-record-write"]
+    }
+  ],
+  "proofAndDeploymentAdapters": [
+    {
+      "id": "atomic-domain-kits-smoke",
+      "services": ["product-composition", "profile-policy", "catalog-policy", "distant-macro-sector", "truck-dynamics"]
+    },
+    {
+      "id": "long-haul-game-smoke",
+      "services": ["100-seed-generation", "local-cell-cloneability", "distant-terrain-determinism", "far-cell-seam-equality", "truck-motion", "delivery-evaluation"]
+    },
+    {
+      "id": "static-shell-smoke-and-ci",
+      "services": ["provider-pin-check", "single-tick-check", "syntax-check", "source-pattern-check", "main-push-ci"]
+    },
+    {
+      "id": "github-pages-deployment",
+      "services": ["static-root-publication", "main-source-delivery"]
+    }
+  ],
+  "renderSurfaces": ["webgl-game-canvas", "canvas2d-paper-map", "dom-menu-hud-result-fault-overlay"],
+  "counts": {
+    "coreKits": 8,
+    "productDomainServiceKits": 12,
+    "engineInstalledKits": 20,
+    "implementedWorldProviders": 1,
+    "controllers": 1,
+    "implementedAdapters": 9,
+    "proofAndDeploymentAdapters": 4,
+    "totalSourceBackedSurfaces": 35,
+    "renderSurfaces": 3,
+    "proposedBestRunSurfaces": 18,
+    "executableProjectValidationCommands": 1
+  },
+  "plannedAuthority": {
+    "domain": "the-long-haul-best-run-scope-durable-record-projection-authority-domain",
+    "status": "proposed-not-implemented",
+    "mainFinding": "A rich RunResult is reduced into one unversioned browser-global record, compared only by adjustedTime, silently written and never restored into a visible projection.",
+    "surfaces": [
+      "best-run-policy-manifest-kit",
+      "best-run-scope-identity-kit",
+      "best-run-record-schema-kit",
+      "best-run-scoring-revision-kit",
+      "best-run-candidate-admission-kit",
+      "best-run-comparison-kit",
+      "best-run-incomparable-result-kit",
+      "best-run-durable-commit-kit",
+      "best-run-readback-verification-kit",
+      "best-run-storage-failure-result-kit",
+      "best-run-restore-admission-kit",
+      "best-run-migration-kit",
+      "best-run-reset-kit",
+      "best-run-projection-kit",
+      "best-run-frame-digest-kit",
+      "first-best-run-bound-frame-ack-kit",
+      "best-run-browser-fixture-kit",
+      "pages-best-run-parity-fixture-kit"
+    ]
+  },
+  "validation": {
+    "sourceInspected": true,
+    "allEligibleHeadsComparedWithMain": true,
+    "documentationOnly": true,
+    "runtimeSourceChanged": false,
+    "scoringOrStorageChanged": false,
+    "htmlOrCssChanged": false,
+    "gameplayOrRenderingChanged": false,
+    "testsChangedByAudit": false,
+    "workflowOrDeploymentChanged": false,
+    "branchCreated": false,
+    "pullRequestCreated": false,
+    "globalReducedRecordSourceEvidence": true,
+    "preferredComparisonScopeClaim": false,
+    "durableCommitClaim": false,
+    "migrationCorrectnessClaim": false,
+    "firstBestRunBoundFrameClaim": false,
+    "pagesParityClaim": false,
+    "projectTestCommand": "npm test",
+    "projectTests": "not-run-during-documentation-audit",
+    "bestRunFixtures": "unavailable",
+    "kitRegistryJson": "valid-json-by-construction"
+  }
+}
