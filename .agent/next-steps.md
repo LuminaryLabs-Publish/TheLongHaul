@@ -1,64 +1,63 @@
 # Next steps
 
-**Timestamp:** `2026-07-17T07-38-20-04-00`
+**Timestamp:** `2026-07-17T17-39-07-04-00`
 
 ## Goal
 
-Give map open one explicit gameplay, input and focus policy without moving semantic ownership into DOM or Canvas2D code.
+Make best-run comparison, durability, restore and projection explicit without moving semantic policy into DOM or local-storage code.
 
 ## Checklist
 
-### 1. Choose product policy
+### 1. Choose comparison scope
 
-- [ ] Select `live-driving`, `restricted-driving` or `suspended` as the default.
-- [ ] Define allowed semantic actions for every policy.
-- [ ] Define Run clock, meters, collisions, wildlife, delivery and streaming behavior.
-- [ ] Define whether map behavior differs for keyboard, gamepad and touch.
+- [ ] Select `exact-course`, `seed-family`, `scoring-revision`, `global` or no persistent record.
+- [ ] Define which course/generator/scoring revisions are comparable.
+- [ ] Define tie behavior.
+- [ ] Define how incomparable runs are presented.
 
-### 2. Admit a map session
+### 2. Define the canonical record
 
-- [ ] Add `MapModeAdmissionCommand` and `MapModeAdmissionResult`.
-- [ ] Bind route, run, input sequence, map viewport and focus revisions.
-- [ ] Allocate `MapSessionId` and reject duplicate/stale toggles.
-- [ ] Reject map admission outside active driving.
+- [ ] Add schema and schema version.
+- [ ] Add record identity, revision and digest.
+- [ ] Retain the course and scoring evidence required by the selected scope.
+- [ ] Define public versus diagnostic fields.
 
-### 3. Commit input and simulation policy
+### 3. Admit candidates
 
-- [ ] Activate a map-specific Core Input context.
-- [ ] Apply an explicit semantic action mask before Truck input.
-- [ ] Suspend or preserve simulation only through the accepted result.
-- [ ] Prevent raw browser key state from bypassing policy.
+- [ ] Add `BestRunPolicyAdmissionCommand` and result.
+- [ ] Add `BestRunCandidateCommand` and result.
+- [ ] Classify better, equal, worse, incomparable and invalid candidates.
+- [ ] Bind the complete terminal `RunResult` and scoring revision.
 
-### 4. Settle focus and accessibility
+### 4. Commit durably
 
-- [ ] Choose retain-game, focus-map or focus-close policy.
-- [ ] Publish one map-open/close announcement.
-- [ ] Restore the accepted prior focus target on close.
-- [ ] Define Escape behavior independently from M close.
+- [ ] Add `BestRunCommitCommand` and result.
+- [ ] Compare expected prior revision before writing.
+- [ ] Read back and verify schema and digest.
+- [ ] Return classified storage failures without invalidating the completed run.
 
-### 5. Settle every exit once
+### 5. Restore, migrate and reset
 
-- [ ] Handle M, Escape, pause, completion, failure, title, retry and reset.
-- [ ] Handle blur, visibility retirement and page replacement.
-- [ ] Clear stale one-shot evidence.
-- [ ] Publish `MapModeSettlementResult`.
+- [ ] Add `BestRunRestoreCommand` and result.
+- [ ] Handle absent, corrupt, incompatible and denied storage.
+- [ ] Define migration from the current reduced v2 record.
+- [ ] Add explicit reset/delete settlement.
 
-### 6. Bind the visible frame
+### 6. Project the accepted record
 
-- [ ] Commit DOM, Canvas2D and gameplay state under one map generation.
-- [ ] Reject late frames after settlement.
-- [ ] Publish `FirstMapModeBoundFrameAck`.
-- [ ] Preserve the prior infinite map viewport/content work as a separate prerequisite.
+- [ ] Decide title and results presentation.
+- [ ] Show the comparison context.
+- [ ] Bind route, record and projection generations.
+- [ ] Publish `BestRunFrameDigest` and `FirstBestRunBoundFrameAck`.
 
 ### 7. Validate
 
-- [ ] Hold W/A/Shift while opening and closing under every policy.
-- [ ] Test M and Escape race/double-settlement paths.
-- [ ] Test route outcomes and reset while open.
-- [ ] Test keyboard focus and announcement restoration.
+- [ ] Test first, better, equal, worse, incomparable and invalid candidates.
+- [ ] Test corrupt, denied and readback-mismatch storage.
+- [ ] Test reload, retry, new course, title and reset.
 - [ ] Run `npm test`.
-- [ ] Compare source, built artifact and Pages receipts.
+- [ ] Compare source, artifact and Pages receipts.
 
 ## Retained work
 
-Infinite map viewport projection and atlas/cell-content adoption remain unresolved. This audit does not replace those semantic map-content contracts.
+Map-mode input/focus, infinite map viewport/content and previously documented runtime, rendering, accessibility, clock, audio, generation, delivery and rollback gaps remain separate unresolved contracts.
