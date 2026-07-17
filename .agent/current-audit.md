@@ -1,14 +1,15 @@
-# Current audit: map-open input context and focus ownership
+# Current audit: best-run scope, durability and projection
 
-**Timestamp:** `2026-07-17T07-38-20-04-00`  
-**Reviewed pre-audit repository head:** `d868fdc0758934a9be4fd70cc5ba479deced6398`  
-**Status:** `map-open-input-context-focus-authority-audited`
+**Timestamp:** `2026-07-17T17-39-07-04-00`  
+**Reviewed pre-audit repository head:** `3fb11448580405aaa864b106af5dd73e8f06283a`  
+**Reviewed runtime source revision:** `189a586877db2bf3e0b1a7c74ae072b552b6fe9a`  
+**Status:** `best-run-scope-durable-record-projection-authority-audited`
 
 ## Summary
 
-TheLongHaul opens its Canvas2D field map without leaving the `driving` scene. `preTickDriving()` first reads held vehicle keys, submits Core Input and Truck input, samples Course/Run and spends fuel; only then does it consume `KeyM` and toggle the map. Every subsequent frame continues Truck, Run, world streaming, camera, HUD, audio and rendering.
+`buildRunResult()` combines Course, Run, Delivery and meter evidence into a detailed terminal result. `showResults()` projects that current result, reads one global local-storage key and replaces it only when the new `adjustedTime` is lower.
 
-`updateMapPanel()` only toggles the panel's `open` class and `aria-hidden`. There is no map-session ID, explicit gameplay policy, map-specific input context, focus destination, announcement result, exact close settlement or first map-mode-bound frame.
+The stored object retains only adjusted time, rating and a short course code. It is never restored into title, results, HUD or map presentation. No domain result chooses comparison scope, versions the record, classifies storage faults, verifies readback, migrates legacy data or binds the stored record to a visible frame.
 
 ## Selection comparison
 
@@ -21,51 +22,46 @@ new or ledger-missing: 0
 root-agent-missing: 0
 undocumented: 0
 runtime-ahead: 0
+all eligible heads matched: yes
 selected: LuminaryLabs-Publish/TheLongHaul
 selection: oldest synchronized documented timestamp
-selected prior timestamp: 2026-07-17T01-01-09-04-00
+selected prior timestamp: 2026-07-17T07-38-20-04-00
 ```
 
 ## Complete interaction loop
 
 ```txt
-page load
-  -> ordered bootstrap
-  -> install 8 Core kits and 12 product DSKs
-  -> create WebGL, Canvas2D, DOM, WebAudio and storage adapters
+page load and ordered bootstrap
+  -> restore settings
+  -> install 8 Core and 12 product kits
+  -> create browser, rendering, audio and storage adapters
 
-start
-  -> generate and verify course package
-  -> prepare initial cells and provider
-  -> reset gameplay domains
-  -> enter driving
+start and drive
+  -> generate and verify course
+  -> activate cells and reset gameplay
+  -> drive, explore, collide, recover and evaluate depots
+  -> settle delivery completion
 
-driving
-  -> read held controls
-  -> submit Input and Truck intent
-  -> sample Course and Run
-  -> spend fuel and settle interactions
-  -> tick engine
-  -> stream cells and update presentation
+result
+  -> build rich RunResult
+  -> project current score cells
+  -> read the-long-haul-best-v2
+  -> compare adjustedTime only
+  -> optionally write reduced record
+  -> publish no commit/readback/failure result
+  -> render no restored best record
 
-map open
-  -> consume M after current-frame driving admission
-  -> toggle DOM/ARIA state
-  -> retain driving scene and held controls
-  -> continue simulation, streaming, audio and both render surfaces
-
-close/outcome
-  -> M, pause, completion, failure or reset closes the map
-  -> no shared map-session settlement result
+retry, fresh course or title
+  -> route changes without a best-record projection generation
 ```
 
 ## Domains in use
 
-Browser startup, ordered modules, document/RAF/resize/keyboard/focus/storage; Core Scene, World, Input, Data, Simulation, Camera, Graphics and Transaction Ledger; World Profile, World Atlas, Horizon LOD, Road Classes, Terrain Policy, Truck Dynamics, Delivery Contracts, Truck, Course, Run, Delivery and Wildlife; procedural course and infinite-cell generation; patch preparation; Core World provider; WebGL, Canvas2D, DOM, WebAudio, storage, tests, Actions, Pages and governance.
+Browser startup, ordered modules, document/RAF/resize/keyboard/focus/storage; Core Scene, World, Input, Data, Simulation, Camera, Graphics and Transaction Ledger; World Profile, World Atlas, Horizon LOD, Road Classes, Terrain Policy, Truck Dynamics, Delivery Contracts, Truck, Course, Run, Delivery and Wildlife; procedural course and infinite-cell generation; patch preparation; Core World provider; result scoring and best-run persistence; WebGL, Canvas2D, DOM, WebAudio, Node smoke, Actions, Pages and governance.
 
 ## Kit and service census
 
-All kit IDs and offered services are enumerated in `trackers/2026-07-17T07-38-20-04-00/project-breakdown.md` and `kit-registry.json`.
+All IDs and offered services are enumerated in `trackers/2026-07-17T17-39-07-04-00/project-breakdown.md` and `kit-registry.json`.
 
 ```txt
 engine-installed kits:               20
@@ -74,29 +70,33 @@ controllers:                          1
 browser/product adapters:             9
 proof/deployment adapters:            4
 total source-backed surfaces:        35
-planned map-mode surfaces:           18
+proposed best-run surfaces:          18
 ```
 
 ## Source-backed finding
 
-The visible map is not an admitted gameplay mode. Current behavior approximates live driving, but no contract distinguishes it from restricted or suspended policy. Raw held keys, semantic actions, simulation clocks, streaming, focus, announcements and close reasons are not bound to one map generation.
+The persisted record is globally scoped by implementation but not by an admitted product policy. It omits canonical course and scoring identities, silently absorbs parse/write failures and has no restore projection. The source therefore cannot prove comparison fairness, durable commit, migration compatibility or a matching visible record frame.
 
 ## Required authority
 
-`the-long-haul-map-open-input-context-focus-authority-domain`
+**Proposed, not implemented:**
+
+`the-long-haul-best-run-scope-durable-record-projection-authority-domain`
 
 ```txt
-MapModeAdmissionCommand
-  -> MapModeAdmissionResult
-MapInputContextCommitCommand
-  -> MapInputContextResult
-MapFocusCommitCommand
-  -> MapFocusCommitResult
-MapModeSettlementCommand
-  -> MapModeSettlementResult
-  -> FirstMapModeBoundFrameAck
+BestRunPolicyAdmissionCommand
+  -> BestRunPolicyResult
+BestRunCandidateCommand
+  -> BestRunCandidateResult
+BestRunCommitCommand
+  -> BestRunCommitResult
+BestRunRestoreCommand
+  -> BestRunRestoreResult
+BestRunProjectionCommitCommand
+  -> BestRunFrameDigest
+  -> FirstBestRunBoundFrameAck
 ```
 
 ## Audit boundary
 
-Documentation only. Runtime JavaScript, HTML, CSS, gameplay, keyboard, focus, ARIA, Canvas2D, WebGL, tests, workflows and deployment were unchanged. No preferred map policy or production failure is claimed.
+Documentation only. Runtime JavaScript, scoring, local storage, HTML, CSS, gameplay, rendering, tests, workflows and deployment were unchanged. No data-loss incident, preferred comparison scope or production failure is claimed.
