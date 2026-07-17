@@ -1,50 +1,53 @@
-# START HERE: The Long Haul infinite-world atlas/cell adoption audit
+# START HERE: The Long Haul infinite-world map viewport audit
 
-**Last updated:** `2026-07-16T19-39-24-04-00`  
+**Last updated:** `2026-07-17T01-01-09-04-00`  
 **Repository:** `LuminaryLabs-Publish/TheLongHaul`  
 **Branch:** `main`  
-**Reviewed pre-audit runtime head:** `189a586877db2bf3e0b1a7c74ae072b552b6fe9a`  
-**Previous documented head:** `090d43a2c5fbebf0886d82eeb1455ee59d239536`  
-**Status:** `infinite-world-atlas-cell-content-adoption-authority-audited`
+**Reviewed pre-audit repository head:** `bc7cb7bebb802f87ce20bac138446e81987ca9ae`  
+**Status:** `infinite-world-map-viewport-projection-authority-audited`
 
 ## Summary
 
-TheLongHaul now declares an infinite world in the product profile and verified course package. Distant gameplay cells produce deterministic finite terrain with seamless shared edges, and macro sectors remain valid at arbitrary coordinates.
+The world profile, package and streamed-cell runtime admit infinite travel. The Canvas2D field map still computes its entire transform from the finite five-branch `course.bounds`, draws only finite-course roads and depots, and has no accepted viewport/content generation.
 
-The focused gap is semantic content adoption. The playable provider still creates every patch from the finite five-branch course. The installed world-atlas DSK can generate distant settlements and edge portals, but those results are not bound into the accepted gameplay-cell plan, Core World provider receipt, map or rendered frame.
+The focused risk is navigation projection: during valid far travel, the truck marker can leave the map canvas and streamed cells, macro sectors, atlas roads, settlements and portals cannot be represented.
 
 ## Goal
 
-Bind every streamed cell to one accepted profile, package, macro-sector, content plan, provider generation and first matching visible frame.
+Make one renderer-neutral map authority choose the world window, query accepted semantic content, preserve discovery policy and commit one matching Canvas2D frame.
 
 ## What needs to happen
 
 ```txt
-cell demand
-  -> validate infinite profile/package agreement
-  -> resolve every overlapping macro sector
-  -> bind deterministic sector digests
-  -> merge finite-course and atlas content by explicit ownership
-  -> create one gameplay-cell content plan
-  -> commit through patch preparation and Core World
-  -> reject stale or duplicate generations
-  -> render matching roads, settlements and portals
-  -> publish FirstAtlasBoundWorldFrameAck
+MapViewportAdmissionCommand
+  -> bind run, world, course, atlas, cell and canvas revisions
+  -> choose finite overview or player-centered infinite window
+  -> publish MapViewportAdmissionResult
+
+MapContentProjectionCommand
+  -> query accepted course and streamed-world content
+  -> filter discovery/rejection state
+  -> clip roads, depots, settlements and portals
+  -> publish MapContentProjectionResult and digest
+
+MapFrameCommitCommand
+  -> draw one accepted generation
+  -> apply explicit truck-marker clipping/tracking policy
+  -> publish FirstInfiniteMapBoundFrameAck
 ```
 
 ## Plan ledger
 
-- [x] Compare all 11 Publish repositories and ten eligible ledgers.
+- [x] Compare all 11 Publish repositories.
 - [x] Exclude `TheCavalryOfRome`.
-- [x] Compare all ten documented heads with `main`.
-- [x] Select only TheLongHaul as the sole runtime-ahead repository.
-- [x] Reconcile the one-commit infinite-world delta.
-- [x] Identify the full interaction loop and active domains.
-- [x] Inventory all 20 engine-installed kits and offered services.
-- [x] Inventory provider, controller, browser, proof and deployment surfaces.
-- [x] Add the timestamped infinite-world audit family.
+- [x] Confirm ten eligible central ledgers and root `.agent` states.
+- [x] Confirm all eligible `main` heads match documented heads.
+- [x] Select only TheLongHaul by the oldest synchronized timestamp.
+- [x] Inspect bootstrap, input, frame loop, streaming and Canvas2D map code.
+- [x] Reconcile all 20 engine-installed kits and 35 source-backed surfaces.
+- [x] Add the timestamped map audit family.
 - [x] Keep runtime behavior unchanged.
-- [ ] Implement atlas-backed cell content planning and frame proof.
+- [ ] Implement map viewport/content admission and matching-frame proof.
 - [ ] Execute source, browser, artifact and Pages fixtures.
 
 ## Current implementation census
@@ -59,29 +62,29 @@ browser/product adapters:             9
 proof/deployment adapters:            4
 total source-backed surfaces:        35
 render surfaces:                      3
-planned adoption surfaces:           18
+planned map-authority surfaces:      18
 ```
 
 ## Read this run first
 
 1. `current-audit.md`
 2. `known-gaps.md`
-3. `trackers/2026-07-16T19-39-24-04-00/project-breakdown.md`
-4. `architecture-audit/2026-07-16T19-39-24-04-00-infinite-world-atlas-cell-adoption-dsk-map.md`
-5. `world-streaming-audit/2026-07-16T19-39-24-04-00-macro-sector-cell-content-contract.md`
-6. `gameplay-audit/2026-07-16T19-39-24-04-00-infinite-drive-content-continuity-loop.md`
-7. `interaction-audit/2026-07-16T19-39-24-04-00-infinite-sector-admission-command-result-map.md`
-8. `render-audit/2026-07-16T19-39-24-04-00-far-cell-atlas-content-visible-frame-gap.md`
-9. `deploy-audit/2026-07-16T19-39-24-04-00-infinite-sector-browser-fixture-gate.md`
-10. `central-sync-audit/2026-07-16T19-39-24-04-00-runtime-ahead-infinite-world-reconciliation.md`
-11. `turn-ledger/2026-07-16T19-39-24-04-00.md`
+3. `trackers/2026-07-17T01-01-09-04-00/project-breakdown.md`
+4. `architecture-audit/2026-07-17T01-01-09-04-00-infinite-map-viewport-projection-dsk-map.md`
+5. `map-system-audit/2026-07-17T01-01-09-04-00-infinite-world-map-window-contract.md`
+6. `render-audit/2026-07-17T01-01-09-04-00-finite-course-map-in-infinite-world-gap.md`
+7. `gameplay-audit/2026-07-17T01-01-09-04-00-map-open-infinite-navigation-loop.md`
+8. `interaction-audit/2026-07-17T01-01-09-04-00-map-viewport-command-result-map.md`
+9. `deploy-audit/2026-07-17T01-01-09-04-00-infinite-map-browser-fixture-gate.md`
+10. `central-sync-audit/2026-07-17T01-01-09-04-00-oldest-selection-infinite-map-reconciliation.md`
+11. `turn-ledger/2026-07-17T01-01-09-04-00.md`
 12. `next-steps.md`
 13. `validation.md`
 
 ## Retained audits
 
-The runtime-frame fault containment audit remains unresolved and preserved. Earlier product-policy, input-lifecycle, Core-adoption, WebGL recovery, accessibility, host-clock, audio, generation-budget, motion, pause, delivery-settlement and rollback audits remain in their timestamped families.
+The prior infinite-world atlas/cell-content adoption audit remains unresolved and directly precedes this map audit. Runtime-fault containment, product-policy adoption, focus/input retirement, Core adoption, WebGL recovery, accessibility, host-clock, audio, generation-budget, motion, pause, delivery settlement and rollback audits remain preserved.
 
 ## Next safe ledge
 
-Do not add ad hoc roads directly in the renderer. First define sector/cell identity and course-versus-atlas ownership, then feed one immutable content plan through the existing patch-preparation and Core World provider path.
+Do not patch `drawMap()` with ad hoc camera math alone. First define the map viewport, content query, discovery filter and generation identity, then keep Canvas2D as a projection adapter.
