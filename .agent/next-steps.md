@@ -1,72 +1,67 @@
 # Next steps
 
-**Timestamp:** `2026-07-16T19-39-24-04-00`
+**Timestamp:** `2026-07-17T01-01-09-04-00`
 
 ## Goal
 
-Adopt macro-sector atlas truth into the existing streamed gameplay-cell pipeline without creating a second world, patch or renderer owner.
+Give the field map one admitted world window and one accepted semantic-content generation without making Canvas2D another world owner.
 
 ## Plan ledger
 
-### 1. Bind one extent manifest
+### 1. Define map modes
 
-- [ ] Add `InfiniteWorldManifest` containing product release, profile revision, package digest, world seed, generator version, cell size and macro-sector size.
-- [ ] Validate profile and package extent agreement before world registration.
-- [ ] Reject a bounded profile paired with an infinite package, or vice versa.
-- [ ] Record whether horizon policy is active, proof-only or deferred.
+- [ ] Add explicit `finite-course-overview`, `player-centered-infinite` and optional `sector-overview` modes.
+- [ ] Decide whether map-open driving remains live or is suspended by policy.
+- [ ] Define keyboard context, focus and announcement behavior for each mode.
+- [ ] Bind mode retirement to route, run, pause, result, loss and title transitions.
 
-### 2. Add deterministic sector demand
+### 2. Admit one viewport
 
-- [ ] Derive all macro sectors overlapping each desired gameplay cell.
-- [ ] Add stable sector demand identity and duplicate suppression.
-- [ ] Generate or retrieve immutable sector results through `long-haul-world-atlas-kit`.
-- [ ] Publish sector digests.
-- [ ] Reject results from retired run/provider generations.
+- [ ] Add `MapViewportAdmissionCommand` and `MapViewportAdmissionResult`.
+- [ ] Bind viewport identity to run, world profile, course package, canvas size and DPR revisions.
+- [ ] Store center, world bounds, scale, tracking mode and clipping policy.
+- [ ] Reject stale resize, route and run evidence.
 
-### 3. Define course-versus-atlas ownership
+### 3. Query accepted content
 
-- [ ] Preserve the finite five-branch course as the delivery challenge owner.
-- [ ] Define deterministic overlap priority for course roads, depots and signs.
-- [ ] Define atlas road generation from paired sector-edge portals.
-- [ ] Define settlement exclusion/composition around course depots.
-- [ ] Ensure surface queries and recovery poses consume the same accepted road plan.
+- [ ] Consume finite-course content through a stable course snapshot.
+- [ ] Consume active streamed-cell and macro-sector content through accepted provider/atlas results.
+- [ ] Preserve discovery, checked-depot and rejection policy.
+- [ ] Define whether undiscovered settlements/portals are hidden, generalized or omitted.
+- [ ] Compute `MapContentDigest`.
 
-### 4. Build one gameplay-cell content plan
+### 4. Project the player reliably
 
-- [ ] Enumerate every overlapping macro sector geometrically; 1024 and 192 are not integer multiples.
-- [ ] Clip/deduplicate roads, settlements and portals by explicit cell ownership.
-- [ ] Bind terrain, biome, density, vegetation and obstacle policies.
-- [ ] Sort contributions deterministically.
-- [ ] Compute `WorldCellGenerationKey` and `WorldCellContentDigest`.
-- [ ] Preserve exact terrain-edge sampling.
+- [ ] Define player-centered tracking and edge-clipping behavior.
+- [ ] Ensure the truck marker cannot silently disappear during valid travel.
+- [ ] Preserve heading and marker scale across zoom changes.
+- [ ] Define out-of-window classification for finite-overview mode.
 
-### 5. Commit through existing world infrastructure
+### 5. Commit one map frame
 
-- [ ] Extend `createCourseCellDescriptor` or replace it with one semantic content-plan adapter; do not bypass patch preparation.
-- [ ] Bind patch cache identity to sector digests and content-policy revisions.
-- [ ] Commit through the existing Core World provider.
-- [ ] Reject late or duplicate patch work.
-- [ ] Release both course- and atlas-owned graphics writes with the cell.
+- [ ] Add `MapFrameCommitCommand` and `MapFrameCommitResult`.
+- [ ] Draw only from immutable viewport/content results.
+- [ ] Reject late content after resize, route or run retirement.
+- [ ] Publish `FirstInfiniteMapBoundFrameAck`.
+- [ ] Keep Canvas2D drawing separate from semantic map queries.
 
-### 6. Project matching WebGL and map state
+### 6. Converge WebGL and map semantics
 
-- [ ] Render atlas roads, settlements and portals from the committed content plan.
-- [ ] Extend map projection from finite-course-only data to accepted atlas content.
-- [ ] Keep LOD representation separate from semantic identity.
-- [ ] Publish `FirstAtlasBoundWorldFrameAck` with sector, cell, content and frame IDs.
+- [ ] Bind both surfaces to the same course/atlas/cell content identities.
+- [ ] Distinguish semantic identity from icon or LOD representation.
+- [ ] Define matching road, depot, settlement and portal IDs across surfaces.
+- [ ] Retain the prior atlas/cell-content adoption authority as the upstream prerequisite.
 
 ### 7. Add executable fixtures
 
-- [ ] Test one, two and four-sector cell overlap.
-- [ ] Test positive and negative distant coordinates.
-- [ ] Test course/atlas road overlap and portal continuity.
-- [ ] Test settlement ownership across cell boundaries.
-- [ ] Test cache reuse and stale-generation rejection.
-- [ ] Test surface classification on a visible atlas road.
+- [ ] Test inside and outside every finite course edge.
+- [ ] Test distant positive and negative coordinates.
+- [ ] Test gameplay-cell and macro-sector boundary crossings.
+- [ ] Test map-open driving, paused map and route retirement.
+- [ ] Test resize and DPR changes while open.
 - [ ] Run `npm test`.
-- [ ] Run deterministic far-drive browser fixtures.
-- [ ] Compare source, built artifact and deployed Pages receipts.
+- [ ] Run browser fixtures and compare source, artifact and Pages receipts.
 
 ## Retained work
 
-Runtime-frame fault containment remains the next independent lifecycle risk. Do not fold its scheduler-retirement behavior into the infinite-world content authority; only bind its existing run/provider generation retirement once that authority is implemented.
+Infinite-world atlas/cell-content adoption remains the upstream semantic-content prerequisite. Runtime-frame fault containment remains an independent lifecycle risk and must not be folded into map projection.
