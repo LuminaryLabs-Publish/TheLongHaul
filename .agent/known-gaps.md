@@ -1,74 +1,65 @@
 # Known gaps
 
-**Timestamp:** `2026-07-16T19-39-24-04-00`
+**Timestamp:** `2026-07-17T01-01-09-04-00`
 
 ## Goal
 
-Track every missing contract between the declared infinite world and the semantic content committed into distant gameplay cells.
+Track every missing contract between infinite-world travel and the Canvas2D field-map frame.
 
-## Extent and revision convergence
+## Map viewport ownership
 
-- World profile and course package both say infinite, but no shared immutable extent manifest binds them at runtime.
-- Profile, package, course, atlas, generator, provider and run revisions are not combined into one admission result.
-- A profile reconfiguration has no migration or cache-invalidation contract.
-- The finite course bounds are retained separately without an explicit semantic role after the world becomes infinite.
+- `drawMap()` derives its complete transform from finite `course.bounds`.
+- No renderer-neutral map viewport owner exists.
+- No explicit finite-overview versus player-centered-infinite policy exists.
+- Map center, scale, world bounds and tracking mode have no revision identity.
+- Resize and DPR evidence are not admitted into a map generation result.
 
-## Macro-sector demand and identity
+## Semantic content query
 
-- The installed atlas is not demanded by the playable patch path.
-- No gameplay-cell request enumerates its overlapping macro sectors.
-- No immutable sector digest is published.
-- No duplicate, stale or retired sector-result classification exists.
-- Macro-sector size 1024 and gameplay-cell size 192 require overlap geometry, but no addressing contract defines it.
+- The map reads mutable course, delivery and truck state directly.
+- It does not consume accepted Core World cell results.
+- It does not consume macro-sector or atlas state.
+- It cannot represent atlas roads, settlements or portals.
+- No stable course/atlas/cell content digest exists.
+- No deterministic clipping and deduplication result exists.
 
-## Road, settlement and portal ownership
+## Player navigation
 
-- Distant macro sectors can describe settlements and four edge portals.
-- No atlas road graph is derived from neighboring portal pairs.
-- No course-versus-atlas road priority exists.
-- No deterministic settlement exclusion/composition policy exists around course depots.
-- No gameplay-cell ownership rule prevents duplicate roads or settlements across cell/sector boundaries.
-- The atlas road registry exists as state but has no playable adoption path.
+- Valid world streaming continues outside finite course bounds.
+- The truck marker can project beyond the canvas without explicit clipping classification.
+- No player-centered tracking window exists.
+- No map zoom or coverage policy exists.
+- No visible indication distinguishes outside-course free travel from missing map coverage.
 
-## Gameplay continuity
+## Map-open interaction
 
-- `nearestRoad`, surface grip, exploration and map logic use the finite course.
-- Outside-course travel is now allowed, but no atlas road becomes a drivable semantic road.
-- Distant cells can be permanently classified off-road despite future visible atlas road intent.
-- No atlas settlement interaction or discovery result exists.
-- Delivery remains finite-course scoped, with no explicit free-roam/end-of-course policy.
+- Driving input and simulation continue while the map is open.
+- That behavior is not represented by an explicit map-mode result.
+- No map-specific input context, focus destination or Escape policy exists.
+- Route/run retirement has no typed map-session settlement.
+- Reopening the map has no stale-content rejection receipt.
 
-## Cell generation and caching
+## Cross-surface convergence
 
-- `createCourseCellDescriptor` consumes only the finite course and exact cell.
-- Terrain uses fixed 24-segment construction even though a horizon LOD policy is installed.
-- No `WorldCellGenerationKey` binds sector digests, policies and generator version.
-- Cache validity does not prove the same sector/content revisions.
-- No stale patch rejection is bound to atlas generation.
-- No content digest is carried through provider commit and release.
-
-## Render and map proof
-
-- WebGL can show continuing terrain but not proven atlas-derived roads, settlements or portals.
-- Canvas2D map projects finite-course roads and depots only.
-- No shared WebGL/map content result exists for distant sectors.
-- No horizon representation is bound to accepted atlas semantics.
-- No `FirstAtlasBoundWorldFrameAck` exists.
+- WebGL and Canvas2D do not consume one shared semantic content result.
+- Map icons and WebGL objects have no matching content IDs for streamed atlas features.
+- No `MapFrameCommitResult` exists.
+- No `FirstInfiniteMapBoundFrameAck` exists.
+- No frame receipt proves that the truck marker and visible world use matching revisions.
 
 ## Validation and deployment
 
-- Source tests prove distant terrain finiteness, determinism and shared edges only.
-- No atlas-backed cell-content fixture exists.
-- No cross-sector portal/road fixture exists.
-- No course/atlas overlap fixture exists.
-- No far-drive browser fixture exists.
+- No distant-coordinate map projection fixture exists.
+- No gameplay-cell or macro-sector crossing fixture exists.
+- No resize/DPR map-generation fixture exists.
+- No map-open driving/paused-map policy fixture exists.
 - No source/artifact/Pages content-digest parity fixture exists.
 - `npm test` was not run during this documentation audit.
 
 ## Retained gaps
 
-Runtime-frame fault containment, product-policy adoption, browser-focus input retirement, Core adoption, WebGL recovery, accessibility, host-clock, audio, generation scheduling, motion preference, pause, delivery settlement and rollback remain preserved in prior audit families.
+The preceding infinite-world atlas/cell-content adoption gap remains unresolved and is the upstream source of missing streamed semantic content. Runtime-frame fault containment, product-policy adoption, browser-focus input retirement, Core adoption, WebGL recovery, accessibility, host-clock, audio, generation scheduling, motion preference, pause, delivery settlement and rollback remain preserved in prior audit families.
 
 ## Completion boundary
 
-Do not claim a populated infinite world, atlas-backed driving continuity, horizon-policy adoption, map/WebGL convergence, artifact parity, Pages parity or production readiness until distant cells consume accepted sector results and publish matching provider and frame receipts.
+Do not claim infinite map usability, player tracking, atlas-backed map content, WebGL/map convergence, first map-bound frame proof, artifact parity, Pages parity or production readiness until one accepted viewport/content generation is committed and acknowledged.
