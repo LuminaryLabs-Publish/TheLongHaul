@@ -1,67 +1,64 @@
 # Next steps
 
-**Timestamp:** `2026-07-17T01-01-09-04-00`
+**Timestamp:** `2026-07-17T07-38-20-04-00`
 
 ## Goal
 
-Give the field map one admitted world window and one accepted semantic-content generation without making Canvas2D another world owner.
+Give map open one explicit gameplay, input and focus policy without moving semantic ownership into DOM or Canvas2D code.
 
-## Plan ledger
+## Checklist
 
-### 1. Define map modes
+### 1. Choose product policy
 
-- [ ] Add explicit `finite-course-overview`, `player-centered-infinite` and optional `sector-overview` modes.
-- [ ] Decide whether map-open driving remains live or is suspended by policy.
-- [ ] Define keyboard context, focus and announcement behavior for each mode.
-- [ ] Bind mode retirement to route, run, pause, result, loss and title transitions.
+- [ ] Select `live-driving`, `restricted-driving` or `suspended` as the default.
+- [ ] Define allowed semantic actions for every policy.
+- [ ] Define Run clock, meters, collisions, wildlife, delivery and streaming behavior.
+- [ ] Define whether map behavior differs for keyboard, gamepad and touch.
 
-### 2. Admit one viewport
+### 2. Admit a map session
 
-- [ ] Add `MapViewportAdmissionCommand` and `MapViewportAdmissionResult`.
-- [ ] Bind viewport identity to run, world profile, course package, canvas size and DPR revisions.
-- [ ] Store center, world bounds, scale, tracking mode and clipping policy.
-- [ ] Reject stale resize, route and run evidence.
+- [ ] Add `MapModeAdmissionCommand` and `MapModeAdmissionResult`.
+- [ ] Bind route, run, input sequence, map viewport and focus revisions.
+- [ ] Allocate `MapSessionId` and reject duplicate/stale toggles.
+- [ ] Reject map admission outside active driving.
 
-### 3. Query accepted content
+### 3. Commit input and simulation policy
 
-- [ ] Consume finite-course content through a stable course snapshot.
-- [ ] Consume active streamed-cell and macro-sector content through accepted provider/atlas results.
-- [ ] Preserve discovery, checked-depot and rejection policy.
-- [ ] Define whether undiscovered settlements/portals are hidden, generalized or omitted.
-- [ ] Compute `MapContentDigest`.
+- [ ] Activate a map-specific Core Input context.
+- [ ] Apply an explicit semantic action mask before Truck input.
+- [ ] Suspend or preserve simulation only through the accepted result.
+- [ ] Prevent raw browser key state from bypassing policy.
 
-### 4. Project the player reliably
+### 4. Settle focus and accessibility
 
-- [ ] Define player-centered tracking and edge-clipping behavior.
-- [ ] Ensure the truck marker cannot silently disappear during valid travel.
-- [ ] Preserve heading and marker scale across zoom changes.
-- [ ] Define out-of-window classification for finite-overview mode.
+- [ ] Choose retain-game, focus-map or focus-close policy.
+- [ ] Publish one map-open/close announcement.
+- [ ] Restore the accepted prior focus target on close.
+- [ ] Define Escape behavior independently from M close.
 
-### 5. Commit one map frame
+### 5. Settle every exit once
 
-- [ ] Add `MapFrameCommitCommand` and `MapFrameCommitResult`.
-- [ ] Draw only from immutable viewport/content results.
-- [ ] Reject late content after resize, route or run retirement.
-- [ ] Publish `FirstInfiniteMapBoundFrameAck`.
-- [ ] Keep Canvas2D drawing separate from semantic map queries.
+- [ ] Handle M, Escape, pause, completion, failure, title, retry and reset.
+- [ ] Handle blur, visibility retirement and page replacement.
+- [ ] Clear stale one-shot evidence.
+- [ ] Publish `MapModeSettlementResult`.
 
-### 6. Converge WebGL and map semantics
+### 6. Bind the visible frame
 
-- [ ] Bind both surfaces to the same course/atlas/cell content identities.
-- [ ] Distinguish semantic identity from icon or LOD representation.
-- [ ] Define matching road, depot, settlement and portal IDs across surfaces.
-- [ ] Retain the prior atlas/cell-content adoption authority as the upstream prerequisite.
+- [ ] Commit DOM, Canvas2D and gameplay state under one map generation.
+- [ ] Reject late frames after settlement.
+- [ ] Publish `FirstMapModeBoundFrameAck`.
+- [ ] Preserve the prior infinite map viewport/content work as a separate prerequisite.
 
-### 7. Add executable fixtures
+### 7. Validate
 
-- [ ] Test inside and outside every finite course edge.
-- [ ] Test distant positive and negative coordinates.
-- [ ] Test gameplay-cell and macro-sector boundary crossings.
-- [ ] Test map-open driving, paused map and route retirement.
-- [ ] Test resize and DPR changes while open.
+- [ ] Hold W/A/Shift while opening and closing under every policy.
+- [ ] Test M and Escape race/double-settlement paths.
+- [ ] Test route outcomes and reset while open.
+- [ ] Test keyboard focus and announcement restoration.
 - [ ] Run `npm test`.
-- [ ] Run browser fixtures and compare source, artifact and Pages receipts.
+- [ ] Compare source, built artifact and Pages receipts.
 
 ## Retained work
 
-Infinite-world atlas/cell-content adoption remains the upstream semantic-content prerequisite. Runtime-frame fault containment remains an independent lifecycle risk and must not be folded into map projection.
+Infinite map viewport projection and atlas/cell-content adoption remain unresolved. This audit does not replace those semantic map-content contracts.
