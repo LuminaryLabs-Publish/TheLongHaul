@@ -1,68 +1,72 @@
 # Validation
 
-**Audit timestamp:** `2026-07-17T17-39-07-04-00`
+**Audit timestamp:** `2026-07-18T03-43-36-04-00`
 
 ## Summary
 
-All 11 Publish repositories were compared. Ten were eligible after excluding Cavalry of Rome. Every eligible repository had a central ledger, root `.agent` state and a `main` head matching its documented repo-local head. TheLongHaul was selected as the oldest synchronized eligible repository.
+All 11 Publish repositories were compared. Ten were eligible after excluding Cavalry of Rome. All ten had central ledgers and root `.agent` state. TheLongHaul, PrehistoricRush and HorrorCorridor were runtime-ahead; TheLongHaul was selected as the newest eligible runtime-ahead repository.
 
-Source inspection proves that a rich terminal result is reduced into one global, unprojected local-storage record. It does not prove that the global policy is defective or that a storage failure has occurred; it proves that scope, durability, migration and projection contracts are absent.
+Source inspection proves that the new horizon world can prepare an updated patch for a cell while the renderer retains an existing host without comparing revisions. It also proves partial, rather than complete, adoption of the named Horizon LOD content modes. It does not prove a visible production defect without executable browser evidence.
 
 ## Checklist
 
 - [x] Compare all accessible Publish repositories.
 - [x] Exclude `LuminaryLabs-Publish/TheCavalryOfRome`.
-- [x] Confirm ten eligible ledgers and root `.agent` folders.
-- [x] Compare all ten documented heads with `main`.
-- [x] Select only TheLongHaul by oldest synchronized timestamp.
-- [x] Inspect bootstrap, scoring, result projection, storage, route and frame-loop paths.
-- [x] Reconcile 20 installed kits and 35 source-backed surfaces.
-- [x] Add the timestamped best-run audit family.
+- [x] Confirm ten eligible ledgers and root `.agent` states.
+- [x] Identify runtime-ahead eligible repositories.
+- [x] Select only TheLongHaul by latest runtime update.
+- [x] Compare prior documentation head with current runtime head.
+- [x] Reconcile 14 runtime commits.
+- [x] Inspect bootstrap, terrain, truck, camera, horizon, frame-loop and smoke paths.
+- [x] Reconcile 20 installed kits and 36 source-backed surfaces.
+- [x] Add the timestamped horizon audit family.
 - [x] Change documentation only.
-- [ ] Execute best-run domain, browser, artifact and Pages fixtures after implementation.
+- [ ] Execute horizon domain, browser, artifact and Pages fixtures after implementation.
 
 ## Repository evidence
 
 ```txt
-reviewed pre-audit repository head: 3fb11448580405aaa864b106af5dd73e8f06283a
-reviewed runtime source revision: 189a586877db2bf3e0b1a7c74ae072b552b6fe9a
+previous repo-local documentation head: 1ed59786aa8f8f26f643c9f1e8c4d0a4205181f6
+reviewed runtime head: 753488e40e69fc13471df42959628ef3052e5992
+runtime commits reconciled: 14
 branch: main
-selection class: oldest synchronized documented timestamp
-selected prior timestamp: 2026-07-17T07-38-20-04-00
+selection class: newest runtime-ahead eligible repository
 ```
 
 ## Source observations
 
 ```txt
-rich RunResult construction: yes
-current result DOM projection: yes
-single local-storage best key: yes
-replacement comparison by adjustedTime: yes
-reduced stored record: yes
-empty storage catch: yes
-restored best-record projection: no
-
-explicit comparison scope result: no
-record schema/revision/digest: no
-durable commit/readback result: no
-migration/reset result: no
-BestRunFrameDigest: no
-FirstBestRunBoundFrameAck: no
+second Core World registered: yes
+quadtree partition used: yes
+curved-horizon surface used: yes
+horizon provider prepareCell/updateCell: yes
+patch map replacement by cell ID: yes
+existing host revision comparison: no
+existing host replacement on patch update: no
+patch revision or digest: no
+focus/profile/policy revision in patch: no
+terrain resolution policy consumed: yes
+road/settlement none gate consumed: yes
+distinct road modes realized: no
+distinct settlement modes realized: no
+forest modes realized: no
+HorizonFrameDigest: no
+FirstHorizonGenerationBoundFrameAck: no
 ```
 
 ## Inventory
 
 ```txt
-Core kits installed: 8
-product DSKs installed: 12
+Core kits: 8
+product DSKs: 12
 engine-installed kits: 20
-Core World effect providers: 1
+Core World effect providers: 2
 controllers: 1
 browser/product adapters: 9
 proof/deployment adapters: 4
-total source-backed surfaces: 35
+total source-backed surfaces: 36
 render surfaces: 3
-proposed best-run surfaces: 18
+proposed horizon-convergence surfaces: 20
 project validation command: npm test
 ```
 
@@ -74,7 +78,7 @@ new architecture audit
 new render audit
 new gameplay audit
 new interaction audit
-new best-run-system contract audit
+new horizon-system contract audit
 new deployment fixture gate
 new central-sync audit
 START_HERE/current-audit/next-steps/known-gaps/validation refreshed
@@ -85,9 +89,8 @@ kit-registry.json refreshed
 
 ```txt
 runtime JavaScript, HTML or CSS: no
-scoring or best-record behavior: no
-local-storage keys or payloads: no
-gameplay, input or rendering: no
+world, truck, camera or horizon behavior: no
+gameplay, input, scoring or storage: no
 tests, packages or workflows: no
 deployment: no
 branch or pull request: no
@@ -97,14 +100,13 @@ branch or pull request: no
 
 ```txt
 npm test: not run
-comparison and schema fixtures: unavailable
-storage failure/readback fixtures: unavailable
-migration and reset fixtures: unavailable
-reload/projection browser fixtures: unavailable
-FirstBestRunBoundFrameAck fixture: unavailable
+patch-replacement fixture: unavailable
+stale-focus/cell fixture: unavailable
+LOD mode fixture: unavailable
+browser motion/refinement fixture: not run
 artifact and Pages parity: not run
 ```
 
 ## Claims not made
 
-No data-loss incident, preferred comparison scope, fair cross-course comparison, durable commit, migration correctness, visible best-record support, matching-frame proof, artifact parity, Pages parity or production readiness is claimed.
+No visible horizon defect, performance regression, memory amount, complete LOD policy adoption, duplicate-free atlas projection, matching-frame proof, artifact parity, Pages parity or production readiness is claimed.
