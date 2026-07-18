@@ -1,95 +1,92 @@
-# START HERE: The Long Haul best-run persistence audit
+# START HERE: The Long Haul horizon convergence audit
 
-**Last updated:** `2026-07-17T17-39-07-04-00`  
+**Last updated:** `2026-07-18T03-43-36-04-00`  
 **Repository:** `LuminaryLabs-Publish/TheLongHaul`  
 **Branch:** `main`  
-**Reviewed pre-audit repository head:** `3fb11448580405aaa864b106af5dd73e8f06283a`  
-**Reviewed runtime source revision:** `189a586877db2bf3e0b1a7c74ae072b552b6fe9a`  
-**Status:** `best-run-scope-durable-record-projection-authority-audited`
+**Reviewed runtime head:** `753488e40e69fc13471df42959628ef3052e5992`  
+**Status:** `horizon-patch-render-host-convergence-authority-audited`
 
 ## Summary
 
-The game produces a detailed terminal run result, then reduces it to one browser-global best record containing adjusted time, rating and a short course code. The record is compared only by adjusted time across procedurally different courses, silently written under `the-long-haul-best-v2`, and never restored into a visible surface.
+The runtime now has a second Core World for quadtree horizon terrain, a curved-horizon surface, a presentation provider, macro-sector roads and settlements, cross-cell terrain normals, conformed road elevation, grounded truck pose and a raised chase camera.
 
-This audit does not declare the global comparison invalid. It records that scope, schema revision, comparison, durability, migration, failure classification and visible-frame projection are not owned by a DSK result.
+The provider can replace a patch in `horizonPatches`, but the Three.js reconciliation path only realizes cells without an existing host. An updated patch for an already-realized cell therefore has no explicit replacement settlement. Because patch heights depend on focus and policy, the visible horizon has no proof that it presents the latest accepted generation.
 
-## Goal
+## Intent
 
-Create one renderer-neutral best-run authority. Keep comparison and persistence semantics in domain results; keep local storage and DOM as adapters.
+Create one renderer-neutral authority for horizon world generation, patch revision, host replacement, resource retirement and visible-frame convergence.
 
 ## What needs to happen
 
 ```txt
-BestRunPolicyAdmissionCommand
-  -> choose and bind one comparison scope
-  -> BestRunPolicyResult
+HorizonWorldAdmissionCommand
+  -> HorizonWorldAdmissionResult
 
-BestRunCandidateCommand
-  -> classify better, equal, worse, incomparable or invalid
-  -> BestRunCandidateResult
+HorizonPatchBuildCommand
+  -> HorizonPatchBuildResult
 
-BestRunCommitCommand
-  -> write and verify one versioned record
-  -> BestRunCommitResult
+HorizonPatchSettlementCommand
+  -> HorizonPatchSettlementResult
 
-BestRunRestoreCommand
-  -> parse, validate and migrate compatible data
-  -> BestRunRestoreResult
+HorizonHostReconciliationCommand
+  -> created | replaced | retained | retired | rejected-stale
+  -> HorizonHostReconciliationResult
 
-BestRunProjectionCommitCommand
-  -> BestRunFrameDigest
-  -> FirstBestRunBoundFrameAck
+HorizonProjectionCommitCommand
+  -> HorizonFrameDigest
+  -> FirstHorizonGenerationBoundFrameAck
 ```
 
 ## Checklist
 
 - [x] Compared all 11 Publish repositories.
 - [x] Excluded `LuminaryLabs-Publish/TheCavalryOfRome`.
-- [x] Confirmed ten eligible central ledgers, root `.agent` folders and matching heads.
-- [x] Selected only TheLongHaul by the oldest synchronized timestamp.
-- [x] Inspected scoring, results projection, storage, route and frame-loop paths.
-- [x] Reconciled all 20 installed kits and 35 source-backed surfaces.
-- [x] Added the timestamped best-run audit family.
-- [x] Kept runtime, scoring, storage and deployment behavior unchanged.
-- [ ] Choose and implement a best-run comparison scope.
-- [ ] Implement versioned commit, readback, restore, migration and reset results.
+- [x] Confirmed ten eligible ledgers and root `.agent` states.
+- [x] Selected only TheLongHaul as the newest runtime-ahead eligible repository.
+- [x] Reconciled 14 runtime commits after the prior documentation head.
+- [x] Identified the complete interaction loop and active domains.
+- [x] Documented all 20 installed kits, two providers, one controller, nine adapters and four proof/deployment surfaces.
+- [x] Added the timestamped horizon audit family.
+- [x] Kept runtime, gameplay, rendering, tests and deployment unchanged.
+- [ ] Add patch and host revisions with atomic replacement.
+- [ ] Fully implement or narrow the named Horizon LOD content modes.
 - [ ] Execute source, browser, artifact and Pages fixtures.
 
 ## Current census
 
 ```txt
-Core kits installed:                  8
-product DSKs installed:              12
-engine-installed kits:               20
-Core World effect providers:          1
-standalone controllers:               1
-browser/product adapters:             9
-proof/deployment adapters:            4
-total source-backed surfaces:        35
-render surfaces:                      3
-proposed best-run surfaces:          18
+Core kits: 8
+product DSKs: 12
+engine-installed kits: 20
+Core World effect providers: 2
+standalone controllers: 1
+browser/product adapters: 9
+proof/deployment adapters: 4
+total source-backed surfaces: 36
+render surfaces: 3
+proposed horizon-convergence surfaces: 20
 ```
 
 ## Read this run first
 
 1. `current-audit.md`
 2. `known-gaps.md`
-3. `trackers/2026-07-17T17-39-07-04-00/project-breakdown.md`
-4. `architecture-audit/2026-07-17T17-39-07-04-00-best-run-scope-durable-record-dsk-map.md`
-5. `best-run-system-audit/2026-07-17T17-39-07-04-00-scope-durability-projection-contract.md`
-6. `render-audit/2026-07-17T17-39-07-04-00-unprojected-best-run-visible-frame-gap.md`
-7. `gameplay-audit/2026-07-17T17-39-07-04-00-run-result-best-record-loop.md`
-8. `interaction-audit/2026-07-17T17-39-07-04-00-best-run-command-result-map.md`
-9. `deploy-audit/2026-07-17T17-39-07-04-00-best-run-browser-pages-fixture-gate.md`
-10. `central-sync-audit/2026-07-17T17-39-07-04-00-oldest-selection-best-run-reconciliation.md`
-11. `turn-ledger/2026-07-17T17-39-07-04-00.md`
+3. `trackers/2026-07-18T03-43-36-04-00/project-breakdown.md`
+4. `architecture-audit/2026-07-18T03-43-36-04-00-horizon-patch-host-convergence-dsk-map.md`
+5. `horizon-system-audit/2026-07-18T03-43-36-04-00-patch-generation-host-convergence-contract.md`
+6. `render-audit/2026-07-18T03-43-36-04-00-horizon-patch-visible-host-convergence-gap.md`
+7. `gameplay-audit/2026-07-18T03-43-36-04-00-driving-horizon-update-loop.md`
+8. `interaction-audit/2026-07-18T03-43-36-04-00-horizon-command-result-map.md`
+9. `deploy-audit/2026-07-18T03-43-36-04-00-horizon-browser-pages-fixture-gate.md`
+10. `central-sync-audit/2026-07-18T03-43-36-04-00-runtime-ahead-horizon-reconciliation.md`
+11. `turn-ledger/2026-07-18T03-43-36-04-00.md`
 12. `next-steps.md`
 13. `validation.md`
 
 ## Retained audits
 
-The map-mode input/focus audit remains unresolved. Infinite map viewport and atlas adoption, runtime faults, focus release, Core adoption, WebGL recovery, accessibility, clock, audio, generation, motion, pause, delivery and rollback audits remain preserved.
+The best-run persistence audit and all prior map, world, runtime-fault, input, WebGL, accessibility, clock, audio, generation, pause, delivery and rollback audits remain unresolved and preserved.
 
 ## Next safe ledge
 
-Do not add more local-storage logic to `showResults()`. First choose a comparison scope and canonical record contract, then bind the storage adapter and visible projection to typed results.
+Do not add another visual workaround around `reconcileHorizon()`. First give patches and hosts comparable revisions, then replace stale hosts atomically and prove the matching presented frame.
