@@ -1,63 +1,59 @@
 # Next steps
 
-**Timestamp:** `2026-07-17T17-39-07-04-00`
+**Timestamp:** `2026-07-18T03-43-36-04-00`
 
 ## Goal
 
-Make best-run comparison, durability, restore and projection explicit without moving semantic policy into DOM or local-storage code.
+Make horizon patch preparation, host replacement, LOD content adoption and visible-frame proof explicit without moving world semantics into renderer-local conditionals.
 
 ## Checklist
 
-### 1. Choose comparison scope
+### 1. Add generation identity
 
-- [ ] Select `exact-course`, `seed-family`, `scoring-revision`, `global` or no persistent record.
-- [ ] Define which course/generator/scoring revisions are comparable.
-- [ ] Define tie behavior.
-- [ ] Define how incomparable runs are presented.
+- [ ] Add horizon world generation and monotonic focus revision.
+- [ ] Add profile and Horizon LOD policy revisions.
+- [ ] Add cell revision to every provider request.
+- [ ] Reject work from retired course or focus generations.
 
-### 2. Define the canonical record
+### 2. Version patches
 
-- [ ] Add schema and schema version.
-- [ ] Add record identity, revision and digest.
-- [ ] Retain the course and scoring evidence required by the selected scope.
-- [ ] Define public versus diagnostic fields.
+- [ ] Add `patchRevision` and deterministic `patchDigest`.
+- [ ] Record the atlas sector IDs sampled by the patch.
+- [ ] Record road, settlement and forest content modes.
+- [ ] Publish a typed `HorizonPatchBuildResult`.
 
-### 3. Admit candidates
+### 3. Reconcile hosts
 
-- [ ] Add `BestRunPolicyAdmissionCommand` and result.
-- [ ] Add `BestRunCandidateCommand` and result.
-- [ ] Classify better, equal, worse, incomparable and invalid candidates.
-- [ ] Bind the complete terminal `RunResult` and scoring revision.
+- [ ] Store accepted patch revision and digest in each host.
+- [ ] Replace an existing host when its accepted patch changes.
+- [ ] Retain only when host and patch digests match.
+- [ ] Return created, replaced, retained, retired and rejected-stale results.
+- [ ] Dispose replaced terrain geometry exactly once.
 
-### 4. Commit durably
+### 4. Complete LOD policy adoption
 
-- [ ] Add `BestRunCommitCommand` and result.
-- [ ] Compare expected prior revision before writing.
-- [ ] Read back and verify schema and digest.
-- [ ] Return classified storage failures without invalidating the completed run.
+- [ ] Implement distinct road recipes for ribbon, thin-ribbon and line.
+- [ ] Implement distinct settlement recipes for low-detail, block-mass and silhouette.
+- [ ] Implement forest modes or remove unsupported modes from the game-stable DSK contract.
+- [ ] Give macro-sector roads and settlements canonical cell ownership or clipping.
 
-### 5. Restore, migrate and reset
+### 5. Bind the visible frame
 
-- [ ] Add `BestRunRestoreCommand` and result.
-- [ ] Handle absent, corrupt, incompatible and denied storage.
-- [ ] Define migration from the current reduced v2 record.
-- [ ] Add explicit reset/delete settlement.
+- [ ] Add `HorizonFrameDigest`.
+- [ ] Include world, focus, policy, cell and host revisions.
+- [ ] Publish `FirstHorizonGenerationBoundFrameAck`.
+- [ ] Surface optional horizon degradation in bounded diagnostics.
 
-### 6. Project the accepted record
+### 6. Validate
 
-- [ ] Decide title and results presentation.
-- [ ] Show the comparison context.
-- [ ] Bind route, record and projection generations.
-- [ ] Publish `BestRunFrameDigest` and `FirstBestRunBoundFrameAck`.
-
-### 7. Validate
-
-- [ ] Test first, better, equal, worse, incomparable and invalid candidates.
-- [ ] Test corrupt, denied and readback-mismatch storage.
-- [ ] Test reload, retry, new course, title and reset.
+- [ ] Add deterministic patch replacement tests.
+- [ ] Add stale-focus and stale-cell rejection tests.
+- [ ] Add resource-retirement tests.
+- [ ] Add LOD mode content tests.
+- [ ] Drive across quadtree refinement boundaries in a browser fixture.
 - [ ] Run `npm test`.
 - [ ] Compare source, artifact and Pages receipts.
 
 ## Retained work
 
-Map-mode input/focus, infinite map viewport/content and previously documented runtime, rendering, accessibility, clock, audio, generation, delivery and rollback gaps remain separate unresolved contracts.
+Best-run persistence, map mode, infinite-map projection, runtime faults, focus release, WebGL recovery, accessibility, clock, audio, generation, pause, delivery and rollback remain separate unresolved audit families.
