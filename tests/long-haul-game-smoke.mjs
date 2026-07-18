@@ -50,7 +50,9 @@ for (let index = 0; index < 100; index += 1) {
     coordinates: [0, 0],
     bounds: { minX: 0, minZ: 0, maxX: CELL_SIZE, maxZ: CELL_SIZE }
   });
-  assert.equal(structuredClone(patch).schema, "long-haul.course-cell/2");
+  assert.equal(structuredClone(patch).schema, "long-haul.course-cell/3");
+  assert.equal(patch.terrain.segments, 32);
+  assert.ok(patch.roads.every((road) => Number.isFinite(road.a.y) && Number.isFinite(road.b.y)));
 
   const farCell = {
     id: `${WORLD_ID}:uniform-grid:0:100000:-100000`,
@@ -112,15 +114,17 @@ function tick(delta = 1 / 60) {
   for (const kit of product.kits) for (const system of kit.systems ?? []) system.system(world);
 }
 
-engine.n.longHaulTruck.reset({ x: 0, z: 0, heading: Math.PI });
+engine.n.longHaulTruck.reset({ x: 0, y: 0.85, z: 0, heading: Math.PI });
 tick();
 for (let frame = 0; frame < 120; frame += 1) {
-  engine.n.longHaulTruck.input({ throttle: 1, steer: 0.1, surface: "road", surfaceGrip: 1 });
+  engine.n.longHaulTruck.input({ throttle: 1, steer: 0.1, surface: "road", surfaceGrip: 1, groundHeight: 0, groundNormal: { x: 0, y: 1, z: 0 } });
   tick();
 }
 const truck = engine.n.longHaulTruck.getState();
 assert.ok(truck.position.z < 0, "truck follows its authoritative forward axis");
 assert.ok(truck.speed > 0, "truck accelerates forward");
+assert.ok(Number.isFinite(truck.position.y), "truck vertical state remains finite");
+assert.ok(Number.isFinite(truck.suspensionCompression), "suspension state remains finite");
 
 engine.n.longHaulDelivery.load(["a", "b", "c", "d", "e"], "c");
 tick();
