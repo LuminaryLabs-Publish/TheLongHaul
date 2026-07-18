@@ -1,16 +1,19 @@
-import { CELL_SIZE, TAU, clone, clamp, hashText, segmentInfo } from "./shared.mjs";
-import { terrainNoise } from "./world-base.mjs";
+import { CELL_SIZE, TAU, clone, clamp, hashText } from "./shared.mjs";
+import { terrainHeight } from "./world-base.mjs";
 
 export function createCourseCellDescriptor(course, cell) {
   const bounds = cell.bounds;
   const [cx, cz] = cell.coordinates;
-  const terrainSegments = 24;
+  const terrainSegments = 32;
   const terrainRoadSegments = [];
   const ownedRoadSegments = [];
+
   for (const edge of course.edges) {
     for (let index = 1; index < edge.samples.length; index += 1) {
-      const a = edge.samples[index - 1];
-      const b = edge.samples[index];
+      const sourceA = edge.samples[index - 1];
+      const sourceB = edge.samples[index];
+      const a = { x: sourceA.x, y: terrainHeight(course, sourceA.x, sourceA.z) + 0.12, z: sourceA.z };
+      const b = { x: sourceB.x, y: terrainHeight(course, sourceB.x, sourceB.z) + 0.12, z: sourceB.z };
       const segment = {
         id: `${edge.id}:${index - 1}`,
         edgeId: edge.id,
@@ -19,38 +22,21 @@ export function createCourseCellDescriptor(course, cell) {
         type: edge.type,
         width: edge.width,
         roughness: edge.roughness,
-        a: { x: a.x, y: 0.08, z: a.z },
-        b: { x: b.x, y: 0.08, z: b.z }
+        a,
+        b
       };
       const minX = Math.min(a.x, b.x);
       const maxX = Math.max(a.x, b.x);
       const minZ = Math.min(a.z, b.z);
       const maxZ = Math.max(a.z, b.z);
-      if (maxX >= bounds.minX - 32 && minX <= bounds.maxX + 32 && maxZ >= bounds.minZ - 32 && minZ <= bounds.maxZ + 32) terrainRoadSegments.push(segment);
+      if (maxX >= bounds.minX - 36 && minX <= bounds.maxX + 36 && maxZ >= bounds.minZ - 36 && minZ <= bounds.maxZ + 36) terrainRoadSegments.push(segment);
       const midpointX = (a.x + b.x) * 0.5;
       const midpointZ = (a.z + b.z) * 0.5;
       if (midpointX >= bounds.minX && midpointX < bounds.maxX && midpointZ >= bounds.minZ && midpointZ < bounds.maxZ) ownedRoadSegments.push(segment);
     }
   }
 
-  function localNearestRoad(point) {
-    let best = null;
-    for (const road of terrainRoadSegments) {
-      const info = segmentInfo(point, road.a, road.b);
-      if (!best || info.distance < best.distance) best = { ...info, edge: road };
-    }
-    return best;
-  }
-
-  function localHeight(x, z) {
-    const natural = terrainNoise(x, z, course.seed);
-    const road = localNearestRoad({ x, z });
-    if (!road) return natural;
-    const flattenRadius = road.edge.width * 0.75 + 14;
-    const blend = clamp(1 - road.distance / flattenRadius, 0, 1);
-    const smoothBlend = blend * blend * (3 - 2 * blend);
-    return natural * (1 - smoothBlend);
-  }
+  const localHeight = (x, z) => terrainHeight(course, x, z);
 
   const heights = [];
   const colors = [];
@@ -60,12 +46,12 @@ export function createCourseCellDescriptor(course, cell) {
       const z = bounds.minZ + (iz / terrainSegments) * CELL_SIZE;
       const y = localHeight(x, z);
       heights.push(y);
-      const moisture = (hashText(`${course.seed}:moisture:${Math.floor(x / 16)}:${Math.floor(z / 16)}`) & 0xffff) / 0xffff;
-      const elevation = clamp((y + 10) / 24, 0, 1);
+      const moisture = (hashText(`${course.seed}:moisture:${Math.floor(x / 24)}:${Math.floor(z / 24)}`) & 0xffff) / 0xffff;
+      const elevation = clamp((y + 18) / 46, 0, 1);
       colors.push({
-        r: 0.22 + moisture * 0.1 + elevation * 0.05,
-        g: 0.35 + moisture * 0.18 - elevation * 0.03,
-        b: 0.18 + moisture * 0.06 + elevation * 0.04
+        r: 0.19 + moisture * 0.1 + elevation * 0.09,
+        g: 0.32 + moisture * 0.19 - elevation * 0.035,
+        b: 0.15 + moisture * 0.07 + elevation * 0.07
       });
     }
   }
@@ -78,52 +64,67 @@ export function createCourseCellDescriptor(course, cell) {
   const grass = [];
   const rocks = [];
   const seedOffset = hashText(`${course.seed}:${cx}:${cz}`);
-  const randomAt = (index, salt) => ((hashText(`${seedOffset}:${salt}:${index}`) & 0xffffff) / 0xffffff);
-  const clusterCount = 5 + Math.floor(randomAt(0, "clusters") * 5);
+  const randomAt = (index, salt) => (hashText(`${seedOffset}:${salt}:${index}`) & 0xffffff) / 0xffffff;
+  const clusterCount = 8 + Math.floor(randomAt(0, "clusters") * 8);
+
   for (let cluster = 0; cluster < clusterCount; cluster += 1) {
     const centerX = bounds.minX + 18 + randomAt(cluster, "cx") * (CELL_SIZE - 36);
     const centerZ = bounds.minZ + 18 + randomAt(cluster, "cz") * (CELL_SIZE - 36);
-    const clusterSize = 3 + Math.floor(randomAt(cluster, "count") * 7);
+    const clusterSize = 4 + Math.floor(randomAt(cluster, "count") * 9);
+    const biomeOpen = randomAt(cluster, "open") > 0.78;
+    if (biomeOpen) continue;
     for (let item = 0; item < clusterSize; item += 1) {
-      const index = cluster * 17 + item;
+      const index = cluster * 23 + item;
       const angle = randomAt(index, "angle") * TAU;
-      const radius = Math.sqrt(randomAt(index, "radius")) * (12 + randomAt(cluster, "spread") * 24);
+      const radius = Math.sqrt(randomAt(index, "radius")) * (10 + randomAt(cluster, "spread") * 30);
       const x = centerX + Math.cos(angle) * radius;
       const z = centerZ + Math.sin(angle) * radius;
       if (x < bounds.minX + 3 || x > bounds.maxX - 3 || z < bounds.minZ + 3 || z > bounds.maxZ - 3) continue;
-      const road = localNearestRoad({ x, z });
-      if (road && road.distance < road.edge.width * 0.7 + 15) continue;
-      if (course.depots.some((depot) => Math.hypot(depot.x - x, depot.z - z) < 60)) continue;
+      const nearRoad = terrainRoadSegments.some((road) => {
+        const dx = road.b.x - road.a.x;
+        const dz = road.b.z - road.a.z;
+        const length2 = dx * dx + dz * dz || 1;
+        const t = clamp(((x - road.a.x) * dx + (z - road.a.z) * dz) / length2, 0, 1);
+        return Math.hypot(x - (road.a.x + dx * t), z - (road.a.z + dz * t)) < road.width * 0.7 + 15;
+      });
+      if (nearRoad) continue;
+      if (course.depots.some((depot) => Math.hypot(depot.x - x, depot.z - z) < 70)) continue;
       const y = localHeight(x, z);
-      const height = 8 + randomAt(index, "height") * 10;
+      const height = 8 + randomAt(index, "height") * 13;
       vegetation.push({
         id: `${cell.id}:tree:${index}`,
-        variant: randomAt(index, "variant") > 0.55 ? "b" : "a",
+        variant: randomAt(index, "variant") > 0.52 ? "b" : "a",
         position: [x, y, z],
-        scale: [0.75 + randomAt(index, "width") * 0.5, height / 12, 0.75 + randomAt(index, "width2") * 0.5],
+        scale: [0.72 + randomAt(index, "width") * 0.62, height / 12, 0.72 + randomAt(index, "width2") * 0.62],
         rotation: randomAt(index, "rotation") * TAU,
         obstacleRadius: 1.4 + height * 0.05
       });
     }
   }
 
-  for (let index = 0; index < 90; index += 1) {
+  for (let index = 0; index < 150; index += 1) {
     const x = bounds.minX + randomAt(index, "grass-x") * CELL_SIZE;
     const z = bounds.minZ + randomAt(index, "grass-z") * CELL_SIZE;
-    const road = localNearestRoad({ x, z });
-    if (road && road.distance < road.edge.width * 0.65 + 5) continue;
+    const nearRoad = terrainRoadSegments.some((road) => {
+      const dx = road.b.x - road.a.x;
+      const dz = road.b.z - road.a.z;
+      const length2 = dx * dx + dz * dz || 1;
+      const t = clamp(((x - road.a.x) * dx + (z - road.a.z) * dz) / length2, 0, 1);
+      return Math.hypot(x - (road.a.x + dx * t), z - (road.a.z + dz * t)) < road.width * 0.65 + 5;
+    });
+    if (nearRoad) continue;
     const y = localHeight(x, z);
     grass.push({
       id: `${cell.id}:grass:${index}`,
       position: [x, y, z],
-      scale: [0.7 + randomAt(index, "grass-sx") * 0.8, 0.7 + randomAt(index, "grass-sy") * 0.8, 0.7 + randomAt(index, "grass-sz") * 0.8],
+      scale: [0.65 + randomAt(index, "grass-sx") * 1.05, 0.65 + randomAt(index, "grass-sy") * 1.1, 0.65 + randomAt(index, "grass-sz") * 1.05],
       rotation: randomAt(index, "grass-r") * TAU
     });
   }
 
   for (const road of roads.filter((entry) => entry.type === "rough-shortcut")) {
-    if (randomAt(hashText(road.id), "rock") < 0.75) continue;
-    const t = 0.25 + randomAt(hashText(road.id), "rock-t") * 0.5;
+    if (randomAt(hashText(road.id), "rock") < 0.58) continue;
+    const t = 0.22 + randomAt(hashText(road.id), "rock-t") * 0.56;
     const x = road.a.x + (road.b.x - road.a.x) * t;
     const z = road.a.z + (road.b.z - road.a.z) * t;
     const headingValue = Math.atan2(road.b.x - road.a.x, road.b.z - road.a.z);
@@ -134,7 +135,7 @@ export function createCourseCellDescriptor(course, cell) {
   }
 
   return {
-    schema: "long-haul.course-cell/2",
+    schema: "long-haul.course-cell/3",
     cellId: cell.id,
     coordinates: [cx, cz],
     bounds: clone(bounds),
