@@ -1,59 +1,62 @@
 # Known gaps
 
-**Timestamp:** `2026-07-17T17-39-07-04-00`
+**Timestamp:** `2026-07-18T03-43-36-04-00`
 
-## Comparison scope
+## Patch identity
 
-- One stored record is shared across all generated courses.
-- No product result explicitly chooses global comparison.
-- Comparison uses `adjustedTime` only.
-- Exact-course, generator and scoring-policy identities are not bound.
-- Equal and incomparable candidates have no typed classification.
+- Horizon patches have no world generation.
+- Focus, profile, policy and cell revisions are not recorded.
+- Sampled macro-sector identities are not retained.
+- No patch revision or digest exists.
+- Provider descriptors expose only cell ID and LOD.
 
-## Record schema
+## Host convergence
 
-- The payload has no schema field or payload-level version.
-- Canonical course ID and full seed are omitted.
-- Generator and scoring revisions are omitted.
-- Par, penalties, condition and collision evidence are omitted.
-- No record ID, revision, prior revision or digest exists.
+- An updated patch can replace `horizonPatches[cell.id]` while an older host remains realized.
+- Existing hosts are not compared with current patches.
+- No atomic host replacement path exists.
+- No stale-host classification exists.
+- No replacement or retirement receipt exists.
 
-## Durability and faults
+## LOD policy adoption
 
-- JSON parse and local-storage writes are inside an empty catch block.
-- No classified storage failure reaches diagnostics or presentation.
-- No expected-prior-revision check prevents stale replacement.
-- No readback verification proves the written record.
-- No `BestRunCommitResult` exists.
+- Terrain-resolution policy is consumed.
+- Road and settlement modes only gate `none` versus present.
+- Ribbon, thin-ribbon and line do not produce distinct road geometry.
+- Low-detail, block-mass and silhouette do not produce distinct settlement geometry.
+- Forest modes are not realized.
+- Unsupported game-stable policy values are not reported.
 
-## Restore and migration
+## Atlas ownership
 
-- The stored record is not restored into a product domain.
-- No migration contract exists for the current v2 key.
-- Corrupt, incompatible, denied and absent storage are not distinguished.
-- No explicit record reset/delete command exists.
+- Each cell independently samples intersecting macro sectors.
+- Distant roads run from sector center to portals without cell clipping.
+- Settlement arrays are admitted without canonical cell ownership.
+- Adjacent or refined quadtree cells can therefore lack explicit duplicate-prevention evidence.
+- No sector/content digest proves stable LOD transitions.
 
-## Projection and frame convergence
+## Frame convergence
 
-- Title, results, HUD and map do not project a restored best record.
-- The visible current result does not show whether it set or matched a record.
-- No frame digest binds record, scope, scoring and route generations.
-- No `FirstBestRunBoundFrameAck` exists.
-- Late restore/projection after retry, new course, title or page retirement has no rejection receipt.
+- Horizon geometry has no host revision.
+- A rendered frame has no horizon world or focus revision.
+- No digest binds visible cells to accepted patch revisions.
+- No `FirstHorizonGenerationBoundFrameAck` exists.
+- Late updates after world retirement have no visible rejection receipt.
 
 ## Validation and deployment
 
-- No candidate-comparison fixture exists.
-- No corrupt/denied/readback-mismatch storage fixture exists.
-- No legacy migration or reset fixture exists.
-- No reload-to-visible-record browser fixture exists.
-- No source/artifact/Pages parity fixture exists.
+- Static smoke checks source markers only.
+- No patch-replacement fixture exists.
+- No stale-focus or stale-cell fixture exists.
+- No LOD mode realization fixture exists.
+- No quadtree transition browser fixture exists.
+- No source/artifact/Pages horizon parity receipt exists.
 - `npm test` was not run during this documentation audit.
 
 ## Retained gaps
 
-Map mode, infinite map projection/content, runtime faults, focus release, WebGL recovery, clock, pause, accessibility, audio, generation, delivery and rollback gaps remain preserved in prior audit families.
+Best-run persistence, map mode, infinite-map content, runtime fault containment, input/focus, WebGL recovery, accessibility, fixed-step clock, audio, generation, pause, delivery and rollback gaps remain preserved.
 
 ## Completion boundary
 
-Do not claim a fair best-run comparison, durable persistence, migration correctness, visible best-record support, matching-frame proof, artifact parity, Pages parity or production readiness until one admitted record scope is committed, restored and acknowledged.
+Do not claim horizon generation convergence, full LOD policy adoption, duplicate-free atlas projection, matching-frame proof, artifact parity, Pages parity or production readiness until one accepted patch generation is reconciled to the matching host and acknowledged by a rendered frame.
