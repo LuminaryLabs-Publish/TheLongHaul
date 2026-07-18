@@ -1,53 +1,35 @@
 {
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "repository": "LuminaryLabs-Publish/TheLongHaul",
   "branch": "main",
-  "auditTimestamp": "2026-07-17T17-39-07-04-00",
-  "reviewedRepositoryHead": "3fb11448580405aaa864b106af5dd73e8f06283a",
-  "reviewedRuntimeSourceRevision": "189a586877db2bf3e0b1a7c74ae072b552b6fe9a",
-  "status": "best-run-scope-durable-record-projection-authority-audited",
-  "retainedStatuses": [
-    "map-open-input-context-focus-authority-central-reconciled",
-    "infinite-world-map-viewport-projection-authority-central-reconciled",
-    "infinite-world-atlas-cell-content-adoption-authority-central-reconciled",
-    "runtime-frame-fault-containment-retirement-authority-central-reconciled",
-    "product-policy-runtime-adoption-authority-central-reconciled",
-    "browser-focus-held-input-release-authority-central-reconciled",
-    "core-capability-adoption-parity-authority-central-reconciled",
-    "webgl-context-resource-recovery-authority-central-reconciled",
-    "accessible-hud-route-announcement-authority-central-reconciled",
-    "input-action-contract-context-convergence-authority-central-reconciled",
-    "host-clock-fixed-step-simulation-frame-authority-central-reconciled",
-    "browser-audio-lifecycle-suspension-retirement-authority-central-reconciled",
-    "generation-work-budget-readiness-authority-central-reconciled",
-    "motion-preference-camera-body-effect-admission-authority-central-reconciled",
-    "pause-scheduler-input-world-suspension-authority-central-reconciled",
-    "delivery-terminal-result-settlement-authority-central-reconciled",
-    "course-generation-admission-rollback-central-reconciled"
-  ],
-  "implementationClassification": "modular-nexus-engine-browser-freight-game-with-unscoped-unprojected-best-run-storage",
-  "tracker": ".agent/trackers/2026-07-17T17-39-07-04-00/project-breakdown.md",
-  "previousTracker": ".agent/trackers/2026-07-17T07-38-20-04-00/project-breakdown.md",
-  "turnLedger": ".agent/turn-ledger/2026-07-17T17-39-07-04-00.md",
+  "auditTimestamp": "2026-07-18T03-43-36-04-00",
+  "reviewedRepositoryHead": "753488e40e69fc13471df42959628ef3052e5992",
+  "previousRepoLocalDocumentationHead": "1ed59786aa8f8f26f643c9f1e8c4d0a4205181f6",
+  "status": "horizon-patch-render-host-convergence-authority-audited",
+  "implementationClassification": "modular-nexus-engine-browser-freight-game-with-dual-core-worlds-and-unversioned-horizon-patch-host-reconciliation",
+  "tracker": ".agent/trackers/2026-07-18T03-43-36-04-00/project-breakdown.md",
+  "previousTracker": ".agent/trackers/2026-07-17T17-39-07-04-00/project-breakdown.md",
+  "turnLedger": ".agent/turn-ledger/2026-07-18T03-43-36-04-00.md",
   "audits": {
-    "architecture": ".agent/architecture-audit/2026-07-17T17-39-07-04-00-best-run-scope-durable-record-dsk-map.md",
-    "render": ".agent/render-audit/2026-07-17T17-39-07-04-00-unprojected-best-run-visible-frame-gap.md",
-    "gameplay": ".agent/gameplay-audit/2026-07-17T17-39-07-04-00-run-result-best-record-loop.md",
-    "interaction": ".agent/interaction-audit/2026-07-17T17-39-07-04-00-best-run-command-result-map.md",
-    "bestRun": ".agent/best-run-system-audit/2026-07-17T17-39-07-04-00-scope-durability-projection-contract.md",
-    "deploy": ".agent/deploy-audit/2026-07-17T17-39-07-04-00-best-run-browser-pages-fixture-gate.md",
-    "centralSync": ".agent/central-sync-audit/2026-07-17T17-39-07-04-00-oldest-selection-best-run-reconciliation.md"
+    "architecture": ".agent/architecture-audit/2026-07-18T03-43-36-04-00-horizon-patch-host-convergence-dsk-map.md",
+    "render": ".agent/render-audit/2026-07-18T03-43-36-04-00-horizon-patch-visible-host-convergence-gap.md",
+    "gameplay": ".agent/gameplay-audit/2026-07-18T03-43-36-04-00-driving-horizon-update-loop.md",
+    "interaction": ".agent/interaction-audit/2026-07-18T03-43-36-04-00-horizon-command-result-map.md",
+    "horizon": ".agent/horizon-system-audit/2026-07-18T03-43-36-04-00-patch-generation-host-convergence-contract.md",
+    "deploy": ".agent/deploy-audit/2026-07-18T03-43-36-04-00-horizon-browser-pages-fixture-gate.md",
+    "centralSync": ".agent/central-sync-audit/2026-07-18T03-43-36-04-00-runtime-ahead-horizon-reconciliation.md"
   },
   "selection": {
     "accessibleRepositoryCount": 11,
     "eligibleRepositoryCount": 10,
     "excludedRepository": "LuminaryLabs-Publish/TheCavalryOfRome",
-    "selectionClass": "oldest-synchronized-documented-timestamp",
+    "selectionClass": "newest-runtime-ahead-eligible-repository",
     "newOrMissingLedgerCount": 0,
     "rootUndocumentedCount": 0,
-    "runtimeAheadCount": 0,
-    "selectedPriorTimestamp": "2026-07-17T07-38-20-04-00",
-    "allEligibleHeadsMatched": true
+    "runtimeAheadCount": 3,
+    "selectedRuntimeCommitCount": 14,
+    "allEligibleLedgersPresent": true,
+    "allEligibleRootAgentStatesPresent": true
   },
   "providers": {
     "nexusEngine": "b941c9b2995e3449c6987908657753e2cf2df242",
@@ -56,31 +38,36 @@
   "entryPoints": {
     "playable": "index.html",
     "bootstrap": "src/app/bootstrap.mjs",
-    "resultScoring": "src/game/score.mjs",
-    "resultProjectionAndStorage": "src/app/app-chunk-10.js",
-    "inputAndMapMode": "src/app/app-chunk-7.js",
-    "worldStreaming": "src/app/app-chunk-8.js",
+    "nearWorldGeneration": "src/game/cell-descriptor.mjs",
+    "terrainAndRoadElevation": "src/game/world-base.mjs",
+    "nearWorldStreaming": "src/app/app-chunk-8.js",
+    "horizonRuntime": "src/app/app-chunk-12.js",
+    "terrainNormalAndHorizonOverride": "src/app/app-chunk-13.js",
+    "truckAndCameraGrounding": "src/app/app-chunk-7.js",
+    "truckVisualProjection": "src/app/app-chunk-9.js",
     "frameLoop": "src/app/app-chunk-11.js"
   },
   "interactionLoop": [
-    "page-load-and-ordered-bootstrap",
+    "page-load-and-ordered-thirteen-chunk-bootstrap",
     "install-eight-core-and-twelve-product-kits",
     "generate-and-verify-course",
-    "prepare-initial-world-cells",
+    "prepare-and-register-near-field-world",
+    "register-quadtree-curved-horizon-world",
     "enter-driving",
-    "admit-controls-and-settle-gameplay",
+    "sample-shared-terrain-height-and-normal",
+    "tick-gameplay-and-near-world-streaming",
+    "update-horizon-focus-and-provider-patches",
+    "reconcile-horizon-render-hosts",
+    "project-truck-camera-hud-map-audio-and-webgl-frame",
     "complete-valid-delivery",
-    "build-rich-run-result",
-    "project-current-result",
-    "compare-adjusted-time-against-one-global-record",
-    "optionally-write-reduced-unverified-record",
-    "retry-same-course-generate-new-course-or-return-title"
+    "score-retry-new-course-or-title"
   ],
   "implementedDomains": [
     "browser-startup-and-ordered-module-loading",
-    "browser-document-raf-resize-keyboard-focus-storage-lifecycle",
+    "browser-document-raf-resize-keyboard-focus-storage-audio-lifecycle",
     "core-scene",
-    "core-world",
+    "core-world-near-uniform-grid",
+    "core-world-horizon-quadtree",
     "core-input",
     "core-data",
     "core-simulation",
@@ -100,10 +87,13 @@
     "long-haul-delivery",
     "long-haul-wildlife",
     "procedural-finite-course-generation",
-    "infinite-gameplay-cell-terrain-generation",
+    "infinite-near-field-cell-generation",
     "macro-sector-generation",
+    "curved-horizon-patch-generation",
+    "terrain-normal-and-road-elevation-continuity",
     "world-patch-preparation",
-    "world-effect-provider",
+    "near-world-effect-provider",
+    "horizon-world-effect-provider",
     "result-scoring-and-best-run-persistence",
     "webgl-presentation",
     "canvas-map",
@@ -113,220 +103,114 @@
     "node-smoke-validation",
     "github-actions-smoke",
     "github-pages-deployment",
-    "best-run-scope-durable-record-projection-authority"
+    "horizon-patch-render-host-convergence-authority"
   ],
   "implementedKits": [
-    {
-      "id": "core-scene-kit",
-      "services": ["scene-registry", "current-scene", "transition-request", "exit-validation", "transition-identity", "snapshot"]
-    },
-    {
-      "id": "core-world-domain",
-      "services": ["world-register", "world-remove", "uniform-grid-partition", "focus", "active-cell-lifecycle", "provider-ordering", "validation", "snapshot"]
-    },
-    {
-      "id": "long-haul-input",
-      "services": ["semantic-actions", "keyboard-bindings", "contexts", "driving-intent", "reset"]
-    },
-    {
-      "id": "core-data-kit",
-      "services": ["course-schema", "package-envelope", "digest-verification", "named-random-streams", "random-snapshot-restore"]
-    },
-    {
-      "id": "core-simulation-kit",
-      "services": ["fuel-meter", "truck-condition-meter", "cargo-condition-meter", "remaining-time-meter", "bounds", "rates", "locks", "thresholds", "reset"]
-    },
-    {
-      "id": "core-camera-kit",
-      "services": ["camera-target", "position-look-fov-smoothing", "snap", "mode", "portable-descriptor"]
-    },
-    {
-      "id": "core-graphics-kit",
-      "services": ["batch-registration", "cell-replace", "cell-remove", "flush", "bounds", "release-receipt"]
-    },
-    {
-      "id": "core-transaction-ledger-kit",
-      "services": ["ledger-id", "apply-once", "duplicate-classification", "metadata", "snapshot"]
-    },
-    {
-      "id": "long-haul-world-profile-kit",
-      "services": ["world-profile", "extent-policy", "gameplay-cell-policy", "horizon-lod-policy", "atlas-target-policy", "configure", "snapshot", "reset"]
-    },
-    {
-      "id": "long-haul-world-atlas-kit",
-      "services": ["macro-sector-generation", "biome-density-descriptor", "settlement-registry", "edge-portals", "road-registry", "sector-query", "snapshot", "reset"]
-    },
-    {
-      "id": "long-haul-horizon-lod-policy-kit",
-      "services": ["quadtree-content-policy", "terrain-resolution-policy", "forest-mode-policy", "road-mode-policy", "settlement-mode-policy", "collision-policy", "configure", "snapshot", "reset"]
-    },
-    {
-      "id": "long-haul-road-class-catalog-kit",
-      "services": ["road-class-catalog", "surface-policy", "grade-curvature-policy", "jump-weight-policy", "get-list-register", "snapshot-reset"]
-    },
-    {
-      "id": "long-haul-terrain-policy-kit",
-      "services": ["terrain-octave-policy", "landform-density-policy", "road-flatten-policy", "jump-profile-catalog", "configure", "snapshot-reset"]
-    },
-    {
-      "id": "long-haul-truck-dynamics-profile-kit",
-      "services": ["powertrain-profile", "drag-and-resistance", "steering-profile", "grip-profile", "suspension-profile", "air-control-profile", "boost-profile", "configure", "snapshot-reset"]
-    },
-    {
-      "id": "long-haul-delivery-contract-catalog-kit",
-      "services": ["contract-type-catalog", "job-policy", "get-list-register", "snapshot-reset"]
-    },
-    {
-      "id": "long-haul-truck-kit",
-      "services": ["truck-state", "road-vehicle-kinematics", "drift", "ground-contact", "suspension", "air-control", "input", "impulse", "teleport", "recovery-pose", "snapshot-load"]
-    },
-    {
-      "id": "long-haul-course-kit",
-      "services": ["course-package-state", "exploration", "discovered-depots", "route-query", "sample", "reset", "snapshot-load"]
-    },
-    {
-      "id": "long-haul-run-kit",
-      "services": ["run-state", "clock", "distance", "max-speed", "off-road-time", "penalties", "collisions", "stuck-detection", "recovery", "completion", "failure", "snapshot-load"]
-    },
-    {
-      "id": "long-haul-delivery-kit",
-      "services": ["candidate-depots", "valid-depot", "depot-evaluation", "duplicate-check", "delivery-result", "reset", "snapshot-load"]
-    },
-    {
-      "id": "long-haul-wildlife-kit",
-      "services": ["hazard-load", "crossing-motion", "damage-radius", "direction", "reset", "snapshot-load"]
-    }
+    {"id":"core-scene-kit","services":["scene-registry","current-scene","transition-request","exit-validation","transition-identity","snapshot"]},
+    {"id":"core-world-domain","services":["world-register","world-remove","uniform-grid-partition","quadtree-partition","focus","active-cell-lifecycle","provider-ordering","validation","snapshot"]},
+    {"id":"long-haul-input","services":["semantic-actions","keyboard-bindings","contexts","driving-intent","reset"]},
+    {"id":"core-data-kit","services":["course-schema","package-envelope","digest-verification","named-random-streams","random-snapshot-restore"]},
+    {"id":"core-simulation-kit","services":["fuel-meter","truck-condition-meter","cargo-condition-meter","remaining-time-meter","bounds","rates","locks","thresholds","reset"]},
+    {"id":"core-camera-kit","services":["camera-target","position-look-fov-smoothing","snap","mode","portable-descriptor"]},
+    {"id":"core-graphics-kit","services":["batch-registration","cell-replace","cell-remove","flush","bounds","release-receipt"]},
+    {"id":"core-transaction-ledger-kit","services":["ledger-id","apply-once","duplicate-classification","metadata","snapshot"]},
+    {"id":"long-haul-world-profile-kit","services":["world-profile","extent-policy","gameplay-cell-policy","horizon-policy","atlas-target-policy","configure","snapshot","reset"]},
+    {"id":"long-haul-world-atlas-kit","services":["macro-sector-generation","biome-density-descriptor","settlement-registry","edge-portals","road-registry","sector-query","snapshot","reset"]},
+    {"id":"long-haul-horizon-lod-policy-kit","services":["terrain-resolution-policy","forest-mode-policy","road-mode-policy","settlement-mode-policy","collision-policy","configure","snapshot","reset"]},
+    {"id":"long-haul-road-class-catalog-kit","services":["road-class-catalog","surface-policy","grade-curvature-policy","jump-weight-policy","get-list-register","snapshot-reset"]},
+    {"id":"long-haul-terrain-policy-kit","services":["terrain-octave-policy","landform-density-policy","road-flatten-policy","jump-profile-catalog","configure","snapshot-reset"]},
+    {"id":"long-haul-truck-dynamics-profile-kit","services":["powertrain-profile","drag-and-resistance","steering-profile","grip-profile","suspension-profile","air-control-profile","boost-profile","configure","snapshot-reset"]},
+    {"id":"long-haul-delivery-contract-catalog-kit","services":["contract-type-catalog","job-policy","get-list-register","snapshot-reset"]},
+    {"id":"long-haul-truck-kit","services":["truck-state","road-vehicle-kinematics","drift","ground-contact","suspension","air-control","input","impulse","teleport","recovery-pose","snapshot-load"]},
+    {"id":"long-haul-course-kit","services":["course-package-state","exploration","discovered-depots","route-query","sample","reset","snapshot-load"]},
+    {"id":"long-haul-run-kit","services":["run-state","clock","distance","max-speed","off-road-time","penalties","collisions","stuck-detection","recovery","completion","failure","snapshot-load"]},
+    {"id":"long-haul-delivery-kit","services":["candidate-depots","valid-depot","depot-evaluation","duplicate-check","delivery-result","reset","snapshot-load"]},
+    {"id":"long-haul-wildlife-kit","services":["hazard-load","crossing-motion","damage-radius","direction","reset","snapshot-load"]}
   ],
   "implementedWorldProviders": [
-    {
-      "id": "long-haul-course-provider",
-      "phase": "foundation",
-      "provides": ["course:cell"],
-      "services": ["prepared-cell-admission", "update-cell", "release-cell", "effect-descriptor", "patch-snapshot-restore", "reset"]
-    }
+    {"id":"long-haul-course-provider","world":"long-haul-gameplay","phase":"foundation","provides":["course:cell"],"services":["prepared-cell-admission","update-cell","release-cell","effect-descriptor","patch-snapshot-restore","reset"]},
+    {"id":"long-haul-horizon-provider","world":"long-haul-horizon","phase":"presentation","provides":["horizon:terrain"],"services":["quadtree-cell-prepare","quadtree-cell-update","curved-horizon-patch-build","patch-registry","release-cell","effect-descriptor","snapshot","reset"]}
   ],
   "controllers": [
-    {
-      "id": "long-haul-world-patch-preparation-controller",
-      "services": ["focus", "desired-set", "prefetch", "generation-budget", "activation-budget", "cache", "prime", "ready-patches", "release", "snapshot-reset"]
-    }
+    {"id":"long-haul-world-patch-preparation-controller","services":["focus","desired-set","prefetch","generation-budget","activation-budget","cache","prime","ready-patches","release","snapshot-reset"]}
   ],
   "implementedAdapters": [
-    {
-      "id": "ordered-module-bootstrap-adapter",
-      "services": ["import-map-bootstrap", "global-dependency-publication", "ordered-eleven-chunk-load", "failure-projection"]
-    },
-    {
-      "id": "procedural-course-generator",
-      "services": ["seeded-five-branch-graph", "depots", "wildlife", "par", "validation"]
-    },
-    {
-      "id": "course-cell-descriptor-generator",
-      "services": ["world-coordinate-terrain", "finite-course-roads", "finite-course-signs", "finite-course-depots", "vegetation", "grass", "rocks", "obstacles"]
-    },
-    {
-      "id": "browser-keyboard-input-adapter",
-      "services": ["keydown", "keyup", "held-state", "one-shot-state", "frame-clear"]
-    },
-    {
-      "id": "three-webgl-presentation-adapter",
-      "services": ["renderer", "scene", "camera-descriptor-consumption", "instance-batches", "streamed-cells", "truck-rig", "wildlife-rig", "resize", "raf", "render", "ordinary-disposal"]
-    },
-    {
-      "id": "dom-scene-hud-adapter",
-      "services": ["title", "help", "settings", "generation-progress", "hud", "pause", "results", "loss", "toast", "failure-overlay"]
-    },
-    {
-      "id": "canvas-map-adapter",
-      "services": ["finite-course-bounds-transform", "finite-course-roads", "depots", "rejected-yards", "truck-marker", "dpr-resize"]
-    },
-    {
-      "id": "web-audio-adapter",
-      "services": ["context-unlock", "engine-loop", "wind-loop", "cues", "gain-update"]
-    },
-    {
-      "id": "browser-storage-adapter",
-      "services": ["settings", "best-score", "global-adjusted-time-comparison", "reduced-record-write"]
-    }
+    {"id":"ordered-module-bootstrap-adapter","services":["import-map-bootstrap","global-dependency-publication","ordered-thirteen-chunk-load","failure-projection"]},
+    {"id":"procedural-course-generator","services":["seeded-five-branch-graph","depots","wildlife","par","validation"]},
+    {"id":"course-cell-descriptor-generator","services":["world-coordinate-terrain","conformed-roads","finite-course-signs","finite-course-depots","vegetation","grass","rocks","obstacles"]},
+    {"id":"browser-keyboard-input-adapter","services":["keydown","keyup","held-state","one-shot-state","frame-clear"]},
+    {"id":"three-webgl-presentation-adapter","services":["renderer","scene","camera-descriptor-consumption","instance-batches","near-streamed-cells","horizon-hosts","truck-rig","wildlife-rig","resize","raf","render","ordinary-disposal"]},
+    {"id":"dom-scene-hud-adapter","services":["title","help","settings","generation-progress","hud","pause","results","loss","toast","failure-overlay"]},
+    {"id":"canvas-map-adapter","services":["finite-course-bounds-transform","finite-course-roads","depots","rejected-yards","truck-marker","dpr-resize"]},
+    {"id":"web-audio-adapter","services":["context-unlock","engine-loop","wind-loop","cues","gain-update"]},
+    {"id":"browser-storage-adapter","services":["settings","best-score","global-adjusted-time-comparison","reduced-record-write"]}
   ],
   "proofAndDeploymentAdapters": [
-    {
-      "id": "atomic-domain-kits-smoke",
-      "services": ["product-composition", "profile-policy", "catalog-policy", "distant-macro-sector", "truck-dynamics"]
-    },
-    {
-      "id": "long-haul-game-smoke",
-      "services": ["100-seed-generation", "local-cell-cloneability", "distant-terrain-determinism", "far-cell-seam-equality", "truck-motion", "delivery-evaluation"]
-    },
-    {
-      "id": "static-shell-smoke-and-ci",
-      "services": ["provider-pin-check", "single-tick-check", "syntax-check", "source-pattern-check", "main-push-ci"]
-    },
-    {
-      "id": "github-pages-deployment",
-      "services": ["static-root-publication", "main-source-delivery"]
-    }
+    {"id":"atomic-domain-kits-smoke","services":["product-composition","profile-policy","catalog-policy","distant-macro-sector","truck-dynamics"]},
+    {"id":"long-haul-game-smoke","services":["100-seed-generation","local-cell-cloneability","distant-terrain-determinism","far-cell-seam-equality","truck-motion","delivery-evaluation"]},
+    {"id":"static-shell-smoke-and-ci","services":["provider-pin-check","single-tick-check","syntax-check","horizon-source-pattern-check","grounding-source-pattern-check","main-push-ci"]},
+    {"id":"github-pages-deployment","services":["static-root-publication","main-source-delivery"]}
   ],
-  "renderSurfaces": ["webgl-game-canvas", "canvas2d-paper-map", "dom-menu-hud-result-fault-overlay"],
+  "renderSurfaces": ["webgl-game-canvas","canvas2d-paper-map","dom-menu-hud-result-fault-overlay"],
   "counts": {
     "coreKits": 8,
     "productDomainServiceKits": 12,
     "engineInstalledKits": 20,
-    "implementedWorldProviders": 1,
+    "implementedWorldProviders": 2,
     "controllers": 1,
     "implementedAdapters": 9,
     "proofAndDeploymentAdapters": 4,
-    "totalSourceBackedSurfaces": 35,
+    "totalSourceBackedSurfaces": 36,
     "renderSurfaces": 3,
-    "proposedBestRunSurfaces": 18,
+    "proposedHorizonConvergenceSurfaces": 20,
     "executableProjectValidationCommands": 1
   },
   "plannedAuthority": {
-    "domain": "the-long-haul-best-run-scope-durable-record-projection-authority-domain",
+    "domain": "the-long-haul-horizon-patch-generation-render-host-convergence-authority-domain",
     "status": "proposed-not-implemented",
-    "mainFinding": "A rich RunResult is reduced into one unversioned browser-global record, compared only by adjustedTime, silently written and never restored into a visible projection.",
+    "mainFinding": "The horizon provider can replace a focus-dependent patch while the Three.js host reconciliation path retains an existing host without comparing patch or host revisions; named LOD content modes are only partially projected.",
     "surfaces": [
-      "best-run-policy-manifest-kit",
-      "best-run-scope-identity-kit",
-      "best-run-record-schema-kit",
-      "best-run-scoring-revision-kit",
-      "best-run-candidate-admission-kit",
-      "best-run-comparison-kit",
-      "best-run-incomparable-result-kit",
-      "best-run-durable-commit-kit",
-      "best-run-readback-verification-kit",
-      "best-run-storage-failure-result-kit",
-      "best-run-restore-admission-kit",
-      "best-run-migration-kit",
-      "best-run-reset-kit",
-      "best-run-projection-kit",
-      "best-run-frame-digest-kit",
-      "first-best-run-bound-frame-ack-kit",
-      "best-run-browser-fixture-kit",
-      "pages-best-run-parity-fixture-kit"
+      "horizon-world-generation-kit",
+      "horizon-focus-revision-kit",
+      "horizon-policy-revision-kit",
+      "horizon-cell-revision-kit",
+      "horizon-atlas-sector-ownership-kit",
+      "horizon-patch-build-kit",
+      "horizon-road-mode-projection-kit",
+      "horizon-settlement-mode-projection-kit",
+      "horizon-forest-mode-projection-kit",
+      "horizon-content-clipping-kit",
+      "horizon-patch-digest-kit",
+      "horizon-host-generation-kit",
+      "horizon-host-replace-kit",
+      "horizon-stale-host-retirement-kit",
+      "horizon-resource-retirement-kit",
+      "horizon-reconciliation-result-kit",
+      "horizon-frame-digest-kit",
+      "first-horizon-generation-bound-frame-ack-kit",
+      "horizon-browser-motion-fixture-kit",
+      "pages-horizon-parity-fixture-kit"
     ]
   },
   "validation": {
     "sourceInspected": true,
-    "allEligibleHeadsComparedWithMain": true,
+    "allEligibleLedgersCompared": true,
+    "allEligibleRootAgentStatesCompared": true,
     "documentationOnly": true,
-    "runtimeSourceChanged": false,
-    "scoringOrStorageChanged": false,
-    "htmlOrCssChanged": false,
-    "gameplayOrRenderingChanged": false,
+    "runtimeSourceChangedByAudit": false,
+    "gameplayOrRenderingChangedByAudit": false,
     "testsChangedByAudit": false,
-    "workflowOrDeploymentChanged": false,
+    "workflowOrDeploymentChangedByAudit": false,
     "branchCreated": false,
     "pullRequestCreated": false,
-    "globalReducedRecordSourceEvidence": true,
-    "preferredComparisonScopeClaim": false,
-    "durableCommitClaim": false,
-    "migrationCorrectnessClaim": false,
-    "firstBestRunBoundFrameClaim": false,
+    "conditionalPatchHostMismatchSourceEvidence": true,
+    "completeLodPolicyAdoptionClaim": false,
+    "visibleDefectClaim": false,
+    "firstHorizonGenerationBoundFrameClaim": false,
     "pagesParityClaim": false,
     "projectTestCommand": "npm test",
     "projectTests": "not-run-during-documentation-audit",
-    "bestRunFixtures": "unavailable",
+    "horizonFixtures": "unavailable",
     "kitRegistryJson": "valid-json-by-construction"
   }
 }
