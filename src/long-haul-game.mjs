@@ -2,6 +2,7 @@ export * from "./game/shared.mjs";
 export * from "./game/world-profile-kit.mjs";
 export * from "./game/world-atlas-kit.mjs";
 export * from "./game/horizon-lod-policy-kit.mjs";
+export * from "./game/world-feature-adapter-kit.mjs";
 export * from "./game/road-class-catalog-kit.mjs";
 export * from "./game/terrain-policy-kit.mjs";
 export * from "./game/truck-dynamics-profile-kit.mjs";
