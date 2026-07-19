@@ -1,6 +1,7 @@
 import { createLongHaulWorldProfileKit } from "./world-profile-kit.mjs";
 import { createLongHaulWorldAtlasKit } from "./world-atlas-kit.mjs";
 import { createLongHaulHorizonLodPolicyKit } from "./horizon-lod-policy-kit.mjs";
+import { createLongHaulWorldFeatureAdapterKit } from "./world-feature-adapter-kit.mjs";
 import { createLongHaulRoadClassCatalogKit } from "./road-class-catalog-kit.mjs";
 import { createLongHaulTerrainPolicyKit } from "./terrain-policy-kit.mjs";
 import { createLongHaulTruckDynamicsProfileKit } from "./truck-dynamics-profile-kit.mjs";
@@ -21,6 +22,7 @@ export function createLongHaulProductKits(N, options = {}) {
     profileResource: worldProfile.resources.ProfileState
   });
   const horizonLod = createLongHaulHorizonLodPolicyKit(N, options.horizon ?? {});
+  const worldFeatures = createLongHaulWorldFeatureAdapterKit(N, options.features ?? {});
   const roadClasses = createLongHaulRoadClassCatalogKit(N, options.roads ?? {});
   const terrainPolicy = createLongHaulTerrainPolicyKit(N, options.terrain ?? {});
   const truckDynamicsProfile = createLongHaulTruckDynamicsProfileKit(N, options.truck ?? {});
@@ -36,7 +38,7 @@ export function createLongHaulProductKits(N, options = {}) {
 
   return Object.freeze({
     domains: Object.freeze({
-      world: Object.freeze([worldProfile.kit, worldAtlas.kit, horizonLod.kit, roadClasses.kit, terrainPolicy.kit, course.kit]),
+      world: Object.freeze([worldProfile.kit, worldAtlas.kit, horizonLod.kit, worldFeatures.kit, roadClasses.kit, terrainPolicy.kit, course.kit]),
       truck: Object.freeze([truckDynamicsProfile.kit, truck.kit]),
       delivery: Object.freeze([deliveryContracts.kit, delivery.kit]),
       run: Object.freeze([run.kit, wildlife.kit])
@@ -45,6 +47,7 @@ export function createLongHaulProductKits(N, options = {}) {
       worldProfile.kit,
       worldAtlas.kit,
       horizonLod.kit,
+      worldFeatures.kit,
       roadClasses.kit,
       terrainPolicy.kit,
       truckDynamicsProfile.kit,
@@ -59,6 +62,7 @@ export function createLongHaulProductKits(N, options = {}) {
       ...worldProfile.resources,
       ...worldAtlas.resources,
       ...horizonLod.resources,
+      ...worldFeatures.resources,
       ...roadClasses.resources,
       ...terrainPolicy.resources,
       ...truckDynamicsProfile.resources,
