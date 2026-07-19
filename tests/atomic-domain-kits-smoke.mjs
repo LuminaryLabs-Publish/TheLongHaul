@@ -9,16 +9,26 @@ import {
   createLongHaulProductKits
 } from "../src/long-haul-game.mjs";
 
+const semanticStub = (spec = {}) => ({
+  type: spec.type,
+  normalize: (value = {}) => ({ ...value, type: spec.type, definition: value.definition ?? value }),
+  validate: () => ({ valid: true, issues: [] }),
+  calculateBounds: (value = {}) => value.bounds ?? value.definition?.bounds ?? { minX: -1, minZ: -1, maxX: 1, maxZ: 1 },
+  sample: () => 0,
+  compileContributions: () => [],
+  describeFidelity: () => ({})
+});
 const N = {
   defineResource: (id) => Symbol(id),
   defineEvent: (id) => id,
-  defineDomainServiceKit: (kit) => kit
+  defineDomainServiceKit: (kit) => kit,
+  createSemanticWorldFeatureKit: semanticStub
 };
 const product = createLongHaulProductKits(N);
-assert.equal(product.domains.world.length, 6);
+assert.equal(product.domains.world.length, 7);
 assert.equal(product.domains.truck.length, 2);
 assert.equal(product.domains.delivery.length, 2);
-assert.equal(product.kits.length, 12);
+assert.equal(product.kits.length, 13);
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.extent, "infinite");
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.playableRadius, null);
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.gameplayActiveRadius, 2);
@@ -50,6 +60,7 @@ assert.equal(engine.n.longHaulRoadClasses.get("forest-trail").id, "forest-trail"
 assert.ok(engine.n.longHaulTerrainPolicy.getJumpProfile("softCrest"));
 assert.equal(engine.n.longHaulDeliveryContracts.get("lost-manifest").candidateDepots, 5);
 assert.equal(engine.n.longHaulHorizonLodPolicy.describeLevel(3).collision, false);
+assert.ok(engine.n.longHaulWorldFeatures, "World Feature adapter is composed");
 engine.n.longHaulWorldAtlas.ensureSector(0, 0);
 tick();
 const sector = engine.n.longHaulWorldAtlas.getSector(0, 0);
