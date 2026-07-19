@@ -1,5 +1,5 @@
     const $=(selector)=>document.querySelector(selector);const $$=(selector)=>Array.from(document.querySelectorAll(selector));const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));const lerp=(a,b,t)=>a+(b-a)*t;const clone=(v)=>structuredClone(v);const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
-    const REQUIRED=["createEngine","defineDomainServiceKit","createCoreSceneKit","createCoreWorldDomain","createUniformGridPartition","createQuadtreePartition","createFlatWorldSurface","createCurvedHorizonSurface","defineWorldEffectProvider","createCoreInputKit","createCoreDataKit","createCoreSimulationKit","createCoreCameraKit","createCoreGraphicsKit","createCoreTransactionLedgerKit","createWorldPatchPreparationController"];
+    const REQUIRED=["createEngine","defineDomainServiceKit","createCoreSceneKit","createCoreWorldDomain","createUniformGridPartition","createQuadtreePartition","createFlatWorldSurface","createCurvedHorizonSurface","defineWorldEffectProvider","createCoreInputKit","createCoreDataKit","createCoreSimulationKit","createCoreCameraKit","createCoreGraphicsKit","createCoreTransactionLedgerKit","createWorldPatchPreparationController","createSemanticWorldFeatureKit"];
     for(const name of REQUIRED)if(typeof N[name]!=="function")throw new Error(`Required NexusEngine export missing: ${name}`);
 
     const settings={sound:true,steering:100,quality:true,motion:true};
@@ -10,7 +10,7 @@
     const inputKit=N.createCoreInputKit({id:"long-haul-input",initialState:{intent:{throttle:0,brake:0,steer:0,boost:false,handbrake:false,interact:false}},actions:{throttle:{},brake:{},steerLeft:{},steerRight:{},boost:{},handbrake:{},interact:{},camera:{},map:{},pause:{},retry:{}},bindings:{keyboard:{throttle:["KeyW","ArrowUp"],brake:["KeyS","ArrowDown"],steerLeft:["KeyA","ArrowLeft"],steerRight:["KeyD","ArrowRight"],boost:["ShiftLeft","ShiftRight"],handbrake:["Space"],interact:["KeyE"],camera:["KeyC"],map:["KeyM"],pause:["Escape"],retry:["KeyR"]}},createApi({baseApi}){return{setIntent(intent={}){return baseApi.update({intent:clone(intent)},"updated")},getIntent(){return clone(baseApi.getState().intent??{})}}}});
     const core=createLongHaulCoreKits(N,{seed:"long-haul-boot",timeLimitSeconds:TIME_LIMIT_SECONDS});
     const product=createLongHaulProductKits(N);
-    const engine=N.createEngine({tick:{maxDelta:1/15,rejectReentry:true},kits:[N.createCoreSceneKit({scenes,initialSceneId:"boot"}),N.createCoreWorldDomain({childDomains:false}),inputKit,...core.kits,...product.kits]});
+    const engine=N.createEngine({tick:{maxDelta:1/15,rejectReentry:true},kits:[N.createCoreSceneKit({scenes,initialSceneId:"boot"}),N.createCoreWorldDomain(),inputKit,...core.kits,...product.kits]});
 
     let transitionSequence=0;function transition(exitId,payload={}){transitionSequence+=1;return engine.n.coreScene.requestTransition({exitId,payload:clone(payload),transitionId:`long-haul-${transitionSequence}`})}
     const meters=engine.n.coreSimulation.resources;const batches=engine.n.coreGraphics.instanceBatches;const smoothing=engine.n.coreCamera.smoothing;
