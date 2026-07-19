@@ -7,8 +7,9 @@ import { dirname, join } from "node:path";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const index = readFileSync(join(root, "index.html"), "utf8");
 const bootstrap = readFileSync(join(root, "src/app/bootstrap.mjs"), "utf8");
-const chunks = Array.from({ length: 13 }, (_, index) => readFileSync(join(root, `src/app/app-chunk-${index + 1}.js`), "utf8"));
+const chunks = Array.from({ length: 14 }, (_, index) => readFileSync(join(root, `src/app/app-chunk-${index + 1}.js`), "utf8"));
 const combined = chunks.join("\n");
+const continuity = chunks[13];
 
 assert.match(index, /NexusEngine@b941c9b2995e3449c6987908657753e2cf2df242/);
 assert.match(index, /src\/app\/bootstrap\.mjs/);
@@ -24,7 +25,13 @@ assert.match(combined, /createQuadtreePartition/);
 assert.match(combined, /registerHorizonWorld/);
 assert.match(combined, /groundHeight:ground\.height/);
 assert.match(combined, /terrainHeight\(course,x-e,z\)/);
-assert.match(bootstrap, /app-chunk-13\.js/);
+assert.match(bootstrap, /app-chunk-14\.js/);
+assert.match(bootstrap, /ACTIVE_RADIUS: Math\.max\(2, ACTIVE_RADIUS\)/);
+assert.match(continuity, /_lhContainsBounds/);
+assert.match(continuity, /skirtDepth=18\+patch\.lod\*5/);
+assert.match(continuity, /miter=clamp/);
+assert.match(continuity, /truckRig\.wheels\.map\(wheel=>wheel\.parent\)/);
+assert.match(continuity, /forestMasses/);
 new Function(combined);
 
 for (const relative of [
@@ -32,6 +39,13 @@ for (const relative of [
   "src/long-haul-core.mjs",
   "src/long-haul-game.mjs",
   "src/game/shared.mjs",
+  "src/game/world-profile-kit.mjs",
+  "src/game/world-atlas-kit.mjs",
+  "src/game/horizon-lod-policy-kit.mjs",
+  "src/game/road-class-catalog-kit.mjs",
+  "src/game/terrain-policy-kit.mjs",
+  "src/game/truck-dynamics-profile-kit.mjs",
+  "src/game/delivery-contract-catalog-kit.mjs",
   "src/game/generator.mjs",
   "src/game/world-base.mjs",
   "src/game/cell-descriptor.mjs",
