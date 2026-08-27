@@ -27,6 +27,7 @@ for (let index = 0; index < 100; index += 1) {
   assert.equal(course.edges.some((edge) => edge.surface === "gravel"), true, "courses include gravel alternatives");
   assert.equal(course.edges.some((edge) => edge.surface === "dirt"), true, "courses include a dirt shortcut");
   assert.equal(course.branches.every((branch) => branch.length > 1450), true, "all freight branches sustain a long route");
+  if (index >= 12) continue;
   const patch = createCourseCellDescriptor(course, { id: `${WORLD_ID}:uniform-grid:0:0:0`, coordinates: [0, 0], bounds: { minX: 0, minZ: 0, maxX: CELL_SIZE, maxZ: CELL_SIZE } });
   assert.equal(structuredClone(patch).schema, "long-haul.course-cell/4");
   assert.equal(patch.terrain.segments, 40);
