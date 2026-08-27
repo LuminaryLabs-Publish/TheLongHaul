@@ -32,6 +32,7 @@ assert.match(combined, /for\(const cell of targets\.values\(\)\)\{const host=cel
 assert.match(combined, /realizeCell\(patch,\{visualOnly:!activeIds\.has\(cell\.id\)\}\)/);
 assert.match(combined, /if\(!entry\|\|options\.visualOnly\)return/);
 assert.match(combined, /prefetchDistance:0/);
+assert.match(combined, /retainRadius:ACTIVE_RADIUS\+4/);
 assert.match(combined, /createCellStreamingPlan\(/);
 assert.match(combined, /setCellStreamingTargets\(\[\.\.\.desired,\.\.\.frontier\]\)/);
 assert.match(combined, /if\(cellQueueState\.pending\)\{reconcileCells\(1\);return\}/);
