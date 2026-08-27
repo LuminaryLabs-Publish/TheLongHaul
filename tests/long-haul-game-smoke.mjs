@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { CELL_SIZE, TIME_LIMIT_SECONDS, WORLD_ID, createCourseCellDescriptor, createLongHaulProductKits, generateCourse } from "../src/long-haul-game.mjs";
+import { ACTIVE_RADIUS, CELL_SIZE, TIME_LIMIT_SECONDS, WORLD_ID, createCourseCellDescriptor, createLongHaulProductKits, generateCourse } from "../src/long-haul-game.mjs";
 
 assert.equal(TIME_LIMIT_SECONDS, 600, "freight runs use a ten-minute dispatch window");
+assert.equal(CELL_SIZE, 160, "runtime terrain uses smaller streaming cells");
+assert.equal(ACTIVE_RADIUS, 1, "fog permits a compact three-by-three active window");
 
 function hashText(text) { let hash = 2166136261; for (const char of String(text)) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); } return hash >>> 0; }
 function seeded(seed) { let state = hashText(seed) || 0x9e3779b9; return () => { state += 0x6d2b79f5; let value = state; value = Math.imul(value ^ (value >>> 15), value | 1); value ^= value + Math.imul(value ^ (value >>> 7), value | 61); return ((value ^ (value >>> 14)) >>> 0) / 4294967296; }; }
@@ -30,7 +32,8 @@ for (let index = 0; index < 100; index += 1) {
   if (index >= 12) continue;
   const patch = createCourseCellDescriptor(course, { id: `${WORLD_ID}:uniform-grid:0:0:0`, coordinates: [0, 0], bounds: { minX: 0, minZ: 0, maxX: CELL_SIZE, maxZ: CELL_SIZE } });
   assert.equal(structuredClone(patch).schema, "long-haul.course-cell/4");
-  assert.equal(patch.terrain.segments, 40);
+  assert.equal(patch.terrain.segments, 20);
+  assert.ok(patch.grass.length <= 96, "streamed cells keep grass realization bounded");
   assert.ok(patch.roads.every((road) => Number.isFinite(road.a.y) && Number.isFinite(road.b.y)));
   const farCell = { id: `${WORLD_ID}:uniform-grid:0:100000:-100000`, coordinates: [100000, -100000], bounds: { minX: 100000 * CELL_SIZE, minZ: -100000 * CELL_SIZE, maxX: 100001 * CELL_SIZE, maxZ: -99999 * CELL_SIZE } };
   const farPatch = createCourseCellDescriptor(course, farCell);

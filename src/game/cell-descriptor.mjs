@@ -1,30 +1,47 @@
-import { CELL_SIZE, TAU, clone, clamp, hashText } from "./shared.mjs";
-import { terrainHeight } from "./world-base.mjs";
+import { CELL_SIZE, TAU, clone, clamp, hashText, segmentInfo } from "./shared.mjs";
+import { roadElevation, terrainNoise } from "./world-base.mjs";
 
 export function createCourseCellDescriptor(course, cell, options = {}) {
   const bounds = cell.bounds;
   const [cx, cz] = cell.coordinates;
-  const terrainSegments = Math.max(8, Math.floor(Number(options.terrainSegments ?? 40)));
-  const sampleHeight = typeof options.sampleHeight === "function" ? options.sampleHeight : (x, z) => terrainHeight(course, x, z);
+  const terrainSegments = Math.max(8, Math.floor(Number(options.terrainSegments ?? 20)));
+  const suppliedSampleHeight = typeof options.sampleHeight === "function" ? options.sampleHeight : null;
   const sampleSurface = typeof options.sampleSurface === "function" ? options.sampleSurface : null;
   const terrainRoadSegments = [];
   const ownedRoadSegments = [];
+  const localRoadSamples = [];
 
   for (const edge of course.edges) {
     for (let index = 1; index < edge.samples.length; index += 1) {
       const sourceA = edge.samples[index - 1];
       const sourceB = edge.samples[index];
-      const a = { x: sourceA.x, y: sampleHeight(sourceA.x, sourceA.z) + 0.12, z: sourceA.z };
-      const b = { x: sourceB.x, y: sampleHeight(sourceB.x, sourceB.z) + 0.12, z: sourceB.z };
+      const minX = Math.min(sourceA.x, sourceB.x), maxX = Math.max(sourceA.x, sourceB.x), minZ = Math.min(sourceA.z, sourceB.z), maxZ = Math.max(sourceA.z, sourceB.z);
+      if (maxX < bounds.minX - 48 || minX > bounds.maxX + 48 || maxZ < bounds.minZ - 48 || minZ > bounds.maxZ + 48) continue;
+      const segmentIndex = index - 1;
+      const heightAtRoadPoint = (point, t) => suppliedSampleHeight?.(point.x, point.z) ?? roadElevation(course, { x: point.x, z: point.z, t, distance: 0, edge, segmentIndex });
+      const a = { x: sourceA.x, y: heightAtRoadPoint(sourceA, 0) + 0.12, z: sourceA.z };
+      const b = { x: sourceB.x, y: heightAtRoadPoint(sourceB, 1) + 0.12, z: sourceB.z };
       const segment = { id: `${edge.id}:${index - 1}`, edgeId: edge.id, branchId: edge.branchId, branchName: edge.branchName, type: edge.type, roadClass: edge.roadClass ?? "paved-regional", surface: edge.surface ?? (edge.type === "rough-shortcut" ? "dirt" : "paved"), width: edge.width, roughness: edge.roughness, a, b };
-      const minX = Math.min(a.x, b.x), maxX = Math.max(a.x, b.x), minZ = Math.min(a.z, b.z), maxZ = Math.max(a.z, b.z);
-      if (maxX >= bounds.minX - 36 && minX <= bounds.maxX + 36 && maxZ >= bounds.minZ - 36 && minZ <= bounds.maxZ + 36) terrainRoadSegments.push(segment);
+      terrainRoadSegments.push(segment);
+      localRoadSamples.push({ a: sourceA, b: sourceB, edge, segmentIndex });
       const midpointX = (a.x + b.x) * 0.5, midpointZ = (a.z + b.z) * 0.5;
       if (midpointX >= bounds.minX && midpointX < bounds.maxX && midpointZ >= bounds.minZ && midpointZ < bounds.maxZ) ownedRoadSegments.push(segment);
     }
   }
 
-  const localHeight = (x, z) => sampleHeight(x, z);
+  const localHeight = suppliedSampleHeight ?? ((x, z) => {
+    const natural = terrainNoise(x, z, course?.seed ?? "long-haul");
+    let best = null;
+    for (const road of localRoadSamples) {
+      const info = segmentInfo({ x, z }, road.a, road.b);
+      if (!best || info.distance < best.distance) best = { ...info, edge: road.edge, segmentIndex: road.segmentIndex };
+    }
+    if (!best) return natural;
+    const flattenRadius = best.edge.width * 0.78 + 16;
+    const blend = clamp(1 - best.distance / flattenRadius, 0, 1);
+    const smoothBlend = blend * blend * (3 - 2 * blend);
+    return natural + (roadElevation(course, best) - natural) * smoothBlend;
+  });
   const localSurface = (x, z) => sampleSurface?.(x, z) ?? null;
   const heights = [];
   const colors = [];
@@ -51,7 +68,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
   const scenery = [];
   const seedOffset = hashText(`${course.seed}:${cx}:${cz}`);
   const randomAt = (index, salt) => (hashText(`${seedOffset}:${salt}:${index}`) & 0xffffff) / 0xffffff;
-  const clusterCount = 12 + Math.floor(randomAt(0, "clusters") * 11);
+  const clusterCount = 5 + Math.floor(randomAt(0, "clusters") * 6);
 
   const blockedByRoad = (x, z, extra = 0) => {
     const semantic = localSurface(x, z);
@@ -82,7 +99,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
     }
   }
 
-  for (let index = 0; index < 240; index += 1) {
+  for (let index = 0; index < 96; index += 1) {
     const x = bounds.minX + randomAt(index, "grass-x") * CELL_SIZE;
     const z = bounds.minZ + randomAt(index, "grass-z") * CELL_SIZE;
     if (blockedByRoad(x, z, 5)) continue;

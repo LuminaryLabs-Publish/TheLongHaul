@@ -4,8 +4,8 @@ export const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? 
 export const TAU = Math.PI * 2;
 
 export const WORLD_ID = "long-haul-course";
-export const CELL_SIZE = 256;
-export const ACTIVE_RADIUS = 2;
+export const CELL_SIZE = 160;
+export const ACTIVE_RADIUS = 1;
 export const TIME_LIMIT_SECONDS = 600;
 export const PAR_TIME_SECONDS = 510;
 
