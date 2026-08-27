@@ -8,13 +8,17 @@ assert.equal(ACTIVE_RADIUS, 1, "fog permits a compact three-by-three active wind
 
 const cardinalPlan = createCellStreamingPlan({ position: { x: 80, z: 80 }, heading: 0, cellSize: CELL_SIZE, activeRadius: ACTIVE_RADIUS });
 assert.deepEqual(cardinalPlan.step, { x: 0, z: 1 }, "streaming looks through the fog in the driving direction");
-assert.equal(cardinalPlan.visualRadius, 2, "streaming adds one visual-only ring around the gameplay window");
-assert.equal(cardinalPlan.frontierCoordinates.length, 16, "the visual ring completely fills the horizon handoff");
-assert.equal(cardinalPlan.frontierCoordinates[0][1], 2, "forward fog-edge cells receive first priority");
+assert.equal(cardinalPlan.visualRadius, 4, "streaming extends lightweight terrain beyond the complete fog fade");
+assert.equal(cardinalPlan.frontierCoordinates.length, 72, "the visual window completely fills the fog handoff");
+assert.ok(cardinalPlan.visualRadius * CELL_SIZE > 610, "terrain coverage extends beyond the maximum procedural fog distance");
+assert.equal(cardinalPlan.frontierCoordinates[0][1], 2, "the nearest connected forward ring receives first priority");
+assert.equal(cardinalPlan.frontierCoordinates.slice(0, 16).every(([x, z]) => Math.max(Math.abs(x - cardinalPlan.cx), Math.abs(z - cardinalPlan.cz)) === 2), true, "the first lightweight ring completes before farther terrain");
+assert.equal(cardinalPlan.frontierCoordinates.slice(16, 40).every(([x, z]) => Math.max(Math.abs(x - cardinalPlan.cx), Math.abs(z - cardinalPlan.cz)) === 3), true, "the middle lightweight ring completes second");
+assert.equal(cardinalPlan.frontierCoordinates.slice(40).every(([x, z]) => Math.max(Math.abs(x - cardinalPlan.cx), Math.abs(z - cardinalPlan.cz)) === 4), true, "the fog-edge ring completes last");
 const diagonalPlan = createCellStreamingPlan({ position: { x: 80, z: 80 }, heading: Math.PI / 4, cellSize: CELL_SIZE, activeRadius: ACTIVE_RADIUS });
 assert.deepEqual(diagonalPlan.step, { x: 1, z: 1 }, "diagonal travel predicts both upcoming cell boundaries");
-assert.equal(diagonalPlan.frontierCoordinates.length, 16, "curves and diagonal roads receive the same complete visual coverage");
-assert.equal(new Set(diagonalPlan.frontierCoordinates.map(([x, z]) => `${x}:${z}`)).size, 16, "frontier cells stay unique");
+assert.equal(diagonalPlan.frontierCoordinates.length, 72, "curves and diagonal roads receive the same complete visual coverage");
+assert.equal(new Set(diagonalPlan.frontierCoordinates.map(([x, z]) => `${x}:${z}`)).size, 72, "frontier cells stay unique");
 const diagonalCoverage = new Set([...diagonalPlan.desiredCoordinates, ...diagonalPlan.frontierCoordinates].map(([x, z]) => `${x}:${z}`));
 for (let z = -ACTIVE_RADIUS; z <= ACTIVE_RADIUS; z += 1) {
   for (let x = -ACTIVE_RADIUS; x <= ACTIVE_RADIUS; x += 1) {
@@ -26,8 +30,8 @@ for (let index = 0; index < 128; index += 1) {
   const frontierIds = new Set(plan.frontierCoordinates.map(([x, z]) => `${x}:${z}`));
   const coverage = new Set([...plan.desiredCoordinates, ...plan.frontierCoordinates].map(([x, z]) => `${x}:${z}`));
   assert.equal(frontierIds.size, plan.frontierCoordinates.length, "streaming never schedules a duplicate frontier cell");
-  assert.equal(plan.frontierCoordinates.length, 16, "the visual frontier remains a bounded five-by-five window");
-  assert.equal(coverage.size, 25, "the horizon handoff has no missing cell wedges");
+  assert.equal(plan.frontierCoordinates.length, 72, "the visual frontier remains a bounded nine-by-nine window");
+  assert.equal(coverage.size, 81, "the fog handoff has no missing cell wedges");
   for (let z = -ACTIVE_RADIUS; z <= ACTIVE_RADIUS; z += 1) {
     for (let x = -ACTIVE_RADIUS; x <= ACTIVE_RADIUS; x += 1) {
       assert.equal(coverage.has(`${plan.cx + plan.step.x + x}:${plan.cz + plan.step.z + z}`), true, "every predicted next-window cell is prepared before the truck crosses into it");
