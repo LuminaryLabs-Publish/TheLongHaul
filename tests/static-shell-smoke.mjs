@@ -21,7 +21,7 @@ assert.equal(/tick\s*\(\s*0\s*\)/.test(combined), false, "no tick-zero helper ex
 assert.equal(/engine\.n\s*=/.test(combined), false, "host never replaces engine.n");
 assert.match(combined, /distance=27\+/);
 assert.match(combined, /ctx\.rotate\(-state\.heading\)/);
-assert.match(combined, /updateDesired\(desired\.map/);
+assert.match(combined, /updateDesired\(visualTargets\)/);
 assert.match(combined, /preparation\.pump\(\{maximum:1\}\)/);
 assert.match(combined, /desired\.every\(cell=>preparation\.hasPatch\(cell\.id\)\)/);
 assert.match(combined, /function reconcileCells\(maximum=1\)/);
@@ -35,6 +35,7 @@ assert.match(combined, /prefetchDistance:0/);
 assert.match(combined, /retainRadius:ACTIVE_RADIUS\+4/);
 assert.match(combined, /createCellStreamingPlan\(/);
 assert.match(combined, /setCellStreamingTargets\(\[\.\.\.desired,\.\.\.frontier\]\)/);
+assert.match(combined, /reason:"visual-ring"/);
 assert.match(combined, /if\(cellQueueState\.pending\)\{reconcileCells\(1\);return\}/);
 assert.match(combined, /function updateProceduralFog/);
 assert.match(combined, /Fog\(0xa5afac,270,560\)/);
