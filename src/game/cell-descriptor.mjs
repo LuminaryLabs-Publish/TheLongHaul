@@ -4,7 +4,7 @@ import { terrainHeight } from "./world-base.mjs";
 export function createCourseCellDescriptor(course, cell, options = {}) {
   const bounds = cell.bounds;
   const [cx, cz] = cell.coordinates;
-  const terrainSegments = Math.max(8, Math.floor(Number(options.terrainSegments ?? 32)));
+  const terrainSegments = Math.max(8, Math.floor(Number(options.terrainSegments ?? 40)));
   const sampleHeight = typeof options.sampleHeight === "function" ? options.sampleHeight : (x, z) => terrainHeight(course, x, z);
   const sampleSurface = typeof options.sampleSurface === "function" ? options.sampleSurface : null;
   const terrainRoadSegments = [];
@@ -16,7 +16,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       const sourceB = edge.samples[index];
       const a = { x: sourceA.x, y: sampleHeight(sourceA.x, sourceA.z) + 0.12, z: sourceA.z };
       const b = { x: sourceB.x, y: sampleHeight(sourceB.x, sourceB.z) + 0.12, z: sourceB.z };
-      const segment = { id: `${edge.id}:${index - 1}`, edgeId: edge.id, branchId: edge.branchId, branchName: edge.branchName, type: edge.type, width: edge.width, roughness: edge.roughness, a, b };
+      const segment = { id: `${edge.id}:${index - 1}`, edgeId: edge.id, branchId: edge.branchId, branchName: edge.branchName, type: edge.type, roadClass: edge.roadClass ?? "paved-regional", surface: edge.surface ?? (edge.type === "rough-shortcut" ? "dirt" : "paved"), width: edge.width, roughness: edge.roughness, a, b };
       const minX = Math.min(a.x, b.x), maxX = Math.max(a.x, b.x), minZ = Math.min(a.z, b.z), maxZ = Math.max(a.z, b.z);
       if (maxX >= bounds.minX - 36 && minX <= bounds.maxX + 36 && maxZ >= bounds.minZ - 36 && minZ <= bounds.maxZ + 36) terrainRoadSegments.push(segment);
       const midpointX = (a.x + b.x) * 0.5, midpointZ = (a.z + b.z) * 0.5;
@@ -48,9 +48,10 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
   const vegetation = [];
   const grass = [];
   const rocks = [];
+  const scenery = [];
   const seedOffset = hashText(`${course.seed}:${cx}:${cz}`);
   const randomAt = (index, salt) => (hashText(`${seedOffset}:${salt}:${index}`) & 0xffffff) / 0xffffff;
-  const clusterCount = 8 + Math.floor(randomAt(0, "clusters") * 8);
+  const clusterCount = 12 + Math.floor(randomAt(0, "clusters") * 11);
 
   const blockedByRoad = (x, z, extra = 0) => {
     const semantic = localSurface(x, z);
@@ -81,7 +82,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
     }
   }
 
-  for (let index = 0; index < 150; index += 1) {
+  for (let index = 0; index < 240; index += 1) {
     const x = bounds.minX + randomAt(index, "grass-x") * CELL_SIZE;
     const z = bounds.minZ + randomAt(index, "grass-z") * CELL_SIZE;
     if (blockedByRoad(x, z, 5)) continue;
@@ -99,5 +100,30 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
     rocks.push({ id: `${road.id}:rock`, x: px, y: localHeight(px, pz), z: pz, radius: 1.5 });
   }
 
-  return { schema: "long-haul.course-cell/4", cellId: cell.id, coordinates: [cx, cz], bounds: clone(bounds), foundationRevision: Number(options.foundationRevision ?? 0), terrain: { segments: terrainSegments, heights, colors }, roads, depots: clone(depots), signs: clone(signs), vegetation, grass, rocks };
+  for (const road of roads) {
+    const code = hashText(`${course.seed}:${road.id}:roadside`);
+    const dx = road.b.x - road.a.x, dz = road.b.z - road.a.z, length = Math.hypot(dx, dz) || 1;
+    const nx = -dz / length, nz = dx / length;
+    const heading = Math.atan2(dx, dz);
+    const x = (road.a.x + road.b.x) * 0.5, z = (road.a.z + road.b.z) * 0.5;
+    if (road.surface === "paved" && (code & 1) === 0) {
+      for (const side of [-1, 1]) {
+        const offset = road.width * 0.58 + 1.8;
+        const px = x + nx * offset * side, pz = z + nz * offset * side;
+        scenery.push({ id: `${road.id}:marker:${side}`, kind: "road-marker", x: px, y: localHeight(px, pz), z: pz, heading, side });
+      }
+    }
+    if ((code & 7) === 3) {
+      const side = code & 8 ? 1 : -1, offset = road.width * 0.65 + 6;
+      const px = x + nx * offset * side, pz = z + nz * offset * side;
+      scenery.push({ id: `${road.id}:pole`, kind: "utility-pole", x: px, y: localHeight(px, pz), z: pz, heading, side });
+    }
+    if (road.surface !== "paved" && (code & 5) === 1) {
+      const side = code & 16 ? 1 : -1, offset = road.width * 0.7 + 4;
+      const px = x + nx * offset * side, pz = z + nz * offset * side;
+      scenery.push({ id: `${road.id}:boulder`, kind: "roadside-boulder", x: px, y: localHeight(px, pz), z: pz, heading, side });
+    }
+  }
+
+  return { schema: "long-haul.course-cell/4", cellId: cell.id, coordinates: [cx, cz], bounds: clone(bounds), foundationRevision: Number(options.foundationRevision ?? 0), terrain: { segments: terrainSegments, heights, colors }, roads, depots: clone(depots), signs: clone(signs), vegetation, grass, rocks, scenery };
 }

@@ -52,9 +52,10 @@ export function roadElevation(course, road) {
   const phase = Number(road.segmentIndex ?? 0) + Number(road.t ?? 0);
   const seedPhase = (hashText(road.edge?.id ?? "road") % 6283) / 1000;
   const wave = Math.max(0, Math.sin(phase * 0.9 + seedPhase));
-  const rough = road.edge?.type === "rough-shortcut";
-  const country = road.edge?.type !== "long-safe";
-  const crest = rough ? Math.pow(wave, 8) * 2.8 : country ? Math.pow(wave, 12) * 0.65 : 0;
+  const surface = road.edge?.surface ?? (road.edge?.type === "rough-shortcut" ? "dirt" : "paved");
+  const rough = surface === "dirt";
+  const gravel = surface === "gravel";
+  const crest = rough ? Math.pow(wave, 8) * 2.5 : gravel ? Math.pow(wave, 10) * 0.72 : Math.pow(wave, 14) * 0.12;
   return base + crest;
 }
 

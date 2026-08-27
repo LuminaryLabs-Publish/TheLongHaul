@@ -2,19 +2,20 @@ const clone = (value) => value === undefined ? undefined : structuredClone(value
 
 export const DEFAULT_TRUCK_DYNAMICS_PROFILE = Object.freeze({
   id: "arcade-freight",
-  mass: 4200,
-  maximumForwardSpeed: 38,
-  maximumReverseSpeed: 10,
-  engineAcceleration: 12.5,
-  reverseAcceleration: 6.2,
-  brakeForce: 17,
-  aerodynamicDrag: 0.00105,
-  rollingResistance: Object.freeze({ road: 0.48, shoulder: 1.15, offRoad: 1.9 }),
-  steering: Object.freeze({ response: 9.5, lowSpeedAngle: 0.68, highSpeedAngle: 0.28, wheelbase: 5.2, yawResponse: 0.84 }),
-  grip: Object.freeze({ highway: 4.0, road: 3.1, rough: 1.8, shoulder: 1.25, offRoad: 0.8, handbrake: 0.35 }),
-  suspension: Object.freeze({ travel: 0.85, spring: 18, compressionDamping: 7.5, extensionDamping: 4.2, landingRestitution: 0.16 }),
+  mass: 7800,
+  maximumForwardSpeed: 30.5,
+  maximumReverseSpeed: 7.5,
+  engineAcceleration: 3.6,
+  reverseAcceleration: 2.6,
+  brakeForce: 9.4,
+  aerodynamicDrag: 0.00135,
+  rollingResistance: Object.freeze({ road: 0.34, shoulder: 0.92, offRoad: 1.65 }),
+  steering: Object.freeze({ response: 6.8, lowSpeedAngle: 0.55, highSpeedAngle: 0.13, wheelbase: 6.1, yawResponse: 0.72 }),
+  grip: Object.freeze({ highway: 4.5, road: 3.8, rough: 2.15, shoulder: 1.55, offRoad: 0.92, handbrake: 0.48 }),
+  suspension: Object.freeze({ travel: 0.92, spring: 15.5, compressionDamping: 8.8, extensionDamping: 5.6, landingRestitution: 0.1 }),
+  roll: Object.freeze({ spring: 8.5, damping: 4.7, lateralScale: 0.043, slopeScale: 0.72, warningAngle: 0.58, tipAngle: 0.9, settledAngle: 1.43 }),
   air: Object.freeze({ gravity: 8.6, steering: 0.14, pitchControl: 0.11, maximumSubsteps: 8, maximumSubstep: 1 / 120 }),
-  boost: Object.freeze({ forceMultiplier: 1.18, speedMultiplier: 1.14 })
+  boost: Object.freeze({ forceMultiplier: 1.1, speedMultiplier: 1.08 })
 });
 
 export function createLongHaulTruckDynamicsProfileKit(N, options = {}) {
@@ -38,6 +39,7 @@ export function createLongHaulTruckDynamicsProfileKit(N, options = {}) {
         steering: { ...(state.steering ?? {}), ...(clone(request.steering) ?? {}) },
         grip: { ...(state.grip ?? {}), ...(clone(request.grip) ?? {}) },
         suspension: { ...(state.suspension ?? {}), ...(clone(request.suspension) ?? {}) },
+        roll: { ...(state.roll ?? {}), ...(clone(request.roll) ?? {}) },
         air: { ...(state.air ?? {}), ...(clone(request.air) ?? {}) },
         boost: { ...(state.boost ?? {}), ...(clone(request.boost) ?? {}) }
       };

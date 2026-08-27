@@ -23,6 +23,9 @@ export function createLongHaulTruckKit(N, options = {}) {
     wheelTravel: 0,
     bodyRoll: 0,
     bodyPitch: 0,
+    rollAngle: 0,
+    rollVelocity: 0,
+    tipped: false,
     grounded: true,
     groundHeight: finite(value.y),
     groundNormal: { x: 0, y: 1, z: 0 },
@@ -64,6 +67,10 @@ export function createLongHaulTruckKit(N, options = {}) {
             longitudinalSpeed: finite(request.speed, 0),
             lateralSpeed: 0,
             steeringAngle: 0,
+            rollAngle: 0,
+            rollVelocity: 0,
+            bodyRoll: 0,
+            tipped: false,
             grounded: request.grounded !== false,
             sequence: state.sequence + 1
           };
@@ -90,6 +97,7 @@ export function createLongHaulTruckKit(N, options = {}) {
         }
         for (const request of world.readEvents(TruckImpulse)) {
           const forward = { x: Math.sin(state.heading), z: Math.cos(state.heading) };
+          const rollImpulse = finite(request.rollDelta);
           state = {
             ...state,
             velocity: {
@@ -99,6 +107,9 @@ export function createLongHaulTruckKit(N, options = {}) {
             },
             heading: normalizeAngle(state.heading + finite(request.headingDelta)),
             yawRate: state.yawRate + finite(request.yawDelta),
+            rollVelocity: state.rollVelocity + rollImpulse,
+            rollAngle: state.rollAngle + Math.sign(rollImpulse) * Math.min(0.18, Math.abs(rollImpulse) * 0.06),
+            tipped: state.tipped || (Math.abs(rollImpulse) >= 1.45 && Math.abs(state.speed) >= 6),
             sequence: state.sequence + 1
           };
         }
@@ -123,25 +134,32 @@ export function createLongHaulTruckKit(N, options = {}) {
           const maximumForward = finite(profile.maximumForwardSpeed, 38) * speedMultiplier * (state.surface === "road" ? 1 : state.surface === "shoulder" ? 0.74 : 0.52);
           const maximumReverse = finite(profile.maximumReverseSpeed, 10);
 
-          if (input.throttle > 0) {
+          const effectiveThrottle = state.tipped ? 0 : input.throttle;
+          const effectiveBrake = state.tipped ? 0 : input.brake;
+          const normalizedSpeed = clamp(Math.abs(longitudinal) / Math.max(1, maximumForward), 0, 1);
+          const torqueCurve = 1 - normalizedSpeed * 0.5;
+          if (effectiveThrottle > 0) {
             if (longitudinal < -0.2) longitudinal = Math.min(0, longitudinal + finite(profile.brakeForce, 17) * input.throttle * dt);
-            else longitudinal += finite(profile.engineAcceleration, 12.5) * boostForce * state.surfaceGrip * input.throttle * dt;
+            else longitudinal += finite(profile.engineAcceleration, 3.6) * torqueCurve * boostForce * state.surfaceGrip * effectiveThrottle * dt;
           }
-          if (input.brake > 0) {
-            if (longitudinal > 0.45) longitudinal = Math.max(0, longitudinal - finite(profile.brakeForce, 17) * input.brake * dt);
-            else longitudinal -= finite(profile.reverseAcceleration, 6.2) * state.surfaceGrip * input.brake * dt;
+          if (effectiveBrake > 0) {
+            if (longitudinal > 0.45) longitudinal = Math.max(0, longitudinal - finite(profile.brakeForce, 9.4) * effectiveBrake * dt);
+            else longitudinal -= finite(profile.reverseAcceleration, 2.6) * state.surfaceGrip * effectiveBrake * dt;
           }
-          if (!input.throttle && !input.brake) {
+          if (!effectiveThrottle && !effectiveBrake) {
             const resistance = finite(profile.rollingResistance?.[surfaceKey], 0.48) * dt;
             longitudinal = Math.abs(longitudinal) <= resistance ? 0 : longitudinal - Math.sign(longitudinal) * resistance;
           }
           longitudinal -= longitudinal * Math.abs(longitudinal) * finite(profile.aerodynamicDrag, 0.00105) * dt;
+          const forwardGrade = -(state.groundNormal.x * forward.x + state.groundNormal.z * forward.z) / Math.max(0.25, state.groundNormal.y);
+          longitudinal -= clamp(forwardGrade, -0.32, 0.32) * 9.81 * dt;
+          if (state.tipped) longitudinal *= Math.exp(-5.5 * dt);
           longitudinal = clamp(longitudinal, -maximumReverse, maximumForward);
           lateral *= Math.exp(-Math.max(0.01, lateralGrip) * dt);
 
           const speedRatio = clamp(Math.abs(longitudinal) / Math.max(1, finite(profile.maximumForwardSpeed, 38)), 0, 1);
           const steering = profile.steering ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.steering;
-          const targetSteer = input.steer * (finite(steering.lowSpeedAngle, 0.68) + (finite(steering.highSpeedAngle, 0.28) - finite(steering.lowSpeedAngle, 0.68)) * speedRatio);
+          const targetSteer = (state.tipped ? 0 : input.steer) * (finite(steering.lowSpeedAngle, 0.55) + (finite(steering.highSpeedAngle, 0.13) - finite(steering.lowSpeedAngle, 0.55)) * speedRatio);
           const steeringAngle = state.steeringAngle + (targetSteer - state.steeringAngle) * (1 - Math.exp(-finite(steering.response, 9.5) * dt));
           const targetYawRate = state.grounded && Math.abs(longitudinal) > 0.08
             ? (longitudinal / finite(steering.wheelbase, 5.2)) * Math.tan(steeringAngle) * finite(steering.yawResponse, 0.84) * state.surfaceGrip
@@ -187,7 +205,21 @@ export function createLongHaulTruckKit(N, options = {}) {
           };
           const planarSpeed = Math.hypot(velocity.x, velocity.z);
           const driftAngle = Math.atan2(lateral, Math.max(0.01, Math.abs(longitudinal)));
-          const safe = grounded && state.surface === "road" && Math.abs(longitudinal) < finite(profile.maximumForwardSpeed, 38) * 0.82
+          const rollProfile = profile.roll ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.roll;
+          const lateralAcceleration = yawRate * longitudinal;
+          const lateralSlope = (state.groundNormal.x * nextRight.x + state.groundNormal.z * nextRight.z) / Math.max(0.25, state.groundNormal.y);
+          let tipped = state.tipped;
+          let rollAngle = state.rollAngle;
+          let rollVelocity = state.rollVelocity;
+          const naturalTarget = clamp(-lateralAcceleration * finite(rollProfile.lateralScale, 0.043) + lateralSlope * finite(rollProfile.slopeScale, 0.72), -0.78, 0.78);
+          const settledAngle = finite(rollProfile.settledAngle, 1.43);
+          const targetRoll = tipped ? Math.sign(rollAngle || rollVelocity || 1) * settledAngle : naturalTarget;
+          const rollAcceleration = (targetRoll - rollAngle) * finite(rollProfile.spring, 8.5) - rollVelocity * finite(rollProfile.damping, 4.7);
+          rollVelocity += rollAcceleration * dt;
+          rollAngle += rollVelocity * dt;
+          if (!tipped && grounded && Math.abs(rollAngle) >= finite(rollProfile.tipAngle, 0.9) && Math.abs(longitudinal) > 5.5) tipped = true;
+          if (tipped) rollAngle = clamp(rollAngle, -settledAngle * 1.05, settledAngle * 1.05);
+          const safe = grounded && !tipped && Math.abs(rollAngle) < 0.34 && state.surface === "road" && Math.abs(longitudinal) < finite(profile.maximumForwardSpeed, 32) * 0.82
             ? { x: position.x, y: position.y, z: position.z, heading }
             : state.lastSafe;
 
@@ -203,8 +235,11 @@ export function createLongHaulTruckKit(N, options = {}) {
             driftAngle,
             steeringAngle,
             wheelTravel: state.wheelTravel + longitudinal * dt,
-            bodyRoll: state.bodyRoll + ((-input.steer * speedRatio * 0.12 - driftAngle * 0.22) - state.bodyRoll) * (1 - Math.exp(-5 * dt)),
+            bodyRoll: rollAngle,
             bodyPitch: state.bodyPitch + (((grounded ? -velocity.y * 0.018 : clamp(velocity.y * 0.04, -0.18, 0.18))) - state.bodyPitch) * (1 - Math.exp(-4 * dt)),
+            rollAngle,
+            rollVelocity,
+            tipped,
             grounded,
             suspensionCompression: clamp(compression / Math.max(0.01, finite(suspension.travel, 0.85)), -1, 1),
             suspensionVelocity,

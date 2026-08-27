@@ -32,9 +32,9 @@ function createCourseAttempt(random, seed, attempt) {
   addNode(course.origin);
   let previous = course.origin;
   let heading = Math.PI;
-  for (let index = 1; index <= 3; index += 1) {
-    const distance = 105 + random.range("course-layout", -8, 8);
-    heading += random.range("course-layout", -0.08, 0.08);
+  for (let index = 1; index <= 6; index += 1) {
+    const distance = 185 + random.range("course-layout", -12, 12);
+    heading += random.range("course-layout", -0.045, 0.045);
     const node = {
       id: `trunk-node-${index}`,
       x: previous.x + Math.sin(heading) * distance,
@@ -42,7 +42,7 @@ function createCourseAttempt(random, seed, attempt) {
       branchId: "trunk"
     };
     addNode(node);
-    const edge = createEdge(`trunk-edge-${index}`, previous, node, { id: "trunk", name: "Dispatch Road", width: 22, roughness: 0.08 }, random.range("course-layout", -8, 8));
+    const edge = createEdge(`trunk-edge-${index}`, previous, node, { id: "trunk", name: "Dispatch Highway", roadClass: "paved-highway", surface: "paved", width: 28, roughness: 0.025 }, random.range("course-layout", -5, 5));
     edge.length = edgeLength(edge);
     course.edges.push(edge);
     previous = node;
@@ -74,7 +74,7 @@ function createCourseAttempt(random, seed, attempt) {
         };
         const key = pointKey(candidate);
         const radial = Math.hypot(candidate.x - course.hub.x, candidate.z - course.hub.z);
-        if (occupied.has(key) || radial > 1150) continue;
+        if (occupied.has(key) || radial > 4200) continue;
         const tooNear = course.nodes.some((node) => node.id !== current.id && Math.hypot(node.x - candidate.x, node.z - candidate.z) < 24);
         if (tooNear) continue;
         const probe = { ...candidate };
@@ -114,13 +114,15 @@ function createCourseAttempt(random, seed, attempt) {
     const firstEdge = course.edges.find((edge) => edge.branchId === profile.id);
     if (firstEdge) {
       const point = firstEdge.samples[Math.min(3, firstEdge.samples.length - 1)];
+      const roadHeading = firstEdge.samples.length > 1 ? Math.atan2(firstEdge.samples[1].x - firstEdge.samples[0].x, firstEdge.samples[1].z - firstEdge.samples[0].z) : 0;
+      const signOffset = profile.width * 0.5 + 5;
       course.signs.push({
         id: `sign-${profile.id}`,
-        x: point.x + Math.cos(firstEdge.samples.length > 1 ? Math.atan2(firstEdge.samples[1].z - firstEdge.samples[0].z, firstEdge.samples[1].x - firstEdge.samples[0].x) : 0) * (profile.width + 5),
-        z: point.z,
-        heading: firstEdge.samples.length > 1 ? Math.atan2(firstEdge.samples[1].x - firstEdge.samples[0].x, firstEdge.samples[1].z - firstEdge.samples[0].z) : 0,
+        x: point.x + Math.cos(roadHeading) * signOffset,
+        z: point.z - Math.sin(roadHeading) * signOffset,
+        heading: roadHeading + Math.PI,
         title: profile.name,
-        subtitle: profile.subtitle,
+        subtitle: `${profile.subtitle} · ${(length / 1609.344).toFixed(1)} mi`,
         color: profile.color
       });
     }
@@ -132,8 +134,8 @@ function createCourseAttempt(random, seed, attempt) {
     const right = course.branches[rightIndex];
     const leftNode = course.nodes.find((node) => node.id === left.nodeIds[Math.floor(left.nodeIds.length * 0.55)]);
     const rightNode = course.nodes.find((node) => node.id === right.nodeIds[Math.floor(right.nodeIds.length * 0.55)]);
-    if (!leftNode || !rightNode || Math.hypot(leftNode.x - rightNode.x, leftNode.z - rightNode.z) > 310) continue;
-    const profile = { id: `link-${left.id}-${right.id}`, name: "Connector", width: 14, roughness: 0.3 };
+    if (!leftNode || !rightNode || Math.hypot(leftNode.x - rightNode.x, leftNode.z - rightNode.z) > 520) continue;
+    const profile = { id: `link-${left.id}-${right.id}`, name: "County Connector", roadClass: "gravel", surface: "gravel", width: 16, roughness: 0.3 };
     const edge = createEdge(profile.id, leftNode, rightNode, profile, random.range("course-layout", -30, 30));
     edge.length = edgeLength(edge);
     const crosses = course.edges.some((existing) => {

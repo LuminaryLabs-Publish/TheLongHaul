@@ -4,17 +4,17 @@ export const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? 
 export const TAU = Math.PI * 2;
 
 export const WORLD_ID = "long-haul-course";
-export const CELL_SIZE = 192;
-export const ACTIVE_RADIUS = 1;
-export const TIME_LIMIT_SECONDS = 300;
-export const PAR_TIME_SECONDS = 240;
+export const CELL_SIZE = 256;
+export const ACTIVE_RADIUS = 2;
+export const TIME_LIMIT_SECONDS = 600;
+export const PAR_TIME_SECONDS = 510;
 
 export const BRANCH_PROFILES = Object.freeze([
-  Object.freeze({ id: "short-narrow", name: "Pine Pass", depotName: "Mile 9 Logging", depotKind: "logging", width: 12, steps: 5, stepLength: 92, turnBias: 0.2, roughness: 0.18, wildlife: 0.08, color: "#d99f45", subtitle: "Short · Narrow" }),
-  Object.freeze({ id: "long-safe", name: "Easy Miles", depotName: "Coldwater Storage", depotKind: "cold-storage", width: 23, steps: 7, stepLength: 104, turnBias: 0.1, roughness: 0.04, wildlife: 0.04, color: "#7ca675", subtitle: "Wide · Long" }),
-  Object.freeze({ id: "rough-shortcut", name: "Old Cut", depotName: "Red Cedar Co-op", depotKind: "farm", width: 16, steps: 5, stepLength: 96, turnBias: 0.28, roughness: 0.82, wildlife: 0.08, color: "#b87346", subtitle: "Rough · Direct" }),
-  Object.freeze({ id: "wildlife-heavy", name: "Deer Run", depotName: "Hollow Creek Transfer", depotKind: "rail", width: 19, steps: 6, stepLength: 100, turnBias: 0.18, roughness: 0.2, wildlife: 0.65, color: "#7a925d", subtitle: "Wildlife Crossing" }),
-  Object.freeze({ id: "confusing-junction", name: "Five Forks", depotName: "Bramble Industrial", depotKind: "industrial", width: 18, steps: 7, stepLength: 94, turnBias: 0.36, roughness: 0.24, wildlife: 0.12, color: "#bc8d52", subtitle: "Many Turns" })
+  Object.freeze({ id: "short-narrow", name: "Pine Pass", depotName: "Mile 9 Logging", depotKind: "logging", roadClass: "paved-regional", surface: "paved", width: 18, steps: 10, stepLength: 185, turnBias: 0.12, roughness: 0.12, wildlife: 0.08, color: "#d99f45", subtitle: "Paved regional · mountain grades" }),
+  Object.freeze({ id: "long-safe", name: "King's Highway", depotName: "Coldwater Storage", depotKind: "cold-storage", roadClass: "paved-highway", surface: "paved", width: 27, steps: 13, stepLength: 205, turnBias: 0.055, roughness: 0.025, wildlife: 0.03, color: "#7ca675", subtitle: "Paved highway · wide shoulders" }),
+  Object.freeze({ id: "rough-shortcut", name: "Old Quarry Cut", depotName: "Red Cedar Co-op", depotKind: "farm", roadClass: "dirt", surface: "dirt", width: 15, steps: 9, stepLength: 175, turnBias: 0.2, roughness: 0.82, wildlife: 0.1, color: "#b87346", subtitle: "Dirt shortcut · severe surface" }),
+  Object.freeze({ id: "wildlife-heavy", name: "Deer Run", depotName: "Hollow Creek Transfer", depotKind: "rail", roadClass: "gravel", surface: "gravel", width: 19, steps: 11, stepLength: 190, turnBias: 0.13, roughness: 0.34, wildlife: 0.65, color: "#7a925d", subtitle: "Gravel road · wildlife corridor" }),
+  Object.freeze({ id: "confusing-junction", name: "Five Forks Route", depotName: "Bramble Industrial", depotKind: "industrial", roadClass: "paved-regional", surface: "paved", width: 21, steps: 12, stepLength: 185, turnBias: 0.2, roughness: 0.16, wildlife: 0.12, color: "#bc8d52", subtitle: "Paved regional · many junctions" })
 ]);
 
 export function hashText(text) {
@@ -96,6 +96,8 @@ export function createEdge(id, from, to, profile, controlOffset = 0) {
     branchId: profile.id,
     branchName: profile.name,
     type: profile.id,
+    roadClass: profile.roadClass ?? "paved-regional",
+    surface: profile.surface ?? "paved",
     width: profile.width,
     roughness: profile.roughness,
     samples,
@@ -130,7 +132,7 @@ export function validateCourse(course) {
     }
     adjacency[edge.from].push(edge.to);
     adjacency[edge.to].push(edge.from);
-    if (edge.length < 40 || edge.length > 220) issues.push(`bad-edge-length:${edge.id}`);
+    if (edge.length < 40 || edge.length > 280) issues.push(`bad-edge-length:${edge.id}`);
   }
 
   const visited = new Set();

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { CELL_SIZE, WORLD_ID, createCourseCellDescriptor, createLongHaulProductKits, generateCourse } from "../src/long-haul-game.mjs";
+import { CELL_SIZE, TIME_LIMIT_SECONDS, WORLD_ID, createCourseCellDescriptor, createLongHaulProductKits, generateCourse } from "../src/long-haul-game.mjs";
+
+assert.equal(TIME_LIMIT_SECONDS, 600, "freight runs use a ten-minute dispatch window");
 
 function hashText(text) { let hash = 2166136261; for (const char of String(text)) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); } return hash >>> 0; }
 function seeded(seed) { let state = hashText(seed) || 0x9e3779b9; return () => { state += 0x6d2b79f5; let value = state; value = Math.imul(value ^ (value >>> 15), value | 1); value ^= value + Math.imul(value ^ (value >>> 7), value | 61); return ((value ^ (value >>> 14)) >>> 0) / 4294967296; }; }
@@ -21,9 +23,13 @@ for (let index = 0; index < 100; index += 1) {
   assert.equal(course.branches.length, 5);
   assert.equal(course.depots.length, 5);
   assert.equal(course.depots.some((depot) => depot.id === course.validDepotId), true);
+  assert.equal(course.edges.some((edge) => edge.surface === "paved" && edge.roadClass === "paved-highway"), true, "courses include a clear paved highway");
+  assert.equal(course.edges.some((edge) => edge.surface === "gravel"), true, "courses include gravel alternatives");
+  assert.equal(course.edges.some((edge) => edge.surface === "dirt"), true, "courses include a dirt shortcut");
+  assert.equal(course.branches.every((branch) => branch.length > 1450), true, "all freight branches sustain a long route");
   const patch = createCourseCellDescriptor(course, { id: `${WORLD_ID}:uniform-grid:0:0:0`, coordinates: [0, 0], bounds: { minX: 0, minZ: 0, maxX: CELL_SIZE, maxZ: CELL_SIZE } });
   assert.equal(structuredClone(patch).schema, "long-haul.course-cell/4");
-  assert.equal(patch.terrain.segments, 32);
+  assert.equal(patch.terrain.segments, 40);
   assert.ok(patch.roads.every((road) => Number.isFinite(road.a.y) && Number.isFinite(road.b.y)));
   const farCell = { id: `${WORLD_ID}:uniform-grid:0:100000:-100000`, coordinates: [100000, -100000], bounds: { minX: 100000 * CELL_SIZE, minZ: -100000 * CELL_SIZE, maxX: 100001 * CELL_SIZE, maxZ: -99999 * CELL_SIZE } };
   const farPatch = createCourseCellDescriptor(course, farCell);
@@ -51,5 +57,10 @@ assert.ok(truck.position.z < 0, "truck follows its authoritative forward axis");
 assert.ok(truck.speed > 0, "truck accelerates forward");
 assert.ok(Number.isFinite(truck.position.y), "truck vertical state remains finite");
 assert.ok(Number.isFinite(truck.suspensionCompression), "suspension state remains finite");
+assert.ok(Math.abs(truck.steeringAngle) < 0.2, "high-speed steering remains progressive");
+engine.n.longHaulTruck.impulse({ rollDelta: 2, speedDelta: 0 }); tick();
+assert.equal(engine.n.longHaulTruck.getState().tipped, true, "a severe moving impact can tip the truck");
+engine.n.longHaulTruck.teleport({ x: 0, y: 0.85, z: 0, heading: 0, speed: 0 }); tick();
+assert.equal(engine.n.longHaulTruck.getState().tipped, false, "roadside recovery returns the truck upright");
 engine.n.longHaulDelivery.load(["a", "b", "c", "d", "e"], "c"); tick(); engine.n.longHaulDelivery.check("a"); tick(); assert.equal(engine.n.longHaulDelivery.getState().lastCheck.rejected, true); engine.n.longHaulDelivery.check("c"); tick(); assert.equal(engine.n.longHaulDelivery.getState().lastCheck.accepted, true);
 console.log("The Long Haul playability smoke passed");
