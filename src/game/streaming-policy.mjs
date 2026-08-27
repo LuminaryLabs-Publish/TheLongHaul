@@ -13,6 +13,7 @@ export function createCellStreamingPlan({ position, heading, cellSize, activeRad
   const forward = { x: Math.sin(angle), z: Math.cos(angle) };
   const desiredCoordinates = [];
   const desiredIds = new Set();
+  const visualRadius = radius + 1;
 
   for (let offsetZ = -radius; offsetZ <= radius; offsetZ += 1) {
     for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
@@ -35,12 +36,17 @@ export function createCellStreamingPlan({ position, heading, cellSize, activeRad
   }
 
   const frontierCoordinates = [];
-  for (let offsetZ = -radius; offsetZ <= radius; offsetZ += 1) {
-    for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
-      const coordinates = [cx + stepX + offsetX, cz + stepZ + offsetZ];
+  for (let offsetZ = -visualRadius; offsetZ <= visualRadius; offsetZ += 1) {
+    for (let offsetX = -visualRadius; offsetX <= visualRadius; offsetX += 1) {
+      const coordinates = [cx + offsetX, cz + offsetZ];
       if (!desiredIds.has(`${coordinates[0]}:${coordinates[1]}`)) frontierCoordinates.push(coordinates);
     }
   }
+  frontierCoordinates.sort((left, right) => {
+    const leftProjection = (left[0] - cx) * forward.x + (left[1] - cz) * forward.z;
+    const rightProjection = (right[0] - cx) * forward.x + (right[1] - cz) * forward.z;
+    return rightProjection - leftProjection || Math.hypot(left[0] - cx, left[1] - cz) - Math.hypot(right[0] - cx, right[1] - cz) || left[0] - right[0] || left[1] - right[1];
+  });
 
   return {
     cx,
@@ -48,6 +54,7 @@ export function createCellStreamingPlan({ position, heading, cellSize, activeRad
     key: `${cx}:${cz}`,
     forward,
     step: { x: stepX, z: stepZ },
+    visualRadius,
     desiredCoordinates,
     frontierCoordinates
   };
