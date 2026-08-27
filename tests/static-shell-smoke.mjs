@@ -26,6 +26,12 @@ assert.match(combined, /preparation\.pump\(\{maximum:1\}\)/);
 assert.match(combined, /desired\.every\(cell=>preparation\.hasPatch\(cell\.id\)\)/);
 assert.match(combined, /function reconcileCells\(maximum=1\)/);
 assert.match(combined, /queuedCellRealizations/);
+assert.match(combined, /streamingVisualCells=new Map\(\)/);
+assert.match(combined, /function setCellStreamingTargets\(cells=\[\]\)/);
+assert.match(combined, /for\(const cell of targets\.values\(\)\)if\(preparation\.hasPatch\(cell\.id\)/);
+assert.match(combined, /prefetchDistance:0/);
+assert.match(combined, /createCellStreamingPlan\(/);
+assert.match(combined, /setCellStreamingTargets\(\[\.\.\.desired,\.\.\.frontier\]\)/);
 assert.match(combined, /if\(cellQueueState\.pending\)\{reconcileCells\(1\);return\}/);
 assert.match(combined, /function updateProceduralFog/);
 assert.match(combined, /FogExp2\(0xa5afac,\.0042\)/);
@@ -37,6 +43,7 @@ assert.match(combined, /registerHorizonWorld/);
 assert.match(combined, /groundHeight:ground\.height/);
 assert.match(bootstrap, /app-chunk-17\.js/);
 assert.match(bootstrap, /ACTIVE_RADIUS: Math\.max\(1, ACTIVE_RADIUS\)/);
+assert.match(bootstrap, /createCellStreamingPlan/);
 assert.match(continuity, /_lhContainsBounds/);
 assert.match(continuity, /miter=clamp/);
 assert.match(continuity, /truckRig\.wheels\.map\(wheel=>wheel\.parent\)/);
@@ -59,6 +66,7 @@ for (const relative of [
   "src/long-haul-core.mjs",
   "src/long-haul-game.mjs",
   "src/game/shared.mjs",
+  "src/game/streaming-policy.mjs",
   "src/game/world-profile-kit.mjs",
   "src/game/world-atlas-kit.mjs",
   "src/game/horizon-lod-policy-kit.mjs",

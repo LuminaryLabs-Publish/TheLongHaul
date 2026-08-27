@@ -1,9 +1,36 @@
 import assert from "node:assert/strict";
 import { ACTIVE_RADIUS, CELL_SIZE, TIME_LIMIT_SECONDS, WORLD_ID, createCourseCellDescriptor, createLongHaulProductKits, generateCourse } from "../src/long-haul-game.mjs";
+import { createCellStreamingPlan } from "../src/game/streaming-policy.mjs";
 
 assert.equal(TIME_LIMIT_SECONDS, 600, "freight runs use a ten-minute dispatch window");
 assert.equal(CELL_SIZE, 160, "runtime terrain uses smaller streaming cells");
 assert.equal(ACTIVE_RADIUS, 1, "fog permits a compact three-by-three active window");
+
+const cardinalPlan = createCellStreamingPlan({ position: { x: 80, z: 80 }, heading: 0, cellSize: CELL_SIZE, activeRadius: ACTIVE_RADIUS });
+assert.deepEqual(cardinalPlan.step, { x: 0, z: 1 }, "streaming looks through the fog in the driving direction");
+assert.equal(cardinalPlan.frontierCoordinates.length, 3, "cardinal travel prepares one narrow frontier row");
+const diagonalPlan = createCellStreamingPlan({ position: { x: 80, z: 80 }, heading: Math.PI / 4, cellSize: CELL_SIZE, activeRadius: ACTIVE_RADIUS });
+assert.deepEqual(diagonalPlan.step, { x: 1, z: 1 }, "diagonal travel predicts both upcoming cell boundaries");
+assert.equal(diagonalPlan.frontierCoordinates.length, 5, "diagonal travel prepares only the newly exposed corner frontier");
+assert.equal(new Set(diagonalPlan.frontierCoordinates.map(([x, z]) => `${x}:${z}`)).size, 5, "frontier cells stay unique");
+const diagonalCoverage = new Set([...diagonalPlan.desiredCoordinates, ...diagonalPlan.frontierCoordinates].map(([x, z]) => `${x}:${z}`));
+for (let z = -ACTIVE_RADIUS; z <= ACTIVE_RADIUS; z += 1) {
+  for (let x = -ACTIVE_RADIUS; x <= ACTIVE_RADIUS; x += 1) {
+    assert.equal(diagonalCoverage.has(`${diagonalPlan.cx + diagonalPlan.step.x + x}:${diagonalPlan.cz + diagonalPlan.step.z + z}`), true, "the rendered frontier completely covers the next physics window");
+  }
+}
+for (let index = 0; index < 128; index += 1) {
+  const plan = createCellStreamingPlan({ position: { x: index * 73.17 - 3700, z: index * -41.83 + 1900 }, heading: index * 2.399963, cellSize: CELL_SIZE, activeRadius: ACTIVE_RADIUS });
+  const frontierIds = new Set(plan.frontierCoordinates.map(([x, z]) => `${x}:${z}`));
+  const coverage = new Set([...plan.desiredCoordinates, ...plan.frontierCoordinates].map(([x, z]) => `${x}:${z}`));
+  assert.equal(frontierIds.size, plan.frontierCoordinates.length, "streaming never schedules a duplicate frontier cell");
+  assert.ok(plan.frontierCoordinates.length >= 3 && plan.frontierCoordinates.length <= 5, "the visual frontier remains compact");
+  for (let z = -ACTIVE_RADIUS; z <= ACTIVE_RADIUS; z += 1) {
+    for (let x = -ACTIVE_RADIUS; x <= ACTIVE_RADIUS; x += 1) {
+      assert.equal(coverage.has(`${plan.cx + plan.step.x + x}:${plan.cz + plan.step.z + z}`), true, "every predicted next-window cell is prepared before the truck crosses into it");
+    }
+  }
+}
 
 function hashText(text) { let hash = 2166136261; for (const char of String(text)) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); } return hash >>> 0; }
 function seeded(seed) { let state = hashText(seed) || 0x9e3779b9; return () => { state += 0x6d2b79f5; let value = state; value = Math.imul(value ^ (value >>> 15), value | 1); value ^= value + Math.imul(value ^ (value >>> 7), value | 61); return ((value ^ (value >>> 14)) >>> 0) / 4294967296; }; }
