@@ -30,6 +30,8 @@ assert.match(combined, /streamingVisualCells=new Map\(\)/);
 assert.match(combined, /function setCellStreamingTargets\(cells=\[\]\)/);
 assert.match(combined, /for\(const cell of targets\.values\(\)\)\{const host=cellHosts\.get\(cell\.id\),needsUpgrade=/);
 assert.match(combined, /realizeCell\(patch,\{visualOnly:!activeIds\.has\(cell\.id\)\}\)/);
+assert.match(combined, /vegetation=visualOnly\?patch\.vegetation\.filter/);
+assert.match(combined, /for\(const item of patch\.scenery\?\?\[\]\)_lhAddRoadside/);
 assert.match(combined, /if\(!entry\|\|options\.visualOnly\)return/);
 assert.match(combined, /prefetchDistance:0/);
 assert.match(combined, /retainRadius:ACTIVE_RADIUS\+4/);
