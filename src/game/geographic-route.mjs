@@ -36,20 +36,16 @@ export function routeToCourse(route, coordinates) {
     }
     previousNode=next;
   }
-  const depots=[];
-  const keys=[.18,.35,.54,.73,1];
-  for(let i=0;i<5;i++){
-    const index=Math.min(nodes.length-1,Math.floor((nodes.length-1)*keys[i])),point=nodes[index];
-    const next=nodes[Math.min(index+1,nodes.length-1)],prev=nodes[Math.max(index-1,0)];
-    const heading=Math.atan2(next.x-prev.x,next.z-prev.z);
-    depots.push({id:`receiving-yard-${i+1}`,nodeId:point.id,branchId:"highway",name:i===4?route.to.name+" Receiving":`Freight Stop ${i+1}`,kind:"warehouse",x:point.x+Math.cos(heading)*28,z:point.z-Math.sin(heading)*28,heading,radius:30});
-  }
-  const course={schema:"long-haul.course-package/1",packageId:`osm-${route.id}`,seed:route.id,generatorVersion:"osm-highway-v1",origin:waypoints[0],hub:nodes[Math.floor(nodes.length/2)],nodes:[waypoints[0],...nodes],edges,branches:[{id:"highway",name:"OSM Highway",nodeIds:nodes.map(n=>n.id),edgeIds:edges.map(e=>e.id)}],depots,signs:[],wildlife:[],validDepotId:depots[4].id,scoring:{parTimeSeconds:Math.max(300,Math.ceil(edges.reduce((s,e)=>s+e.length,0)/20)),parDistance:edges.reduce((s,e)=>s+e.length,0)},bounds:null,geography:{source:"OpenStreetMap contributors via OSRM",from:route.from.code,to:route.to.code,actualMeters:distance,scale}};
+  const destination=nodes.at(-1),preceding=nodes.at(-2)??waypoints[0];
+  const heading=Math.atan2(destination.x-preceding.x,destination.z-preceding.z);
+  // Receiving gate touches the paved corridor; no unconnected phantom driveway.
+  const depots=[{id:"receiving-yard",nodeId:destination.id,branchId:"highway",name:route.to.name+" Receiving",kind:"warehouse",x:destination.x+Math.cos(heading)*10,z:destination.z-Math.sin(heading)*10,heading,radius:30}];
+  const course={schema:"long-haul.course-package/1",packageId:`osm-${route.id}`,seed:route.id,generatorVersion:"osm-highway-v1",origin:waypoints[0],hub:nodes[Math.floor(nodes.length/2)],nodes:[waypoints[0],...nodes],edges,branches:[{id:"highway",name:"OSM Highway",nodeIds:nodes.map(n=>n.id),edgeIds:edges.map(e=>e.id)}],depots,signs:[],wildlife:[],validDepotId:depots[0].id,scoring:{parTimeSeconds:Math.max(300,Math.ceil(edges.reduce((s,e)=>s+e.length,0)/20)),parDistance:edges.reduce((s,e)=>s+e.length,0)},bounds:null,geography:{source:"OpenStreetMap contributors via OSRM",from:route.from.code,to:route.to.code,actualMeters:distance,scale}};
   course.bounds=deriveCourseBounds(course);
   return course;
 }
 export async function loadGeographicCourse(route,{signal}={}){
-  const a=route.from,b=route.to;
+  const a={...route.from,...(route.from.code==="NJ"?{lon:-74.1724,lat:40.7357}:{})},b={...route.to,...(route.to.code==="PA"?{lon:-75.1636,lat:39.9524}:{})};
   const endpoint=`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson&steps=false`;
   const response=await fetch(endpoint,{signal});
   if(!response.ok)throw Error(`OSM routing unavailable (HTTP ${response.status})`);
