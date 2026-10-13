@@ -54,7 +54,7 @@ export function createLongHaulCourseSchema(NexusEngine) {
         type: "object",
         required: ["candidateDepotIds", "validDepotId"],
         properties: {
-          candidateDepotIds: { type: "array", minLength: 5, maxLength: 5, items: { type: "string", minLength: 1 } },
+          candidateDepotIds: { type: "array", minLength: 1, maxLength: 5, items: { type: "string", minLength: 1 } },
           validDepotId: { type: "string", minLength: 1 }
         },
         additionalProperties: false
