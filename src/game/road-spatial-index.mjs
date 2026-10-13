@@ -35,7 +35,7 @@ export function candidateRoadSegments(course,point){
  const x=Math.floor(point.x/size),z=Math.floor(point.z/size),ids=new Set();
  for(let radius=0;radius<=3;radius++){
   for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++)for(const id of index.cells.get(key(x+dx,z+dz))||[])ids.add(id);
-  if(ids.size)return [...ids].map(id=>index.segments[id]);
+  if(ids.size&&radius>=1){const list=[...ids].map(id=>index.segments[id]); const near=list.some(({a,b})=>{const dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/(dx*dx+dz*dz||1)));return Math.hypot(point.x-a.x-t*dx,point.z-a.z-t*dz)<size*radius;});if(near)return list;}
  }
  return index.segments; // preserves exact nearest semantics beyond populated cells
 }
