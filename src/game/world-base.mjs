@@ -1,12 +1,11 @@
+import { candidateRoadSegments } from "./road-spatial-index.mjs";
 import { clamp, hashText, segmentInfo } from "./shared.mjs";
 
 export function nearestRoad(course, point) {
   let best = null;
-  for (const edge of course?.edges ?? []) {
-    for (let index = 1; index < edge.samples.length; index += 1) {
-      const info = segmentInfo(point, edge.samples[index - 1], edge.samples[index]);
-      if (!best || info.distance < best.distance) best = { ...info, edge, segmentIndex: index - 1 };
-    }
+  for (const {a,b,edge,segmentIndex} of candidateRoadSegments(course,point)) {
+    const info=segmentInfo(point,a,b);
+    if(!best||info.distance<best.distance)best={...info,edge,segmentIndex};
   }
   return best;
 }
