@@ -69,7 +69,7 @@ assert.match(horizonCorrection, /_lhCompileFoundationWithoutPortalRoads/);
 assert.equal(/skirtDepth/.test(horizonCorrection), false, "final horizon geometry does not add visible skirts");
 assert.equal(/LineSegments/.test(horizonCorrection), false, "final horizon renderer does not draw portal spokes");
 assert.match(combined, /createCoreWorldDomain\(\{childDomains:false\}\)/);
-assert.match(combined, /function createResolvedCoursePatch\(cell\)\{return createCourseCellDescriptor\(course,cell\)\}/);
+assert.match(combined, /function createResolvedCoursePatch\(cell\)\{return createCourseCellDescriptor\(course,cell,course\?\.geography/);
 assert.equal(/longHaulWorldFeatures\.loadCourse\(course\)/.test(combined), false, "stable generation does not depend on World Features");
 new Function(combined);
 
