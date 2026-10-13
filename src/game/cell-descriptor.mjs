@@ -1,3 +1,4 @@
+import { roadSegmentsNear } from "./road-spatial-index.mjs";
 import { CELL_SIZE, TAU, clone, clamp, hashText, segmentInfo } from "./shared.mjs";
 import { roadElevation, terrainNoise } from "./world-base.mjs";
 
@@ -11,10 +12,8 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
   const ownedRoadSegments = [];
   const localRoadSamples = [];
 
-  for (const edge of course.edges) {
-    for (let index = 1; index < edge.samples.length; index += 1) {
-      const sourceA = edge.samples[index - 1];
-      const sourceB = edge.samples[index];
+  for (const {edge,segmentIndex, a:sourceA, b:sourceB} of roadSegmentsNear(course,bounds)) {
+      const index=segmentIndex+1;
       const minX = Math.min(sourceA.x, sourceB.x), maxX = Math.max(sourceA.x, sourceB.x), minZ = Math.min(sourceA.z, sourceB.z), maxZ = Math.max(sourceA.z, sourceB.z);
       if (maxX < bounds.minX - 48 || minX > bounds.maxX + 48 || maxZ < bounds.minZ - 48 || minZ > bounds.maxZ + 48) continue;
       const segmentIndex = index - 1;
