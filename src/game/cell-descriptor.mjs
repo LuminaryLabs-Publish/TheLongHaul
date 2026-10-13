@@ -16,7 +16,6 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       const index=segmentIndex+1;
       const minX = Math.min(sourceA.x, sourceB.x), maxX = Math.max(sourceA.x, sourceB.x), minZ = Math.min(sourceA.z, sourceB.z), maxZ = Math.max(sourceA.z, sourceB.z);
       if (maxX < bounds.minX - 48 || minX > bounds.maxX + 48 || maxZ < bounds.minZ - 48 || minZ > bounds.maxZ + 48) continue;
-      const segmentIndex = index - 1;
       const heightAtRoadPoint = (point, t) => suppliedSampleHeight?.(point.x, point.z) ?? roadElevation(course, { x: point.x, z: point.z, t, distance: 0, edge, segmentIndex });
       const a = { x: sourceA.x, y: heightAtRoadPoint(sourceA, 0) + 0.12, z: sourceA.z };
       const b = { x: sourceB.x, y: heightAtRoadPoint(sourceB, 1) + 0.12, z: sourceB.z };
@@ -25,7 +24,6 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       localRoadSamples.push({ a: sourceA, b: sourceB, edge, segmentIndex });
       const midpointX = (a.x + b.x) * 0.5, midpointZ = (a.z + b.z) * 0.5;
       if (midpointX >= bounds.minX && midpointX < bounds.maxX && midpointZ >= bounds.minZ && midpointZ < bounds.maxZ) ownedRoadSegments.push(segment);
-    }
   }
 
   const localHeight = suppliedSampleHeight ?? ((x, z) => {
