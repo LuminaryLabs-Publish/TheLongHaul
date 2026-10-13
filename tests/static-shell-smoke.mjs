@@ -37,8 +37,8 @@ assert.match(combined, /prefetchDistance:0/);
 assert.match(combined, /retainRadius:ACTIVE_RADIUS\+4/);
 assert.match(combined, /createCellStreamingPlan\(/);
 assert.match(combined, /setCellStreamingTargets\(\[\.\.\.preloadedRouteCells,\.\.\.desired,\.\.\.frontier\]\)/);
-assert.match(combined, /const routeCells=createRouteCells\(course\)/);
-assert.match(combined, /reconcileCells\(routeCells\.length\+windowSize\)/);
+assert.match(combined, /const routeCells=course\.geography\?\[\]:createRouteCells\(course\)/);
+assert.match(combined, /reconcileCells\(windowSize\)/);
 assert.match(combined, /reason:"visual-ring"/);
 assert.match(combined, /if\(cellQueueState\.pending\)\{reconcileCells\(1\);return\}/);
 assert.match(combined, /function updateProceduralFog/);
@@ -88,6 +88,7 @@ for (const relative of [
   "src/game/truck-dynamics-profile-kit.mjs",
   "src/game/delivery-contract-catalog-kit.mjs",
   "src/game/generator.mjs",
+  "src/game/geographic-route.mjs",
   "src/game/world-base.mjs",
   "src/game/cell-descriptor.mjs",
   "src/game/product-kits.mjs",
@@ -102,4 +103,8 @@ for (const relative of [
   assert.equal(result.status, 0, `${relative} must parse: ${result.stderr}`);
 }
 
+const campaign = readFileSync(join(root,"campaign.html"),"utf8");
+assert.doesNotMatch(campaign,/function tick\(t\)|id="roadCanvas"|function draw\(\)/,"the campaign does not contain a second driving engine");
+assert.match(campaign,/loadGeographicCourse/);
+assert.match(combined,/campaignLaunch\.course/);
 console.log("The Long Haul static shell smoke passed");
