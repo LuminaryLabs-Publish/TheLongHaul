@@ -1,0 +1,41 @@
+// Local, in-memory acceleration for repeated route/terrain queries.
+// WeakMap keeps the index out of serialized course packages and saves.
+const cache=new WeakMap();
+const size=192;
+const key=(x,z)=>x+":"+z;
+export function roadIndex(course){
+ if(!course||typeof course!=="object")return null;
+ const cached=cache.get(course);
+ if(cached&&cached.edges===course.edges)return cached;
+ const cells=new Map(),segments=[];
+ for(const edge of course.edges||[])for(let i=1;i<(edge.samples?.length||0);i++){
+  const a=edge.samples[i-1],b=edge.samples[i];
+  if(!Number.isFinite(a.x+a.z+b.x+b.z))continue;
+  const entry={a,b,edge,segmentIndex:i-1},id=segments.push(entry)-1;
+  const padding=Math.max(48,(Number(edge.width)||18)*2);
+  const x0=Math.floor((Math.min(a.x,b.x)-padding)/size),x1=Math.floor((Math.max(a.x,b.x)+padding)/size);
+  const z0=Math.floor((Math.min(a.z,b.z)-padding)/size),z1=Math.floor((Math.max(a.z,b.z)+padding)/size);
+  for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){
+    const k=key(x,z);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(id);
+  }
+ }
+ const index={edges:course.edges,cells,segments};
+ cache.set(course,index);return index;
+}
+export function roadSegmentsNear(course,bounds){
+ const index=roadIndex(course);if(!index)return [];
+ const x0=Math.floor(bounds.minX/size),x1=Math.floor(bounds.maxX/size);
+ const z0=Math.floor(bounds.minZ/size),z1=Math.floor(bounds.maxZ/size);
+ const ids=new Set();
+ for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)for(const id of index.cells.get(key(x,z))||[])ids.add(id);
+ return [...ids].map(id=>index.segments[id]);
+}
+export function candidateRoadSegments(course,point){
+ const index=roadIndex(course);if(!index)return [];
+ const x=Math.floor(point.x/size),z=Math.floor(point.z/size),ids=new Set();
+ for(let radius=0;radius<=3;radius++){
+  for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++)for(const id of index.cells.get(key(x+dx,z+dz))||[])ids.add(id);
+  if(ids.size)return [...ids].map(id=>index.segments[id]);
+ }
+ return index.segments; // preserves exact nearest semantics beyond populated cells
+}
