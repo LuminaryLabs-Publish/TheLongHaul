@@ -31,7 +31,7 @@
     }
     function arcadeTrafficUpdate(dt){
       if(!arcadeCampaign()) {arcadeTrafficRoot.visible=false;return}
-      arcadeTrafficRoot.visible=true;
+      arcadeTrafficRoot.visible=true;if(arcadeTrafficRoot.parent!==dynamicRoot)dynamicRoot.add(arcadeTrafficRoot);
       const truck=engine.n.longHaulTruck.getState(),run=engine.n.longHaulRun.getState(),distance=run.distance||0;
       const upgrades=arcadeUpgradeState().upgrades||{},armor=Number(upgrades.armor)||0;
       for(let i=0;i<arcadeVehicles.length;i++){
