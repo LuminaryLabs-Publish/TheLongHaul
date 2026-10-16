@@ -146,10 +146,10 @@ async function initGaragePreview(){
   canvas.addEventListener('pointerdown',e=>{dragX=e.clientX;canvas.setPointerCapture(e.pointerId)});
   canvas.addEventListener('pointermove',e=>{if(dragX!==null){garageRotation+=(e.clientX-dragX)*.01;dragX=e.clientX}});
   canvas.addEventListener('pointerup',()=>dragX=null);canvas.addEventListener('pointercancel',()=>dragX=null);
-  function draw(){requestAnimationFrame(draw);if(phase!=='garage')return;
+  function renderGaragePreview(){requestAnimationFrame(renderGaragePreview);if(phase!=='garage')return;
    if(garage3d.model){if(dragX===null)garageRotation+=.004;garage3d.model.rotation.y=garageRotation}
    renderer.render(scene,camera)}
-  requestAnimationFrame(draw);
+  requestAnimationFrame(renderGaragePreview);
  }catch(e){console.warn('Garage preview unavailable',e)}
 }
 const originalGarage=garage;
