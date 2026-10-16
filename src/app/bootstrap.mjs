@@ -12,7 +12,7 @@ for (const src of ["./app-chunk-1.js", "./app-chunk-2.js", "./app-chunk-3.js", "
     script.src = new URL(src, import.meta.url).href;
     script.async = false;
     script.onload = resolve;
-    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    script.onerror = () => reject(new Error(`Failed to load ${src}. Reload or check the connection.`));
     document.head.append(script);
   });
 }

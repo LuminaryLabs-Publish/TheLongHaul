@@ -6,13 +6,21 @@
     const arcadeTrafficGeometry=new THREE.BoxGeometry(1,1,1);
     const arcadeTrafficMaterials=[0x4c91b7,0xc7c2ac,0xb64c3c,0x496c57,0xb69d57].map(color=>new THREE.MeshLambertMaterial({color}));
     const arcadeVehicles=[];
+    const arcadeWheelGeo=new THREE.CylinderGeometry(.5,.5,.36,12);
+    const arcadeWheelMat=new THREE.MeshLambertMaterial({color:0x171c22});
+    const arcadeGlassMat=new THREE.MeshLambertMaterial({color:0x75aec0});
+    const arcadeLampMat=new THREE.MeshBasicMaterial({color:0xffdd99});
+    const arcadeTailMat=new THREE.MeshBasicMaterial({color:0xc42f29});
     function arcadeMakeVehicle(index){
-      const group=new THREE.Group(),kind=index%4,bodyLength=[4.7,5.8,7.5,11][kind],height=[1.35,1.8,2.5,3.15][kind];
-      const body=new THREE.Mesh(arcadeTrafficGeometry,arcadeTrafficMaterials[index%arcadeTrafficMaterials.length]);
-      body.scale.set([2,2.25,2.3,2.6][kind],height,bodyLength);body.position.y=.9+height/2;group.add(body);
-      const cab=new THREE.Mesh(arcadeTrafficGeometry,arcadeTrafficMaterials[(index+2)%arcadeTrafficMaterials.length]);
-      cab.scale.set(kind===3?2.4:1.8,kind===3?2:1.1,kind===3?2.7:1.9);
-      cab.position.set(0,kind===3?2.8:1.85,kind===3?bodyLength*.26:-.25);group.add(cab);
+      const group=new THREE.Group(),kind=index%4,bodyLength=[4.7,5.8,7.5,11][kind],height=[1.35,1.8,2.5,3.15][kind],width=[1.9,2.18,2.28,2.55][kind],paint=arcadeTrafficMaterials[index%arcadeTrafficMaterials.length];
+      function box(mat,w,h,d,x,y,z){const part=new THREE.Mesh(arcadeTrafficGeometry,mat);part.scale.set(w,h,d);part.position.set(x,y,z);group.add(part)}
+      box(arcadeWheelMat,width,.35,bodyLength,0,.73,0);
+      box(paint,width,height,bodyLength*(kind===3?.58:.86),0,1.15+height*.5,kind===3?-bodyLength*.18:0);
+      if(kind!==2)box(paint,width*.92,kind===3?1.65:.85,kind===3?2.65:2.3,0,1.55+height*.65,kind===3?bodyLength*.32:bodyLength*.12);
+      const front=kind===3?bodyLength*.47:bodyLength*.39;
+      box(arcadeGlassMat,width*.77,.55,.08,0,1.45+height*.73,front);
+      for(const side of [-1,1]){for(const z of [-bodyLength*.31,bodyLength*.31]){const wheel=new THREE.Mesh(arcadeWheelGeo,arcadeWheelMat);wheel.rotation.z=Math.PI/2;wheel.position.set(side*(width*.5+.08),.52,z);group.add(wheel)}
+       box(arcadeLampMat,.25,.21,.12,side*width*.33,1.06,bodyLength*.49);box(arcadeTailMat,.27,.22,.12,side*width*.33,1.04,-bodyLength*.49)}
       arcadeTrafficRoot.add(group);
       return {group,kind,length:bodyLength,progress:0,lane:0,hit:false,passed:false,near:false,active:false};
     }
@@ -57,7 +65,7 @@
         }
         if(!vehicle.passed&&vehicle.progress<distance+3){
           vehicle.passed=true;
-          if(separation<12&&!vehicle.hit){vehicle.near=true;arcadeBonuses+=35;toast("NEAR MISS +$35","good",900)}
+          if(separation<12&&!vehicle.hit){vehicle.near=true;arcadeBonuses+=35;arcadeFlashBonus("+$35 NEAR MISS");toast("NEAR MISS +$35","good",900)}
           else if(!vehicle.hit){arcadeBonuses+=15}
         }
       }
@@ -122,3 +130,25 @@
       arcadeOriginalPostTick(surface);
       arcadeSettleFailedRun();
     };
+
+    // Visual-first arcade display and procedural title vehicle.
+    const arcadeOverlay=document.createElement("div");arcadeOverlay.id="arcade-overlay";arcadeOverlay.innerHTML='<div class="arcade-stat">⛽ <b id="arcade-fuel">100%</b></div><div class="arcade-stat">⚡ <b id="arcade-boost">SHIFT</b></div><div class="arcade-stat">↗ <b id="arcade-distance">0 mi</b></div><div class="arcade-stat">＄ <b id="arcade-earnings">$0</b></div><div id="arcade-flash" aria-live="polite"></div>';document.body.append(arcadeOverlay);
+    function arcadeFlashBonus(message){const el=document.getElementById("arcade-flash");el.textContent=message;el.classList.remove("active");void el.offsetWidth;el.classList.add("active")}
+    const arcadeMenuTruck=new THREE.Group(),arcadeMenuPaint=new THREE.MeshLambertMaterial({color:0xe1a14e});
+    function arcadeMenuBox(mat,w,h,d,x,y,z){const part=new THREE.Mesh(arcadeTrafficGeometry,mat);part.scale.set(w,h,d);part.position.set(x,y,z);arcadeMenuTruck.add(part)}
+    arcadeMenuBox(arcadeMenuPaint,2.9,2.5,3.3,0,2.2,1.4);
+    arcadeMenuBox(arcadeTrafficMaterials[0],3,3.1,5.5,0,2.8,-2.8);
+    arcadeMenuBox(arcadeGlassMat,2.6,1,.12,0,3.03,3.1);
+    for(const side of [-1,1])for(const z of [-4.2,2.15]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.88,.88,.55,12),arcadeWheelMat);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.72,1,z);arcadeMenuTruck.add(wheel)}
+    scene.add(arcadeMenuTruck);arcadeMenuTruck.position.set(4,0,0);
+    function arcadeVisualFrame(now){
+      const view=currentScene(),title=view==="title"&&!campaignLaunch?.course;
+      arcadeMenuTruck.visible=title;
+      if(title){arcadeMenuTruck.rotation.y=-.5+Math.sin(now*.00031)*.22;arcadeMenuTruck.position.y=Math.sin(now*.0011)*.09;camera.position.set(11,6,17);camera.lookAt(2,2,-1)}
+      const playing=view==="driving"&&arcadeCampaign();arcadeOverlay.classList.toggle("active",playing);
+      if(playing){const run=engine.n.longHaulRun.getState(),fuel=meters.get("fuel")?.value??0,intent=engine.n.coreInput.getIntent(),distance=run.distance||0;
+        document.getElementById("arcade-fuel").textContent=Math.ceil(fuel)+"%";
+        document.getElementById("arcade-boost").textContent=intent.boost?"ACTIVE":"SHIFT";
+        document.getElementById("arcade-distance").textContent=(distance/1609.344).toFixed(2)+" mi";
+        document.getElementById("arcade-earnings").textContent="$"+(Math.max(75,Math.round(distance*.11))+arcadeBonuses)}
+    }
