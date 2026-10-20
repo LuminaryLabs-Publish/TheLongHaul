@@ -20,3 +20,11 @@ Original prompt: Epxlain every performance issue. be hyper critical and then loo
 - Implemented the authorized local cleanup: bounded worker-backed scenery, local runtime bundles, render batching, cheaper terrain/state queries, repaired horizon, real quality budgets, visibility-aware lifecycle and garage ownership. Preserved the rolling start and existing visual/collider work.
 - Built the committed static assets; all existing smoke suites and standalone gameplay client pass. Window/pause/fallback/cache/upgrade checks pass. Final 90-second moving checkpoints show p95/p99 at most 16.8 ms, 81 high-quality hosts and at most 104 cached patches.
 - Evidence and limitations: `.agent/performance-cleanup.md`, `.agent/performance-cleanup/`. Keep the original audit as a historical baseline. No engine repository or deployment files were edited.
+
+
+## 2026-10-19 double-tap forward boost
+
+- Request: “make it so double tapping W or forward arrow usaes ta 5 secodn boost that charges tyou forward relaly fast. And uses a warmpe focus and strema parkcletielce.s”
+- Added a same-key double-tap burst lasting five gameplay seconds, strong automatic acceleration, smooth speed-cap recovery, countdown, warm focus/wider FOV and one 96-line streaming particle batch (48 on low quality). Reduced motion preserves mechanics without the motion effects.
+- Built static runtime, all three existing smoke suites pass. Inline checks cover five-second timing, independent keys, slow taps, no active refresh and cancellation. Browser verified W activation, held-key/repeat rejection, brake cancellation, ArrowUp activation and natural expiry after approximately five seconds, reduced-motion suppression and pause reset. Standalone client reached 56.425 m/s against the default 30.5 m/s cap; inspected screenshot and state, zero client errors.
+- Only The Long Haul changed; deployment configuration is unchanged. Continuing the authorized main-branch workflow after validation.

@@ -130,7 +130,7 @@
     };
 
     // Visual-first arcade display and procedural title vehicle.
-    const arcadeOverlay=document.createElement("div");arcadeOverlay.id="arcade-overlay";arcadeOverlay.innerHTML='<div class="arcade-stat">⛽ <b id="arcade-fuel">100%</b></div><div class="arcade-stat">⚡ <b id="arcade-boost">SHIFT</b></div><div class="arcade-stat">↗ <b id="arcade-distance">0 mi</b></div><div class="arcade-stat">＄ <b id="arcade-earnings">$0</b></div><div id="arcade-flash" aria-live="polite"></div>';document.body.append(arcadeOverlay);
+    const arcadeOverlay=document.createElement("div");arcadeOverlay.id="arcade-overlay";arcadeOverlay.innerHTML='<div class="arcade-stat">⛽ <b id="arcade-fuel">100%</b></div><div class="arcade-stat">⚡ <b id="arcade-boost">W ×2 / ↑ ×2</b></div><div class="arcade-stat">↗ <b id="arcade-distance">0 mi</b></div><div class="arcade-stat">＄ <b id="arcade-earnings">$0</b></div><div id="arcade-flash" aria-live="polite"></div>';document.body.append(arcadeOverlay);
     function arcadeFlashBonus(message){const el=document.getElementById("arcade-flash");el.textContent=message;el.classList.remove("active");void el.offsetWidth;el.classList.add("active")}
     const arcadeMenuTruck=new THREE.Group(),arcadeMenuPaint=new THREE.MeshLambertMaterial({color:0xe1a14e});
     function arcadeMenuBox(mat,w,h,d,x,y,z){const part=new THREE.Mesh(arcadeTrafficGeometry,mat);part.scale.set(w,h,d);part.position.set(x,y,z);arcadeMenuTruck.add(part)}
@@ -147,7 +147,7 @@
       const playing=view==="driving"&&arcadeCampaign();arcadeOverlay.classList.toggle("active",playing);
       if(playing&&now-arcadeLastHud>=66){arcadeLastHud=now;const run=readRun(),fuel=meters.get("fuel")?.value??0,intent=engine.n.coreInput.getIntent(),distance=run.distance||0;
         document.getElementById("arcade-fuel").textContent=Math.ceil(fuel)+"%";
-        document.getElementById("arcade-boost").textContent=intent.boost?"ACTIVE":"SHIFT";
+        document.getElementById("arcade-boost").textContent=forwardBoost.remaining>0?`${forwardBoost.remaining.toFixed(1)}s`:intent.boost?"ACTIVE":"W ×2 / ↑ ×2";
         document.getElementById("arcade-distance").textContent=(distance/1609.344).toFixed(2)+" mi";
         document.getElementById("arcade-earnings").textContent="$"+(Math.max(75,Math.round(distance*.11))+arcadeBonuses)}
     }

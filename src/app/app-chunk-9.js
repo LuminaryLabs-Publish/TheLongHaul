@@ -1,6 +1,33 @@
+    // One preallocated camera-space line batch, no extra scene render or blur pass.
+    const boostStreakCount=96,boostPositions=new Float32Array(boostStreakCount*6),boostDepths=new Float32Array(boostStreakCount);
+    for(let i=0;i<boostStreakCount;i++)boostDepths[i]=3+(i*.61803398875%1)*52;
+    const boostGeometry=new THREE.BufferGeometry();boostGeometry.setAttribute("position",new THREE.BufferAttribute(boostPositions,3).setUsage(THREE.DynamicDrawUsage));
+    const boostMaterial=new THREE.LineBasicMaterial({color:0xffe4ad,transparent:true,opacity:0,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending});
+    const boostStreaks=new THREE.LineSegments(boostGeometry,boostMaterial);boostStreaks.frustumCulled=false;boostStreaks.renderOrder=1000;boostStreaks.visible=false;camera.add(boostStreaks);scene.add(camera);
+    const boostFocus=document.createElement("div");boostFocus.id="boost-focus";boostFocus.setAttribute("aria-hidden","true");document.getElementById("game-stage").append(boostFocus);
+    const boostReadout=document.createElement("div");boostReadout.id="boost-readout";document.getElementById("game-stage").append(boostReadout);
+    let boostVisualStrength=0,boostReadoutText="";
+    function updateBoostVisuals(dt){
+      const driving=currentScene()==="driving",active=driving&&forwardBoost.remaining>0,target=active&&settings.motion?1:0;
+      boostVisualStrength=driving?lerp(boostVisualStrength,target,1-Math.exp(-dt*(target?9:6))):0;
+      if(!settings.motion)boostVisualStrength=0;
+      boostStreaks.visible=boostVisualStrength>.01;boostMaterial.opacity=boostVisualStrength*.65;
+      boostFocus.style.opacity=String(boostVisualStrength*.7);
+      boostReadout.classList.toggle("active",active);const label=`BOOST · ${forwardBoost.remaining.toFixed(1)}s`;
+      if(label!==boostReadoutText){boostReadout.textContent=label;boostReadoutText=label}
+      if(!boostStreaks.visible)return;
+      const count=settings.quality?boostStreakCount:48;boostGeometry.setDrawRange(0,count*2);
+      for(let i=0;i<count;i++){
+        boostDepths[i]-=dt*65;if(boostDepths[i]<3)boostDepths[i]+=52;
+        const depth=boostDepths[i],angle=i*2.39996323,radius=5+(i*.754877666%1)*25,x=Math.cos(angle)*radius,y=Math.sin(angle)*radius*.6,tail=depth+4+boostVisualStrength*4;
+        const j=i*6;boostPositions[j]=x;boostPositions[j+1]=y;boostPositions[j+2]=-depth;
+        boostPositions[j+3]=x;boostPositions[j+4]=y;boostPositions[j+5]=-tail;
+      }
+      boostGeometry.attributes.position.needsUpdate=true;
+    }
     function updateTruckVisual(dt){if(!truckRig)return;const state=readTruck();const surface=surfaceAt(state.position);const travel=engine.n.longHaulTruckDynamicsProfile?.getState?.().suspension?.travel??.85;const visualGround=state.position.y-travel+.02;truckRig.root.position.x=lerp(truckRig.root.position.x,state.position.x,1-Math.exp(-18*dt));truckRig.root.position.z=lerp(truckRig.root.position.z,state.position.z,1-Math.exp(-18*dt));truckRig.root.position.y=lerp(truckRig.root.position.y,visualGround,1-Math.exp(-16*dt));truckRig.root.rotation.y=state.heading;const normal=state.groundNormal??{x:0,y:1,z:0},groundPitch=Math.atan2(normal.z,Math.max(.01,normal.y)),groundRoll=-Math.atan2(normal.x,Math.max(.01,normal.y));truckRig.body.position.y=lerp(truckRig.body.position.y,-clamp(state.suspensionCompression??0,-1,1)*.16,1-Math.exp(-10*dt));truckRig.body.rotation.z=lerp(truckRig.body.rotation.z,state.bodyRoll+groundRoll*.45,1-Math.exp(-8*dt));truckRig.body.rotation.x=lerp(truckRig.body.rotation.x,state.bodyPitch+groundPitch*.5,1-Math.exp(-8*dt));for(const wheel of truckRig.wheels)wheel.rotation.x=state.wheelTravel/.82;for(const pivot of truckRig.steering)pivot.rotation.y=state.steeringAngle;const cargo=meters.get("cargo-condition")?.value??100;for(let i=0;i<truckRig.crates.length;i++)truckRig.crates[i].rotation.z=Math.sin(performance.now()*.002+i)*(100-cargo)*.00035;sky.position.set(state.position.x,0,state.position.z);cloudRoot.position.set(state.position.x,0,state.position.z);sun.position.set(state.position.x-150,230,state.position.z-110);sun.target.position.set(state.position.x,0,state.position.z);sun.target.updateMatrixWorld()}
     function updateWildlifeVisual(){if(!wildlifeRig)return;const hazards=readWildlife().hazards,hazardById=new Map(hazards.map(h=>[h.id,h]));for(const animal of wildlifeRig.animals){const hazard=hazardById.get(animal.userData.id);if(!hazard){animal.visible=false;continue}animal.visible=true;animal.position.set(hazard.x,terrainHeight(course,hazard.x,hazard.z),hazard.z);const dx=(hazard.end.x-hazard.start.x)*(hazard.direction||1),dz=(hazard.end.z-hazard.start.z)*(hazard.direction||1);animal.rotation.y=Math.atan2(dx,dz);const stride=performance.now()*.004+animal.userData.phase;animal.userData.legs.forEach((leg,index)=>leg.rotation.x=Math.sin(stride+(index%2?Math.PI:0))*.48);animal.position.y+=Math.abs(Math.sin(stride))*.06}}
-    function applyCamera(){const descriptor=smoothing.getDescriptor("player-camera");camera.position.fromArray(descriptor.position);camera.quaternion.fromArray(descriptor.quaternion);if(camera.fov!==descriptor.fov){camera.fov=descriptor.fov;camera.updateProjectionMatrix()}}
+    function applyCamera(){const descriptor=smoothing.getDescriptor("player-camera");camera.position.fromArray(descriptor.position);camera.quaternion.fromArray(descriptor.quaternion);const fov=descriptor.fov+boostVisualStrength*14;if(camera.fov!==fov){camera.fov=fov;camera.updateProjectionMatrix()}}
 
     function interactionPrompt(){const state=readTruck(),run=readRun(),condition={fuel:meters.get("fuel")?.value??0};const surface=surfaceAt(state.position);if((condition.fuel<=0||run.stuckSeconds>2.8||(surface.surface==="off-road"&&Math.abs(state.speed)<.8))&&!run.recoveryUsed)return"E · Call roadside recovery";const nearest=nearestDepot(course,state.position);if(nearest&&nearest.distance<=nearest.depot.radius+8)return Math.abs(state.speed)>1.1?"Brake to a full stop":`E · Check ${nearest.depot.name}`;return""}
     function setMeter(element,value,warning=30){const safe=clamp(value,0,100);element.style.width=`${safe}%`;element.style.background=safe<warning?"var(--red)":safe<55?"var(--amber)":"var(--green)"}

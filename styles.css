@@ -56,3 +56,8 @@ body.driving:has(#arcade-overlay.active) #timer-box,body.driving:has(#arcade-ove
   .speedGauge strong{font-size:clamp(36px,14cqh,56px)}
   .driveTop strong{font-size:clamp(15px,5cqh,20px)}
 }
+
+/* Burst focus stays in the 16:9 frame and never intercepts input. */
+#boost-focus{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:4;background:radial-gradient(ellipse at 50% 48%,transparent 32%,rgba(236,169,69,.12) 67%,rgba(255,183,72,.55) 100%)}
+#boost-readout{position:absolute;left:50%;bottom:15%;transform:translateX(-50%);z-index:8;pointer-events:none;opacity:0;padding:.45em 1em;border-top:2px solid #ffd17c;color:#ffe3a7;background:rgba(24,22,16,.78);font-size:clamp(10px,1.3cqw,18px);font-weight:900;letter-spacing:.18em;font-variant-numeric:tabular-nums}
+#boost-readout.active{opacity:1}

@@ -2,11 +2,11 @@
     function showBootError(error){console.error(error);$("#boot-error").textContent=String(error?.message??error);$("#boot-failure").classList.add("show")}
     function resize(){const stage=document.getElementById("game-stage")||document.documentElement;const {width:rawWidth,height:rawHeight}=stage.getBoundingClientRect();const width=Math.max(1,Math.round(rawWidth)),height=Math.max(1,Math.round(rawHeight));const pixelBudget=settings.quality?2304000:1036800;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,settings.quality?1.25:.85,Math.sqrt(pixelBudget/(width*height))));renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()}addEventListener("resize",resize);resize();applySettings();
 
-    window.render_game_to_text=()=>{const truck=readTruck(),run=readRun();return JSON.stringify({scene:currentScene(),mode:arcadeCampaign()?"campaign":"endless",coordinates:"meters; x east, y up, z south; heading 0 faces +z",player:{position:truck.position,velocity:truck.velocity,heading:truck.heading,speed:truck.speed,normalTopSpeed:readDynamics().maximumForwardSpeed},run:{status:run.status,distance:run.distance},fuel:meters.get("fuel")?.value,loading:generation&&!generation.ready?generation.cursor:null})};
+    window.render_game_to_text=()=>{const truck=readTruck(),run=readRun();return JSON.stringify({scene:currentScene(),mode:arcadeCampaign()?"campaign":"endless",coordinates:"meters; x east, y up, z south; heading 0 faces +z",player:{position:truck.position,velocity:truck.velocity,heading:truck.heading,speed:truck.speed,normalTopSpeed:readDynamics().maximumForwardSpeed},run:{status:run.status,distance:run.distance},fuel:meters.get("fuel")?.value,boost:{remaining:forwardBoost.remaining,visualStrength:boostVisualStrength,streaks:boostStreaks.visible},loading:generation&&!generation.ready?generation.cursor:null})};
     window.__longHaulBooted=true;window.longHaulBootReady?.();transition("ready");
     const performanceStats=createPerformanceStats();let previous=performance.now(),scheduled=previous,lastHud=-Infinity,lastMap=-Infinity;
     window.LongHaulPerformance={reset:()=>performanceStats.reset(),getState:()=>({...performanceStats.snapshot(),scene:currentScene(),cells:cellHosts.size,horizonCells:horizonHosts.size,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,patches:preparation?.getStats(),worker:patchClient?.getState(),streamingPending:cellRealizeQueue.length+cellDecorationQueue.length})};
-    window.addEventListener("blur",()=>{for(const key of Object.keys(keys))keys[key]=false;pressed.clear()});
+    window.addEventListener("blur",()=>{for(const key of Object.keys(keys))keys[key]=false;pressed.clear();forwardBoost.reset()});
     document.addEventListener("visibilitychange",()=>{previous=scheduled=performance.now();if(document.hidden&&currentScene()==="driving")pauseGame()});
     function frame(now){
       requestAnimationFrame(frame);if(document.hidden){previous=scheduled=now;return}
@@ -23,10 +23,10 @@
         if(sceneId==="driving"){
           performanceStats.measure("gameplay",()=>postTickGameplay(surface??surfaceAt(readTruck().position),dt));
           performanceStats.measure("streaming",updateWorldStreaming);performanceStats.measure("horizon",updateHorizonWorld);
-          performanceStats.measure("visuals",()=>{updateTruckVisual(dt);updateCloudLayers(readTruck(),now);updateWildlifeVisual();applyCamera()});
+          performanceStats.measure("visuals",()=>{updateTruckVisual(dt);updateCloudLayers(readTruck(),now);updateWildlifeVisual();updateBoostVisuals(dt);applyCamera()});
           if(now-lastHud>=66){lastHud=now;performanceStats.measure("hud",()=>updateHud(surface??surfaceAt(readTruck().position)))}
           audio.update(readTruck().speed,engine.n.coreInput.getIntent().throttle,true);
-        }else audio.update(0,0,false);
+        }else {updateBoostVisuals(dt);audio.update(0,0,false)}
         if(sceneId==="generating")updateLoadingUi();
         if(now-lastMap>=66){lastMap=now;drawMap()}
         arcadeVisualFrame(now);performanceStats.measure("renderCpu",()=>renderer.render(scene,camera));

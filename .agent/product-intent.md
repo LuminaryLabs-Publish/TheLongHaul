@@ -358,3 +358,12 @@ No repository changes were made during this handoff. Would you like to log this 
 **Cleaned-up request, same meaning:** Implement the performance cleanup plan. Change only The Long Haul, leave deployment files unchanged, and push to main when finished.
 
 **Implementation scope:** Apply the ranked local performance remedies from `performance-audit.md`, preserve existing user work and the 50% rolling start, validate the game and resource budgets, record evidence in `performance-cleanup.md`, and commit the runnable static assets with the source. No upstream Nexus Engine edits or deployment configuration edits.
+
+
+## 2026-10-19: Double-tap forward boost
+
+**User wording, preserved:** “make it so double tapping W or forward arrow usaes ta 5 secodn boost that charges tyou forward relaly fast. And uses a warmpe focus and strema parkcletielce.s”
+
+**Cleaned-up request, same meaning:** Double-tapping W or the forward arrow triggers a five-second boost that charges the truck forward very quickly, with a warp-focus effect and streaming particles.
+
+**Implementation:** Two fresh presses of the same forward key within 300 ms activate a five-second simulation-time burst. The truck accelerates automatically toward at least 1.85 times its normal speed cap, retaining vehicle/upgrades and ordinary steering/collisions. Extra fuel cost uses the existing boost path. Repeated keydown/holding and taps during an active burst cannot restart its timer. A widened camera FOV, warm edge focus and a single preallocated speed-streak batch convey the surge; a countdown shows remaining time. Reduced motion hides streaks/focus/FOV changes while preserving gameplay and countdown. Braking, handbrake, empty fuel, rollover, pause, focus loss and run reset cancel the burst. Expiry eases excess speed down rather than snapping to the normal cap. Shift retains its smaller held boost.

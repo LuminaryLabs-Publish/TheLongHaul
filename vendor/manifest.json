@@ -26,6 +26,6 @@
   "sha256": {
     "nexusengine.mjs": "af28f66747e9dbbabe5503c79d825b7555fe9c7198fad0b54f47220d66584a43",
     "three.module.js": "5916c8dfb5f4e3eede312de305345868d4a0a8105383b080c6985565d6e79b46",
-    "app-runtime.js": "6115914083d5375f2c12e84bca25370d907c03a489d067d35c1f6d283183bb60"
+    "app-runtime.js": "e01a95cdc9ceafb0519fec89a9b5bac0c44318bb4067d708d8b7cddb97316b1d"
   }
 }

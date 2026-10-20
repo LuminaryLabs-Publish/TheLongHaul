@@ -35,7 +35,7 @@ export function createLongHaulTruckKit(N, options = {}) {
     surface: "road",
     surfaceGrip: 1,
     lastSafe: { x: finite(value.x), y: finite(value.y), z: finite(value.z), heading: finite(value.heading) },
-    input: { throttle: 0, brake: 0, steer: 0, handbrake: false, boost: false },
+    input: { throttle: 0, brake: 0, steer: 0, handbrake: false, boost: false, rush: false },
     sequence: 0
   });
 
@@ -85,7 +85,8 @@ export function createLongHaulTruckKit(N, options = {}) {
               brake: clamp(finite(request.brake), 0, 1),
               steer: clamp(finite(request.steer), -1, 1),
               handbrake: Boolean(request.handbrake),
-              boost: Boolean(request.boost)
+              boost: Boolean(request.boost),
+              rush: Boolean(request.rush)
             },
             surface: String(request.surface ?? state.surface),
             surfaceGrip: clamp(finite(request.surfaceGrip, state.surfaceGrip), 0.12, 1.2),
@@ -132,8 +133,8 @@ export function createLongHaulTruckKit(N, options = {}) {
           const surfaceKey = state.surface === "road" ? "road" : state.surface === "shoulder" ? "shoulder" : "offRoad";
           const gripCatalog = profile.grip ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.grip;
           const lateralGrip = (input.handbrake ? gripCatalog.handbrake : gripCatalog[surfaceKey] ?? gripCatalog.road) * state.surfaceGrip;
-          const boostForce = input.boost ? finite(profile.boost?.forceMultiplier, 1.18) : 1;
-          const speedMultiplier = input.boost ? finite(profile.boost?.speedMultiplier, 1.14) : 1;
+          const boostForce = input.rush ? Math.max(1.18,finite(profile.boost?.forceMultiplier,1.18))*8 : input.boost ? finite(profile.boost?.forceMultiplier, 1.18) : 1;
+          const speedMultiplier = input.rush ? Math.max(1.85,finite(profile.boost?.speedMultiplier,1.14)+.65) : input.boost ? finite(profile.boost?.speedMultiplier, 1.14) : 1;
           const maximumForward = finite(profile.maximumForwardSpeed, 38) * speedMultiplier * (state.surface === "road" ? 1 : state.surface === "shoulder" ? 0.74 : 0.52);
           const maximumReverse = finite(profile.maximumReverseSpeed, 10);
 
@@ -157,7 +158,8 @@ export function createLongHaulTruckKit(N, options = {}) {
           const forwardGrade = -(state.groundNormal.x * forward.x + state.groundNormal.z * forward.z) / Math.max(0.25, state.groundNormal.y);
           longitudinal -= clamp(forwardGrade, -0.32, 0.32) * 9.81 * dt;
           if (state.tipped) longitudinal *= Math.exp(-5.5 * dt);
-          longitudinal = clamp(longitudinal, -maximumReverse, maximumForward);
+          // Ease down after a burst instead of snapping instantly to the normal cap.
+          longitudinal = clamp(longitudinal, -maximumReverse, Math.max(maximumForward,state.speed-12*dt));
           lateral *= Math.exp(-Math.max(0.01, lateralGrip) * dt);
 
           const speedRatio = clamp(Math.abs(longitudinal) / Math.max(1, finite(profile.maximumForwardSpeed, 38)), 0, 1);
