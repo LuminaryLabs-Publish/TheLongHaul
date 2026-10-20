@@ -1,0 +1,75 @@
+{
+  "runtimeSha256": "6115914083d5375f2c12e84bca25370d907c03a489d067d35c1f6d283183bb60",
+  "pausePositionStable": true,
+  "windowStages": [
+    [
+      1280,
+      720
+    ],
+    [
+      640,
+      360
+    ],
+    [
+      480,
+      270
+    ]
+  ],
+  "horizontalOverflow": false,
+  "unchangedMapExtraStrokes": 0,
+  "workerFallbackReachedDriving": true,
+  "workerFallbackCells": 49,
+  "workerAndFallbackGeometryEqual": true,
+  "retiredWorkerRejectsPending": true,
+  "trafficMetersInOneSecond": {
+    "30Hz": 5.999999999999659,
+    "60Hz": 5.999999999999659
+  },
+  "campaignCachedRoute": {
+    "edges": 165,
+    "networkCallsWithFetchBlocked": 0
+  },
+  "campaignStreamingFocus": {
+    "position": [
+      -434.61834799584517,
+      768.0958835283889
+    ],
+    "cells": 49,
+    "horizonCells": 26,
+    "readyNotifications": 0,
+    "workerPending": 0,
+    "failedHorizonProviders": 0
+  },
+  "garageRepeatedSelection": {
+    "switches": 8,
+    "geometries": 8,
+    "programs": 1,
+    "hiddenSchedulingStopped": true
+  },
+  "campaignUpgrade": {
+    "firstObservedSpeed": 19.4,
+    "normalMaximum": 38.8,
+    "persistedAfterReload": true
+  },
+  "deliveryTerminalFixture": {
+    "destination": "PA",
+    "reward": 877,
+    "saveRestored": true,
+    "naturalFullRoutePlaythrough": false
+  },
+  "gpu": {
+    "method": "asynchronous EXT_disjoint_timer_query_webgl2, discard disjoint results",
+    "quality": "low",
+    "canvas": [
+      1088,
+      612
+    ],
+    "scene": "campaign driving",
+    "samples": 301,
+    "meanMs": 0.6414615980066442,
+    "p95Ms": 0.827374,
+    "maxMs": 1.358375,
+    "comparableToHighQualityBaseline": false
+  },
+  "standaloneClientErrors": []
+}

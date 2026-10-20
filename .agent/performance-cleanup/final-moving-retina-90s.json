@@ -1,0 +1,967 @@
+{
+  "seconds": 90,
+  "bootMs": 280,
+  "sourceSha256": "6115914083d5375f2c12e84bca25370d907c03a489d067d35c1f6d283183bb60",
+  "conditions": {
+    "viewport": [
+      1280,
+      800
+    ],
+    "quality": "high",
+    "deviceScaleFactor": 2,
+    "seed": "haul-1nwc3cl-12goa01"
+  },
+  "runs": [
+    {
+      "elapsedMs": 15117,
+      "state": {
+        "scene": "driving",
+        "frames": 907,
+        "counts": {},
+        "phases": {
+          "interval": {
+            "samples": 907,
+            "mean": 16.66593164277839,
+            "p50": 16.69999999999891,
+            "p95": 16.700000000000728,
+            "p99": 16.800000000000182,
+            "max": 16.80000000000291
+          },
+          "input": {
+            "samples": 907,
+            "mean": 0.27089305309108497,
+            "p50": 0.2999999523162842,
+            "p95": 0.5,
+            "p99": 0.6000000238418579,
+            "max": 0.9000000357627869
+          },
+          "simulation": {
+            "samples": 907,
+            "mean": 0.8280044116548035,
+            "p50": 0.7000000476837158,
+            "p95": 1.5,
+            "p99": 1.600000023841858,
+            "max": 2.300000011920929
+          },
+          "gameplay": {
+            "samples": 907,
+            "mean": 0.035611907531565845,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.19999998807907104,
+            "max": 0.20000004768371582
+          },
+          "streaming": {
+            "samples": 907,
+            "mean": 0.1071664829632676,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 3.399999976158142,
+            "max": 15.600000023841858
+          },
+          "horizon": {
+            "samples": 907,
+            "mean": 0.010474090407938258,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.19999998807907104
+          },
+          "visuals": {
+            "samples": 907,
+            "mean": 0.3171995592353888,
+            "p50": 0.30000001192092896,
+            "p95": 0.5,
+            "p99": 0.6000000238418579,
+            "max": 0.800000011920929
+          },
+          "renderCpu": {
+            "samples": 907,
+            "mean": 0.6738699005614831,
+            "p50": 0.6000000238418579,
+            "p95": 1,
+            "p99": 1.600000023841858,
+            "max": 4.899999976158142
+          },
+          "hud": {
+            "samples": 227,
+            "mean": 0.129074889657781,
+            "p50": 0.10000002384185791,
+            "p95": 0.30000001192092896,
+            "p99": 0.40000003576278687,
+            "max": 0.40000003576278687
+          }
+        },
+        "cells": 81,
+        "horizonCells": 26,
+        "drawCalls": 228,
+        "triangles": 199794,
+        "geometries": 135,
+        "textures": 7,
+        "patches": {
+          "id": "long-haul-course-1a8puaf",
+          "patchSize": 160,
+          "retainRadius": 5,
+          "prefetchDistance": 0,
+          "cacheLimit": 104,
+          "generationBudget": 1,
+          "activationBudget": 1,
+          "generatorVersion": "long-haul-v2",
+          "settingsHash": "haul-1nwc3cl-12goa01",
+          "focus": {
+            "position": {
+              "x": 3.922517530809757e-14,
+              "z": -320.29786331379506
+            },
+            "velocity": {
+              "x": 3.7351727373994275e-15,
+              "z": -30.5
+            },
+            "forward": {
+              "x": 1.2246467991473532e-16,
+              "z": -1
+            },
+            "center": {
+              "x": 0,
+              "z": -3
+            }
+          },
+          "desiredActive": 81,
+          "desiredPrefetch": 0,
+          "cached": 104,
+          "ready": 0,
+          "queued": 0,
+          "inflight": 0,
+          "statuses": {
+            "active": 81,
+            "retained": 18,
+            "cached": 5
+          },
+          "diagnostics": []
+        },
+        "worker": {
+          "worker": true,
+          "fallback": false,
+          "pending": 0
+        },
+        "streamingPending": 0
+      },
+      "truck": {
+        "scene": "driving",
+        "mode": "endless",
+        "coordinates": "meters; x east, y up, z south; heading 0 faces +z",
+        "player": {
+          "position": {
+            "x": 5.292018614977338e-14,
+            "y": 8.347067679249674,
+            "z": -432.12611331379344
+          },
+          "velocity": {
+            "x": 3.7351727373994275e-15,
+            "y": 0.47257081995124667,
+            "z": -30.5
+          },
+          "heading": 3.141592653589793,
+          "speed": 30.5,
+          "normalTopSpeed": 30.5
+        },
+        "run": {
+          "status": "running",
+          "distance": 431.61981331379343
+        },
+        "fuel": 98.5756196161013,
+        "loading": null
+      },
+      "heap": 205073771,
+      "failedProviders": 0
+    },
+    {
+      "elapsedMs": 30252,
+      "state": {
+        "scene": "driving",
+        "frames": 1814,
+        "counts": {},
+        "phases": {
+          "interval": {
+            "samples": 1800,
+            "mean": 16.675277777777776,
+            "p50": 16.69999999999891,
+            "p95": 16.700000000004366,
+            "p99": 16.80000000000109,
+            "max": 33.299999999995634
+          },
+          "input": {
+            "samples": 1800,
+            "mean": 0.259944444000721,
+            "p50": 0.20000004768371582,
+            "p95": 0.5,
+            "p99": 0.5999999642372131,
+            "max": 0.9000000357627869
+          },
+          "simulation": {
+            "samples": 1800,
+            "mean": 0.8106666672560904,
+            "p50": 0.7000000476837158,
+            "p95": 1.4000000357627869,
+            "p99": 1.600000023841858,
+            "max": 2.300000011920929
+          },
+          "gameplay": {
+            "samples": 1800,
+            "mean": 0.03194444431198968,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.19999998807907104,
+            "max": 0.20000004768371582
+          },
+          "streaming": {
+            "samples": 1800,
+            "mean": 0.1306666667924987,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 4.400000035762787,
+            "max": 15.600000023841858
+          },
+          "horizon": {
+            "samples": 1800,
+            "mean": 0.00972222218910853,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.19999998807907104
+          },
+          "visuals": {
+            "samples": 1800,
+            "mean": 0.30716666668653486,
+            "p50": 0.30000001192092896,
+            "p95": 0.5,
+            "p99": 0.6000000238418579,
+            "max": 0.800000011920929
+          },
+          "renderCpu": {
+            "samples": 1800,
+            "mean": 0.6953333333134651,
+            "p50": 0.699999988079071,
+            "p95": 1,
+            "p99": 1.699999988079071,
+            "max": 5.699999988079071
+          },
+          "hud": {
+            "samples": 450,
+            "mean": 0.1266666661368476,
+            "p50": 0.10000002384185791,
+            "p95": 0.2999999523162842,
+            "p99": 0.40000003576278687,
+            "max": 0.40000003576278687
+          }
+        },
+        "cells": 81,
+        "horizonCells": 24,
+        "drawCalls": 292,
+        "triangles": 146990,
+        "geometries": 199,
+        "textures": 9,
+        "patches": {
+          "id": "long-haul-course-1a8puaf",
+          "patchSize": 160,
+          "retainRadius": 5,
+          "prefetchDistance": 0,
+          "cacheLimit": 104,
+          "generationBudget": 1,
+          "activationBudget": 1,
+          "generatorVersion": "long-haul-v2",
+          "settingsHash": "haul-1nwc3cl-12goa01",
+          "focus": {
+            "position": {
+              "x": 11.884642665900818,
+              "z": -868.9840806235895
+            },
+            "velocity": {
+              "x": 0.010719760727035819,
+              "z": -30.499998116175842
+            },
+            "forward": {
+              "x": 0.0003514675648208635,
+              "z": -0.9999999382352736
+            },
+            "center": {
+              "x": 0,
+              "z": -6
+            }
+          },
+          "desiredActive": 81,
+          "desiredPrefetch": 0,
+          "cached": 104,
+          "ready": 0,
+          "queued": 0,
+          "inflight": 0,
+          "statuses": {
+            "retained": 23,
+            "active": 81
+          },
+          "diagnostics": []
+        },
+        "worker": {
+          "worker": true,
+          "fallback": false,
+          "pending": 0
+        },
+        "streamingPending": 0
+      },
+      "truck": {
+        "scene": "driving",
+        "mode": "endless",
+        "coordinates": "meters; x east, y up, z south; heading 0 faces +z",
+        "player": {
+          "position": {
+            "x": 13.846430578140396,
+            "y": 7.3872471452031885,
+            "z": -892.7648705564508
+          },
+          "velocity": {
+            "x": 4.5824302559743435,
+            "y": 0.01940940858370837,
+            "z": -30.153794669147878
+          },
+          "heading": 2.990777973453228,
+          "speed": 30.5,
+          "normalTopSpeed": 30.5
+        },
+        "run": {
+          "status": "running",
+          "distance": 893.1670022656156
+        },
+        "fuel": 97.13952638610135,
+        "loading": null
+      },
+      "heap": 202511985,
+      "failedProviders": 0
+    },
+    {
+      "elapsedMs": 45352,
+      "state": {
+        "scene": "driving",
+        "frames": 161,
+        "counts": {},
+        "phases": {
+          "interval": {
+            "samples": 161,
+            "mean": 16.666459627329164,
+            "p50": 16.69999999999709,
+            "p95": 16.80000000000291,
+            "p99": 16.80000000000291,
+            "max": 16.80000000000291
+          },
+          "input": {
+            "samples": 161,
+            "mean": 0.23726708400323523,
+            "p50": 0.20000004768371582,
+            "p95": 0.3999999761581421,
+            "p99": 0.40000003576278687,
+            "max": 0.5
+          },
+          "simulation": {
+            "samples": 161,
+            "mean": 0.7801242241207857,
+            "p50": 0.7000000476837158,
+            "p95": 1.300000011920929,
+            "p99": 1.5,
+            "max": 1.5
+          },
+          "gameplay": {
+            "samples": 161,
+            "mean": 0.02546583902761803,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791
+          },
+          "streaming": {
+            "samples": 161,
+            "mean": 0.4012422383942219,
+            "p50": 0.09999996423721313,
+            "p95": 0.5999999642372131,
+            "p99": 6.600000023841858,
+            "max": 10.400000035762787
+          },
+          "horizon": {
+            "samples": 161,
+            "mean": 0.1645962725514951,
+            "p50": 0,
+            "p95": 2.199999988079071,
+            "p99": 2.799999952316284,
+            "max": 2.899999976158142
+          },
+          "visuals": {
+            "samples": 161,
+            "mean": 0.30434782349545025,
+            "p50": 0.30000001192092896,
+            "p95": 0.5,
+            "p99": 0.5999999642372131,
+            "max": 0.5999999642372131
+          },
+          "renderCpu": {
+            "samples": 161,
+            "mean": 0.6118012422360248,
+            "p50": 0.5999999642372131,
+            "p95": 1.199999988079071,
+            "p99": 1.5999999642372131,
+            "max": 1.7000000476837158
+          },
+          "hud": {
+            "samples": 40,
+            "mean": 0.10000000298023223,
+            "p50": 0.10000002384185791,
+            "p95": 0.19999998807907104,
+            "p99": 0.2999999523162842,
+            "max": 0.2999999523162842
+          }
+        },
+        "cells": 81,
+        "horizonCells": 32,
+        "drawCalls": 220,
+        "triangles": 194114,
+        "geometries": 101,
+        "textures": 7,
+        "patches": {
+          "id": "long-haul-course-1a8puaf",
+          "patchSize": 160,
+          "retainRadius": 5,
+          "prefetchDistance": 0,
+          "cacheLimit": 104,
+          "generationBudget": 1,
+          "activationBudget": 1,
+          "generatorVersion": "long-haul-v2",
+          "settingsHash": "haul-1nwc3cl-12goa01",
+          "focus": {
+            "position": {
+              "x": 3.117538233455919e-17,
+              "z": -0.25456631541653246
+            },
+            "velocity": {
+              "x": 1.866390948988377e-15,
+              "z": -15.240238657283317
+            },
+            "forward": {
+              "x": 1.2246467991473532e-16,
+              "z": -1
+            },
+            "center": {
+              "x": 0,
+              "z": -1
+            }
+          },
+          "desiredActive": 81,
+          "desiredPrefetch": 0,
+          "cached": 90,
+          "ready": 0,
+          "queued": 0,
+          "inflight": 0,
+          "statuses": {
+            "active": 81,
+            "cached": 9
+          },
+          "diagnostics": []
+        },
+        "worker": {
+          "worker": true,
+          "fallback": false,
+          "pending": 0
+        },
+        "streamingPending": 0
+      },
+      "truck": {
+        "scene": "driving",
+        "mode": "endless",
+        "coordinates": "meters; x east, y up, z south; heading 0 faces +z",
+        "player": {
+          "position": {
+            "x": 6.073179927430086e-15,
+            "y": 9.158706755973048,
+            "z": -49.59127751494119
+          },
+          "velocity": {
+            "x": 2.6049733259646187e-15,
+            "y": 0.8014277038843709,
+            "z": -21.271221447508804
+          },
+          "heading": 3.141592653589793,
+          "speed": 21.271221447508804,
+          "normalTopSpeed": 30.5
+        },
+        "run": {
+          "status": "running",
+          "distance": 49.236225277503536
+        },
+        "fuel": 99.80373064067724,
+        "loading": null
+      },
+      "heap": 176683638,
+      "failedProviders": 0
+    },
+    {
+      "elapsedMs": 60506,
+      "state": {
+        "scene": "driving",
+        "frames": 1070,
+        "counts": {},
+        "phases": {
+          "interval": {
+            "samples": 1070,
+            "mean": 16.666074766355138,
+            "p50": 16.69999999999709,
+            "p95": 16.799999999995634,
+            "p99": 16.80000000000291,
+            "max": 16.80000000000291
+          },
+          "input": {
+            "samples": 1070,
+            "mean": 0.24420560882470319,
+            "p50": 0.20000004768371582,
+            "p95": 0.40000003576278687,
+            "p99": 0.5,
+            "max": 0.6000000238418579
+          },
+          "simulation": {
+            "samples": 1070,
+            "mean": 0.8088785041158444,
+            "p50": 0.699999988079071,
+            "p95": 1.4000000357627869,
+            "p99": 1.5999999642372131,
+            "max": 2.5
+          },
+          "gameplay": {
+            "samples": 1070,
+            "mean": 0.03420560727609652,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.19999998807907104,
+            "max": 0.30000001192092896
+          },
+          "streaming": {
+            "samples": 1070,
+            "mean": 0.16401869220154308,
+            "p50": 0,
+            "p95": 0.3999999761581421,
+            "p99": 5.699999988079071,
+            "max": 11.399999976158142
+          },
+          "horizon": {
+            "samples": 1070,
+            "mean": 0.03233644834188657,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.19999998807907104,
+            "max": 2.899999976158142
+          },
+          "visuals": {
+            "samples": 1070,
+            "mean": 0.2942990661781525,
+            "p50": 0.30000001192092896,
+            "p95": 0.5,
+            "p99": 0.5999999642372131,
+            "max": 0.800000011920929
+          },
+          "renderCpu": {
+            "samples": 1070,
+            "mean": 0.6255140188141404,
+            "p50": 0.5999999642372131,
+            "p95": 1.199999988079071,
+            "p99": 1.5,
+            "max": 2.199999988079071
+          },
+          "hud": {
+            "samples": 267,
+            "mean": 0.10973782642057325,
+            "p50": 0.10000002384185791,
+            "p95": 0.20000004768371582,
+            "p99": 0.2999999523162842,
+            "max": 0.30000001192092896
+          }
+        },
+        "cells": 72,
+        "horizonCells": 26,
+        "drawCalls": 219,
+        "triangles": 196130,
+        "geometries": 127,
+        "textures": 7,
+        "patches": {
+          "id": "long-haul-course-1a8puaf",
+          "patchSize": 160,
+          "retainRadius": 5,
+          "prefetchDistance": 0,
+          "cacheLimit": 104,
+          "generationBudget": 1,
+          "activationBudget": 1,
+          "generatorVersion": "long-haul-v2",
+          "settingsHash": "haul-1nwc3cl-12goa01",
+          "focus": {
+            "position": {
+              "x": 2.5046095422622434,
+              "z": -480.00647367676305
+            },
+            "velocity": {
+              "x": 2.206043120851281,
+              "z": -30.42011462419142
+            },
+            "forward": {
+              "x": 0.07232928265086164,
+              "z": -0.9973808073505384
+            },
+            "center": {
+              "x": 0,
+              "z": -4
+            }
+          },
+          "desiredActive": 81,
+          "desiredPrefetch": 0,
+          "cached": 104,
+          "ready": 1,
+          "queued": 4,
+          "inflight": 0,
+          "statuses": {
+            "active": 76,
+            "retained": 23,
+            "ready": 1,
+            "requested": 4
+          },
+          "diagnostics": []
+        },
+        "worker": {
+          "worker": true,
+          "fallback": false,
+          "pending": 0
+        },
+        "streamingPending": 10
+      },
+      "truck": {
+        "scene": "driving",
+        "mode": "endless",
+        "coordinates": "meters; x east, y up, z south; heading 0 faces +z",
+        "player": {
+          "position": {
+            "x": 2.645732290991303,
+            "y": 8.288581523755072,
+            "z": -482.038976944081
+          },
+          "velocity": {
+            "x": 2.020605735651169,
+            "y": 0.01663421911826614,
+            "z": -30.432994470821527
+          },
+          "heading": 3.0752947280651886,
+          "speed": 30.5,
+          "normalTopSpeed": 30.5
+        },
+        "run": {
+          "status": "running",
+          "distance": 481.6167477974147
+        },
+        "fuel": 98.41938572406019,
+        "loading": null
+      },
+      "heap": 214604694,
+      "failedProviders": 0
+    },
+    {
+      "elapsedMs": 75621,
+      "state": {
+        "scene": "driving",
+        "frames": 1977,
+        "counts": {},
+        "phases": {
+          "interval": {
+            "samples": 1800,
+            "mean": 16.666,
+            "p50": 16.69999999999709,
+            "p95": 16.79999999998836,
+            "p99": 16.80000000000291,
+            "max": 16.80000000000291
+          },
+          "input": {
+            "samples": 1800,
+            "mean": 0.24116666770643658,
+            "p50": 0.20000004768371582,
+            "p95": 0.3999999761581421,
+            "p99": 0.5,
+            "max": 0.6000000238418579
+          },
+          "simulation": {
+            "samples": 1800,
+            "mean": 0.7805555553237598,
+            "p50": 0.699999988079071,
+            "p95": 1.399999976158142,
+            "p99": 1.5,
+            "max": 2.5
+          },
+          "gameplay": {
+            "samples": 1800,
+            "mean": 0.03238888849814733,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.19999998807907104,
+            "max": 0.3999999761581421
+          },
+          "streaming": {
+            "samples": 1800,
+            "mean": 0.12100000000662274,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 4,
+            "max": 12
+          },
+          "horizon": {
+            "samples": 1800,
+            "mean": 0.008333333300219643,
+            "p50": 0,
+            "p95": 0.09999996423721313,
+            "p99": 0.10000002384185791,
+            "max": 0.19999998807907104
+          },
+          "visuals": {
+            "samples": 1800,
+            "mean": 0.29261111170053483,
+            "p50": 0.30000001192092896,
+            "p95": 0.40000003576278687,
+            "p99": 0.5,
+            "max": 0.800000011920929
+          },
+          "renderCpu": {
+            "samples": 1800,
+            "mean": 0.6822222215599484,
+            "p50": 0.6000000238418579,
+            "p95": 1,
+            "p99": 1.5,
+            "max": 5.600000023841858
+          },
+          "hud": {
+            "samples": 450,
+            "mean": 0.11222222050031026,
+            "p50": 0.10000002384185791,
+            "p95": 0.20000004768371582,
+            "p99": 0.20000004768371582,
+            "max": 0.30000001192092896
+          }
+        },
+        "cells": 81,
+        "horizonCells": 23,
+        "drawCalls": 290,
+        "triangles": 115230,
+        "geometries": 201,
+        "textures": 9,
+        "patches": {
+          "id": "long-haul-course-1a8puaf",
+          "patchSize": 160,
+          "retainRadius": 5,
+          "prefetchDistance": 0,
+          "cacheLimit": 104,
+          "generationBudget": 1,
+          "activationBudget": 1,
+          "generatorVersion": "long-haul-v2",
+          "settingsHash": "haul-1nwc3cl-12goa01",
+          "focus": {
+            "position": {
+              "x": 16.468320915078827,
+              "z": -937.7603396613529
+            },
+            "velocity": {
+              "x": 0.0815685061086114,
+              "z": -30.499890927326465
+            },
+            "forward": {
+              "x": 0.0026743772494626588,
+              "z": -0.9999964238467693
+            },
+            "center": {
+              "x": 0,
+              "z": -6
+            }
+          },
+          "desiredActive": 81,
+          "desiredPrefetch": 0,
+          "cached": 104,
+          "ready": 0,
+          "queued": 0,
+          "inflight": 0,
+          "statuses": {
+            "retained": 23,
+            "active": 81
+          },
+          "diagnostics": []
+        },
+        "worker": {
+          "worker": true,
+          "fallback": false,
+          "pending": 0
+        },
+        "streamingPending": 0
+      },
+      "truck": {
+        "scene": "driving",
+        "mode": "endless",
+        "coordinates": "meters; x east, y up, z south; heading 0 faces +z",
+        "player": {
+          "position": {
+            "x": 16.598495924312346,
+            "y": 7.1300601671646495,
+            "z": -941.8233499769179
+          },
+          "velocity": {
+            "x": 1.8240195439700935,
+            "y": 0.12136092343493414,
+            "z": -30.445409386362588
+          },
+          "heading": 3.081753028412444,
+          "speed": 30.5,
+          "normalTopSpeed": 30.5
+        },
+        "run": {
+          "status": "running",
+          "distance": 942.6544669397474
+        },
+        "fuel": 96.98487732406024,
+        "loading": null
+      },
+      "heap": 216255308,
+      "failedProviders": 0
+    }
+  ],
+  "errors": [],
+  "canvas": [
+    1600,
+    900
+  ],
+  "performance": {
+    "scene": "driving",
+    "frames": 293,
+    "counts": {},
+    "phases": {
+      "interval": {
+        "samples": 293,
+        "mean": 17.860409556313964,
+        "p50": 16.69999999999709,
+        "p95": 16.70000000001164,
+        "p99": 16.80000000000291,
+        "max": 366.59999999999127
+      },
+      "input": {
+        "samples": 293,
+        "mean": 0.23890784799849213,
+        "p50": 0.20000004768371582,
+        "p95": 0.30000001192092896,
+        "p99": 0.40000003576278687,
+        "max": 0.40000003576278687
+      },
+      "simulation": {
+        "samples": 293,
+        "mean": 0.7389078496259227,
+        "p50": 0.7000000476837158,
+        "p95": 0.8999999761581421,
+        "p99": 0.9000000357627869,
+        "max": 1.399999976158142
+      },
+      "gameplay": {
+        "samples": 293,
+        "mean": 0.029692831910104068,
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 0.10000002384185791,
+        "max": 0.19999998807907104
+      },
+      "streaming": {
+        "samples": 293,
+        "mean": 0.21467576763328838,
+        "p50": 0,
+        "p95": 0.3999999761581421,
+        "p99": 6.100000023841858,
+        "max": 10.300000011920929
+      },
+      "horizon": {
+        "samples": 293,
+        "mean": 0.09180887363876498,
+        "p50": 0,
+        "p95": 0.10000002384185791,
+        "p99": 2.699999988079071,
+        "max": 2.799999952316284
+      },
+      "visuals": {
+        "samples": 293,
+        "mean": 0.29249146916353663,
+        "p50": 0.30000001192092896,
+        "p95": 0.40000003576278687,
+        "p99": 0.40000003576278687,
+        "max": 0.5
+      },
+      "renderCpu": {
+        "samples": 293,
+        "mean": 0.6075085340506388,
+        "p50": 0.6000000238418579,
+        "p95": 0.7000000476837158,
+        "p99": 1.0999999642372131,
+        "max": 3
+      },
+      "hud": {
+        "samples": 74,
+        "mean": 0.09999999967781273,
+        "p50": 0.10000002384185791,
+        "p95": 0.19999998807907104,
+        "p99": 0.20000004768371582,
+        "max": 0.20000004768371582
+      }
+    },
+    "cells": 81,
+    "horizonCells": 30,
+    "drawCalls": 213,
+    "triangles": 191890,
+    "geometries": 101,
+    "textures": 7,
+    "patches": {
+      "id": "long-haul-course-1a8puaf",
+      "patchSize": 160,
+      "retainRadius": 5,
+      "prefetchDistance": 0,
+      "cacheLimit": 104,
+      "generationBudget": 1,
+      "activationBudget": 1,
+      "generatorVersion": "long-haul-v2",
+      "settingsHash": "haul-1nwc3cl-12goa01",
+      "focus": {
+        "position": {
+          "x": 3.098713912758779e-17,
+          "z": -0.25302919298170085
+        },
+        "velocity": {
+          "x": 1.866398115659483e-15,
+          "z": -15.240297177593916
+        },
+        "forward": {
+          "x": 1.2246467991473532e-16,
+          "z": -1
+        },
+        "center": {
+          "x": 0,
+          "z": -1
+        }
+      },
+      "desiredActive": 81,
+      "desiredPrefetch": 0,
+      "cached": 90,
+      "ready": 0,
+      "queued": 0,
+      "inflight": 0,
+      "statuses": {
+        "active": 81,
+        "cached": 9
+      },
+      "diagnostics": []
+    },
+    "worker": {
+      "worker": true,
+      "fallback": false,
+      "pending": 0
+    },
+    "streamingPending": 0
+  },
+  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)",
+  "bootBlocked": false
+}

@@ -39,3 +39,9 @@ export function candidateRoadSegments(course,point){
  }
  return index.segments; // preserves exact nearest semantics beyond populated cells
 }
+
+// Bounded terrain influence: the index already pads every road by >=48 metres.
+export function terrainRoadSegments(course, point) {
+ const index=roadIndex(course);if(!index)return [];
+ return (index.cells.get(key(Math.floor(point.x/size),Math.floor(point.z/size)))||[]).map(id=>index.segments[id]);
+}

@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+"""Reduce CC0 Cloud Forest Library binary PLY scans to game tree shape points."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import struct
+from pathlib import Path
+from urllib.request import urlopen
+
+
+SOURCES = {
+    "oak": "https://xyz.cct.lsu.edu/data/cloud-forest/quercus-alba-01/quercus-alba-01.ply",
+    "cedar": "https://xyz.cct.lsu.edu/data/cloud-forest/cryptomeria-japonica-01/cryptomeria-japonica-01.ply",
+}
+SOURCE_META = {
+    "oak": {"species": "Quercus alba", "commonName": "White Oak", "widthScale": 1.0, "crownBase": 0.14, "trunkRadius": 0.022, "leafRadius": 0.024},
+    "cedar": {"species": "Cryptomeria japonica", "commonName": "Japanese Cedar", "widthScale": 0.58, "crownBase": 0.12, "trunkRadius": 0.025, "leafRadius": 0.022},
+}
+
+
+def load_bytes(path: str | None, url: str) -> bytes:
+    if path:
+        return Path(path).read_bytes()
+    with urlopen(url, timeout=60) as response:
+        return response.read()
+
+
+def read_cloud(data: bytes) -> list[tuple[float, float, float, int, int, int]]:
+    header_end = data.find(b"end_header\n")
+    if header_end < 0:
+        raise ValueError("PLY header is missing end_header")
+    header_end += len(b"end_header\n")
+    lines = data[:header_end].decode("ascii").splitlines()
+    if "format binary_little_endian 1.0" not in lines:
+        raise ValueError("Expected a binary-little-endian PLY point cloud")
+    count = int(next(line.split()[2] for line in lines if line.startswith("element vertex ")))
+    properties = [line.split()[1:] for line in lines if line.startswith("property ")]
+    expected = [["float", "x"], ["float", "y"], ["float", "z"], ["uchar", "red"], ["uchar", "green"], ["uchar", "blue"]]
+    if properties != expected:
+        raise ValueError(f"Unsupported PLY vertex properties: {properties}")
+    payload = data[header_end:]
+    record = struct.Struct("<fffBBB")
+    if len(payload) != count * record.size:
+        raise ValueError("PLY vertex payload length does not match its header")
+    return [record.unpack_from(payload, index * record.size) for index in range(count)]
+
+
+def srgb_to_linear(value: int) -> float:
+    color = value / 255
+    return color / 12.92 if color <= 0.04045 else ((color + 0.055) / 1.055) ** 2.4
+
+
+def make_profile(key: str, points: list[tuple[float, float, float, int, int, int]]) -> dict:
+    min_x, max_x = min(p[0] for p in points), max(p[0] for p in points)
+    min_y, max_y = min(p[1] for p in points), max(p[1] for p in points)
+    min_z, max_z = min(p[2] for p in points), max(p[2] for p in points)
+    height = max(max_z - min_z, 1e-6)
+    center_x, center_y = (min_x + max_x) * 0.5, (min_y + max_y) * 0.5
+
+    # Keep one measured surface point per vertical and azimuth bin. This preserves
+    # the scanned crown silhouette while shrinking a dense scan to a small template.
+    bins: dict[tuple[int, int], tuple[float, tuple[float, float, float, int, int, int]]] = {}
+    vertical_slices, radial_slices = 12, 16
+    for point in points:
+        x, y, z, *_ = point
+        dx, dy = x - center_x, y - center_y
+        radius = math.hypot(dx, dy)
+        angle = (math.atan2(dy, dx) + math.tau) % math.tau
+        height_band = min(vertical_slices - 1, max(0, int((z - min_z) / height * vertical_slices)))
+        angle_band = min(radial_slices - 1, int(angle / math.tau * radial_slices))
+        key_bin = (height_band, angle_band)
+        if key_bin not in bins or radius > bins[key_bin][0]:
+            bins[key_bin] = (radius, point)
+
+    profile = dict(SOURCE_META[key])
+    profile["sourcePointCount"] = len(points)
+    profile["measuredHeight"] = round(height, 4)
+    profile["measuredWidth"] = round(max(max_x - min_x, max_y - min_y), 4)
+    profile["points"] = [
+        [
+            round((point[0] - center_x) / height, 4),
+            round((point[2] - min_z) / height, 4),
+            round((point[1] - center_y) / height, 4),
+            round(srgb_to_linear(point[3]), 4),
+            round(srgb_to_linear(point[4]), 4),
+            round(srgb_to_linear(point[5]), 4),
+        ]
+        for _, point in sorted(bins.values(), key=lambda item: (item[1][2], math.atan2(item[1][1] - center_y, item[1][0] - center_x)))
+    ]
+    return profile
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--oak", help="Local White Oak PLY. Downloads the CC0 source when omitted.")
+    parser.add_argument("--cedar", help="Local Japanese Cedar PLY. Downloads the CC0 source when omitted.")
+    parser.add_argument("--output", default="src/game/tree-point-profiles.mjs")
+    args = parser.parse_args()
+
+    profiles = {}
+    for key, path in (("oak", args.oak), ("cedar", args.cedar)):
+        profiles[key] = make_profile(key, read_cloud(load_bytes(path, SOURCES[key])))
+
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("// Generated by tools/build_tree_point_profiles.py from LSU Cloud Forest Library CC0 scans.\n"
+                      "export const TREE_POINT_PROFILES = "
+                      + json.dumps(profiles, separators=(",", ":"), ensure_ascii=False)
+                      + ";\n", encoding="utf-8")
+    print(f"Wrote {output}: " + ", ".join(f"{key}={len(value['points'])} points from {value['sourcePointCount']}" for key, value in profiles.items()))
+
+
+if __name__ == "__main__":
+    main()

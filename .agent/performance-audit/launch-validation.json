@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-19",
+  "units": "meters, seconds; heading zero points along positive z",
+  "campaign": {
+    "normalMaximumForwardSpeed": 36,
+    "queuedLaunchSpeed": 18,
+    "firstObservedSpeed": 17.985914953114367,
+    "firstObservedVelocity": { "x": 0.020661652391769245, "y": 0.00300333260727783, "z": 17.985903085382827 },
+    "heading": 0.0011487687443233522
+  },
+  "endless": {
+    "normalMaximumForwardSpeed": 30.5,
+    "queuedLaunchSpeed": 15.25,
+    "firstObservedSpeed": 15.239617276199665,
+    "firstObservedVelocity": { "x": 1.8663148517528624e-15, "y": 0.0058342463562234895, "z": -15.239617276199665 },
+    "heading": 3.141592653589793,
+    "retryObservedSpeed": 15.233312063753095,
+    "pauseResumeObservedSpeed": 0.00015416933346505064
+  },
+  "domainChecks": { "headings": [0, 1.5707963267948966, 3.141592653589793, -1.5707963267948966], "velocityMatchesRequestedSpeed": "passed", "zeroSpeedTeleport": "passed" },
+  "note": "Speed is slightly below exactly half after the first tick because normal drag and rolling resistance already apply. Browser sampler can record the same game frame twice because other animation callbacks also run."
+}

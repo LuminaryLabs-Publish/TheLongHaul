@@ -92,7 +92,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       if (course.depots.some((depot) => Math.hypot(depot.x - x, depot.z - z) < 70)) continue;
       const y = localHeight(x, z);
       const height = 8 + randomAt(index, "height") * 13;
-      vegetation.push({ id: `${cell.id}:tree:${index}`, variant: randomAt(index, "variant") > 0.52 ? "b" : "a", position: [x, y, z], scale: [0.72 + randomAt(index, "width") * 0.62, height / 12, 0.72 + randomAt(index, "width2") * 0.62], rotation: randomAt(index, "rotation") * TAU, obstacleRadius: 1.4 + height * 0.05 });
+      vegetation.push({ id: `${cell.id}:tree:${index}`, variant: randomAt(index, "variant") > 0.52 ? "b" : "a", position: [x, y, z], scale: [0.72 + randomAt(index, "width") * 0.62, height / 12, 0.72 + randomAt(index, "width2") * 0.62], rotation: randomAt(index, "rotation") * TAU, obstacleRadius: 0.32 + height * 0.014 });
     }
   }
 

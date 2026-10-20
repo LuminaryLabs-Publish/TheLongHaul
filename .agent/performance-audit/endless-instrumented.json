@@ -1,0 +1,28 @@
+{
+  "label": "Endless-warm-15s-instrumented",
+  "source": "Browser function wrappers and independent requestAnimationFrame interval collector, captured in this chat",
+  "seed": "haul-1nwc3cl-12goa01",
+  "wallMs": 15017.7,
+  "frames": 980,
+  "intervalsMs": { "mean": 15.3064, "p50": 16.6, "p95": 17.6, "p99": 24.9, "max": 33.7 },
+  "inclusiveCpuMsPerFrame": {
+    "structuredClone": 4.9898,
+    "coreWorld.getWorld": 4.8021,
+    "coreWorld.getActiveCells": 1.2001,
+    "updateWorldStreaming": 4.4886,
+    "reconcileCells": 2.58,
+    "updateHorizonWorld": 2.1929,
+    "engine.tick": 0.8824,
+    "renderer.render": 4.2558,
+    "terrainHeight": 0.8758,
+    "preTickDriving": 0.9716,
+    "postTickGameplay": 0.1998,
+    "updateWildlifeVisual": 0.434,
+    "updateTruckVisual": 0.2449,
+    "updateCloudLayers": 0.00143,
+    "updateHud": 0.1791
+  },
+  "calls": { "structuredClone": 116624, "terrainHeight": 26460, "coreWorld.getWorld": 2940, "coreWorld.getActiveCells": 980 },
+  "snapshot": { "realizedCells": 280, "horizonMeshes": 0, "drawCalls": 1931, "triangles": 1718734, "geometries": 558, "textures": 8, "usedJSHeapBytes": 200814979 },
+  "limits": ["Inclusive nested timings overlap and must not be summed", "Wrappers add measurement overhead", "JS heap is not total process or GPU memory"]
+}

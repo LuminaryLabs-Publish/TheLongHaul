@@ -47,10 +47,17 @@ export function routeToCourse(route, coordinates) {
 export async function loadGeographicCourse(route,{signal}={}){
   const a={...route.from,...(route.from.code==="NJ"?{lon:-74.1724,lat:40.7357}:{})},b={...route.to,...(route.to.code==="PA"?{lon:-75.1636,lat:39.9524}:{})};
   const endpoint=`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson&steps=false`;
-  const response=await fetch(endpoint,{signal});
-  if(!response.ok)throw Error(`OSM routing unavailable (HTTP ${response.status})`);
-  const data=await response.json();
-  const geometry=data.routes?.[0]?.geometry?.coordinates;
-  if(!geometry?.length)throw Error("OSM routing returned no connected highway alignment.");
-  return routeToCourse(route,geometry);
+  const cacheKey='longhaul-route-geometry-v1:'+route.id;
+  try{const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');if(cached?.endpoint===endpoint&&Date.now()-cached.savedAt<7*86400000)return routeToCourse(route,cached.geometry)}catch{}
+  const controller=new AbortController(),abort=()=>controller.abort();if(signal?.aborted)abort();else signal?.addEventListener('abort',abort,{once:true});
+  const timer=setTimeout(()=>controller.abort(),12000);
+  try{
+    const response=await fetch(endpoint,{signal:controller.signal});
+    if(!response.ok)throw Error(`OSM routing unavailable (HTTP ${response.status})`);
+    const data=await response.json(),geometry=data.routes?.[0]?.geometry?.coordinates;
+    if(!geometry?.length)throw Error('OSM routing returned no connected highway alignment.');
+    const course=routeToCourse(route,geometry);
+    try{localStorage.setItem(cacheKey,JSON.stringify({endpoint,geometry,savedAt:Date.now()}));const keys=Object.keys(localStorage).filter(k=>k.startsWith('longhaul-route-geometry-v1:'));keys.sort((a,b)=>{try{return JSON.parse(localStorage.getItem(a)).savedAt-JSON.parse(localStorage.getItem(b)).savedAt}catch{return 0}});while(keys.length>8)localStorage.removeItem(keys.shift())}catch{}
+    return course;
+  }finally{clearTimeout(timer);signal?.removeEventListener('abort',abort)}
 }

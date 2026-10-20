@@ -1,0 +1,31 @@
+{
+  "nexusEngineRevision": "b941c9b2995e3449c6987908657753e2cf2df242",
+  "threeVersion": "0.165.0",
+  "exports": [
+    "createCoreCameraKit",
+    "createCoreDataKit",
+    "createCoreGraphicsKit",
+    "createCoreInputKit",
+    "createCoreSceneKit",
+    "createCoreSimulationKit",
+    "createCoreTransactionLedgerKit",
+    "createCoreWorldDomain",
+    "createCurvedHorizonSurface",
+    "createDataSchema",
+    "createEngine",
+    "createFlatWorldSurface",
+    "createQuadtreePartition",
+    "createSemanticWorldFeatureKit",
+    "createUniformGridPartition",
+    "createWorldPatchPreparationController",
+    "defineDomainServiceKit",
+    "defineEvent",
+    "defineResource",
+    "defineWorldEffectProvider"
+  ],
+  "sha256": {
+    "nexusengine.mjs": "af28f66747e9dbbabe5503c79d825b7555fe9c7198fad0b54f47220d66584a43",
+    "three.module.js": "5916c8dfb5f4e3eede312de305345868d4a0a8105383b080c6985565d6e79b46",
+    "app-runtime.js": "6115914083d5375f2c12e84bca25370d907c03a489d067d35c1f6d283183bb60"
+  }
+}

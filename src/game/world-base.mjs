@@ -1,4 +1,4 @@
-import { candidateRoadSegments } from "./road-spatial-index.mjs";
+import { candidateRoadSegments, terrainRoadSegments } from "./road-spatial-index.mjs";
 import { clamp, hashText, segmentInfo } from "./shared.mjs";
 
 export function nearestRoad(course, point) {
@@ -60,7 +60,11 @@ export function roadElevation(course, road) {
 
 export function terrainHeight(course, x, z) {
   const natural = terrainNoise(x, z, course?.seed ?? "long-haul");
-  const road = nearestRoad(course, { x, z });
+  let road = null;
+  for(const {a,b,edge,segmentIndex} of terrainRoadSegments(course,{x,z})) {
+    const info=segmentInfo({x,z},a,b);
+    if(!road||info.distance<road.distance)road={...info,edge,segmentIndex};
+  }
   if (!road) return natural;
   const flattenRadius = road.edge.width * 0.78 + 16;
   const blend = clamp(1 - road.distance / flattenRadius, 0, 1);

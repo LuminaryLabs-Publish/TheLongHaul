@@ -58,13 +58,15 @@ export function createLongHaulTruckKit(N, options = {}) {
 
         for (const request of world.readEvents(TruckReset)) state = initialTruck(request);
         for (const request of world.readEvents(TruckTeleport)) {
+          const heading = finite(request.heading, state.heading);
+          const speed = finite(request.speed, 0);
           state = {
             ...state,
             position: { x: finite(request.x, state.position.x), y: finite(request.y, state.position.y), z: finite(request.z, state.position.z) },
-            velocity: { x: 0, y: finite(request.verticalSpeed), z: 0 },
-            heading: finite(request.heading, state.heading),
-            speed: finite(request.speed, 0),
-            longitudinalSpeed: finite(request.speed, 0),
+            velocity: { x: Math.sin(heading) * speed, y: finite(request.verticalSpeed), z: Math.cos(heading) * speed },
+            heading,
+            speed,
+            longitudinalSpeed: speed,
             lateralSpeed: 0,
             steeringAngle: 0,
             rollAngle: 0,
@@ -114,7 +116,8 @@ export function createLongHaulTruckKit(N, options = {}) {
           };
         }
 
-        const frameDelta = clamp(finite(world.__nexusClock?.delta), 0, 1 / 15);
+        const sceneId=world.__longHaulScene;
+        const frameDelta = clamp(sceneId&&sceneId!=="driving"?0:finite(world.__nexusClock?.delta), 0, 1 / 15);
         const maximumSubstep = Math.max(1 / 240, finite(profile.air?.maximumSubstep, 1 / 120));
         const maximumSubsteps = Math.max(1, Math.floor(finite(profile.air?.maximumSubsteps, 8)));
         const steps = Math.min(maximumSubsteps, Math.max(1, Math.ceil(frameDelta / maximumSubstep)));

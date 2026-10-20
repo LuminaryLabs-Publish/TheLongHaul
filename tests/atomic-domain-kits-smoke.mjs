@@ -31,7 +31,7 @@ assert.equal(product.domains.delivery.length, 2);
 assert.equal(product.kits.length, 13);
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.extent, "infinite");
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.playableRadius, null);
-assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.gameplayActiveRadius, 2);
+assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.gameplayActiveRadius, 1);
 assert.equal(DEFAULT_HORIZON_LOD_POLICY.collision[0], false);
 assert.equal(DEFAULT_ROAD_CLASSES.length, 4);
 assert.ok(DEFAULT_TERRAIN_POLICY.jumpProfiles.erodedRamp);

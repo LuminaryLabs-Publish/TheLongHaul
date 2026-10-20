@@ -1,0 +1,70 @@
+{
+  "label": "Campaign-NJ-PA-warm-20s-uninstrumented",
+  "wallMs": 20032.899999976158,
+  "frames": 1803,
+  "meanMs": 11.09850249581382,
+  "p50Ms": 8.400000000001455,
+  "p95Ms": 16.900000000001455,
+  "p99Ms": 17.599999999998545,
+  "maxMs": 24.399999999997817,
+  "over16_8": 102,
+  "over33_4": 0,
+  "state": {
+    "samples": 3117,
+    "elapsed": 34911.40000015497,
+    "maxFrameMs": 278.80000001192093,
+    "avgFrameMs": 10.245155936476767,
+    "fps": 63,
+    "drawCalls": 711,
+    "triangles": 599758,
+    "geometries": 65,
+    "textures": 6,
+    "streamingStalls": 0,
+    "scene": "driving",
+    "cells": 81,
+    "horizonCells": 0
+  },
+  "heap": 78014125,
+  "traffic": 14,
+  "preparation": {
+    "id": "long-haul-osm-NJ-PA",
+    "patchSize": 160,
+    "retainRadius": 5,
+    "prefetchDistance": 0,
+    "cacheLimit": 104,
+    "generationBudget": 1,
+    "activationBudget": 1,
+    "generatorVersion": "osm-highway-v1",
+    "settingsHash": "NJ-PA",
+    "focus": {
+      "position": {
+        "x": -0.000019165370250483,
+        "z": -0.016683394211877436
+      },
+      "velocity": {
+        "x": -6.118244168287692e-7,
+        "z": -0.000532591220571339
+      },
+      "forward": {
+        "x": 0.0011487684916574989,
+        "z": 0.9999993401652587
+      },
+      "center": {
+        "x": -1,
+        "z": -1
+      }
+    },
+    "desiredActive": 81,
+    "desiredPrefetch": 0,
+    "cached": 81,
+    "ready": 81,
+    "queued": 0,
+    "inflight": 0,
+    "statuses": {
+      "cached": 4,
+      "retained": 5,
+      "ready": 72
+    },
+    "diagnostics": []
+  }
+}

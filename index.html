@@ -5,17 +5,27 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#172126">
   <title>THE LONG HAUL</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./styles.css">
   <script type="importmap">
-    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","nexusengine":"https://cdn.jsdelivr.net/gh/LuminaryLabs-Dev/NexusEngine@b941c9b2995e3449c6987908657753e2cf2df242/src/index.js"}}
+    {"imports":{"three":"./vendor/three.module.js","nexusengine":"./vendor/nexusengine.mjs"}}
   </script>
 </head>
 <body>
+  <div id="game-stage">
   <canvas id="game-canvas" aria-label="The Long Haul game view"></canvas>
   <div id="vignette"></div><div id="grain"></div>
+  <section id="intro-credits" aria-label="Opening credits" aria-hidden="false">
+    <div class="intro-credit-card" aria-live="polite">
+      <div class="intro-credit" id="engine-credit"><span>Powered by</span><strong>Nexus Engine</strong></div>
+      <div class="intro-divider" aria-hidden="true"></div>
+      <div class="intro-credit" id="studio-credit"><span>Built by</span><strong>Luminary Labs</strong></div>
+    </div>
+    <button id="intro-skip" type="button" aria-label="Skip opening credits">Skip <span aria-hidden="true">↗</span></button>
+  </section>
   <section id="title-screen" class="screen menu-screen active" aria-label="Title">
 
-    <div class="title-card"><div class="eyebrow">American Campaign · Coast to coast</div><h1>The Long Haul</h1><p class="tagline">Race real highways, dodge traffic, earn cash, upgrade your truck, and drive farther every run.</p><div class="menu-actions"><a class="btn primary" href="./campaign.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Play · American Campaign</a><a class="btn" href="./campaign.html#garage" style="text-decoration:none">Garage</a><a class="btn" href="./campaign.html" style="text-decoration:none">Map</a><button id="start-btn" class="btn">Classic Mode</button><button id="how-btn" class="btn">How to Play</button><button id="settings-btn" class="btn">Settings</button></div><div class="control-strip"><span><i class="key">WASD</i>Drive</span><span><i class="key">E</i>Depot / Recover</span><span><i class="key">C</i>Camera</span><span><i class="key">M</i>Map</span><span><i class="key">Esc</i>Pause</span></div></div>
+    <div class="title-card"><div class="eyebrow">American Campaign · Coast to coast</div><h1>The Long Haul</h1><p class="tagline">Race real highways, dodge traffic, earn cash, upgrade your truck, and drive farther every run.</p><div class="menu-actions"><div class="mode-options"><a class="btn primary mode-choice" href="./campaign.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">American Campaign</a><button id="start-btn" class="btn primary mode-choice">Endless</button></div><a class="btn" href="./campaign.html#garage" style="text-decoration:none">Garage</a><a class="btn" href="./campaign.html" style="text-decoration:none">Map</a><button id="how-btn" class="btn">How to Play</button><button id="settings-btn" class="btn">Settings</button></div><div class="control-strip"><span><i class="key">WASD</i>Drive</span><span><i class="key">E</i>Depot / Recover</span><span><i class="key">C</i>Camera</span><span><i class="key">M</i>Map</span><span><i class="key">Esc</i>Pause</span></div></div>
   </section>
 
   <section id="dispatch-screen" class="screen menu-screen" aria-label="Dispatch board"><div class="panel dispatch-panel"><div class="eyebrow">Dispatch board · Choose your risk</div><h2>What are you hauling?</h2><p class="lead">Each contract changes the kind of trouble the route generator favors. The receiving yard is still hidden.</p><div class="contract-grid"><button class="contract-card selected" data-contract="standard"><b>Standard freight</b><span>Balanced roads and a clean margin for error.</span><em>Base pay · 10:00</em></button><button class="contract-card" data-contract="fragile"><b>Glassworks crate</b><span>Rough roads punish the cargo twice as hard.</span><em>Higher pay · 9:30 target</em></button><button class="contract-card" data-contract="express"><b>Express manifest</b><span>More time pressure, but the best payout.</span><em>High pay · 8:00 target</em></button></div><div class="dispatch-footer"><span id="contract-note">A reliable first run.</span><button id="dispatch-go-btn" class="btn primary">Accept contract</button><button id="dispatch-back-btn" class="btn">Back</button></div></div></section>
@@ -41,11 +51,39 @@
   <section id="loss-screen" class="screen" aria-label="Run over"><div class="result-card"><div class="result-kicker loss-kicker">Freight undelivered</div><h2>Haul over</h2><p id="loss-reason" class="lead">The road won this round.</p><div class="panel-footer"><button id="loss-retry-btn" class="btn primary">Retry Same Course</button><button id="loss-new-btn" class="btn">New Course</button><button id="loss-title-btn" class="btn">Title</button></div></div></section>
   <div id="toast"></div>
   <div id="boot-failure"><div class="panel"><div class="eyebrow">The truck could not leave the yard</div><h2>Road closed</h2><p id="boot-error" class="lead">Reload the page to try again.</p><button id="reload-btn" class="btn primary">Reload</button></div></div>
-  <script>window.__longHaulBooted=false;const bootFailure=(message)=>{const panel=document.getElementById("boot-failure"),text=document.getElementById("boot-error");if(text)text.textContent=message||"The game modules could not start.";panel?.classList.add("show")};window.addEventListener("error",event=>{if(!window.__longHaulBooted)bootFailure(event.message)});setTimeout(()=>{if(!window.__longHaulBooted)bootFailure("The game took too long to start. Check the connection and reload.")},12000);</script>
+  <script>window.__longHaulBooted=false;window.longHaulBootReady=()=>document.getElementById("boot-failure")?.classList.remove("show");const bootFailure=(message)=>{const panel=document.getElementById("boot-failure"),text=document.getElementById("boot-error");if(text)text.textContent=message||"The game modules could not start.";panel?.classList.add("show")};window.addEventListener("error",event=>{if(!window.__longHaulBooted)bootFailure(event.message)});setTimeout(()=>{if(!window.__longHaulBooted)bootFailure("The game is still loading. You can wait or reload.")},12000);</script>
 
   <script type="module" src="./src/app/bootstrap.mjs"></script>
   <script>
+  (()=>{
+    const intro=document.getElementById('intro-credits');
+    const skip=document.getElementById('intro-skip');
+    const seenKey='long-haul-intro-credits-seen-v1';
+    let alreadySeen=false;
+    try{alreadySeen=sessionStorage.getItem(seenKey)==='1'}catch{}
+    if(alreadySeen){intro?.remove();return}
+    let finished=false;
+    let timer;
+    const finish=()=>{
+      if(finished)return;
+      finished=true;
+      clearTimeout(timer);
+      try{sessionStorage.setItem(seenKey,'1')}catch{}
+      intro?.classList.add('is-leaving');
+      setTimeout(()=>intro?.remove(),420);
+      removeEventListener('keydown',finish);
+      removeEventListener('pointerdown',finish);
+    };
+    skip?.addEventListener('click',finish);
+    addEventListener('keydown',finish,{once:true});
+    addEventListener('pointerdown',finish,{once:true});
+    intro?.classList.add('is-playing');
+    timer=setTimeout(finish,3600);
+  })();
+  </script>
+  <script>
   (()=>{let armed=false;const start=()=>document.getElementById('start-btn'),dispatch=()=>document.getElementById('dispatch-screen');const boot=()=>{const s=start(),d=dispatch(),title=document.getElementById('title-screen'),back=document.getElementById('dispatch-back-btn'),go=document.getElementById('dispatch-go-btn');if(!s||!d||!title||!back||!go)return setTimeout(boot,120);let selected='standard';const cards=[...document.querySelectorAll('.contract-card')];const note=document.getElementById('contract-note');const notes={standard:'A reliable first run.',fragile:'Brake early and protect the crate.',express:'Every second matters. Take the direct line.'};cards.forEach(card=>card.addEventListener('click',()=>{selected=card.dataset.contract;cards.forEach(c=>c?.classList?.toggle('selected',c===card));if(note)note.textContent=notes[selected]}));s.addEventListener('click',e=>{if(armed){armed=false;return}e.preventDefault();e.stopImmediatePropagation();document.querySelectorAll('.screen').forEach(x=>x?.classList?.remove('active'));d.classList.add('active')},true);back.addEventListener('click',()=>{d.classList.remove('active');title.classList.add('active')});go.addEventListener('click',()=>{window.longHaulContract=selected;armed=true;s.click()});};boot()})();
   </script>
+  </div>
 </body>
 </html>

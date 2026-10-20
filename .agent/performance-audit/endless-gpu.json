@@ -1,0 +1,22 @@
+{
+  "label": "Endless-GPU-10s",
+  "samples": 81,
+  "meanMs": 3.50465637037037,
+  "p95Ms": 5.685833,
+  "maxMs": 7.811125,
+  "state": {
+    "samples": 18798,
+    "elapsed": 153420.19999581575,
+    "maxFrameMs": 1922,
+    "avgFrameMs": 14.182502722066305,
+    "fps": 60,
+    "drawCalls": 1931,
+    "triangles": 1718734,
+    "geometries": 558,
+    "textures": 8,
+    "streamingStalls": 0,
+    "scene": "driving",
+    "cells": 280,
+    "horizonCells": 0
+  }
+}

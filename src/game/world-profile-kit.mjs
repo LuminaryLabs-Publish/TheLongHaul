@@ -7,8 +7,8 @@ export const DEFAULT_LONG_HAUL_WORLD_PROFILE = Object.freeze({
   playableRadius: null,
   boundaryFadeWidth: 0,
   macroSectorSize: 1024,
-  gameplayCellSize: 192,
-  gameplayActiveRadius: 2,
+  gameplayCellSize: 160,
+  gameplayActiveRadius: 1,
   horizon: Object.freeze({
     rootBounds: Object.freeze({ minX: -24576, minZ: -24576, maxX: 24576, maxZ: 24576 }),
     maxDepth: 6,

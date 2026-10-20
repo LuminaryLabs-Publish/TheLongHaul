@@ -2,7 +2,7 @@ function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
-export function createCellStreamingPlan({ position, heading, cellSize, activeRadius }) {
+export function createCellStreamingPlan({ position, heading, cellSize, activeRadius, quality = true }) {
   const size = Math.max(1, Number(cellSize) || 1);
   const radius = Math.max(1, Math.floor(Number(activeRadius) || 1));
   const x = Number(position?.x) || 0;
@@ -13,7 +13,7 @@ export function createCellStreamingPlan({ position, heading, cellSize, activeRad
   const forward = { x: Math.sin(angle), z: Math.cos(angle) };
   const desiredCoordinates = [];
   const desiredIds = new Set();
-  const visualRadius = radius + 3;
+  const visualRadius = radius + (quality ? 3 : 2);
 
   for (let offsetZ = -radius; offsetZ <= radius; offsetZ += 1) {
     for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {

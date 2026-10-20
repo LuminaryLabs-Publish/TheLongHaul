@@ -1,4 +1,5 @@
 import { clone, finite, segmentInfo } from "./shared.mjs";
+import { roadSegmentsNear } from "./road-spatial-index.mjs";
 import { nearestRoad, nearestDepot } from "./world-base.mjs";
 
 export function createLongHaulCourseKit(N) {
@@ -28,10 +29,8 @@ export function createLongHaulCourseKit(N) {
           const explored = new Set(state.exploredEdgeIds);
           const discovered = new Set(state.discoveredDepotIds);
           const point = { x: finite(request.x), z: finite(request.z) };
-          for (const edge of state.course.edges) {
-            if (explored.has(edge.id)) continue;
-            const close = edge.samples.slice(1).some((sample, index) => segmentInfo(point, edge.samples[index], sample).distance < 75);
-            if (close) explored.add(edge.id);
+          for (const {a,b,edge} of roadSegmentsNear(state.course,{minX:point.x-75,maxX:point.x+75,minZ:point.z-75,maxZ:point.z+75})) {
+            if(!explored.has(edge.id)&&segmentInfo(point,a,b).distance<75)explored.add(edge.id);
           }
           for (const depot of state.course.depots) if (Math.hypot(point.x - depot.x, point.z - depot.z) < 115) discovered.add(depot.id);
           state = { ...state, exploredEdgeIds: [...explored], discoveredDepotIds: [...discovered], sequence: state.sequence + 1 };
@@ -44,8 +43,9 @@ export function createLongHaulCourseKit(N) {
       const get = () => clone(world.getResource(CourseState));
       return {
         getState: get,
+        getExploration() { const s=world.getResource(CourseState);return {exploredEdgeIds:[...s.exploredEdgeIds],discoveredDepotIds:[...s.discoveredDepotIds],sequence:s.sequence}; },
         load(course) { world.emit(CourseLoad, { course: clone(course) }); return get(); },
-        sample(position) { world.emit(CourseSample, clone(position)); return get(); },
+        sample(position) { world.emit(CourseSample, clone(position)); },
         reset() { world.emit(CourseReset, {}); return get(); },
         nearestRoad(point) { return nearestRoad(world.getResource(CourseState)?.course, point); },
         nearestDepot(point) { return nearestDepot(world.getResource(CourseState)?.course, point); },

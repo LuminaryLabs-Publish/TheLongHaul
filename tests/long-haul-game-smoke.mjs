@@ -102,3 +102,25 @@ engine.n.longHaulTruck.teleport({ x: 0, y: 0.85, z: 0, heading: 0, speed: 0 }); 
 assert.equal(engine.n.longHaulTruck.getState().tipped, false, "roadside recovery returns the truck upright");
 engine.n.longHaulDelivery.load(["a", "b", "c", "d", "e"], "c"); tick(); engine.n.longHaulDelivery.check("a"); tick(); assert.equal(engine.n.longHaulDelivery.getState().lastCheck.rejected, true); engine.n.longHaulDelivery.check("c"); tick(); assert.equal(engine.n.longHaulDelivery.getState().lastCheck.accepted, true);
 console.log("The Long Haul playability smoke passed");
+
+// Bounded quality tiers preserve the complete collision window.
+const lowPlan=createCellStreamingPlan({position:{x:80,z:80},heading:0,cellSize:CELL_SIZE,activeRadius:ACTIVE_RADIUS,quality:false});
+assert.equal(lowPlan.desiredCoordinates.length,9);
+assert.equal(lowPlan.desiredCoordinates.length+lowPlan.frontierCoordinates.length,49);
+// Rolling launch speed must be real velocity, and zero-speed recovery still stops.
+for(const heading of [0,Math.PI/2,Math.PI,-Math.PI/2]){
+ engine.n.longHaulTruck.teleport({x:0,y:.85,z:0,heading,speed:15.25});tick(0);
+ const launched=engine.n.longHaulTruck.getState();
+ assert.ok(Math.abs(launched.speed-15.25)<1e-8);
+ assert.ok(Math.abs(launched.velocity.x-Math.sin(heading)*15.25)<1e-8);
+ assert.ok(Math.abs(launched.velocity.z-Math.cos(heading)*15.25)<1e-8);
+}
+world.__longHaulScene='paused';const paused=engine.n.longHaulTruck.getState();tick(1/30);
+assert.deepEqual(engine.n.longHaulTruck.getState().position,paused.position,'pause gates truck integration');
+world.__longHaulScene='driving';
+const {buildTreeMeshData}=await import('../src/game/tree-mesh-builder.mjs');
+const tree={id:'lod-check',variant:'a',position:[0,0,0],scale:[1,1,1],rotation:0};
+const nearTrees=buildTreeMeshData([tree]),farTrees=buildTreeMeshData([tree],{visualOnly:true});
+assert.ok(farTrees.indices.length<nearTrees.indices.length/3,'distant data-derived trees reduce geometry');
+assert.deepEqual(buildTreeMeshData([tree]),nearTrees,'tree generation remains deterministic');
+console.log('Performance domain regressions passed');

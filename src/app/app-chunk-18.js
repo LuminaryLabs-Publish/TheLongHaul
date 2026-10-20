@@ -5,7 +5,7 @@
     const arcadeTrafficRoot=new THREE.Group();dynamicRoot.add(arcadeTrafficRoot);
     const arcadeTrafficGeometry=new THREE.BoxGeometry(1,1,1);
     const arcadeTrafficMaterials=[0x4c91b7,0xc7c2ac,0xb64c3c,0x496c57,0xb69d57].map(color=>new THREE.MeshLambertMaterial({color}));
-    const arcadeVehicles=[];
+    const arcadeVehicles=[];let arcadeCachedSave=null,arcadeRouteCache=null;
     const arcadeWheelGeo=new THREE.CylinderGeometry(.5,.5,.36,12);
     const arcadeWheelMat=new THREE.MeshLambertMaterial({color:0x171c22});
     const arcadeGlassMat=new THREE.MeshLambertMaterial({color:0x75aec0});
@@ -21,27 +21,24 @@
       box(arcadeGlassMat,width*.77,.55,.08,0,1.45+height*.73,front);
       for(const side of [-1,1]){for(const z of [-bodyLength*.31,bodyLength*.31]){const wheel=new THREE.Mesh(arcadeWheelGeo,arcadeWheelMat);wheel.rotation.z=Math.PI/2;wheel.position.set(side*(width*.5+.08),.52,z);group.add(wheel)}
        box(arcadeLampMat,.25,.21,.12,side*width*.33,1.06,bodyLength*.49);box(arcadeTailMat,.27,.22,.12,side*width*.33,1.04,-bodyLength*.49)}
-      arcadeTrafficRoot.add(group);
-      return {group,kind,length:bodyLength,progress:0,lane:0,hit:false,passed:false,near:false,active:false};
+      group.visible=false;arcadeTrafficRoot.add(group);
+      return {group,kind,collider:ARCADE_TRAFFIC_COLLIDERS[kind],progress:0,lane:0,hit:false,passed:false,near:false,active:false};
     }
     for(let i=0;i<14;i++)arcadeVehicles.push(arcadeMakeVehicle(i));
     function arcadeRoutePosition(progress,lane=0){
       const edges=course?.edges??[];if(!edges.length)return null;
-      const pointAt=index=>edges[Math.max(0,Math.min(edges.length-1,index))]?.samples;
-      let remaining=Math.max(0,progress);
-      for(let i=0;i<edges.length;i++){
-        const edge=edges[i],length=edge.length||Math.hypot(edge.samples.at(-1).x-edge.samples[0].x,edge.samples.at(-1).z-edge.samples[0].z);
-        if(remaining>length&&i<edges.length-1){remaining-=length;continue}
-        const a=edge.samples[0],b=edge.samples.at(-1),t=clamp(remaining/Math.max(1,length),0,1),dx=b.x-a.x,dz=b.z-a.z,mag=Math.hypot(dx,dz)||1;
-        return{x:lerp(a.x,b.x,t)-dz/mag*lane,z:lerp(a.z,b.z,t)+dx/mag*lane,heading:Math.atan2(dx,dz)};
-      }
-      return null;
+      if(arcadeRouteCache?.course!==course){let total=0;arcadeRouteCache={course,ends:edges.map(edge=>total+=edge.length),total}}
+      const distance=clamp(progress,0,arcadeRouteCache.total);let lo=0,hi=edges.length-1;
+      while(lo<hi){const mid=(lo+hi)>>1;if(arcadeRouteCache.ends[mid]<distance)lo=mid+1;else hi=mid}
+      const edge=edges[lo],a=edge.samples[0],b=edge.samples.at(-1),t=clamp((distance-(lo?arcadeRouteCache.ends[lo-1]:0))/Math.max(1,edge.length),0,1),dx=b.x-a.x,dz=b.z-a.z,mag=Math.hypot(dx,dz)||1;
+      return{x:lerp(a.x,b.x,t)-dz/mag*lane,z:lerp(a.z,b.z,t)+dx/mag*lane,heading:Math.atan2(dx,dz)};
     }
     function arcadeTrafficUpdate(dt){
       if(!arcadeCampaign()) {arcadeTrafficRoot.visible=false;return}
       arcadeTrafficRoot.visible=true;if(arcadeTrafficRoot.parent!==dynamicRoot)dynamicRoot.add(arcadeTrafficRoot);
-      const truck=engine.n.longHaulTruck.getState(),run=engine.n.longHaulRun.getState(),distance=run.distance||0;
-      const upgrades=arcadeUpgradeState().upgrades||{},armor=Number(upgrades.armor)||0;
+      const truck=readTruck(),run=readRun(),distance=run.distance||0;
+      const truckCollider=createVehicleCollider(truck.position,truck.heading,LONG_HAUL_TRUCK_COLLIDER);
+      const upgrades=(arcadeCachedSave??=arcadeUpgradeState()).upgrades||{},armor=Number(upgrades.armor)||0;
       for(let i=0;i<arcadeVehicles.length;i++){
         const vehicle=arcadeVehicles[i];
         if(!vehicle.active||vehicle.progress<distance-65||vehicle.progress>distance+330){
@@ -52,7 +49,8 @@
         const pos=arcadeRoutePosition(vehicle.progress,vehicle.lane);if(!pos){vehicle.group.visible=false;continue}
         vehicle.group.visible=true;vehicle.group.position.set(pos.x,terrainHeight(course,pos.x,pos.z)+.05,pos.z);vehicle.group.rotation.y=pos.heading;
         const separation=Math.hypot(pos.x-truck.position.x,pos.z-truck.position.z);
-        if(separation<vehicle.length*.48+2.2&&!vehicle.hit&&Math.abs(truck.speed)>3){
+        const trafficCollider=createVehicleCollider(pos,pos.heading,vehicle.collider);
+        if(vehicleCollidersOverlap(truckCollider,trafficCollider)&&!vehicle.hit&&Math.abs(truck.speed)>3){
           vehicle.hit=true;
           const key="traffic:"+i+":"+Math.floor(vehicle.progress/70);
           const receipt=applyLongHaulOperationOnce(engine,runKey,key,()=>({seconds:5}));
@@ -72,11 +70,11 @@
     }
     let arcadeBonuses=0;
     const arcadeStartGeneration=startGeneration;
-    startGeneration=function(...args){arcadeBonuses=0;arcadeConfiguredRun="";arcadeTrafficRoot.children.forEach(child=>child.visible=false);for(const v of arcadeVehicles)v.active=false;return arcadeStartGeneration(...args)};
+    startGeneration=function(...args){arcadeBonuses=0;arcadeConfiguredRun="";arcadeCachedSave=null;arcadeRouteCache=null;arcadeTrafficRoot.children.forEach(child=>child.visible=false);for(const v of arcadeVehicles)v.active=false;return arcadeStartGeneration(...args)};
     function arcadeApplyUpgrades(){
       if(!arcadeCampaign()||arcadeConfiguredRun===runKey)return;
       arcadeConfiguredRun=runKey;
-      const save=arcadeUpgradeState(),u=save.upgrades||{},fleet=save.truck||"delivery";
+      const save=arcadeCachedSave??=arcadeUpgradeState(),u=save.upgrades||{},fleet=save.truck||"delivery";
       const level=id=>Math.max(0,Math.min(5,Number(u[id])||0));
       const base={delivery:[36,5.1],box:[39,5.35],semi:[42,5.65],heavy:[45,5.9]}[fleet]||[36,5.1];
       engine.n.longHaulTruckDynamicsProfile.configure({
@@ -93,7 +91,7 @@
     preTickDriving=function(dt){
       const surface=arcadeOriginalPreTick(dt);
       if(arcadeCampaign()){
-        const state=engine.n.longHaulTruck.getState(),intent=engine.n.coreInput.getIntent(),u=arcadeUpgradeState().upgrades||{};
+        const state=readTruck(),intent=engine.n.coreInput.getIntent(),u=(arcadeCachedSave??=arcadeUpgradeState()).upgrades||{};
         const efficiency=1/(1+(Number(u.efficiency)||0)*.19+(Number(u.fuel)||0)*.24);
         const extra=(.48+Math.max(0,Number(intent.throttle)||0)*.33+(intent.boost?.7:0)+Math.abs(state.speed)*.005)*dt*efficiency;
         meters.spend("fuel",extra,"arcade-highway-consumption");
@@ -102,7 +100,7 @@
     };
     function arcadeSettleFailedRun(){
       if(!arcadeCampaign()||arcadeSettledRun===runKey)return;
-      const run=engine.n.longHaulRun.getState();if(run.status!=="failed")return;
+      const run=readRun();if(run.status!=="failed")return;
       arcadeSettledRun=runKey;
       const route=campaignLaunch.route,save=arcadeUpgradeState();
       if(!Number.isFinite(Number(save.cash)))return;
@@ -125,8 +123,8 @@
       $("#loss-title-btn").onclick=()=>location.href="./campaign.html";
     }
     const arcadeOriginalPostTick=postTickGameplay;
-    postTickGameplay=function(surface){
-      if(arcadeCampaign()){arcadeApplyUpgrades();arcadeTrafficUpdate(1/60)}
+    postTickGameplay=function(surface,dt){
+      if(arcadeCampaign()){arcadeApplyUpgrades();arcadeTrafficUpdate(dt)}
       arcadeOriginalPostTick(surface);
       arcadeSettleFailedRun();
     };
@@ -141,12 +139,13 @@
     arcadeMenuBox(arcadeGlassMat,2.6,1,.12,0,3.03,3.1);
     for(const side of [-1,1])for(const z of [-4.2,2.15]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.88,.88,.55,12),arcadeWheelMat);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.72,1,z);arcadeMenuTruck.add(wheel)}
     scene.add(arcadeMenuTruck);arcadeMenuTruck.position.set(4,0,0);
+    let arcadeLastHud=0;
     function arcadeVisualFrame(now){
       const view=currentScene(),title=view==="title"&&!campaignLaunch?.course;
       arcadeMenuTruck.visible=title;
       if(title){arcadeMenuTruck.rotation.y=-.5+Math.sin(now*.00031)*.22;arcadeMenuTruck.position.y=Math.sin(now*.0011)*.09;camera.position.set(11,6,17);camera.lookAt(2,2,-1)}
       const playing=view==="driving"&&arcadeCampaign();arcadeOverlay.classList.toggle("active",playing);
-      if(playing){const run=engine.n.longHaulRun.getState(),fuel=meters.get("fuel")?.value??0,intent=engine.n.coreInput.getIntent(),distance=run.distance||0;
+      if(playing&&now-arcadeLastHud>=66){arcadeLastHud=now;const run=readRun(),fuel=meters.get("fuel")?.value??0,intent=engine.n.coreInput.getIntent(),distance=run.distance||0;
         document.getElementById("arcade-fuel").textContent=Math.ceil(fuel)+"%";
         document.getElementById("arcade-boost").textContent=intent.boost?"ACTIVE":"SHIFT";
         document.getElementById("arcade-distance").textContent=(distance/1609.344).toFixed(2)+" mi";
