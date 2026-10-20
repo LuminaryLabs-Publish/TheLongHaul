@@ -27,7 +27,9 @@ export function createLongHaulTruckKit(N, options = {}) {
     rollVelocity: 0,
     tipped: false,
     grounded: true,
-    groundHeight: finite(value.y),
+    groundHeight: finite(value.y)-DEFAULT_TRUCK_DYNAMICS_PROFILE.suspension.travel,
+    contactShape: "sphere",
+    contactRadius: DEFAULT_TRUCK_DYNAMICS_PROFILE.suspension.travel,
     groundNormal: { x: 0, y: 1, z: 0 },
     suspensionCompression: 0,
     suspensionVelocity: 0,
@@ -180,7 +182,8 @@ export function createLongHaulTruckKit(N, options = {}) {
           };
 
           const suspension = profile.suspension ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.suspension;
-          const targetRideHeight = state.groundHeight + finite(suspension.travel, 0.85);
+          const contactRadius=finite(suspension.travel,.92);
+          const targetRideHeight = state.groundHeight + contactRadius;
           const compression = targetRideHeight - state.position.y;
           const hasGround = compression > -0.18 && velocity.y <= 3.5;
           let grounded = state.grounded;
@@ -192,7 +195,7 @@ export function createLongHaulTruckKit(N, options = {}) {
             const damping = velocity.y < 0 ? finite(suspension.compressionDamping, 7.5) : finite(suspension.extensionDamping, 4.2);
             suspensionVelocity += (springForce - velocity.y * damping) * dt;
             velocity.y += suspensionVelocity * dt;
-            if (positionY < targetRideHeight - finite(suspension.travel, 0.85)) positionY = targetRideHeight - finite(suspension.travel, 0.85);
+            if (positionY < targetRideHeight) positionY = targetRideHeight;
             if (!grounded && velocity.y < 0) velocity.y = -velocity.y * finite(suspension.landingRestitution, 0.16);
             grounded = true;
             airTime = 0;
@@ -208,6 +211,8 @@ export function createLongHaulTruckKit(N, options = {}) {
             y: positionY + velocity.y * dt,
             z: state.position.z + velocity.z * dt
           };
+          // Ground contact supports the sphere centre. Render lean never changes this radius.
+          if(position.y<targetRideHeight){position.y=targetRideHeight;velocity.y=Math.max(0,velocity.y);suspensionVelocity=Math.max(0,suspensionVelocity);grounded=true;airTime=0}
           const planarSpeed = Math.hypot(velocity.x, velocity.z);
           const driftAngle = Math.atan2(lateral, Math.max(0.01, Math.abs(longitudinal)));
           const rollProfile = profile.roll ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.roll;
@@ -246,6 +251,7 @@ export function createLongHaulTruckKit(N, options = {}) {
             rollVelocity,
             tipped,
             grounded,
+            contactRadius,
             suspensionCompression: clamp(compression / Math.max(0.01, finite(suspension.travel, 0.85)), -1, 1),
             suspensionVelocity,
             airTime,

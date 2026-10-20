@@ -25,7 +25,59 @@
       }
       boostGeometry.attributes.position.needsUpdate=true;
     }
-    function updateTruckVisual(dt){if(!truckRig)return;const state=readTruck();const surface=surfaceAt(state.position);const travel=engine.n.longHaulTruckDynamicsProfile?.getState?.().suspension?.travel??.85;const visualGround=state.position.y-travel+.02;truckRig.root.position.x=lerp(truckRig.root.position.x,state.position.x,1-Math.exp(-18*dt));truckRig.root.position.z=lerp(truckRig.root.position.z,state.position.z,1-Math.exp(-18*dt));truckRig.root.position.y=lerp(truckRig.root.position.y,visualGround,1-Math.exp(-16*dt));truckRig.root.rotation.y=state.heading;const normal=state.groundNormal??{x:0,y:1,z:0},groundPitch=Math.atan2(normal.z,Math.max(.01,normal.y)),groundRoll=-Math.atan2(normal.x,Math.max(.01,normal.y));truckRig.body.position.y=lerp(truckRig.body.position.y,-clamp(state.suspensionCompression??0,-1,1)*.16,1-Math.exp(-10*dt));truckRig.body.rotation.z=lerp(truckRig.body.rotation.z,state.bodyRoll+groundRoll*.45,1-Math.exp(-8*dt));truckRig.body.rotation.x=lerp(truckRig.body.rotation.x,state.bodyPitch+groundPitch*.5,1-Math.exp(-8*dt));for(const wheel of truckRig.wheels)wheel.rotation.x=state.wheelTravel/.82;for(const pivot of truckRig.steering)pivot.rotation.y=state.steeringAngle;const cargo=meters.get("cargo-condition")?.value??100;for(let i=0;i<truckRig.crates.length;i++)truckRig.crates[i].rotation.z=Math.sin(performance.now()*.002+i)*(100-cargo)*.00035;sky.position.set(state.position.x,0,state.position.z);cloudRoot.position.set(state.position.x,0,state.position.z);sun.position.set(state.position.x-150,230,state.position.z-110);sun.target.position.set(state.position.x,0,state.position.z);sun.target.updateMatrixWorld()}
+    // A fixed world-space spark pool follows the visual scrape point, not the controller.
+    const scrapeCount=72,scrapePositions=new Float32Array(scrapeCount*6),scrapeColors=new Float32Array(scrapeCount*6),scrapeLife=new Float32Array(scrapeCount),scrapeXYZ=new Float32Array(scrapeCount*3),scrapeVelocity=new Float32Array(scrapeCount*3),scrapeFloor=new Float32Array(scrapeCount);
+    const scrapeGeometry=new THREE.BufferGeometry();scrapeGeometry.setAttribute("position",new THREE.BufferAttribute(scrapePositions,3).setUsage(THREE.DynamicDrawUsage));scrapeGeometry.setAttribute("color",new THREE.BufferAttribute(scrapeColors,3).setUsage(THREE.DynamicDrawUsage));
+    const scrapeMaterial=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:1,depthWrite:false,blending:THREE.AdditiveBlending});
+    const scrapeSparks=new THREE.LineSegments(scrapeGeometry,scrapeMaterial);scrapeSparks.frustumCulled=false;scrapeSparks.visible=false;scene.add(scrapeSparks);
+    let scrapeCursor=0,scrapeBudget=0,scraping=false;
+    function resetScrapeSparks(){scrapeLife.fill(0);scrapePositions.fill(0);scrapeColors.fill(0);scrapeSparks.visible=false;scrapeCursor=0;scrapeBudget=0;scraping=false}
+    function updateScrapeSparks(dt,state,rig){
+      const speed=Math.abs(state.speed),lean=Math.abs(rig.leanPivot.rotation.z),limit=settings.quality?scrapeCount:36;
+      scraping=state.grounded&&speed>6&&lean>.46&&rig.grounding.lift>.03;
+      scrapeBudget=scraping?Math.min(8,scrapeBudget+dt*(45+Math.min(speed,60))):0;
+      while(scrapeBudget>=1){scrapeBudget--;const i=scrapeCursor++%limit,j=i*3,point=rig.grounding.contact,side=-Math.sign(rig.leanPivot.rotation.z),rightX=Math.cos(state.heading)*side,rightZ=-Math.sin(state.heading)*side,back=8+Math.random()*9;
+        scrapeLife[i]=.22+Math.random()*.28;scrapeXYZ[j]=point.x;scrapeXYZ[j+1]=point.y+.06;scrapeXYZ[j+2]=point.z;scrapeFloor[i]=point.y;
+        scrapeVelocity[j]=state.velocity.x*.22-Math.sin(state.heading)*back+rightX*(1+Math.random()*3);scrapeVelocity[j+1]=1+Math.random()*3;scrapeVelocity[j+2]=state.velocity.z*.22-Math.cos(state.heading)*back+rightZ*(1+Math.random()*3);
+      }
+      let alive=0;
+      for(let i=0;i<scrapeCount;i++){const j=i*3,k=i*6;if(scrapeLife[i]<=0){scrapeColors.fill(0,k,k+6);continue}scrapeLife[i]-=dt;if(scrapeLife[i]<=0){scrapeColors.fill(0,k,k+6);continue}alive++;
+        scrapeVelocity[j+1]-=9.8*dt;for(let axis=0;axis<3;axis++)scrapeXYZ[j+axis]+=scrapeVelocity[j+axis]*dt;
+        if(scrapeXYZ[j+1]<scrapeFloor[i]){scrapeXYZ[j+1]=scrapeFloor[i];scrapeVelocity[j+1]=Math.abs(scrapeVelocity[j+1])*.25}
+        const fade=Math.min(1,scrapeLife[i]*4);
+        for(let axis=0;axis<3;axis++){scrapePositions[k+axis]=scrapeXYZ[j+axis];scrapePositions[k+3+axis]=scrapeXYZ[j+axis]-scrapeVelocity[j+axis]*.035}
+        scrapeColors[k]=fade;scrapeColors[k+1]=fade*.66;scrapeColors[k+2]=fade*.16;scrapeColors[k+3]=fade*.7;scrapeColors[k+4]=fade*.16;scrapeColors[k+5]=0;
+      }
+      scrapeSparks.visible=alive>0;if(alive){scrapeGeometry.attributes.position.needsUpdate=true;scrapeGeometry.attributes.color.needsUpdate=true}
+    }
+    const truckSurfaceEntries=[];
+    function truckRenderedGroundHeight(x,z){
+      const cell=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${Math.floor(x/CELL_SIZE)}:${Math.floor(z/CELL_SIZE)}`);
+      // Grid keys are resolved from cached active entries, avoiding world snapshot APIs.
+      const patch=(cell??truckSurfaceEntries.find(e=>x>=e.patch.bounds.minX&&x<e.patch.bounds.maxX&&z>=e.patch.bounds.minZ&&z<e.patch.bounds.maxZ))?.patch;
+      let height;
+      if(patch){const data=patch.terrain,n=data.segments,gx=clamp((x-patch.bounds.minX)/CELL_SIZE*n,0,n-1e-8),gz=clamp((z-patch.bounds.minZ)/CELL_SIZE*n,0,n-1e-8),ix=Math.floor(gx),iz=Math.floor(gz),u=gx-ix,v=gz-iz,a=iz*(n+1)+ix,h=data.heights,h00=h[a],h10=h[a+1],h01=h[a+n+1],h11=h[a+n+2];height=u+v<=1?h00+(h10-h00)*u+(h01-h00)*v:h11+(h01-h11)*(1-u)+(h10-h11)*(1-v)}else height=terrainHeight(course,x,z);
+      for(const entry of truckSurfaceEntries)height=sampleDriveSurface(entry.group.userData.driveSurface??[],x,z,height);
+      return height;
+    }
+    function updateTruckVisual(dt){
+      if(!truckRig)return;const state=readTruck(),rig=truckRig,travel=readDynamics().suspension?.travel??.92;
+      // Upright steering root follows the spherical ground support, never body roll.
+      rig.root.position.set(state.position.x,Math.max(state.position.y-travel+.02,terrainHeight(course,state.position.x,state.position.z)+.02),state.position.z);
+      rig.root.rotation.set(0,state.heading,0);
+      const normal=state.groundNormal??{x:0,y:1,z:0},s=Math.sin(state.heading),c=Math.cos(state.heading),forwardSlope=normal.x*s+normal.z*c,rightSlope=normal.x*c-normal.z*s;
+      const pitch=Math.atan2(forwardSlope,Math.max(.25,normal.y)),slopeRoll=-Math.atan2(rightSlope,Math.max(.25,normal.y));
+      const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-.72,.72);
+      rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.5,.5),1-Math.exp(-8*dt)),0,lerp(rig.leanPivot.rotation.z,lean+slopeRoll,1-Math.exp(-8*dt)));
+      rig.leanPivot.position.y=1.5-clamp(state.suspensionCompression??0,-1,1)*.12;
+      truckSurfaceEntries.length=0;const cx=Math.floor(state.position.x/CELL_SIZE),cz=Math.floor(state.position.z/CELL_SIZE);for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){const entry=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${x}:${z}`);if(entry)truckSurfaceEntries.push(entry)}
+      rig.grounding.resolve(rig.root,rig.leanPivot,truckRenderedGroundHeight);
+      for(const wheel of rig.wheels)wheel.rotation.x=state.wheelTravel/.82;
+      for(const pivot of rig.steering)pivot.rotation.y=state.steeringAngle;
+      const cargo=meters.get("cargo-condition")?.value??100;for(let i=0;i<rig.crates.length;i++)rig.crates[i].rotation.z=Math.sin(performance.now()*.002+i)*(100-cargo)*.00035;
+      updateScrapeSparks(dt,state,rig);
+      sky.position.set(state.position.x,0,state.position.z);cloudRoot.position.set(state.position.x,0,state.position.z);sun.position.set(state.position.x-150,230,state.position.z-110);sun.target.position.set(state.position.x,0,state.position.z);sun.target.updateMatrixWorld();
+    }
     function updateWildlifeVisual(){if(!wildlifeRig)return;const hazards=readWildlife().hazards,hazardById=new Map(hazards.map(h=>[h.id,h]));for(const animal of wildlifeRig.animals){const hazard=hazardById.get(animal.userData.id);if(!hazard){animal.visible=false;continue}animal.visible=true;animal.position.set(hazard.x,terrainHeight(course,hazard.x,hazard.z),hazard.z);const dx=(hazard.end.x-hazard.start.x)*(hazard.direction||1),dz=(hazard.end.z-hazard.start.z)*(hazard.direction||1);animal.rotation.y=Math.atan2(dx,dz);const stride=performance.now()*.004+animal.userData.phase;animal.userData.legs.forEach((leg,index)=>leg.rotation.x=Math.sin(stride+(index%2?Math.PI:0))*.48);animal.position.y+=Math.abs(Math.sin(stride))*.06}}
     function applyCamera(){const descriptor=smoothing.getDescriptor("player-camera");camera.position.fromArray(descriptor.position);camera.quaternion.fromArray(descriptor.quaternion);const fov=descriptor.fov+boostVisualStrength*14;if(camera.fov!==fov){camera.fov=fov;camera.updateProjectionMatrix()}}
 

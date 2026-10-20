@@ -28,3 +28,11 @@ Original prompt: Epxlain every performance issue. be hyper critical and then loo
 - Added a same-key double-tap burst lasting five gameplay seconds, strong automatic acceleration, smooth speed-cap recovery, countdown, warm focus/wider FOV and one 96-line streaming particle batch (48 on low quality). Reduced motion preserves mechanics without the motion effects.
 - Built static runtime, all three existing smoke suites pass. Inline checks cover five-second timing, independent keys, slow taps, no active refresh and cancellation. Browser verified W activation, held-key/repeat rejection, brake cancellation, ArrowUp activation and natural expiry after approximately five seconds, reduced-motion suppression and pause reset. Standalone client reached 56.425 m/s against the default 30.5 m/s cap; inspected screenshot and state, zero client errors.
 - Only The Long Haul changed; deployment configuration is unchanged. Continuing the authorized main-branch workflow after validation.
+
+
+## 2026-10-19 truck contact, lean and sparks
+
+- User request preserved in `.agent/product-intent.md`. Separated upright ground-contact steering from visual lean; removed both competing visual overrides and fixed the suspension centre's lower bound. Added precomputed mesh support points, exact local rendered terrain/road surface sampling, and a 72-slot spark pool (36 emit slots on low quality).
+- Browser pose fixtures at 0, ±0.7, ±1.43 radians: root roll zero, physics position unchanged by presentation, minimum sampled visual clearance 0.0487 m. Surface sampler agreed with actual rendered road/terrain ray intersections within 0.000001 m. Severe-impact rollover and zero-speed recovery remain covered by existing smoke tests.
+- Standalone client natural turn reaches lean/sparks; inspected rendered capture. Runtime source, generated bundle and provenance are rebuilt together. No upstream engine or deployment changes.
+- Short final-source Chrome/Metal check at 1600 x 900 output: 20-second capture, sampled p95 interval 16.7 ms, visual-update p95 0.6 ms, zero errors. This is a focused regression sample, not a thermal or full-route benchmark. Saved `.agent/truck-presentation-performance.json`.

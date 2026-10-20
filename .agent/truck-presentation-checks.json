@@ -1,0 +1,43 @@
+{
+  "results": [
+    {
+      "angle": -1.43,
+      "minClearance": 0.04869520154527596,
+      "rootRoll": 0,
+      "physicsPositionUnchanged": true,
+      "sparks": 4
+    },
+    {
+      "angle": -0.7,
+      "minClearance": 0.04998945346588979,
+      "rootRoll": 0,
+      "physicsPositionUnchanged": true,
+      "sparks": 9
+    },
+    {
+      "angle": 0,
+      "minClearance": 0.05065037011301943,
+      "rootRoll": 0,
+      "physicsPositionUnchanged": true,
+      "sparks": 9
+    },
+    {
+      "angle": 0.7,
+      "minClearance": 0.050551313006550025,
+      "rootRoll": 0,
+      "physicsPositionUnchanged": true,
+      "sparks": 12
+    },
+    {
+      "angle": 1.43,
+      "minClearance": 0.05017812993673765,
+      "rootRoll": 0,
+      "physicsPositionUnchanged": true,
+      "sparks": 16
+    }
+  ],
+  "physicsClearance": 0.000030786578586794455,
+  "contactShape": "sphere",
+  "supportPoints": 37,
+  "renderSurfaceMaxError": 8.900367287623112e-8
+}
