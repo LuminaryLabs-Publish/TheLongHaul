@@ -378,3 +378,12 @@ No repository changes were made during this handoff. Would you like to log this 
 **Implementation:** Keep the existing Nexus driving controller and its spherical ground support upright, and put the visible truck under a separate lean pivot. The physical support centre stays at least its radius above its sampled ground plane; cosmetic lean cannot move the steering position or rotate its root. Remove competing terrain/rollover presentation overrides. Precompute mesh support points and lift only the visual pivot enough to clear the actual streamed terrain triangles and raised road/shoulder strips, including sideways poses. Emit pooled gold/orange sparks from the low-side contact point above a 0.46-radian lean at speeds over 6 m/s. Preserve steering, boost, heading-aligned vehicle impact footprints, collision penalties and existing severe-impact rollover/recovery behavior. This remains the existing height-field controller, without adding a second physics engine.
 
 **Evidence:** Existing tests pass; browser pose checks at 0, ±0.7 and ±1.43 radians keep the steering root upright and its position unchanged, with sampled mesh vertices at least 0.048 m above the visible surface. Render-surface sampling matches browser ray intersections within 0.000001 m in the checked area. Natural steering produces lean and sparks, and the standard client screenshot was inspected. See `truck-presentation-checks.json` and `truck-lean-preview.png`. These checks are not an exhaustive proof for every terrain seam or route.
+
+
+## 2026-10-27: Self-righting steering lean
+
+**User wording, preserved:** “Make it so the truck doesn’t flip over from steering. It should lean and scrape with sparks on sharp turns, then straighten back up when I release steering.”
+
+**Cleaned-up request, same meaning:** Prevent steering-induced rollovers. Keep visible lean and scrape sparks during sharp turns, then return the truck upright when steering is released.
+
+**Implementation:** Remove the steering/slope roll-angle transition into the tipped state. Bound steering lean to 0.72 radians, target zero on steering release, and use critically damped recovery. Terrain alignment, visual clearance, scrape particles, and severe-impact rollover/recovery retain their existing ownership.

@@ -217,17 +217,19 @@ export function createLongHaulTruckKit(N, options = {}) {
           const driftAngle = Math.atan2(lateral, Math.max(0.01, Math.abs(longitudinal)));
           const rollProfile = profile.roll ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.roll;
           const lateralAcceleration = yawRate * longitudinal;
-          const lateralSlope = (state.groundNormal.x * nextRight.x + state.groundNormal.z * nextRight.z) / Math.max(0.25, state.groundNormal.y);
           let tipped = state.tipped;
           let rollAngle = state.rollAngle;
           let rollVelocity = state.rollVelocity;
-          const naturalTarget = clamp(-lateralAcceleration * finite(rollProfile.lateralScale, 0.043) + lateralSlope * finite(rollProfile.slopeScale, 0.72), -0.78, 0.78);
+          // Steering lean is cosmetic and self-righting; only impact requests can tip the truck.
+          const naturalTarget = Math.abs(input.steer)>.01 ? clamp(-lateralAcceleration * finite(rollProfile.lateralScale, 0.043), -.68, .68) : 0;
           const settledAngle = finite(rollProfile.settledAngle, 1.43);
           const targetRoll = tipped ? Math.sign(rollAngle || rollVelocity || 1) * settledAngle : naturalTarget;
-          const rollAcceleration = (targetRoll - rollAngle) * finite(rollProfile.spring, 8.5) - rollVelocity * finite(rollProfile.damping, 4.7);
+          const rollSpring=Math.max(.01,finite(rollProfile.spring,8.5));
+          const rollDamping=tipped?finite(rollProfile.damping,4.7):Math.max(finite(rollProfile.damping,4.7),2*Math.sqrt(rollSpring));
+          const rollAcceleration = (targetRoll - rollAngle) * rollSpring - rollVelocity * rollDamping;
           rollVelocity += rollAcceleration * dt;
           rollAngle += rollVelocity * dt;
-          if (!tipped && grounded && Math.abs(rollAngle) >= finite(rollProfile.tipAngle, 0.9) && Math.abs(longitudinal) > 5.5) tipped = true;
+          if(!tipped){rollAngle=clamp(rollAngle,-.72,.72);if(Math.abs(rollAngle)>=.72&&Math.sign(rollVelocity)===Math.sign(rollAngle))rollVelocity=0}
           if (tipped) rollAngle = clamp(rollAngle, -settledAngle * 1.05, settledAngle * 1.05);
           const safe = grounded && !tipped && Math.abs(rollAngle) < 0.34 && state.surface === "road" && Math.abs(longitudinal) < finite(profile.maximumForwardSpeed, 32) * 0.82
             ? { x: position.x, y: position.y, z: position.z, heading }

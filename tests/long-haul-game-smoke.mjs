@@ -96,6 +96,19 @@ assert.ok(truck.speed > 0, "truck accelerates forward");
 assert.ok(Number.isFinite(truck.position.y), "truck vertical state remains finite");
 assert.ok(Number.isFinite(truck.suspensionCompression), "suspension state remains finite");
 assert.ok(Math.abs(truck.steeringAngle) < 0.2, "high-speed steering remains progressive");
+// Steering alone must never enter the impact-only rollover state.
+for(const steer of [-1,1]){
+  engine.n.longHaulTruck.teleport({x:0,y:.92,z:0,heading:0,speed:30});tick();let peak=0;
+  for(let frame=0;frame<600;frame++){
+    engine.n.longHaulTruck.input({throttle:1,steer,boost:true,rush:true,surface:"road",surfaceGrip:1,groundHeight:0,groundNormal:{x:.12,y:.98,z:.08}});tick();
+    const state=engine.n.longHaulTruck.getState();peak=Math.max(peak,Math.abs(state.bodyRoll));
+    assert.equal(state.tipped,false,"sustained boosted full-lock steering cannot flip the truck");
+    assert.ok(Math.abs(state.rollAngle)<=.720001,"steering lean stays bounded");
+  }
+  assert.ok(peak>.46,"hard steering still reaches the scrape lean threshold");
+  for(let frame=0;frame<240;frame++){engine.n.longHaulTruck.input({throttle:1,steer:0,surface:"road",surfaceGrip:1,groundHeight:0,groundNormal:{x:0,y:1,z:0}});tick()}
+  assert.ok(Math.abs(engine.n.longHaulTruck.getState().bodyRoll)<.01,"releasing steering returns the truck upright");
+}
 engine.n.longHaulTruck.impulse({ rollDelta: 2, speedDelta: 0 }); tick();
 assert.equal(engine.n.longHaulTruck.getState().tipped, true, "a severe moving impact can tip the truck");
 engine.n.longHaulTruck.teleport({ x: 0, y: 0.85, z: 0, heading: 0, speed: 0 }); tick();

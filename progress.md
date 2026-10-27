@@ -36,3 +36,10 @@ Original prompt: Epxlain every performance issue. be hyper critical and then loo
 - Browser pose fixtures at 0, ±0.7, ±1.43 radians: root roll zero, physics position unchanged by presentation, minimum sampled visual clearance 0.0487 m. Surface sampler agreed with actual rendered road/terrain ray intersections within 0.000001 m. Severe-impact rollover and zero-speed recovery remain covered by existing smoke tests.
 - Standalone client natural turn reaches lean/sparks; inspected rendered capture. Runtime source, generated bundle and provenance are rebuilt together. No upstream engine or deployment changes.
 - Short final-source Chrome/Metal check at 1600 x 900 output: 20-second capture, sampled p95 interval 16.7 ms, visual-update p95 0.6 ms, zero errors. This is a focused regression sample, not a thermal or full-route benchmark. Saved `.agent/truck-presentation-performance.json`.
+
+
+## 2026-10-27 self-righting steering
+
+- Removed steering/slope angle-triggered rollover. Non-impact lean stays within ±0.72 rad, targets neutral on release, and uses critical damping. Existing collision-triggered tipping and recovery remain. Added cases to the existing gameplay smoke suite for both steering directions under sustained rush boost and banked ground normals, scrape threshold, and neutral recovery.
+- Reviewed the linked Luminary Framework through connected Drive as requested and recorded its authority/evidence guidance in repository memory. No Drive records were edited.
+- `npm run build`, all existing `npm test` suites, and scoped whitespace checks pass. Standalone browser turn capture has 13 live sparks; after release the visual lean settles to -0.00247 rad. Inspected both screenshots; no client error logs. These are bounded steering checks, not a full-route acceptance run. Evidence: `.agent/steering-self-right-checks.json`, `.agent/steering-scrape-preview.png`.

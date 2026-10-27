@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-27",
+  "steeringCapture": {
+    "scene": "driving",
+    "mode": "endless",
+    "coordinates": "meters; x east, y up, z south; heading 0 faces +z",
+    "player": {
+      "position": {
+        "x": -35.927783339317756,
+        "y": 10.675185314991923,
+        "z": -153.51393248615074
+      },
+      "velocity": {
+        "x": -20.898437119174844,
+        "y": 0.08446167636857856,
+        "z": -6.897197968717905
+      },
+      "heading": -1.8895746848166362,
+      "speed": 22.007180960854377,
+      "normalTopSpeed": 30.5
+    },
+    "run": {
+      "status": "running",
+      "distance": 170.95145530917608
+    },
+    "fuel": 99.39944566272136,
+    "presentation": {
+      "contactShape": "sphere",
+      "contactRadius": 0.92,
+      "lean": -0.36545846935200127,
+      "clearance": 0.05,
+      "scraping": false,
+      "sparks": 13
+    },
+    "boost": {
+      "remaining": 0,
+      "visualStrength": 0,
+      "streaks": false
+    },
+    "loading": null
+  },
+  "releasedSteeringCapture": {
+    "scene": "driving",
+    "mode": "endless",
+    "coordinates": "meters; x east, y up, z south; heading 0 faces +z",
+    "player": {
+      "position": {
+        "x": -75.33496869161226,
+        "y": -6.804611308822086,
+        "z": -150.03377066710686
+      },
+      "velocity": {
+        "x": -9.53963921015778,
+        "y": 0.0033815260281217395,
+        "z": -5.0977410128133585
+      },
+      "heading": -2.0615639875130767,
+      "speed": 10.816269213259215,
+      "normalTopSpeed": 30.5
+    },
+    "run": {
+      "status": "running",
+      "distance": 189.49487036767835
+    },
+    "fuel": 99.2383681082839,
+    "presentation": {
+      "contactShape": "sphere",
+      "contactRadius": 0.92,
+      "lean": -0.002472999784918298,
+      "clearance": 0.05,
+      "scraping": false,
+      "sparks": 0
+    },
+    "boost": {
+      "remaining": 0,
+      "visualStrength": 0,
+      "streaks": false
+    },
+    "loading": null
+  },
+  "domainChecks": "600 frames full-lock steering in each direction with rush boost and banked ground normals: no tipped state, bounded roll, scrape threshold reached; 240 release frames: roll below 0.01 rad. Existing severe-impact tip/recovery assertions pass.",
+  "clientErrors": []
+}

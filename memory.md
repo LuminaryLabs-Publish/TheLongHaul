@@ -45,3 +45,9 @@ The Long Haul is a browser-based trucking game evolving toward a 3D American hig
 - Double-tapping the same forward key (W or Up, within 300 ms) triggers a five-second timed forward burst. Keep it independent of keyboard repeat, do not refresh active bursts, retain Shift as the smaller held boost, and cancel timed bursts on braking/pause/focus loss/reset. Reduced motion disables burst streaks, edge focus and FOV changes but preserves the countdown and mechanics. Speed streaks share one preallocated line batch, avoiding a post-processing render pass.
 
 - Truck ground support/steering stays upright and independent of `leanPivot`, which owns visible pitch and roll. Resolve visual clearance against cached streamed terrain heights and indexed road/shoulder triangles, including raised asphalt; do not reintroduce root roll or the old terrain-owned vehicle presentation override. Existing heading-aligned impact footprints remain independent. Hard leaning emits one bounded world-space spark batch from the low-side visual contact point.
+
+## Luminary Framework
+
+Reviewed 2026-10-27 through connected Google Drive: [00 - Luminary Framework](https://docs.google.com/document/d/1lZLgr2A99EBzMwoLl4iEY7NiFVFG6LjU8snI2eP3ZWI/edit). This is the company discovery and governance map, not a replacement for repository implementation history or project trackers. Keep work bounded, retain acceptance evidence, preserve access boundaries, and link authoritative records instead of duplicating live state. Project workspace organization uses the eleven lifecycle folders described there; do not restructure this repository to mirror Drive folders.
+
+- Steering alone never enters the rollover state. Its lean is bounded and critically damped, returning to neutral when steering is released; ground alignment remains visual. Scrape sparks remain at hard lean. Severe collision impulses retain their existing rollover/recovery behavior.
