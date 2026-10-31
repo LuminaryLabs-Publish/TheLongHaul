@@ -1,12 +1,18 @@
 import { TREE_POINT_PROFILES } from "./tree-point-profiles.mjs";
 
-const OCTAHEDRON = [
-  [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]
+const LEAF_RING_SIDES = 6;
+const LEAF_BLOB = [
+  [0, 1, 0], [0, -1, 0],
+  ...Array.from({ length: LEAF_RING_SIDES }, (_, index) => {
+    const angle = index / LEAF_RING_SIDES * Math.PI * 2;
+    return [Math.cos(angle), 0, Math.sin(angle)];
+  })
 ];
-const OCTAHEDRON_FACES = [
-  0, 2, 4, 4, 2, 1, 1, 2, 5, 5, 2, 0,
-  4, 3, 0, 1, 3, 4, 5, 3, 1, 0, 3, 5
-];
+const LEAF_BLOB_FACES = [];
+for (let side = 0; side < LEAF_RING_SIDES; side += 1) {
+  const current = side + 2, next = (side + 1) % LEAF_RING_SIDES + 2;
+  LEAF_BLOB_FACES.push(0, next, current, 1, current, next);
+}
 
 function hash(value) {
   let result = 2166136261;
@@ -28,21 +34,25 @@ function pushColor(colors, color) {
   colors.push(color[0], color[1], color[2]);
 }
 
-function addOctaBlob(positions, colors, indices, center, radius, sourceColor, tint, seed) {
+function addLeafBlob(positions, colors, indices, center, radius, sourceColor, tint, seed) {
   const base = positions.length / 3;
   const jitter = 0.86 + randomUnit(seed, base) * 0.28;
-  for (let index = 0; index < OCTAHEDRON.length; index += 1) {
-    const vertex = OCTAHEDRON[index];
+  const yaw = randomUnit(seed, base + 41) * Math.PI * 2;
+  const cos = Math.cos(yaw), sin = Math.sin(yaw);
+  for (let index = 0; index < LEAF_BLOB.length; index += 1) {
+    const vertex = LEAF_BLOB[index];
     const variation = 0.9 + randomUnit(seed, base + index + 7) * 0.2;
+    const x = vertex[0] * radius[0] * variation * jitter;
+    const z = vertex[2] * radius[2] * variation * jitter;
     positions.push(
-      center[0] + vertex[0] * radius[0] * variation * jitter,
+      center[0] + cos * x + sin * z,
       center[1] + vertex[1] * radius[1] * variation * jitter,
-      center[2] + vertex[2] * radius[2] * variation * jitter
+      center[2] - sin * x + cos * z
     );
     const shade = tint * (0.88 + randomUnit(seed, base + index + 19) * 0.24);
     pushColor(colors, [sourceColor[0] * shade, sourceColor[1] * shade, sourceColor[2] * shade]);
   }
-  for (const vertex of OCTAHEDRON_FACES) indices.push(base + vertex);
+  for (const vertex of LEAF_BLOB_FACES) indices.push(base + vertex);
 }
 
 function addBranch(positions, colors, indices, start, end, radius, seed) {
@@ -76,7 +86,7 @@ function addBranch(positions, colors, indices, start, end, radius, seed) {
       const b = base + ring * ringSides + next;
       const c = base + (ring + 1) * ringSides + side;
       const d = base + (ring + 1) * ringSides + next;
-      indices.push(a, c, b, b, c, d);
+      indices.push(a, b, c, b, d, c);
     }
   }
 }
@@ -127,7 +137,7 @@ export function* buildTreeMeshSteps(trees, { visualOnly = false, pointLimit = 96
       const anchor = toWorld(tree, profile, point, height, cos, sin);
       const radius = leafRadius * (0.82 + randomUnit(seed, index + 31) * 0.42);
       const sourceColor = [point[3], point[4], point[5]];
-      addOctaBlob(positions, colors, indices, anchor,
+      addLeafBlob(positions, colors, indices, anchor,
         [radius * tree.scale[0], radius * 0.78, radius * tree.scale[2]], sourceColor, tint, seed + index * 13);
       used.push(point);
     }
@@ -148,7 +158,7 @@ export function* buildTreeMeshSteps(trees, { visualOnly = false, pointLimit = 96
   return {
     positions: new Float32Array(positions),
     colors: new Float32Array(colors),
-    indices: new Uint32Array(indices),
+    indices: positions.length / 3 <= 65535 ? new Uint16Array(indices) : new Uint32Array(indices),
     treeCount: candidates.length
   };
 }

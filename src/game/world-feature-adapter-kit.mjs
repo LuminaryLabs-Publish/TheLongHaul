@@ -213,7 +213,15 @@ export function createLongHaulWorldFeatureAdapterKit(N, options = {}) {
             class: String(edge.type ?? edge.branchId ?? "country-road"),
             surface: edge.type === "rough-shortcut" ? "gravel" : "asphalt"
           },
-          metadata: { edgeId: edge.id, branchId: edge.branchId, source: prefix }
+          metadata: {
+            edgeId: edge.id,
+            branchId: edge.branchId,
+            source: prefix,
+            optional: edge.optional === true,
+            laneCount: Number(edge.laneCount ?? 0),
+            laneWidth: Number(edge.laneWidth ?? 0),
+            junction: edge.type === "roundabout" ? "roundabout" : edge.type?.includes("ramp") ? edge.type : null
+          }
         });
         registerFeature({
           id: `${prefix}:road-grade:${edge.id}`,
@@ -229,7 +237,15 @@ export function createLongHaulWorldFeatureAdapterKit(N, options = {}) {
             edgeId: edge.id,
             roadType: edge.type ?? edge.branchId ?? "country-road"
           },
-          metadata: { edgeId: edge.id, branchId: edge.branchId, source: prefix }
+          metadata: {
+            edgeId: edge.id,
+            branchId: edge.branchId,
+            source: prefix,
+            optional: edge.optional === true,
+            laneCount: Number(edge.laneCount ?? 0),
+            laneWidth: Number(edge.laneWidth ?? 0),
+            junction: edge.type === "roundabout" ? "roundabout" : edge.type?.includes("ramp") ? edge.type : null
+          }
         });
       }
 

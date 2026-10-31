@@ -40,7 +40,8 @@ export function createLongHaulRunKit(N) {
       phase: "resolve",
       name: "longHaulRunSystem",
       system(world) {
-        let state = world.getResource(RunState);
+        const previousState = world.getResource(RunState);
+        let state = previousState;
         const dt = clamp(finite(world.__nexusClock?.delta), 0, 1 / 15);
         for (const request of world.readEvents(RunReset)) state = initialRunState();
         for (const request of world.readEvents(RunStart)) state = { ...initialRunState(), status: "running", lastPosition: clone(request.position ?? null), sequence: state.sequence + 1 };
@@ -80,7 +81,7 @@ export function createLongHaulRunKit(N) {
         for (const request of world.readEvents(RunRecovery)) state = { ...state, recoveryUsed: true, stuckSeconds: 0, lastPosition: clone(request.position ?? state.lastPosition), sequence: state.sequence + 1 };
         for (const request of world.readEvents(RunComplete)) state = { ...state, status: "completed", result: clone(request.result), sequence: state.sequence + 1 };
         for (const request of world.readEvents(RunFail)) if (!["completed", "failed"].includes(state.status)) state = { ...state, status: "failed", failureReason: String(request.reason), sequence: state.sequence + 1 };
-        world.setResource(RunState, state);
+        if (state !== previousState) world.setResource(RunState, state);
       }
     }],
     initWorld({ world }) { world.setResource(RunState, initialRunState()); },

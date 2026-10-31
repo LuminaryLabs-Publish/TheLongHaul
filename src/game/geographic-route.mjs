@@ -6,8 +6,8 @@ const rad = Math.PI / 180;
 const metersBetween=(a,b)=>Math.hypot((b[0]-a[0])*111320*Math.cos(((a[1]+b[1])/2)*rad),(b[1]-a[1])*111320);
 export function routeToCourse(route, coordinates) {
   if(!route?.id||!Array.isArray(coordinates)||coordinates.length<2)throw Error("Real route geometry is required.");
-  const valid=coordinates.filter(p=>Array.isArray(p)&&p.length>=2&&p.every(Number.isFinite));
-  if(valid.length<2)throw Error("No valid real road geometry.");
+  if(!coordinates.every(p=>Array.isArray(p)&&p.length>=2&&Number.isFinite(p[0])&&Number.isFinite(p[1])&&Math.abs(p[0])<=180&&Math.abs(p[1])<=90))throw Error("Invalid real road geometry.");
+  const valid=coordinates;
   // Preserve real bends and intersections, reduce the traversal scale for arcade play.
   const origin=valid[0], scale=.035, waypoints=[{id:"origin",x:0,z:0}], nodes=[],edges=[];
   let distance=0,previous=origin;

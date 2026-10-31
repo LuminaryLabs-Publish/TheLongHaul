@@ -2,7 +2,7 @@
 export function createTruckGrounding(THREE,body) {
   body.updateWorldMatrix(true,true);
   const inverse=new THREE.Matrix4().copy(body.matrixWorld).invert(),matrix=new THREE.Matrix4(),v=new THREE.Vector3(),vertices=[];
-  body.traverse(node=>{
+  body.traverseVisible(node=>{
     if(!node.isMesh)return;
     node.geometry.computeBoundingBox();const b=node.geometry.boundingBox;
     matrix.multiplyMatrices(inverse,node.matrixWorld);

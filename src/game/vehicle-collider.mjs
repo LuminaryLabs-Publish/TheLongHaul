@@ -1,16 +1,16 @@
 // Ground-plane collision footprints sized from the meshes built in app-chunk-3.js
 // and app-chunk-18.js. Local forward is +Z, matching the vehicle visuals.
 export const LONG_HAUL_TRUCK_COLLIDER = Object.freeze({
-  width: 3.65,
-  length: 8.2,
+  width: 3.25,
+  length: 8.15,
   offsetZ: -0.12
 });
 
 export const ARCADE_TRAFFIC_COLLIDERS = Object.freeze([
-  Object.freeze({ name: "car", width: 3.05, length: 4.85, offsetZ: 0 }),
-  Object.freeze({ name: "pickup", width: 3.35, length: 5.95, offsetZ: 0 }),
-  Object.freeze({ name: "box truck", width: 3.55, length: 7.6, offsetZ: 0 }),
-  Object.freeze({ name: "semi", width: 3.72, length: 11, offsetZ: 0 })
+  Object.freeze({ name: "car", width: 2.5, length: 4.82, offsetZ: 0 }),
+  Object.freeze({ name: "pickup", width: 2.68, length: 5.9, offsetZ: 0 }),
+  Object.freeze({ name: "box truck", width: 2.76, length: 7.55, offsetZ: 0 }),
+  Object.freeze({ name: "semi", width: 3.02, length: 10.9, offsetZ: 0 })
 ]);
 
 export function createVehicleCollider(position, heading, dimensions) {
@@ -40,4 +40,13 @@ export function vehicleCollidersOverlap(first, second) {
     if (distance > firstRadius + secondRadius) return false;
   }
   return true;
+}
+
+export function vehicleColliderOverlapsCircle(vehicle, x, z, radius) {
+  const dx = x - vehicle.x, dz = z - vehicle.z;
+  const localX = dx * vehicle.axisX.x + dz * vehicle.axisX.z;
+  const localZ = dx * vehicle.axisZ.x + dz * vehicle.axisZ.z;
+  const outsideX = Math.max(0, Math.abs(localX) - vehicle.halfWidth);
+  const outsideZ = Math.max(0, Math.abs(localZ) - vehicle.halfLength);
+  return outsideX * outsideX + outsideZ * outsideZ <= radius * radius;
 }

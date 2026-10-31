@@ -3,10 +3,11 @@
 const cache=new WeakMap();
 const size=192;
 const key=(x,z)=>x+":"+z;
+const noSegments=Object.freeze([]);
 export function roadIndex(course){
  if(!course||typeof course!=="object")return null;
  const cached=cache.get(course);
- if(cached&&cached.edges===course.edges)return cached;
+ if(cached&&cached.edges===course.edges&&cached.edgeCount===(course.edges?.length??0))return cached;
  const cells=new Map(),segments=[];
  for(const edge of course.edges||[])for(let i=1;i<(edge.samples?.length||0);i++){
   const a=edge.samples[i-1],b=edge.samples[i];
@@ -19,7 +20,7 @@ export function roadIndex(course){
     const k=key(x,z);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(id);
   }
  }
- const index={edges:course.edges,cells,segments};
+ const index={edges:course.edges,edgeCount:course.edges?.length??0,cells,segments,terrainCells:new Map()};
  cache.set(course,index);return index;
 }
 export function roadSegmentsNear(course,bounds){
@@ -42,6 +43,10 @@ export function candidateRoadSegments(course,point){
 
 // Bounded terrain influence: the index already pads every road by >=48 metres.
 export function terrainRoadSegments(course, point) {
- const index=roadIndex(course);if(!index)return [];
- return (index.cells.get(key(Math.floor(point.x/size),Math.floor(point.z/size)))||[]).map(id=>index.segments[id]);
+ const index=roadIndex(course);if(!index)return noSegments;
+ const cellKey=key(Math.floor(point.x/size),Math.floor(point.z/size));
+ const ids=index.cells.get(cellKey);if(!ids)return noSegments;
+ let entries=index.terrainCells.get(cellKey);
+ if(!entries){entries=ids.map(id=>index.segments[id]);index.terrainCells.set(cellKey,entries)}
+ return entries;
 }

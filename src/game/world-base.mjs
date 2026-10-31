@@ -67,6 +67,7 @@ export function terrainHeight(course, x, z) {
   }
   if (!road) return natural;
   const flattenRadius = road.edge.width * 0.78 + 16;
+  if (road.distance >= flattenRadius) return natural;
   const blend = clamp(1 - road.distance / flattenRadius, 0, 1);
   const smoothBlend = blend * blend * (3 - 2 * blend);
   return natural + (roadElevation(course, road) - natural) * smoothBlend;

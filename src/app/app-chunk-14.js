@@ -13,4 +13,46 @@
     reconcileHorizon=function(){if(!engine.n.coreWorld.getWorldDefinition(HORIZON_WORLD_ID))return;const state=readTruck(),active=engine.n.coreWorld.getActiveCells(HORIZON_WORLD_ID),leaves=active.filter(cell=>!active.some(other=>other.id!==cell.id&&other.level>cell.level&&_lhContainsBounds(cell.bounds,other.bounds))),ids=new Set(leaves.map(cell=>cell.id));for(const id of [...horizonHosts.keys()])if(!ids.has(id))releaseHorizonCell(id);for(const cell of leaves){if(_lhDistanceToBounds(state.position,cell.bounds)<CELL_SIZE*(ACTIVE_RADIUS+.25)&&Math.max(cell.bounds.maxX-cell.bounds.minX,cell.bounds.maxZ-cell.bounds.minZ)<CELL_SIZE*2){releaseHorizonCell(cell.id);continue}const patch=horizonPatches.get(cell.id);if(!patch)continue;const host=horizonHosts.get(cell.id);if(host&&host.patch===patch)continue;if(host)releaseHorizonCell(cell.id);realizeHorizonCell(patch)}}
     ribbonGeometry=function(roads,widthScale,yOffset){const groups=new Map();for(const road of roads){const list=groups.get(road.edgeId)??[];list.push(road);groups.set(road.edgeId,list)}const positions=[],uvs=[],indices=[];let vertexOffset=0;for(const segments of groups.values()){segments.sort((left,right)=>Number(left.id.split(":").at(-1))-Number(right.id.split(":").at(-1)));const points=[segments[0].a,...segments.map(segment=>segment.b)],widths=[segments[0].width,...segments.map(segment=>segment.width)],distance=[0];for(let i=1;i<points.length;i++)distance.push(distance[i-1]+Math.hypot(points[i].x-points[i-1].x,points[i].z-points[i-1].z));for(let i=0;i<points.length;i++){const previous=points[Math.max(0,i-1)],next=points[Math.min(points.length-1,i+1)],tx=next.x-previous.x,tz=next.z-previous.z,length=Math.hypot(tx,tz)||1,nx=-tz/length,nz=tx/length;let joinX=nx,joinZ=nz,miter=1;if(i>0&&i<points.length-1){const ax=points[i].x-previous.x,az=points[i].z-previous.z,al=Math.hypot(ax,az)||1,bx=next.x-points[i].x,bz=next.z-points[i].z,bl=Math.hypot(bx,bz)||1,n1x=-az/al,n1z=ax/al,n2x=-bz/bl,n2z=bx/bl,jx=n1x+n2x,jz=n1z+n2z,jl=Math.hypot(jx,jz)||1;joinX=jx/jl;joinZ=jz/jl;miter=clamp(1/Math.max(.56,joinX*n2x+joinZ*n2z),.72,1.8)}const half=widths[i]*widthScale*.5*miter,point=points[i],y=finite(point.y)+yOffset;positions.push(point.x+joinX*half,y,point.z+joinZ*half,point.x-joinX*half,y,point.z-joinZ*half);uvs.push(0,distance[i]/10,1,distance[i]/10)}for(let i=0;i<points.length-1;i++){const a=vertexOffset+i*2,b=a+1,c=a+2,d=a+3;indices.push(a,c,b,b,c,d)}vertexOffset+=points.length*2}const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute("uv",new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);geometry.computeVertexNormals();geometry.computeBoundingSphere();return geometry}
     const _lhRealizeCellBase=realizeCell;realizeCell=function(patch,options={}){_lhRealizeCellBase(patch,options);const entry=cellHosts.get(patch.cellId);if(!entry||options.visualOnly)return;for(const segment of patch.roads){if((hashText(`${segment.id}:utility`)&7)!==0)continue;const dx=segment.b.x-segment.a.x,dz=segment.b.z-segment.a.z,length=Math.hypot(dx,dz)||1,nx=-dz/length,nz=dx/length,side=(hashText(segment.id)&1)?1:-1,x=(segment.a.x+segment.b.x)/2+nx*(segment.width*.65+5)*side,z=(segment.a.z+segment.b.z)/2+nz*(segment.width*.65+5)*side,y=terrainHeight(course,x,z);const pole=mesh(geometries.cylinder,materials.trunk,{x,y:y+4.2,z},{x:.12,y:4.2,z:.12});const arm=mesh(geometries.box,materials.trunk,{x,y:y+8.1,z},{x:2.4,y:.12,z:.12});entry.group.add(pole,arm)}if(!patch.depots.length&&(hashText(`${patch.cellId}:landmark`)%19)===0){const x=patch.bounds.minX+CELL_SIZE*.72,z=patch.bounds.minZ+CELL_SIZE*.28,y=terrainHeight(course,x,z),tower=mesh(geometries.cylinder,materials.chrome,{x,y:y+5.5,z},{x:1.3,y:5.5,z:1.3}),tank=mesh(geometries.sphere,materials.blue,{x,y:y+12,z},{x:3.6,y:2.7,z:3.6});entry.group.add(tower,tank)}}
+    function _lhHazardsAt(segment){
+      if(course?.geography||segment.branchId!=="trunk"||Number(segment.laneCount)<5)return [];
+      const edgeId=segment.edgeId||segment.id.slice(0,segment.id.lastIndexOf(":"));
+      const edgeNumber=Number(edgeId.match(/trunk-edge-(\d+)$/)?.[1]);
+      const segmentNumber=Number(segment.id.slice(segment.id.lastIndexOf(":")+1));
+      if(!Number.isFinite(edgeNumber)||edgeNumber%2!==0||!Number.isFinite(segmentNumber))return [];
+      if(segmentNumber<2||segmentNumber>6)return [];
+      const dx=segment.b.x-segment.a.x,dz=segment.b.z-segment.a.z,length=Math.hypot(dx,dz)||1;
+      const heading=Math.atan2(dx,dz),laneWidth=Number(segment.laneWidth)||3.4,nx=-dz/length,nz=dx/length;
+      const kinds=["tire-debris","work-cones","pothole"];
+      const laneIndex=(segmentNumber-2+hashText(`${course.seed}:${edgeId}:hazard-lane`)%5)%5;
+      const lane=laneIndex-2,offset=lane*laneWidth,x=(segment.a.x+segment.b.x)*.5+nx*offset,z=(segment.a.z+segment.b.z)*.5+nz*offset;
+      return [{id:`${edgeId}:lane-hazard:${laneIndex}`,kind:kinds[(laneIndex+hashText(`${course.seed}:${edgeId}:hazard-kind`))%kinds.length],x,y:terrainHeight(course,x,z),z,heading,radius:1.35,lane,laneIndex}];
+    }
+    function _lhHazardVisual(hazard){
+      const group=new THREE.Group();group.position.set(hazard.x,hazard.y,hazard.z);group.rotation.y=hazard.heading;
+      const add=(geometry,material,position,scale,rotation={})=>group.add(mesh(geometry,material,position,scale,rotation));
+      if(hazard.kind==="tire-debris"){
+        for(const x of [-.38,.38])add(geometries.wheel,materials.truckDark,{x,y:.62,z:0},{x:.45,y:.45,z:.45},{z:Math.PI/2});
+        add(geometries.box,materials.truckRed,{y:.16,z:.12},{x:1.4,y:.22,z:.28},{y:.16});
+      }else if(hazard.kind==="work-cones"){
+        for(const x of [-.58,0,.58])add(geometries.cone,materials.yellow,{x,y:.42,z:0},{x:.28,y:.82,z:.28});
+        add(geometries.box,materials.truckRed,{y:.9,z:.05},{x:1.55,y:.13,z:.18});
+      }else{
+        add(geometries.circle,materials.truckDark,{y:.035},{x:1.25,y:1,z:.9},{x:-Math.PI/2});
+        for(const x of [-.62,.62])add(geometries.cone,materials.yellow,{x,y:.37,z:.65},{x:.24,y:.72,z:.24});
+      }
+      for(const side of [-1,1]){
+        const distance=side*32,ground=terrainHeight(course,hazard.x+Math.sin(hazard.heading)*distance,hazard.z+Math.cos(hazard.heading)*distance)-hazard.y;
+        add(geometries.box,materials.truckRed,{y:ground+1.2,z:distance},{x:1.35,y:.9,z:.16});
+        add(geometries.box,materials.yellow,{y:ground+1.2,z:distance+side*.12},{x:1.12,y:.18,z:.12});
+      }
+      for(const z of [-2.2,2.2])add(geometries.cone,materials.yellow,{y:.38,z},{x:.22,y:.72,z:.22});
+      return group;
+    }
+    function _lhAddLaneHazards(patch,options={}){
+      if(options.visualOnly||course?.geography)return;
+      const entry=cellHosts.get(patch.cellId);if(!entry||entry.visualOnly)return;
+      let changed=false;
+      for(const segment of patch.roads)for(const hazard of _lhHazardsAt(segment)){entry.obstacles.push({id:hazard.id,x:hazard.x,z:hazard.z,radius:hazard.radius,kind:"lane-hazard"});entry.group.add(_lhHazardVisual(hazard));changed=true}
+      if(changed)refreshObstacles();
+    }
     // Vehicle presentation is owned by app-chunk-9; terrain LOD does not override it.

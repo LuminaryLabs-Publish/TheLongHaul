@@ -33,7 +33,10 @@ export function createLongHaulCourseSchema(NexusEngine) {
         required: ["markers", "corridors"],
         properties: {
           markers: { type: "array" },
-          corridors: { type: "array" }
+          corridors: { type: "array" },
+          optionalRoads: { type: "array" },
+          roundabouts: { type: "array" },
+          routeChoices: { type: "array" }
         },
         additionalProperties: true
       },

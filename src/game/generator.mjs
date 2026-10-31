@@ -1,11 +1,13 @@
 import { BRANCH_PROFILES, PAR_TIME_SECONDS, hashText, normalizeAngle, pointKey, createEdge, edgeLength, deriveCourseBounds, validateCourse, segmentsIntersect } from "./shared.mjs";
+import { addOptionalBypass, roadsHaveClearance } from "./road-topology.mjs";
 
-function createCourseAttempt(random, seed, attempt) {
+function createCourseAttempt(random, seed, attempt, options = {}) {
+  const deterministicLayout = options.deterministicLayout === true;
   const course = {
     schema: "long-haul.course-package/1",
     packageId: `course-${hashText(`${seed}:${attempt}`).toString(36)}`,
     seed: String(seed),
-    generatorVersion: "long-haul-v2",
+    generatorVersion: "long-haul-v3",
     origin: { id: "origin", x: 0, z: 0 },
     hub: null,
     nodes: [],
@@ -13,6 +15,9 @@ function createCourseAttempt(random, seed, attempt) {
     branches: [],
     depots: [],
     signs: [],
+    optionalRoads: [],
+    roundabouts: [],
+    routeChoices: [],
     wildlife: [],
     validDepotId: null,
     scoring: { parTimeSeconds: PAR_TIME_SECONDS, parDistance: 1 },
@@ -33,8 +38,8 @@ function createCourseAttempt(random, seed, attempt) {
   let previous = course.origin;
   let heading = Math.PI;
   for (let index = 1; index <= 6; index += 1) {
-    const distance = 185 + random.range("course-layout", -12, 12);
-    heading += random.range("course-layout", -0.045, 0.045);
+    const distance = deterministicLayout ? 185 : 185 + random.range("course-layout", -12, 12);
+    if (!deterministicLayout) heading += random.range("course-layout", -0.045, 0.045);
     const node = {
       id: `trunk-node-${index}`,
       x: previous.x + Math.sin(heading) * distance,
@@ -42,12 +47,21 @@ function createCourseAttempt(random, seed, attempt) {
       branchId: "trunk"
     };
     addNode(node);
-    const edge = createEdge(`trunk-edge-${index}`, previous, node, { id: "trunk", name: "Dispatch Highway", roadClass: "paved-highway", surface: "paved", width: 28, roughness: 0.025 }, random.range("course-layout", -5, 5));
+    const edge = createEdge(`trunk-edge-${index}`, previous, node, { id: "trunk", name: "Dispatch Highway", roadClass: "paved-highway", surface: "paved", width: 28, laneCount: 5, laneWidth: 3.4, roughness: 0.025 }, deterministicLayout ? 0 : random.range("course-layout", -5, 5));
+    edge.laneCount = 5;
+    edge.laneWidth = 3.4;
     edge.length = edgeLength(edge);
     course.edges.push(edge);
     previous = node;
   }
   course.hub = previous;
+
+  // Reserve the optional bypass before destination branches are laid out.
+  // Branch placement checks this reserved route for crossing and road-width
+  // clearance, so the bypass has room before destination branches consume it.
+  const optionalBypass = addOptionalBypass(course);
+  if (!optionalBypass) return null;
+  course.optionalRoads = [optionalBypass];
 
   const baseAngles = [-1.08, -0.55, 0, 0.55, 1.08].map((offset) => Math.PI + offset);
   for (let branchIndex = 0; branchIndex < BRANCH_PROFILES.length; branchIndex += 1) {
@@ -55,17 +69,17 @@ function createCourseAttempt(random, seed, attempt) {
     const stream = `branch-${profile.id}`;
     if (!random.hasStream(stream)) random.fork("course-layout", profile.id, { id: stream });
     let current = course.hub;
-    let branchHeading = baseAngles[branchIndex] + random.range(stream, -0.08, 0.08);
+    let branchHeading = baseAngles[branchIndex] + (deterministicLayout ? 0 : random.range(stream, -0.08, 0.08));
     const nodeIds = [];
     let length = 0;
 
     for (let step = 0; step < profile.steps; step += 1) {
       let chosen = null;
       for (let attemptIndex = 0; attemptIndex < 32 && !chosen; attemptIndex += 1) {
-        const turnChoices = [-1, -0.5, 0, 0, 0, 0.5, 1];
-        const turn = random.choose(stream, turnChoices) * profile.turnBias;
+        const turnChoices = deterministicLayout ? [0] : [-1, -0.5, 0, 0, 0, 0.5, 1];
+        const turn = (deterministicLayout ? 0 : random.choose(stream, turnChoices)) * profile.turnBias;
         const nextHeading = normalizeAngle(branchHeading + turn);
-        const distance = profile.stepLength * random.range(stream, 0.88, 1.12);
+        const distance = deterministicLayout ? profile.stepLength : profile.stepLength * random.range(stream, 0.88, 1.12);
         const candidate = {
           id: `${profile.id}-node-${step}`,
           x: current.x + Math.sin(nextHeading) * distance,
@@ -77,18 +91,21 @@ function createCourseAttempt(random, seed, attempt) {
         if (occupied.has(key) || radial > 4200) continue;
         const tooNear = course.nodes.some((node) => node.id !== current.id && Math.hypot(node.x - candidate.x, node.z - candidate.z) < 24);
         if (tooNear) continue;
-        const probe = { ...candidate };
-        const crosses = course.edges.some((edge) => {
-          if (edge.from === current.id || edge.to === current.id) return false;
-          return edge.samples.slice(1).some((point, sampleIndex) => segmentsIntersect(current, probe, edge.samples[sampleIndex], point));
+        const candidateEdge = createEdge(`${profile.id}-edge-${step}`, current, candidate, profile, deterministicLayout ? 0 : random.range(stream, -profile.width * 0.65, profile.width * 0.65));
+        const crosses = course.edges.some((existing) => {
+          if (existing.from === current.id || existing.to === current.id) return false;
+          return candidateEdge.samples.slice(1).some((point, sampleIndex) =>
+            existing.samples.slice(1).some((existingPoint, existingIndex) =>
+              segmentsIntersect(candidateEdge.samples[sampleIndex], point, existing.samples[existingIndex], existingPoint)));
         });
-        if (crosses) continue;
-        chosen = { candidate, nextHeading };
+        const overlapsBypass = course.edges.some((existing) => existing.branchId === optionalBypass.id && !roadsHaveClearance(candidateEdge, existing));
+        if (crosses || overlapsBypass) continue;
+        chosen = { candidate, nextHeading, edge: candidateEdge };
       }
       if (!chosen) return null;
       addNode(chosen.candidate);
       nodeIds.push(chosen.candidate.id);
-      const edge = createEdge(`${profile.id}-edge-${step}`, current, chosen.candidate, profile, random.range(stream, -profile.width * 0.65, profile.width * 0.65));
+      const edge = chosen.edge;
       edge.length = edgeLength(edge);
       course.edges.push(edge);
       length += edge.length;
@@ -128,7 +145,9 @@ function createCourseAttempt(random, seed, attempt) {
     }
   }
 
-  const linkPairs = [[0, 1], [3, 4]];
+  // Keep the recovery layout to five separated radial routes; optional
+  // county connectors remain part of randomized courses only.
+  const linkPairs = deterministicLayout ? [] : [[0, 1], [3, 4]];
   for (const [leftIndex, rightIndex] of linkPairs) {
     const left = course.branches[leftIndex];
     const right = course.branches[rightIndex];
@@ -136,18 +155,22 @@ function createCourseAttempt(random, seed, attempt) {
     const rightNode = course.nodes.find((node) => node.id === right.nodeIds[Math.floor(right.nodeIds.length * 0.55)]);
     if (!leftNode || !rightNode || Math.hypot(leftNode.x - rightNode.x, leftNode.z - rightNode.z) > 520) continue;
     const profile = { id: `link-${left.id}-${right.id}`, name: "County Connector", roadClass: "gravel", surface: "gravel", width: 16, roughness: 0.3 };
-    const edge = createEdge(profile.id, leftNode, rightNode, profile, random.range("course-layout", -30, 30));
+    const edge = createEdge(profile.id, leftNode, rightNode, profile, deterministicLayout ? 0 : random.range("course-layout", -30, 30));
     edge.length = edgeLength(edge);
     const crosses = course.edges.some((existing) => {
       if ([existing.from, existing.to].includes(leftNode.id) || [existing.from, existing.to].includes(rightNode.id)) return false;
       return edge.samples.slice(1).some((point, index) => existing.samples.slice(1).some((other, otherIndex) => segmentsIntersect(edge.samples[index], point, existing.samples[otherIndex], other)));
     });
-    if (!crosses) course.edges.push(edge);
+    const overlapsBypass = course.edges.some((existing) => existing.branchId === optionalBypass.id && !roadsHaveClearance(edge, existing));
+    if (!crosses && !overlapsBypass) course.edges.push(edge);
   }
 
   course.validDepotId = random.choose("valid-depot", course.depots.map((depot) => depot.id));
-  const routeDistance = course.edges.reduce((sum, edge) => sum + edge.length, 0);
-  course.scoring.parDistance = Math.round((routeDistance * 0.42) / 25) * 25;
+  const targetDepot = course.depots.find((depot) => depot.id === course.validDepotId);
+  const targetBranch = course.branches.find((branch) => branch.id === targetDepot?.branchId);
+  const highwayDistance = course.edges.filter((edge) => edge.branchId === "trunk").reduce((sum, edge) => sum + edge.length, 0);
+  const routeDistance = highwayDistance + (targetBranch?.length ?? 0) + 30;
+  course.scoring.parDistance = Math.max(25, Math.round(routeDistance / 25) * 25);
   course.bounds = deriveCourseBounds(course);
 
   const wildlifeEdges = course.edges.filter((edge) => edge.branchId === "wildlife-heavy");
@@ -185,12 +208,25 @@ export function generateCourse(engine, seed, options = {}) {
   for (const stream of ["course-layout", "valid-depot", "terrain", "vegetation", "wildlife", "materials", "presentation"]) {
     if (!random.hasStream(stream)) random.createStream(stream);
   }
-  const maxAttempts = Math.max(1, Math.floor(options.maxAttempts ?? 32));
+  const requestedAttempts = Number(options.maxAttempts ?? 32);
+  const maxAttempts = Number.isFinite(requestedAttempts)
+    ? Math.max(1, Math.min(64, Math.floor(requestedAttempts)))
+    : 32;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     random.setWorldSeed(`${seed}:attempt:${attempt}`);
     for (const stream of ["course-layout", "valid-depot", "terrain", "vegetation", "wildlife", "materials", "presentation"]) random.createStream(stream, { replace: true });
     const course = createCourseAttempt(random, seed, attempt);
     if (course) return course;
   }
+
+  // A final fixed layout prevents random branch placement from exhausting
+  // retries. Straight radial branches leave clear space around the reserved
+  // highway bypass and preserve the same five-destination course contract.
+  random.setWorldSeed(`${seed}:deterministic-fallback`);
+  for (const stream of ["course-layout", "valid-depot", "terrain", "vegetation", "wildlife", "materials", "presentation"]) {
+    random.createStream(stream, { replace: true });
+  }
+  const fallback = createCourseAttempt(random, seed, maxAttempts, { deterministicLayout: true });
+  if (fallback) return fallback;
   throw new Error("Unable to generate a valid course within the bounded attempt limit.");
 }

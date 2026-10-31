@@ -20,8 +20,9 @@ export function createLongHaulDeliveryKit(N) {
       name: "longHaulDeliverySystem",
       system(world) {
         let state = world.getResource(DeliveryState);
-        for (const request of world.readEvents(DeliveryReset)) state = initialDelivery();
-        for (const request of world.readEvents(DeliveryLoad)) state = { ...initialDelivery(), candidateDepotIds: clone(request.candidateDepotIds), validDepotId: String(request.validDepotId), sequence: state.sequence + 1 };
+        let changed = false;
+        for (const request of world.readEvents(DeliveryReset)) { state = initialDelivery(); changed = true; }
+        for (const request of world.readEvents(DeliveryLoad)) { state = { ...initialDelivery(), candidateDepotIds: clone(request.candidateDepotIds), validDepotId: String(request.validDepotId), sequence: state.sequence + 1 }; changed = true; }
         for (const request of world.readEvents(DeliveryCheck)) {
           const depotId = String(request.depotId);
           if (!state.candidateDepotIds.includes(depotId)) continue;
@@ -35,8 +36,9 @@ export function createLongHaulDeliveryKit(N) {
             lastCheck: { depotId, accepted, rejected: !accepted, duplicate, sequence: state.sequence + 1 },
             sequence: state.sequence + 1
           };
+          changed = true;
         }
-        world.setResource(DeliveryState, state);
+        if (changed) world.setResource(DeliveryState, state);
       }
     }],
     initWorld({ world }) { world.setResource(DeliveryState, initialDelivery()); },

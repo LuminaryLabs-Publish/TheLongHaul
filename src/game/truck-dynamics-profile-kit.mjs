@@ -13,7 +13,7 @@ export const DEFAULT_TRUCK_DYNAMICS_PROFILE = Object.freeze({
   steering: Object.freeze({ response: 6.8, lowSpeedAngle: 0.55, highSpeedAngle: 0.13, wheelbase: 6.1, yawResponse: 0.72 }),
   grip: Object.freeze({ highway: 4.5, road: 3.8, rough: 2.15, shoulder: 1.55, offRoad: 0.92, handbrake: 0.48 }),
   suspension: Object.freeze({ travel: 0.92, spring: 15.5, compressionDamping: 8.8, extensionDamping: 5.6, landingRestitution: 0.1 }),
-  roll: Object.freeze({ spring: 8.5, damping: 4.7, lateralScale: 0.043, slopeScale: 0.72, warningAngle: 0.58, tipAngle: 0.9, settledAngle: 1.43 }),
+  roll: Object.freeze({ spring: 8.5, damping: 4.7, lateralScale: 0.0135, slopeScale: 0.72, warningAngle: 0.58, tipAngle: 0.9, settledAngle: 1.43 }),
   air: Object.freeze({ gravity: 8.6, steering: 0.14, pitchControl: 0.11, maximumSubsteps: 8, maximumSubstep: 1 / 120 }),
   boost: Object.freeze({ forceMultiplier: 1.1, speedMultiplier: 1.08 })
 });
@@ -32,7 +32,8 @@ export function createLongHaulTruckDynamicsProfileKit(N, options = {}) {
     resources: { TruckDynamicsProfileState },
     events: { ConfigureTruckDynamics },
     systems: [{ phase: "resolve", name: "longHaulTruckDynamicsProfileSystem", system(world) {
-      let state = world.getResource(TruckDynamicsProfileState);
+      const previousState = world.getResource(TruckDynamicsProfileState);
+      let state = previousState;
       for (const request of world.readEvents(ConfigureTruckDynamics)) state = {
         ...state,
         ...clone(request),
@@ -43,7 +44,7 @@ export function createLongHaulTruckDynamicsProfileKit(N, options = {}) {
         air: { ...(state.air ?? {}), ...(clone(request.air) ?? {}) },
         boost: { ...(state.boost ?? {}), ...(clone(request.boost) ?? {}) }
       };
-      world.setResource(TruckDynamicsProfileState, state);
+      if (state !== previousState) world.setResource(TruckDynamicsProfileState, state);
     }}],
     initWorld({ world }) { world.setResource(TruckDynamicsProfileState, clone(initial)); },
     createApi({ world }) {

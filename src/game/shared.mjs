@@ -145,6 +145,49 @@ export function validateCourse(course) {
   }
   for (const depot of course.depots) if (!visited.has(depot.nodeId)) issues.push(`unreachable:${depot.id}`);
 
+  if (course.generatorVersion === "long-haul-v3") {
+    const edgesById = new Map(course.edges.map((edge) => [edge.id, edge]));
+    const trunkEdges = course.edges.filter((edge) => edge.branchId === "trunk");
+    const trunkNodes = new Set(trunkEdges.flatMap((edge) => [edge.from, edge.to]));
+    if (!trunkEdges.length || trunkEdges.some((edge) => edge.laneCount !== 5 || !(edge.laneWidth > 0) || edge.width < edge.laneCount * edge.laneWidth)) issues.push("invalid-highway-lanes");
+    const bypass = (course.optionalRoads ?? []).find((road) => road.junction === "roundabout");
+    const entry = edgesById.get(bypass?.entryEdgeId), exit = edgesById.get(bypass?.exitEdgeId);
+    const ringEdges = (bypass?.roundaboutEdgeIds ?? []).map((id) => edgesById.get(id));
+    const roundabout = (course.roundabouts ?? []).find((item) => item.id === bypass?.roundaboutId);
+    if (!bypass || !entry || !exit || entry.type !== "bypass-off-ramp" || exit.type !== "bypass-on-ramp" || !trunkNodes.has(entry.from) || !trunkNodes.has(exit.to)) {
+      issues.push("missing-connected-bypass-ramps");
+    } else {
+      const highwaySeen = new Set(), highwayPending = [entry.from];
+      while (highwayPending.length) {
+        const node = highwayPending.pop();
+        if (highwaySeen.has(node)) continue;
+        highwaySeen.add(node);
+        for (const edge of trunkEdges) {
+          if (edge.from === node) highwayPending.push(edge.to);
+          else if (edge.to === node) highwayPending.push(edge.from);
+        }
+      }
+      if (!highwaySeen.has(exit.to)) issues.push("disconnected-highway-alternative");
+      const ringAdjacency = new Map();
+      for (const edge of ringEdges) {
+        if (!edge || edge.type !== "roundabout" || edge.optional !== true) continue;
+        for (const [from, to] of [[edge.from, edge.to], [edge.to, edge.from]]) {
+          if (!ringAdjacency.has(from)) ringAdjacency.set(from, []);
+          ringAdjacency.get(from).push(to);
+        }
+      }
+      const seen = new Set(), pending = [entry.to];
+      while (pending.length) {
+        const node = pending.pop();
+        if (seen.has(node)) continue;
+        seen.add(node);
+        pending.push(...(ringAdjacency.get(node) ?? []));
+      }
+      if (ringEdges.length < 3 || ringEdges.some((edge) => !edge || edge.type !== "roundabout" || edge.optional !== true) || !seen.has(exit.from)) issues.push("disconnected-bypass-roundabout");
+    }
+    if (!roundabout || !(roundabout.radius > 0) || (roundabout.approaches ?? []).filter((approach) => approach.yield === true).length < 2) issues.push("missing-roundabout-approaches");
+  }
+
   for (let left = 0; left < course.edges.length; left += 1) {
     const a = course.edges[left];
     for (let right = left + 1; right < course.edges.length; right += 1) {

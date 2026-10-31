@@ -12,7 +12,7 @@ export function createLongHaulCourseKit(N) {
     id: "long-haul-course-kit",
     domain: "long-haul-course",
     apiName: "longHaulCourse",
-    services: ["course-package", "exploration", "route-query"],
+    services: ["course-package", "exploration", "route-query", "route-choice-topology"],
     stability: "game-stable",
     version: "2.0.0",
     resources: { CourseState },
@@ -21,7 +21,8 @@ export function createLongHaulCourseKit(N) {
       phase: "resolve",
       name: "longHaulCourseSystem",
       system(world) {
-        let state = world.getResource(CourseState);
+        const previousState = world.getResource(CourseState);
+        let state = previousState;
         for (const request of world.readEvents(CourseReset)) state = initialCourseState();
         for (const request of world.readEvents(CourseLoad)) state = { course: clone(request.course), exploredEdgeIds: [], discoveredDepotIds: [], sequence: state.sequence + 1 };
         for (const request of world.readEvents(CourseSample)) {
@@ -33,9 +34,11 @@ export function createLongHaulCourseKit(N) {
             if(!explored.has(edge.id)&&segmentInfo(point,a,b).distance<75)explored.add(edge.id);
           }
           for (const depot of state.course.depots) if (Math.hypot(point.x - depot.x, point.z - depot.z) < 115) discovered.add(depot.id);
-          state = { ...state, exploredEdgeIds: [...explored], discoveredDepotIds: [...discovered], sequence: state.sequence + 1 };
+          if (explored.size !== state.exploredEdgeIds.length || discovered.size !== state.discoveredDepotIds.length) {
+            state = { ...state, exploredEdgeIds: [...explored], discoveredDepotIds: [...discovered], sequence: state.sequence + 1 };
+          }
         }
-        world.setResource(CourseState, state);
+        if (state !== previousState) world.setResource(CourseState, state);
       }
     }],
     initWorld({ world }) { world.setResource(CourseState, initialCourseState()); },
@@ -49,6 +52,9 @@ export function createLongHaulCourseKit(N) {
         reset() { world.emit(CourseReset, {}); return get(); },
         nearestRoad(point) { return nearestRoad(world.getResource(CourseState)?.course, point); },
         nearestDepot(point) { return nearestDepot(world.getResource(CourseState)?.course, point); },
+        getRouteChoices() { return clone(world.getResource(CourseState)?.course?.routeChoices ?? []); },
+        getOptionalRoads() { return clone(world.getResource(CourseState)?.course?.optionalRoads ?? []); },
+        getRoundabouts() { return clone(world.getResource(CourseState)?.course?.roundabouts ?? []); },
         snapshot: get,
         loadSnapshot(snapshot = {}) { world.setResource(CourseState, { ...initialCourseState(), ...clone(snapshot) }); return get(); }
       };

@@ -1,5 +1,16 @@
 import { clone, clamp, finite } from "./shared.mjs";
 
+function positionWildlife(hazard, elapsed) {
+  const cycle = (hazard.phase + elapsed * hazard.speed) % 1;
+  const ping = cycle < 0.5 ? cycle * 2 : (1 - cycle) * 2;
+  return {
+    ...hazard,
+    x: hazard.start.x + (hazard.end.x - hazard.start.x) * ping,
+    z: hazard.start.z + (hazard.end.z - hazard.start.z) * ping,
+    direction: cycle < 0.5 ? 1 : -1
+  };
+}
+
 export function createLongHaulWildlifeKit(N, RunState) {
   const WildlifeState = N.defineResource("long-haul.wildlife.state");
   const WildlifeLoad = N.defineEvent("long-haul.wildlife.load.request");
@@ -19,25 +30,18 @@ export function createLongHaulWildlifeKit(N, RunState) {
       name: "longHaulWildlifeSystem",
       system(world) {
         let state = world.getResource(WildlifeState);
-        for (const request of world.readEvents(WildlifeReset)) state = initialWildlife();
-        for (const request of world.readEvents(WildlifeLoad)) state = { hazards: clone(request.hazards), elapsed: 0, sequence: state.sequence + 1 };
+        let changed = false;
+        for (const request of world.readEvents(WildlifeReset)) { state = initialWildlife(); changed = true; }
+        for (const request of world.readEvents(WildlifeLoad)) { state = { hazards: clone(request.hazards).map(hazard => positionWildlife(hazard, 0)), elapsed: 0, sequence: state.sequence + 1 }; changed = true; }
         const run = world.getResource(RunState);
         const dt = run?.status === "running" ? clamp(finite(world.__nexusClock?.delta), 0, 1 / 15) : 0;
-        if (dt > 0) {
+        if (dt > 0 && state.hazards.length > 0) {
           const elapsed = state.elapsed + dt;
-          const hazards = state.hazards.map((hazard) => {
-            const cycle = (hazard.phase + elapsed * hazard.speed) % 1;
-            const ping = cycle < 0.5 ? cycle * 2 : (1 - cycle) * 2;
-            return {
-              ...hazard,
-              x: hazard.start.x + (hazard.end.x - hazard.start.x) * ping,
-              z: hazard.start.z + (hazard.end.z - hazard.start.z) * ping,
-              direction: cycle < 0.5 ? 1 : -1
-            };
-          });
+          const hazards = state.hazards.map(hazard => positionWildlife(hazard, elapsed));
           state = { ...state, hazards, elapsed, sequence: state.sequence + 1 };
+          changed = true;
         }
-        world.setResource(WildlifeState, state);
+        if (changed) world.setResource(WildlifeState, state);
       }
     }],
     initWorld({ world }) { world.setResource(WildlifeState, initialWildlife()); },

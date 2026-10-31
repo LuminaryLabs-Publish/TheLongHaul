@@ -14,7 +14,7 @@
       if(key!==lastHorizonKey){lastHorizonKey=key;engine.n.coreWorld.setFocus(HORIZON_WORLD_ID,{position:state.position});engine.n.coreWorld.updateWorld(HORIZON_WORLD_ID)}
       for(const [id,host] of horizonHosts)if(_lhDistanceToBounds(state.position,host.patch.bounds)>1800)releaseHorizonCell(id);
       const jobs=[...horizonJobs].sort((a,b)=>_lhDistanceToBounds(state.position,a[1].cell.bounds)-_lhDistanceToBounds(state.position,b[1].cell.bounds));
-      const started=performance.now();for(const [id,job] of jobs){horizonJobs.delete(id);const width=job.cell.bounds.maxX-job.cell.bounds.minX;if(width>1536||_lhDistanceToBounds(state.position,job.cell.bounds)>1800){releaseHorizonCell(id);continue}if(horizonHosts.size>=32&&!horizonHosts.has(id))continue;const patch=buildHorizonPatch(job.cell,job.focus);releaseHorizonCell(id);horizonPatches.set(id,patch);realizeHorizonCell(patch);if(performance.now()-started>=2)break}
+      const started=performance.now();for(const [id,job] of jobs){const width=job.cell.bounds.maxX-job.cell.bounds.minX;if(width>1536||_lhDistanceToBounds(state.position,job.cell.bounds)>1800){horizonJobs.delete(id);releaseHorizonCell(id);continue}if(horizonHosts.size>=32&&!horizonHosts.has(id))continue;horizonJobs.delete(id);const patch=buildHorizonPatch(job.cell,{x:state.position.x,z:state.position.z});releaseHorizonCell(id);horizonPatches.set(id,patch);realizeHorizonCell(patch);if(performance.now()-started>=2)break}
       horizonRoot.visible=true;
     }
     function clearHorizonWorld(){try{if(engine.n.coreWorld.getWorldDefinition(HORIZON_WORLD_ID))engine.n.coreWorld.removeWorld(HORIZON_WORLD_ID)}catch{}for(const id of [...horizonHosts.keys()])releaseHorizonCell(id);horizonJobs.clear();horizonPatches.clear();lastHorizonKey=""}
