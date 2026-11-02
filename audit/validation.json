@@ -1,0 +1,15 @@
+{
+  "allowed_origins": [
+    "http://127.0.0.1:9000"
+  ],
+  "required_tools": [
+    "node",
+    "npm"
+  ],
+  "required_env": [],
+  "scenario_files": [
+    "audit/suites/regression.jsonl"
+  ],
+  "runs_dir": "audit/runs",
+  "services": {}
+}

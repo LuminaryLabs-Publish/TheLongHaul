@@ -1,0 +1,2 @@
+{"test":"TLH-REG-001","name":"Existing TheLongHaul deterministic regression suites","suite":"baseline","services":[]}
+{"do":"command","command":["npm","test"],"cwd":".","timeout_seconds":240}

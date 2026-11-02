@@ -1,0 +1,43 @@
+{
+  "schema": "thelonghaul.audit.checks.v1",
+  "status": "planned",
+  "sampling": {
+    "everySimulationTicks": 6,
+    "checkpointAtSegmentBoundaries": true
+  },
+  "tolerances": {
+    "scoreAndWallet": "exact",
+    "payoutIdentity": "exactly-once",
+    "positionAndSpeed": "numeric tolerance to be calibrated per target browser",
+    "roadResources": "bounded by existing contracts",
+    "frameErrors": 0,
+    "steeringReversalsPer10Seconds": 3
+  },
+  "conditions": [
+    {
+      "when": "unexpected scene/terminal state",
+      "then": "fail+dump-state"
+    },
+    {
+      "when": "pickup missed",
+      "then": "assert replacement; continue explicitly"
+    },
+    {
+      "when": "collision",
+      "then": "assert damage and combo response"
+    },
+    {
+      "when": "delivery",
+      "then": "assert atomic payout and next load"
+    },
+    {
+      "when": "reload",
+      "then": "assert state/receipt continuity"
+    },
+    {
+      "when": "input oscillation",
+      "then": "fail steering-quality; do not silently edit footage"
+    }
+  ],
+  "assertionSemantics": "Event checks are triggered by observed state changes, never by elapsed time alone; segment time is a budget, not proof that an action happened."
+}
