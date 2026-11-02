@@ -21,6 +21,8 @@ export function createLongHaulRunKit(N) {
     penaltyTotal: 0,
     penalties: [],
     recoveryUsed: false,
+    recoveryCount: 0,
+    lastRecoveryTime: -100,
     stuckSeconds: 0,
     failureReason: null,
     result: null,
@@ -78,7 +80,7 @@ export function createLongHaulRunKit(N) {
             sequence: state.sequence + 1
           };
         }
-        for (const request of world.readEvents(RunRecovery)) state = { ...state, recoveryUsed: true, stuckSeconds: 0, lastPosition: clone(request.position ?? state.lastPosition), sequence: state.sequence + 1 };
+        for (const request of world.readEvents(RunRecovery)) state = { ...state, recoveryUsed: true, recoveryCount: (state.recoveryCount ?? 0) + 1, lastRecoveryTime: state.rawTime, stuckSeconds: 0, lastPosition: clone(request.position ?? state.lastPosition), sequence: state.sequence + 1 };
         for (const request of world.readEvents(RunComplete)) state = { ...state, status: "completed", result: clone(request.result), sequence: state.sequence + 1 };
         for (const request of world.readEvents(RunFail)) if (!["completed", "failed"].includes(state.status)) state = { ...state, status: "failed", failureReason: String(request.reason), sequence: state.sequence + 1 };
         if (state !== previousState) world.setResource(RunState, state);

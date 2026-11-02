@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/atomic-domain-kits-smoke.mjs && node tests/long-haul-game-smoke.mjs && node tests/static-shell-smoke.mjs",
+    "test": "node tests/atomic-domain-kits-smoke.mjs && node tests/long-haul-game-smoke.mjs && node tests/vehicle-feel-regression.mjs && node tests/arcade-score-regression.mjs && node tests/encounter-regression.mjs && node tests/static-shell-smoke.mjs",
     "build": "node tools/build-runtime.mjs",
-    "perf": "node tools/capture-performance.mjs"
+    "perf": "node tools/capture-performance.mjs",
+    "validate:gameplay": "node tools/validate-gameplay.mjs",
+    "record:gameplay": "node tools/record-gameplay.mjs --seconds=60"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

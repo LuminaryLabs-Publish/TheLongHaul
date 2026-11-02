@@ -8,12 +8,12 @@
     const boostReadout=document.createElement("div");boostReadout.id="boost-readout";document.getElementById("game-stage").append(boostReadout);
     let boostVisualStrength=0,boostReadoutText="";
     function updateBoostVisuals(dt){
-      const driving=currentScene()==="driving",active=driving&&forwardBoost.remaining>0,target=active&&settings.motion?1:0;
+      const driving=currentScene()==="driving",active=driving&&(forwardBoost.remaining>0||engine.n.coreInput.getIntent().boost),target=active&&settings.motion?1:0;
       boostVisualStrength=driving?lerp(boostVisualStrength,target,1-Math.exp(-dt*(target?9:6))):0;
       if(!settings.motion)boostVisualStrength=0;
       boostStreaks.visible=boostVisualStrength>.01;boostMaterial.opacity=boostVisualStrength*.65;
       boostFocus.style.opacity=String(boostVisualStrength*.7);
-      boostReadout.classList.toggle("active",active);const label=`BOOST · ${forwardBoost.remaining.toFixed(1)}s`;
+      boostReadout.classList.toggle("active",active);const label=forwardBoost.remaining>0?`RUSH · ${forwardBoost.remaining.toFixed(1)}s`:"BOOST";
       if(label!==boostReadoutText){boostReadout.textContent=label;boostReadoutText=label}
       if(!boostStreaks.visible)return;
       const count=settings.quality?boostStreakCount:48;boostGeometry.setDrawRange(0,count*2);
@@ -58,7 +58,7 @@
       let height;
       if(patch){const data=patch.terrain,n=data.segments,gx=clamp((x-patch.bounds.minX)/CELL_SIZE*n,0,n-1e-8),gz=clamp((z-patch.bounds.minZ)/CELL_SIZE*n,0,n-1e-8),ix=Math.floor(gx),iz=Math.floor(gz),u=gx-ix,v=gz-iz,a=iz*(n+1)+ix,h=data.heights,h00=h[a],h10=h[a+1],h01=h[a+n+1],h11=h[a+n+2];height=u+v<=1?h00+(h10-h00)*u+(h01-h00)*v:h11+(h01-h11)*(1-u)+(h10-h11)*(1-v)}else height=terrainHeight(course,x,z);
       for(const entry of truckSurfaceEntries)height=sampleDriveSurface(entry.group.userData.driveSurface??[],x,z,height);
-      return height;
+      return arcadeRampGround({x,z},height);
     }
     function updateTruckVisual(dt){
       if(!truckRig)return;const state=readTruck(),rig=truckRig,travel=readDynamics().suspension?.travel??.92;
@@ -66,9 +66,9 @@
       rig.root.position.set(state.position.x,Math.max(state.position.y-travel+.02,terrainHeight(course,state.position.x,state.position.z)+.02),state.position.z);
       rig.root.rotation.set(0,state.heading,0);
       const normal=state.groundNormal??{x:0,y:1,z:0},s=Math.sin(state.heading),c=Math.cos(state.heading),forwardSlope=normal.x*s+normal.z*c,rightSlope=normal.x*c-normal.z*s;
-      const pitch=Math.atan2(forwardSlope,Math.max(.25,normal.y)),slopeRoll=-Math.atan2(rightSlope,Math.max(.25,normal.y));
-      const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-.36,.36);
-      rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.5,.5),1-Math.exp(-8*dt)),0,lerp(rig.leanPivot.rotation.z,lean+slopeRoll,1-Math.exp(-8*dt)));
+      const pitch=state.grounded?Math.atan2(forwardSlope,Math.max(.25,normal.y)):0,slopeRoll=state.grounded?-Math.atan2(rightSlope,Math.max(.25,normal.y)):0;
+      const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-.62,.62);
+      rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lerp(rig.leanPivot.rotation.z,lean+slopeRoll,1-Math.exp(-8*dt)));
       rig.leanPivot.position.y=1.5-clamp(state.suspensionCompression??0,-1,1)*.12;
       truckSurfaceEntries.length=0;const cx=Math.floor(state.position.x/CELL_SIZE),cz=Math.floor(state.position.z/CELL_SIZE);for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){const entry=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${x}:${z}`);if(entry)truckSurfaceEntries.push(entry)}
       rig.grounding.resolve(rig.root,rig.leanPivot,truckRenderedGroundHeight);
@@ -79,9 +79,9 @@
       sky.position.set(state.position.x,0,state.position.z);cloudRoot.position.set(state.position.x,0,state.position.z);sun.position.set(state.position.x-150,230,state.position.z-110);sun.target.position.set(state.position.x,0,state.position.z);sun.target.updateMatrixWorld();
     }
     const wildlifeHazardsById=new Map();function updateWildlifeVisual(){if(!wildlifeRig)return;const hazards=readWildlife().hazards,hazardById=wildlifeHazardsById;hazardById.clear();for(const hazard of hazards)hazardById.set(hazard.id,hazard);for(const animal of wildlifeRig.animals){const hazard=hazardById.get(animal.userData.id);if(!hazard){animal.visible=false;continue}animal.visible=true;animal.position.set(hazard.x,terrainHeight(course,hazard.x,hazard.z),hazard.z);const dx=(hazard.end.x-hazard.start.x)*(hazard.direction||1),dz=(hazard.end.z-hazard.start.z)*(hazard.direction||1);animal.rotation.y=Math.atan2(dx,dz);const stride=performance.now()*.004+animal.userData.phase;animal.userData.legs.forEach((leg,index)=>leg.rotation.x=Math.sin(stride+(index%2?Math.PI:0))*.48);animal.position.y+=Math.abs(Math.sin(stride))*.06}}
-    function applyCamera(){const descriptor=smoothing.getDescriptor("player-camera");camera.position.fromArray(descriptor.position);camera.quaternion.fromArray(descriptor.quaternion);const fov=descriptor.fov+boostVisualStrength*14;if(camera.fov!==fov){camera.fov=fov;camera.updateProjectionMatrix()}}
+    function applyCamera(){const descriptor=smoothing.getDescriptor("player-camera");camera.position.fromArray(descriptor.position);camera.quaternion.fromArray(descriptor.quaternion);const fov=descriptor.fov+boostVisualStrength*14;if(camera.fov!==fov){camera.fov=fov;camera.updateProjectionMatrix()}applyImpactCamera()}
 
     function interactionPrompt(){const state=readTruck(),run=readRun(),condition={fuel:meters.get("fuel")?.value??0};const surface=surfaceAt(state.position);if((condition.fuel<=0||run.stuckSeconds>2.8||(surface.surface==="off-road"&&Math.abs(state.speed)<.8))&&!run.recoveryUsed)return"E · Call roadside recovery";const nearest=nearestDepot(course,state.position);if(nearest&&nearest.distance<=nearest.depot.radius+8)return Math.abs(state.speed)>1.1?"Brake to a full stop":`E · Check ${nearest.depot.name}`;return""}
     function setMeter(element,value,warning=30){const safe=clamp(value,0,100);element.style.width=`${safe}%`;element.style.background=safe<warning?"var(--red)":safe<55?"var(--amber)":"var(--green)"}
-    function updateHud(surface){if(!course)return;const state=readTruck(),run=readRun(),delivery=readDelivery();const fuel=meters.get("fuel")?.value??0,truck=meters.get("truck-condition")?.value??0,cargo=meters.get("cargo-condition")?.value??0,time=meters.get("remaining-time")?.value??0;$("#timer").textContent=formatTime(time);$("#map-time").textContent=formatTime(time);$("#speed").textContent=String(Math.round(Math.abs(state.speed)*2.237));$("#road-name").textContent=surface?.road?.edge.branchName??(surface?.surface==="shoulder"?"Road shoulder":surface?.surface==="off-road"?"Off road":"Freight Road");$("#fuel-num").textContent=`${Math.ceil(fuel)}%`;$("#truck-num").textContent=`${Math.floor(100-truck)}% damage`;$("#cargo-num").textContent=`${Math.ceil(cargo)}%`;setMeter($("#fuel-meter"),fuel,22);setMeter($("#truck-meter"),truck,35);setMeter($("#cargo-meter"),cargo,40);$("#destination-name").textContent=course.depots.find(depot=>depot.id===delivery.validDepotId)?.name??"Receiving yard";$("#checked-num").textContent=`${delivery.checkedDepotIds.length} / ${course.depots.length}`;$("#penalty-num").textContent=`+${Math.round(run.penaltyTotal)}s`;$("#recovery-num").textContent=run.recoveryUsed?"Used":"Ready";document.body.classList.toggle("final-minute",time<=60&&run.status==="running");const prompt=interactionPrompt(),interact=$("#interact");interact.textContent=prompt;interact.classList.toggle("show",Boolean(prompt))}
+    function updateHud(surface){if(!course)return;const state=readTruck(),run=readRun(),delivery=readDelivery();const fuel=meters.get("fuel")?.value??0,truck=meters.get("truck-condition")?.value??0,cargo=meters.get("cargo-condition")?.value??0,time=meters.get("remaining-time")?.value??0;$("#timer").textContent=formatTime(time);$("#map-time").textContent=formatTime(time);$("#speed").textContent=String(Math.round(Math.abs(state.speed)*2.237));$("#road-name").textContent=surface?.road?.edge.branchName??(surface?.surface==="shoulder"?"Road shoulder":surface?.surface==="off-road"?"Off road":"Freight Road");$("#fuel-num").textContent=`${Math.ceil(fuel)}%`;$("#truck-num").textContent=`${Math.floor(100-truck)}% damage`;$("#cargo-num").textContent=`${Math.ceil(cargo)}%`;setMeter($("#fuel-meter"),fuel,22);setMeter($("#truck-meter"),truck,35);setMeter($("#cargo-meter"),cargo,40);$("#destination-name").textContent=course.depots.find(depot=>depot.id===delivery.validDepotId)?.name??"Receiving yard";$("#checked-num").textContent=`${delivery.checkedDepotIds.length} / ${course.depots.length}`;$("#penalty-num").textContent=`+${Math.round(run.penaltyTotal)}s`;$("#recovery-num").textContent=(run.rawTime-(run.lastRecoveryTime??-100)<8)?"Resetting":"Ready";document.body.classList.toggle("final-minute",time<=60&&run.status==="running");const prompt=interactionPrompt(),interact=$("#interact");interact.textContent=prompt;interact.classList.toggle("show",Boolean(prompt))}
     function updateMapPanel(){cachedMapBounds=null;const panel=$("#map-panel");panel.classList.toggle("open",mapOpen);panel.setAttribute("aria-hidden",String(!mapOpen))}

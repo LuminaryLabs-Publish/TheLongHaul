@@ -6,13 +6,24 @@
     try{Object.assign(settings,JSON.parse(localStorage.getItem("the-long-haul-settings-v2")||"{}"))}catch{}
     settings.sound=settings.sound!==false;settings.quality=settings.quality!==false;settings.motion=settings.motion!==false;settings.steering=clamp(finite(settings.steering,100),75,125);
 
-    const scenes={boot:{kind:"web-canvas-scene",exits:{ready:{to:"title"}}},title:{kind:"web-canvas-scene",exits:{start:{to:"generating"},settings:{to:"settings"},how:{to:"how-to-play"}}},generating:{kind:"web-three-scene",exits:{ready:{to:"driving"},cancel:{to:"title"}}},driving:{kind:"web-three-scene",exits:{pause:{to:"paused"},retry:{to:"generating"},complete:{to:"results"},fail:{to:"loss"},title:{to:"title"}}},paused:{kind:"web-three-scene",exits:{resume:{to:"driving"},settings:{to:"settings"},retry:{to:"generating"},title:{to:"title"}}},results:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},loss:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},settings:{kind:"web-canvas-scene",exits:{title:{to:"title"},pause:{to:"paused"}}},"how-to-play":{kind:"web-canvas-scene",exits:{back:{to:"title"}}}};
+    const scenes={boot:{kind:"web-canvas-scene",exits:{ready:{to:"title"}}},dispatch:{kind:"web-canvas-scene",exits:{start:{to:"generating"},back:{to:"title"}}},title:{kind:"web-canvas-scene",exits:{dispatch:{to:"dispatch"},start:{to:"generating"},settings:{to:"settings"},how:{to:"how-to-play"}}},generating:{kind:"web-three-scene",exits:{ready:{to:"driving"},cancel:{to:"title"}}},driving:{kind:"web-three-scene",exits:{pause:{to:"paused"},retry:{to:"generating"},complete:{to:"results"},fail:{to:"loss"},title:{to:"title"}}},paused:{kind:"web-three-scene",exits:{resume:{to:"driving"},settings:{to:"settings"},retry:{to:"generating"},title:{to:"title"}}},results:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},loss:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},settings:{kind:"web-canvas-scene",exits:{title:{to:"title"},pause:{to:"paused"}}},"how-to-play":{kind:"web-canvas-scene",exits:{back:{to:"title"}}}};
     const inputKit=N.createCoreInputKit({id:"long-haul-input",initialState:{intent:{throttle:0,brake:0,steer:0,boost:false,handbrake:false,interact:false}},actions:{throttle:{},brake:{},steerLeft:{},steerRight:{},boost:{},handbrake:{},interact:{},camera:{},map:{},pause:{},retry:{}},bindings:{keyboard:{throttle:["KeyW","ArrowUp"],brake:["KeyS","ArrowDown"],steerLeft:["KeyA","ArrowLeft"],steerRight:["KeyD","ArrowRight"],boost:["ShiftLeft","ShiftRight"],handbrake:["Space"],interact:["KeyE"],camera:["KeyC"],map:["KeyM"],pause:["Escape"],retry:["KeyR"]}},createApi({baseApi}){return{setIntent(intent={}){return baseApi.update({intent:clone(intent)},"updated")},getIntent(){return clone(baseApi.getState().intent??{})}}}});
     const core=createLongHaulCoreKits(N,{seed:"long-haul-boot",timeLimitSeconds:TIME_LIMIT_SECONDS});
     const product=createLongHaulProductKits(N);
     const engine=N.createEngine({tick:{maxDelta:1/15,rejectReentry:true},kits:[N.createCoreSceneKit({scenes,initialSceneId:"boot"}),N.createCoreWorldDomain({childDomains:false}),inputKit,...core.kits,...product.kits]});
 
-    let transitionSequence=0;function transition(exitId,payload={}){transitionSequence+=1;return engine.n.coreScene.requestTransition({exitId,payload:clone(payload),transitionId:`long-haul-${transitionSequence}`})}
+    let transitionSequence=0,pendingSceneTransition=null;
+    function transition(exitId,payload={}){
+      const from=engine.n.coreScene.getCurrentScene()?.id??"boot";
+      if(pendingSceneTransition||!scenes[from]?.exits?.[exitId])return false;
+      pendingSceneTransition={from,exitId};transitionSequence+=1;
+      const result=engine.n.coreScene.requestTransition({exitId,payload:clone(payload),transitionId:`long-haul-${transitionSequence}`});
+      // Core commits synchronous scene changes immediately. Transfer input/focus
+      // in that same event so the first key in the new scene cannot be discarded.
+      if(engine.n.coreScene.getCurrentScene()?.id!==from)updateSceneUi();
+      else pendingSceneTransition=null;
+      return result;
+    }
     const meters=engine.n.coreSimulation.resources;const batches=engine.n.coreGraphics.instanceBatches;const smoothing=engine.n.coreCamera.smoothing;
     for(const batch of [{id:"grass",assetId:"grass",materialId:"grass",capacity:7500}])if(!batches.hasBatch(batch.id))batches.createBatch({...batch,updateMode:"incremental"});
 

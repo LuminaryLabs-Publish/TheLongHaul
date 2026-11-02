@@ -13,16 +13,8 @@
 </head>
 <body>
   <div id="game-stage">
-  <canvas id="game-canvas" aria-label="The Long Haul game view"></canvas>
+  <canvas id="game-canvas" aria-label="The Long Haul game view" tabindex="-1"></canvas>
   <div id="vignette"></div><div id="grain"></div>
-  <section id="intro-credits" aria-label="Opening credits" aria-hidden="false">
-    <div class="intro-credit-card" aria-live="polite">
-      <div class="intro-credit" id="engine-credit"><span>Powered by</span><strong>Nexus Engine</strong></div>
-      <div class="intro-divider" aria-hidden="true"></div>
-      <div class="intro-credit" id="studio-credit"><span>Built by</span><strong>Luminary Labs</strong></div>
-    </div>
-    <button id="intro-skip" type="button" aria-label="Skip opening credits">Skip <span aria-hidden="true">↗</span></button>
-  </section>
   <section id="title-screen" class="screen menu-screen active" aria-label="Title">
 
     <div class="title-card"><div class="eyebrow">Campaign · Coast to coast</div><h1>The Long Haul</h1><p class="tagline">Race real highways, dodge traffic, earn cash, upgrade your truck, and drive farther every run.</p><div class="menu-actions"><div class="mode-options"><a class="btn primary mode-choice" href="./campaign.html#map" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Campaign</a><button id="start-btn" class="btn primary mode-choice">Endless</button></div><a class="btn" href="./campaign.html#garage" style="text-decoration:none">Garage</a><button id="how-btn" class="btn">How to Play</button><button id="settings-btn" class="btn">Settings</button></div><div class="control-strip"><span><i class="key">WASD</i>Drive</span><span><i class="key">E</i>Depot / Recover</span><span><i class="key">C</i>Camera</span><span><i class="key">M</i>Map</span><span><i class="key">Esc</i>Pause</span></div></div>
@@ -30,13 +22,13 @@
 
   <section id="dispatch-screen" class="screen menu-screen" aria-label="Dispatch board"><div class="panel dispatch-panel"><div class="eyebrow">Dispatch board · Choose your risk</div><h2>What are you hauling?</h2><p class="lead">Choose a deadline and reward. Your assigned destination appears on the map.</p><div class="contract-grid"><button class="contract-card selected" data-contract="standard" aria-pressed="true"><b>Standard freight</b><span>Balanced pay and a clean margin for error.</span><em>Base pay · 10:00 limit</em></button><button class="contract-card" data-contract="fragile" aria-pressed="false"><b>Glassworks crate</b><span>Impacts damage the cargo twice as hard.</span><em>25% more delivery pay · 9:30 limit</em></button><button class="contract-card" data-contract="express" aria-pressed="false"><b>Express manifest</b><span>More time pressure, but the best payout.</span><em>50% more delivery pay · 8:00 limit</em></button></div><div class="dispatch-footer"><span id="contract-note">A reliable first run.</span><button id="dispatch-go-btn" class="btn primary">Accept contract</button><button id="dispatch-back-btn" class="btn">Back</button></div></div></section>
 
-  <section id="how-screen" class="screen menu-screen" aria-label="How to play"><div class="panel"><div class="eyebrow">Driver briefing</div><h2>Deliver the freight</h2><p class="lead">Follow your assigned route to the receiving yard before time runs out. Wrong gates add twenty seconds to your score.</p><div class="how-grid"><div class="how-item"><b>Drive</b><span>W or ↑ accelerates. S or ↓ brakes then reverses. A and D steer. Double-tap W or ↑ for a five-second charge. Brake to cancel. Shift gives a smaller held boost. Boosting uses extra fuel.</span></div><div class="how-item"><b>Deliver</b><span>Enter a depot gate. Stop fully. Press E. Decoys keep the freight and mark themselves on the map.</span></div><div class="how-item"><b>Navigate</b><span>M opens the map with your assigned route and destination. Optional bypasses and explored roads also appear.</span></div><div class="how-item"><b>Protect the load</b><span>Brake for wildlife. Stay near the road. Save the single roadside recovery for a real emergency.</span></div><div class="how-item"><b>Score</b><span>Lower adjusted time wins. Wrong yards impacts lost cargo recovery and excess distance count against par.</span></div><div class="how-item"><b>Camera</b><span>C switches between a readable chase camera and a low hood camera. Escape pauses. R retries the same course.</span></div></div><div class="panel-footer"><button id="how-back-btn" class="btn primary">Back</button></div></div></section>
+  <section id="how-screen" class="screen menu-screen" aria-label="How to play"><div class="panel"><div class="eyebrow">Driver briefing</div><h2>Deliver the freight</h2><p class="lead">Follow your assigned route to the receiving yard before time runs out. Wrong gates add twenty seconds to your score.</p><div class="how-grid"><div class="how-item"><b>Drive</b><span>W or ↑ accelerates. S or ↓ brakes then reverses. A and D steer. Double-tap W or ↑ for a five-second charge, then three seconds to recharge. Brake to cancel. Shift holds boost while using extra fuel.</span></div><div class="how-item"><b>Deliver</b><span>Enter a depot gate. Stop fully. Press E. Decoys keep the freight and mark themselves on the map.</span></div><div class="how-item"><b>Navigate</b><span>M opens the map with your assigned route and destination. Optional bypasses and explored roads also appear.</span></div><div class="how-item"><b>Protect the load</b><span>Take cyan ramps for airtime. Avoid striped barriers. E rights a rolled rig with a time and cargo cost. Recovery resets after eight seconds.</span></div><div class="how-item"><b>Score</b><span>Close passes and clean landings build a ×5 combo. Drive clean for four seconds to bank it. A crash loses the pending combo; banked points remain. Each 20 banked points earns $1. Delivery timing still counts.</span></div><div class="how-item"><b>Camera</b><span>C switches between a readable chase camera and a low hood camera. Escape pauses. R retries the same course.</span></div></div><div class="panel-footer"><button id="how-back-btn" class="btn primary">Back</button></div></div></section>
 
   <section id="settings-screen" class="screen menu-screen" aria-label="Settings"><div class="panel"><div class="eyebrow">Cab setup</div><h2>Settings</h2><div class="setting"><div><b>Sound</b><small>Engine road impacts and UI cues.</small></div><button id="sound-switch" class="switch on" aria-pressed="true"><i></i></button></div><div class="setting"><div><label for="steer-range"><b>Steering response</b></label><small>Higher values move the steering wheel faster.</small></div><input id="steer-range" type="range" min="75" max="125" value="100"></div><div class="setting"><div><b>Sharper picture</b><small>Raises pixel density immediately. Tree detail updates on the next run.</small></div><button id="quality-switch" class="switch on" aria-pressed="true"><i></i></button></div><div class="setting"><div><b>Camera motion</b><small>Body roll road vibration and impact shake.</small></div><button id="motion-switch" class="switch on" aria-pressed="true"><i></i></button></div><div class="panel-footer"><button id="settings-back-btn" class="btn primary">Back</button></div></div></section>
 
   <section id="generating-screen" class="screen" aria-label="Preparing course"><div class="loading-card"><div id="course-code" class="course-code">Course</div><h2>Building the haul</h2><p id="phase-detail" class="lead">Choosing course</p><div class="progress-shell"><div id="progress-fill"></div></div><div class="progress-row"><span>Real course preparation</span><span id="progress-percent">0%</span></div><div id="phase-list"></div></div></section>
 
-  <div id="hud" aria-live="polite">
+  <div id="hud" role="region" aria-label="Run status">
     <div id="condition-box" class="hud-box"><div class="meter-row"><div class="meter-label"><span>Fuel</span><span id="fuel-num">100%</span></div><div class="meter"><i id="fuel-meter"></i></div></div><div class="meter-row"><div class="meter-label"><span>Truck</span><span id="truck-num">0% damage</span></div><div class="meter"><i id="truck-meter"></i></div></div><div class="meter-row"><div class="meter-label"><span>Cargo</span><span id="cargo-num">100%</span></div><div class="meter"><i id="cargo-meter"></i></div></div></div>
     <div id="timer-box" class="hud-box"><div id="timer-label">Time remaining</div><div id="timer">10:00</div></div>
     <div id="drive-box" class="hud-box"><div class="speed-readout"><span id="speed">0</span><span class="unit">MPH</span></div><div id="road-name">Dispatch Road</div></div>
@@ -54,36 +46,6 @@
   <script>document.getElementById("reload-btn").addEventListener("click",()=>location.reload());window.__longHaulBooted=false;window.longHaulBootReady=()=>document.getElementById("boot-failure")?.classList.remove("show");const bootFailure=(message)=>{const panel=document.getElementById("boot-failure"),text=document.getElementById("boot-error");if(text)text.textContent=message||"The game modules could not start.";panel?.classList.add("show")};window.addEventListener("error",event=>{if(!window.__longHaulBooted)bootFailure(event.message)});setTimeout(()=>{if(!window.__longHaulBooted)bootFailure("The game is still loading. You can wait or reload.")},12000);</script>
 
   <script type="module" src="./src/app/bootstrap.mjs"></script>
-  <script>
-  (()=>{
-    const intro=document.getElementById('intro-credits');
-    const skip=document.getElementById('intro-skip');
-    const seenKey='long-haul-intro-credits-seen-v1';
-    let alreadySeen=false;
-    try{alreadySeen=sessionStorage.getItem(seenKey)==='1'}catch{}
-    if(alreadySeen){intro?.remove();return}
-    let finished=false;
-    let timer;
-    const finish=()=>{
-      if(finished)return;
-      finished=true;
-      clearTimeout(timer);
-      try{sessionStorage.setItem(seenKey,'1')}catch{}
-      intro?.classList.add('is-leaving');
-      setTimeout(()=>intro?.remove(),420);
-      removeEventListener('keydown',finish);
-      removeEventListener('pointerdown',finish);
-    };
-    skip?.addEventListener('click',finish);
-    addEventListener('keydown',finish,{once:true});
-    addEventListener('pointerdown',finish,{once:true});
-    intro?.classList.add('is-playing');
-    timer=setTimeout(finish,3600);
-  })();
-  </script>
-  <script>
-  (()=>{let armed=false;const start=()=>document.getElementById('start-btn'),dispatch=()=>document.getElementById('dispatch-screen');const boot=()=>{const s=start(),d=dispatch(),title=document.getElementById('title-screen'),back=document.getElementById('dispatch-back-btn'),go=document.getElementById('dispatch-go-btn');if(!s||!d||!title||!back||!go)return setTimeout(boot,120);let selected='standard';const cards=[...document.querySelectorAll('.contract-card')];const note=document.getElementById('contract-note');const notes={standard:'A reliable first run.',fragile:'Brake early and protect the crate.',express:'Every second matters. Take the direct line.'};cards.forEach(card=>card.addEventListener('click',()=>{selected=card.dataset.contract;cards.forEach(c=>{c.classList.toggle('selected',c===card);c.setAttribute('aria-pressed',String(c===card))});if(note)note.textContent=notes[selected]}));s.addEventListener('click',e=>{if(armed){armed=false;return}e.preventDefault();e.stopImmediatePropagation();document.querySelectorAll('.screen').forEach(x=>x?.classList?.remove('active'));d.classList.add('active')},true);back.addEventListener('click',()=>{d.classList.remove('active');title.classList.add('active')});go.addEventListener('click',()=>{window.longHaulContract=selected;armed=true;s.click()});};boot()})();
-  </script>
   </div>
 </body>
 </html>

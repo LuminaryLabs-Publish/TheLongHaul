@@ -37,7 +37,7 @@
       for(const obstacle of obstacleCandidates(state.position,50)){
         if(obstacle.kind==="roundabout-island"){const key=`obstacle:${obstacle.id}`;if(activeContacts.has(key)&&vehicleColliderOverlapsCircle(truckCollider,obstacle.x,obstacle.z,obstacle.radius+.5))touching.add(key);continue}
         const distance=Math.hypot(state.position.x-obstacle.x,state.position.z-obstacle.z),key=`obstacle:${obstacle.id}`;
-        const overlaps=distance<obstacle.radius+5&&vehicleColliderOverlapsCircle(truckCollider,obstacle.x,obstacle.z,obstacle.radius);if(overlaps)touching.add(key);
+        const overlaps=arcadeRecoveryGrace<=0&&state.position.y-terrainHeight(course,state.position.x,state.position.z)<4.5&&distance<obstacle.radius+5&&vehicleColliderOverlapsCircle(truckCollider,obstacle.x,obstacle.z,obstacle.radius);if(overlaps)touching.add(key);
         if(overlaps&&speed>3&&!activeContacts.has(key)){
           activeContacts.add(key);
           const severity=clamp((speed-3)/24,0,1),seconds=Math.round(8+severity*10),heavy=obstacle.kind==="tree",roadHazard=obstacle.kind==="lane-hazard",truckDamage=(heavy?14:roadHazard?7:10)+severity*(heavy?22:roadHazard?12:18),cargoDamage=(roadHazard?3:5)+severity*(roadHazard?8:15),side=hashText(key)%2?1:-1,result=applyLongHaulOperationOnce(engine,runKey,`${key}:${++impactSerial}`,()=>({seconds}));
@@ -54,7 +54,7 @@
       }
       for(const hazard of readWildlife().hazards){
         const distance=Math.hypot(state.position.x-hazard.x,state.position.z-hazard.z),key=`wildlife:${hazard.id}`;
-        const overlaps=distance<hazard.radius+5&&vehicleColliderOverlapsCircle(truckCollider,hazard.x,hazard.z,hazard.radius);if(overlaps)touching.add(key);
+        const overlaps=arcadeRecoveryGrace<=0&&state.position.y-terrainHeight(course,state.position.x,state.position.z)<4.5&&distance<hazard.radius+5&&vehicleColliderOverlapsCircle(truckCollider,hazard.x,hazard.z,hazard.radius);if(overlaps)touching.add(key);
         if(overlaps&&speed>2.5&&!activeContacts.has(key)){
           activeContacts.add(key);
           const severity=clamp((speed-2.5)/22,0,1),seconds=Math.round(7+severity*9),side=hazard.direction||1,result=applyLongHaulOperationOnce(engine,runKey,`${key}:${++impactSerial}`,()=>({seconds}));
@@ -64,8 +64,35 @@
       for(const key of activeContacts)if(!touching.has(key))activeContacts.delete(key);
       _lhImpactGameplayBase(surface);
       const after=readTruck();
-      if(after.tipped){const tip=applyLongHaulOperationOnce(engine,runKey,"truck-tip",()=>({seconds:15}));if(tip.applied){engine.n.longHaulRun.penalty({id:"truck-tip",kind:"tip",label:"Truck rollover",seconds:15,collision:true});spendTruckDamage(18,"rollover");spendCargoDamage(12,"rollover");toast(readRun().recoveryUsed?"Truck rolled · no recovery remaining":"Truck rolled · press E for roadside recovery","bad",3600);audio.wrong()}}
+      if(after.tipped){const tip=applyLongHaulOperationOnce(engine,runKey,"truck-tip",()=>({seconds:15}));if(tip.applied){engine.n.longHaulRun.penalty({id:"truck-tip",kind:"tip",label:"Truck rollover",seconds:15,collision:true});spendTruckDamage(18,"rollover");spendCargoDamage(12,"rollover");toast("Truck rolled · E to recover and build again","bad",2400);audio.wrong()}}
     };
 
-    interactionPrompt=function(){const state=readTruck(),run=readRun(),condition={fuel:meters.get("fuel")?.value??0},surface=surfaceAt(state.position),nearest=nearestDepot(course,state.position),atDepot=nearest&&nearest.distance<=nearest.depot.radius+6;if((state.tipped||condition.fuel<=.01||run.stuckSeconds>2.8||(!atDepot&&surface.surface==="off-road"&&Math.abs(state.speed)<.8))&&!run.recoveryUsed)return state.tipped?"E · Recover rolled truck":"E · Call roadside recovery";if(atDepot)return Math.abs(state.speed)>1.1?"Brake to a full stop":`E · Check ${nearest.depot.name}`;return""};
-    handleInteraction=function(state,run,condition,surface){const nearest=nearestDepot(course,state.position),atDepot=nearest&&nearest.distance<=nearest.depot.radius+6,needsRecovery=state.tipped||run.stuckSeconds>2.8||condition.fuel<=.01||(!atDepot&&surface.surface==="off-road"&&Math.abs(state.speed)<.8);if(needsRecovery&&!run.recoveryUsed){const result=applyLongHaulOperationOnce(engine,runKey,"recovery",()=>({seconds:35}));if(result.applied){forwardBoost.reset();const safe=state.lastSafe,ground=groundSample(safe),safeSurface=surfaceAt(safe),barriers=obstacleCandidates(safe,60).filter(obstacle=>obstacle.kind==="roundabout-island");engine.n.longHaulTruck.teleport({x:safe.x,y:safe.y,z:safe.z,heading:safe.heading,speed:0,groundHeight:ground.height,groundNormal:ground.normal,surface:safeSurface.surface,surfaceGrip:safeSurface.grip,roadClass:safeSurface.road?.edge.roadClass,roadMaterial:safeSurface.material,barrierContacts:barriers});engine.n.longHaulRun.recovery(safe);engine.n.longHaulRun.penalty({id:"recovery",kind:"recovery",label:state.tipped?"Rollover recovery":"Roadside recovery",seconds:35,collision:false});meters.restore("fuel",14,"recovery");meters.restore("truck-condition",6,"recovery");toast(`${state.tipped?"Rollover":"Roadside"} recovery · +35s`,`bad`,2600);audio.tone(180,.2,"triangle",.08)}return}if(!atDepot){toast("No receiving gate in range","bad",1400);audio.wrong();return}if(Math.abs(state.speed)>1.1){toast("Stop the truck at the gate","bad",1600);audio.wrong();return}engine.n.longHaulDelivery.check(nearest.depot.id)};
+    interactionPrompt=function(){
+      const state=readTruck(),run=readRun(),fuel=meters.get("fuel")?.value??0,surface=surfaceAt(state.position),nearest=nearestDepot(course,state.position),atDepot=nearest&&nearest.distance<=nearest.depot.radius+6;
+      const needsRecovery=state.tipped||run.stuckSeconds>2.8||fuel<=.01||(!atDepot&&surface.surface==="off-road"&&Math.abs(state.speed)<.8);
+      if(needsRecovery){const wait=Math.max(0,8-(run.rawTime-(run.lastRecoveryTime??-100)));return wait>0?`Recovery ready in ${Math.ceil(wait)}s`:state.tipped?"E · Right the rig · combo lost":"E · Roadside recovery · time penalty"}
+      if(atDepot)return Math.abs(state.speed)>1.1?"Brake to a full stop":`E · Deliver to ${nearest.depot.name}`;
+      return "";
+    };
+    handleInteraction=function(state,run,condition,surface){
+      const nearest=nearestDepot(course,state.position),atDepot=nearest&&nearest.distance<=nearest.depot.radius+6;
+      const needsRecovery=state.tipped||run.stuckSeconds>2.8||condition.fuel<=.01||(!atDepot&&surface.surface==="off-road"&&Math.abs(state.speed)<.8);
+      if(needsRecovery){
+        if(run.rawTime-(run.lastRecoveryTime??-100)<8){toast("Recovery crew is resetting","",1000);return}
+        const count=run.recoveryCount??0,seconds=12+Math.min(count,4)*5;
+        const receipt=applyLongHaulOperationOnce(engine,runKey,`recovery:${count}`,()=>({seconds}));
+        if(receipt.applied){
+          forwardBoost.reset({preserveCooldown:true});releaseDrivingInput();
+          const safe=state.lastSafe,ground=groundSample(safe),safeSurface=surfaceAt(safe),barriers=obstacleCandidates(safe,60).filter(obstacle=>obstacle.kind==="roundabout-island");
+          engine.n.longHaulTruck.teleport({x:safe.x,y:ground.height+readDynamics().suspension.travel,z:safe.z,heading:safe.heading,speed:0,groundHeight:ground.height,groundNormal:ground.normal,surface:safeSurface.surface,surfaceGrip:safeSurface.grip,roadClass:safeSurface.road?.edge.roadClass,roadMaterial:safeSurface.material,barrierContacts:barriers});
+          engine.n.longHaulRun.recovery(safe);engine.n.longHaulRun.penalty({id:`recovery:${count}`,kind:"recovery",label:"Roadside recovery",seconds,collision:false});
+          if(!count&&condition.fuel<=.01)meters.restore("fuel",14,"emergency-fuel");
+          spendCargoDamage(2,"recovery");resetArcadeCombo("RECOVERED · BUILD AGAIN");arcadeRecoveryGrace=1.5;
+          toast(`Back on the road · +${seconds}s`,"",1600);audio.tone(180,.12,"triangle",.08);
+        }
+        return;
+      }
+      if(!atDepot){toast("No receiving gate in range","",1000);return}
+      if(Math.abs(state.speed)>1.1){toast("Stop at the receiving gate","",1200);return}
+      engine.n.longHaulDelivery.check(nearest.depot.id);
+    };
