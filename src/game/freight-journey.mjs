@@ -26,8 +26,8 @@ function validTruckSnapshot(truck) {
   // malformed field overrides that default and can poison subsequent arithmetic.
   if (!optionalFields(truck, ['speed', 'longitudinalSpeed', 'lateralSpeed', 'driftAngle', 'rollAngle', 'rollVelocity',
     'steeringAngle', 'yawRate', 'wheelTravel', 'bodyRoll', 'bodyPitch', 'groundHeight', 'contactRadius',
-    'surfaceGrip', 'suspensionCompression', 'suspensionVelocity', 'supportVelocity', 'acceleration'], Number.isFinite)
-    || !optionalFields(truck, ['airTime', 'flightPeakHeight', 'cargoMass', 'effectiveMass', 'loadStress'], nonnegative)
+    'surfaceGrip', 'suspensionCompression', 'suspensionVelocity', 'supportVelocity', 'acceleration', 'weightTransfer', 'cargoShift', 'steeringDamage'], Number.isFinite)
+    || !optionalFields(truck, ['airTime', 'flightPeakHeight', 'cargoMass', 'effectiveMass', 'totalMass', 'loadStress'], nonnegative)
     || !optionalFields(truck, ['sequence', 'impactSequence', 'landingSequence'], integer)
     || !optionalFields(truck, ['grounded', 'tipped'], value => typeof value === 'boolean')
     || !optionalFields(truck, ['id', 'surface', 'roadClass', 'roadMaterial', 'contactShape'], value => typeof value === 'string')) return false;
@@ -48,10 +48,21 @@ function validTruckSnapshot(truck) {
     if (!record(impact) || !integer(impact.sequence) || !nonnegative(impact.strength) || !nonnegative(impact.speed) || typeof impact.kind !== 'string'
       || !optionalFields(impact, ['effectiveMass', 'energy'], nonnegative)) return false;
   }
+  if (Object.hasOwn(truck, 'drift')) {
+    const drift = truck.drift;
+    if (!record(drift) || typeof drift.active !== 'boolean' || !['idle', 'sliding', 'countersteer', 'released'].includes(drift.phase)
+      || ![-1, 0, 1].includes(drift.direction) || !['energy', 'momentum', 'charge', 'duration', 'distance', 'entrySpeed', 'maxAngle', 'counterTime', 'releaseGrace', 'cooldown'].every(key => nonnegative(drift[key]))
+      || !integer(drift.sequence) || !integer(drift.releaseSequence) || drift.charge > 1 || drift.energy > 242 || drift.momentum > 22) return false;
+    if (drift.lastManeuver !== null) {
+      const maneuver = drift.lastManeuver;
+      if (!record(maneuver) || !integer(maneuver.sequence) || !integer(maneuver.releaseSequence) || typeof maneuver.countersteer !== 'boolean' || typeof maneuver.reason !== 'string'
+        || !['duration', 'distance', 'entrySpeed', 'exitSpeed', 'maxAngle', 'reserve'].every(key => nonnegative(maneuver[key]))) return false;
+    }
+  }
   if (Object.hasOwn(truck, 'input')) {
     const input = truck.input;
-    if (!record(input) || !optionalFields(input, ['throttle', 'brake', 'steer', 'pitchControl'], Number.isFinite)
-      || !optionalFields(input, ['handbrake', 'boost', 'rush'], value => typeof value === 'boolean')) return false;
+    if (!record(input) || !optionalFields(input, ['throttle', 'brake', 'steer', 'pitchControl', 'steeringDamage'], Number.isFinite)
+      || !optionalFields(input, ['handbrake', 'boost', 'rush', 'drift'], value => typeof value === 'boolean')) return false;
     if (Object.hasOwn(input, 'barrierContacts') && (!Array.isArray(input.barrierContacts) || input.barrierContacts.some(contact =>
       !vector(contact, ['x', 'z']) || typeof contact.id !== 'string' || !nonnegative(contact.radius)))) return false;
   }

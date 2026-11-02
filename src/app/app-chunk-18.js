@@ -100,10 +100,10 @@
           const overlap=arcadeEncounters.find(event=>event.path===vehicle.path&&Math.abs(event.distance-vehicle.progress)<100);
           if(overlap?.kind==="ramp")vehicle.lane=-Math.sign(overlap.lane)*Math.min(5,spawn.edge.width*.22);
           if(overlap?.kind==="roadblock")vehicle.lane=overlap.safeLane;
-          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
+          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.skillDisabled=0;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
         }
         // Traffic advances in road coordinates independently of the player.
-        vehicle.progress+=vehicle.direction*vehicle.speed*dt;
+        vehicle.skillDisabled=Math.max(0,(vehicle.skillDisabled||0)-dt);vehicle.progress+=vehicle.direction*vehicle.speed*dt*(vehicle.skillDisabled>0?.35:1);
         const pos=arcadePathPoint(vehicle.path,vehicle.progress,vehicle.lane);if(!pos){vehicle.active=false;vehicle.group.visible=false;continue}
         if(course.endless&&freightProtectedProgress(-pos.z)&&Math.hypot(pos.x-truck.position.x,pos.z-truck.position.z)>60){vehicle.active=false;vehicle.group.visible=false;continue}
         const relative=(vehicle.progress-progress.distance)*direction,vehicleHeading=pos.heading+(vehicle.direction<0?Math.PI:0),height=terrainHeight(course,pos.x,pos.z)+.05;
@@ -179,7 +179,7 @@
         for(const [label,value] of [["Distance",formatDistance(traveled)],["Driving bonuses","$"+arcadeBonuses],["Cash earned",alreadyPaid?"Already paid":saved?"$"+cash:"Save unavailable"],["Best run",formatDistance(save.bestArcadeDistance)]]){const cell=document.createElement("div");cell.className="score-cell";const a=document.createElement("span"),b=document.createElement("b");a.textContent=label;b.textContent=value;cell.append(a,b);payout.append(cell)}
       }
       $("#loss-retry-btn").textContent="RETRY HIGHWAY";
-      $("#loss-new-btn").textContent="GARAGE · UPGRADE";
+      $("#loss-new-btn").textContent="GARAGF · UPGRADE";
       $("#loss-title-btn").textContent="CAMPAIGN MAP";
     }
     function arcadeSettleRoadsideRun(){
@@ -262,14 +262,14 @@
     function arcadeCullGarages(now){if(now-arcadeLastGarageCull<250)return;arcadeLastGarageCull=now;const position=readTruck().position;for(const stop of arcadeGarageStops){const dx=stop.x-position.x,dz=stop.z-position.z;stop.group.visible=dx*dx+dz*dz<650*650}}
     function arcadeShowGarage(focusItem=null){
       const wasHidden=arcadeGaragePanel.hidden,restoreFocus=wasHidden||arcadeGaragePanel.contains(document.activeElement),scrollTop=arcadeGaragePanel.scrollTop;
-      if(wasHidden){releaseDrivingInput();forwardBoost.reset({preserveCooldown:true});arcadeScore.tick(0,{active:false})}
+      if(wasHidden){releaseDrivingInput();forwardBoost.clearTaps();arcadeScore.tick(0,{active:false})}
       const save=arcadeUpgradeState(),upgrades=save.upgrades||{},cash=Number(save.cash)||0,saveAvailable=arcadeSaveWritable();
-      arcadeGaragePanel.innerHTML="";const title=document.createElement("h2");title.textContent="ROADSIDE GARAGE";const summary=document.createElement("p");summary.textContent=saveAvailable?`Available cash $${cash.toLocaleString()} · The delivery clock keeps running while you shop.`:"Save unavailable · Upgrades cannot be purchased. The delivery clock keeps running.";arcadeGaragePanel.append(title,summary);
+      arcadeGaragePanel.innerHTML="";const title=document.createElement("h2");title.textContent="ROADSIDE GARAGE";const summary=document.createElement("p");summary.textContent=saveAvailable?`Available cash $${cash.toLocaleString()} · Driving is paused while you shop.`:"Save unavailable · Upgrades cannot be purchased. Driving is paused.";arcadeGaragePanel.append(title,summary);
       for(const item of arcadeGarageCatalog){const level=Math.max(0,Number(upgrades[item.id])||0),cost=Math.round(item.base*Math.pow(1.65,level)),row=document.createElement("div");row.className="garage-row";const info=document.createElement("div"),name=document.createElement("b"),description=document.createElement("small"),button=document.createElement("button");name.textContent=`${item.label} · LEVEL ${level}/${item.max}`;description.textContent=item.description;info.append(name,description);button.dataset.upgrade=item.id;button.textContent=level>=item.max?"MAX":`UPGRADE $${cost}`;button.disabled=!saveAvailable||level>=item.max||cash<cost;button.addEventListener("click",()=>{const latest=arcadeUpgradeState(),nextCash=Number(latest.cash)||0,nextLevel=Number(latest.upgrades?.[item.id])||0;if(nextLevel!==level||nextCash<cost){arcadeShowGarage(item.id);return}if(nextLevel>=item.max)return;latest.cash=nextCash-cost;latest.upgrades={...(latest.upgrades||{}),[item.id]:nextLevel+1};try{if(!arcadeSaveWritable())throw Error("Save unavailable");localStorage.setItem("longhaul-campaign-v1",JSON.stringify(latest));arcadeCachedSave=latest;arcadeConfiguredRun="";arcadeApplyUpgrades();arcadeShowGarage(item.id)}catch{toast("Garage save unavailable","bad",1600)}});row.append(info,button);arcadeGaragePanel.append(row)}
-      const close=document.createElement("button");close.textContent="CLOSE · E TO DRIVE";close.addEventListener("click",closeArcadeGarage);arcadeGaragePanel.append(close);arcadeGaragePanel.hidden=false;arcadeGaragePanel.scrollTop=scrollTop;if(restoreFocus){const target=focusItem?arcadeGaragePanel.querySelector(`button[data-upgrade="${focusItem}"]:not(:disabled)`):arcadeGaragePanel;(target||close).focus({preventScroll:true})}
+      const close=document.createElement("button");close.textContent="CLOSE · F TO DRIVE";close.addEventListener("click",closeArcadeGarage);arcadeGaragePanel.append(close);arcadeGaragePanel.hidden=false;arcadeGaragePanel.scrollTop=scrollTop;if(restoreFocus){const target=focusItem?arcadeGaragePanel.querySelector(`button[data-upgrade="${focusItem}"]:not(:disabled)`):arcadeGaragePanel;(target||close).focus({preventScroll:true})}
     }
     const arcadeOriginalInteractionPrompt=interactionPrompt;
-    interactionPrompt=function(){const base=arcadeOriginalInteractionPrompt();if(!arcadeRoadsideMode()||currentScene()!=="driving")return base;const state=readTruck(),run=readRun(),garage=arcadeNearestGarage(state.position),depot=nearestDepot(course,state.position);if(!garage||depot&&depot.distance<=depot.depot.radius+6||(state.tipped||(meters.get("fuel")?.value??0)<=.01||run.stuckSeconds>2.8))return base;return Math.abs(state.speed)>1.1?"Brake to a full stop at the garage":arcadeGaragePanel.hidden?"E · Open roadside garage":"E · Close roadside garage"};
+    interactionPrompt=function(){const base=arcadeOriginalInteractionPrompt();if(!arcadeRoadsideMode()||currentScene()!=="driving")return base;const state=readTruck(),run=readRun(),garage=arcadeNearestGarage(state.position),depot=nearestDepot(course,state.position);if(!garage||depot&&depot.distance<=depot.depot.radius+6||(state.tipped||(meters.get("fuel")?.value??0)<=.01||run.stuckSeconds>2.8))return base;return Math.abs(state.speed)>1.1?"Brake to a full stop at the garage":arcadeGaragePanel.hidden?"F · Open roadside garage":"F · Close roadside garage"};
     const arcadeOriginalHandleInteraction=handleInteraction;
     handleInteraction=function(state,run,condition,surface){if(arcadeRoadsideMode()){const garage=arcadeNearestGarage(state.position),depot=nearestDepot(course,state.position),atDepot=depot&&depot.distance<=depot.depot.radius+6,needsRecovery=(state.tipped||condition.fuel<=.01||run.stuckSeconds>2.8);if(garage&&!atDepot&&!needsRecovery){if(Math.abs(state.speed)>1.1){toast("Stop at the garage to upgrade","bad",1500);return}if(arcadeGaragePanel.hidden)arcadeShowGarage();else closeArcadeGarage();audio.click();return}}arcadeOriginalHandleInteraction(state,run,condition,surface)};
     postTickGameplay=function(surface,dt){
@@ -299,7 +299,7 @@
       const playing=view==="driving"&&!launchIntro.active;arcadeOverlay.classList.toggle("active",playing);
       if(playing&&now-arcadeLastHud>=66){arcadeLastHud=now;const run=readRun(),fuel=meters.get("fuel")?.value??0,intent=engine.n.coreInput.getIntent(),distance=run.distance||0;
         document.getElementById("arcade-fuel").textContent=Math.ceil(fuel)+"%";
-        document.getElementById("arcade-boost").textContent=forwardBoost.remaining>0?`${forwardBoost.remaining.toFixed(1)}s`:forwardBoost.cooldown>0?`RECHARGE ${forwardBoost.cooldown.toFixed(1)}s`:intent.boost?"ACTIVE":"W ×2 / SHIFT";
+        document.getElementById("arcade-boost").textContent=forwardBoost.remaining>0?`${forwardBoost.remaining.toFixed(1)}s`:forwardBoost.cooldown>0?`RECHARGE ${forwardBoost.cooldown.toFixed(1)}s`:intent.boost?"ACTIVE":"W ×2 / SPACE";
         document.getElementById("arcade-distance").textContent=(distance/1609.344).toFixed(2)+" mi";
         document.getElementById("arcade-earnings").textContent="$"+arcadeBonuses}
     }

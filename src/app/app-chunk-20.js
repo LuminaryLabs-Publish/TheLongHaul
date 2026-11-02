@@ -89,7 +89,7 @@
         save.cash-=walletCost;
         const checkpoint={schema:"long-haul.freight-checkpoint/1",journey:freightJourney.snapshot(),truck:engine.n.longHaulTruck.snapshot(),run:engine.n.longHaulRun.snapshot(),
           meters:{fuel:meters.get("fuel").value,truck:meters.get("truck-condition").value,cargo:meters.get("cargo-condition").value},bankedPoints:risk.banked,bestMultiplier:risk.bestMultiplier,
-          initialType:freightInitialType,terminal:terminal||readRun().status==="failed"};
+          initialType:freightInitialType,terminal:terminal||readRun().status==="failed",skillState:skillCheckpointState()};
         const result=prepareFreightSave(save,checkpoint,{expectedRevision:freightRevision});
         if(!result.ok){if(["save-conflict","stale-contract","stale-checkpoint","inactive-session","closed-session"].includes(result.reason)){freightStorageConflict=true;freightStorageStatus="Another tab changed this haul · save paused"}else freightStorageStatus="Save unavailable · haul kept in this tab";return false}
         localStorage.setItem("longhaul-campaign-v1",JSON.stringify(result.save));
@@ -245,9 +245,9 @@
       // is wider than the truck, while the wide route never has these obstacles.
       {const station=state.pickupStation;if(station&&Math.abs(station.progress+truck.position.z)<48){const p=station.risky.point,dx=truck.position.x-p.x,dz=truck.position.z-p.z,along=dx*Math.sin(p.heading)+dz*Math.cos(p.heading),side=dx*Math.cos(p.heading)-dz*Math.sin(p.heading);
         const contact=truck.grounded&&Math.abs(along)<4.4&&Math.abs(side)>2.4&&Math.abs(side)<6.1;
-        if(contact&&truck.speed>3&&freightGateContact!==station.id){freightGateContact=station.id;spendTruckDamage(5,"loading-gate");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.16,kind:"prop",allowTip:false});audio.hit()}
-        if(!contact&&freightGateContact===station.id)freightGateContact=null;
-      }else freightGateContact=null}
+        if(!simulationFrozen()&&contact&&truck.speed>3&&freightGateContact!==station.id){freightGateContact=station.id;spendTruckDamage(5,"loading-gate");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.16,kind:"prop",allowTip:false});audio.hit()}
+        if(!simulationFrozen()&&!contact&&freightGateContact===station.id)freightGateContact=null;
+      }else if(!simulationFrozen())freightGateContact=null}
     }
 
     let freightCargoRoot=null;
@@ -261,7 +261,7 @@
           freightCargoRoot.userData.profileId=cargo.id;
         }
       }
-      if(freightCargoRoot){freightCargoRoot.position.x=(readTruck().loadShift?.x??0)*.45;freightCargoRoot.rotation.z=(readTruck().loadShift?.x??0)*.08}
+      if(freightCargoRoot){freightCargoRoot.position.x=settings.motion?(readTruck().loadShift?.x??0)*.45:0;freightCargoRoot.rotation.z=settings.motion?(readTruck().loadShift?.x??0)*.08:0}
     }
     const freightTruckVisualBase=updateTruckVisual;updateTruckVisual=function(dt){freightTruckVisualBase(dt);updateFreightCargoVisual()};
 
@@ -311,7 +311,7 @@
     const freightGarageShowBase=arcadeShowGarage;
     arcadeShowGarage=function(focusItem){
       freightGarageShowBase(focusItem);if(!isContinuousFreight())return;
-      const saved=arcadeUpgradeState();const summary=arcadeGaragePanel.querySelector("p");summary.textContent=`$${saved.cash.toLocaleString()} · Cargo deadline continues while shopping.`;
+      const saved=arcadeUpgradeState();const summary=arcadeGaragePanel.querySelector("p");summary.textContent=`$${saved.cash.toLocaleString()} · Driving and cargo deadline are paused.`;
       for(const [id,label,meter,cost] of [["service-fuel","REFUEL +45%","fuel",90],["service-repair","REPAIR +35%","truck-condition",120]]){
         const button=document.createElement("button");button.dataset.service=id;button.textContent=`${label} · $${cost}`;button.disabled=freightStorageConflict||!arcadeSaveWritable()||saved.cash<cost||meters.get(meter).value>=99;
         button.addEventListener("click",()=>{if(freightStorageConflict||!arcadeSaveWritable())return;const prior=meters.get(meter).value;meters.restore(meter,meter==="fuel"?45:35,"paid-garage-service");if(!saveFreightCheckpoint(false,cost)){meters.set(meter,prior,"service-rollback",{allowLockedOverride:true});toast("Service could not be saved","bad",1600)}arcadeShowGarage()});

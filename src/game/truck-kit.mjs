@@ -1,6 +1,7 @@
 import { clone, clamp, finite, normalizeAngle } from "./shared.mjs";
 import { DEFAULT_TRUCK_DYNAMICS_PROFILE } from "./truck-dynamics-profile-kit.mjs";
 import { LONG_HAUL_TRUCK_COLLIDER } from "./vehicle-collider.mjs";
+import { createDriftState, prepareDrift, resolveDrift } from "./drift-behavior.mjs";
 import { cargoDynamics, normalizeCargoLoad } from "./cargo-profiles.mjs";
 
 function cargoState(profile, value, previous = null) {
@@ -12,6 +13,8 @@ function cargoState(profile, value, previous = null) {
     cargo,
     cargoMass: loadFactors.cargoMass,
     effectiveMass: loadFactors.effectiveMass,
+    totalMass: loadFactors.effectiveMass,
+    cargoShift: sameLoad ? clamp(finite(previous.loadShift?.x), -1, 1) : 0,
     loadFactors,
     loadShift: sameLoad ? boundedVector(previous.loadShift) : { x: 0, z: 0 },
     loadShiftVelocity: sameLoad ? boundedVector(previous.loadShiftVelocity, 4) : { x: 0, z: 0 },
@@ -94,6 +97,11 @@ export function createLongHaulTruckKit(N, options = {}) {
     longitudinalSpeed: 0,
     lateralSpeed: 0,
     driftAngle: 0,
+    drift: createDriftState(),
+    weightTransfer: 0,
+    cargoShift: 0,
+    steeringDamage: 0,
+    totalMass: DEFAULT_TRUCK_DYNAMICS_PROFILE.mass,
     steeringAngle: 0,
     wheelTravel: 0,
     bodyRoll: 0,
@@ -122,7 +130,7 @@ export function createLongHaulTruckKit(N, options = {}) {
     roadMaterial: "paved",
     surfaceGrip: 1,
     lastSafe: { x: finite(value.x), y: finite(value.y), z: finite(value.z), heading: finite(value.heading) },
-    input: { throttle: 0, brake: 0, steer: 0, pitchControl: 0, handbrake: false, boost: false, rush: false, barrierContacts: [] },
+    input: { throttle: 0, brake: 0, steer: 0, pitchControl: 0, handbrake: false, boost: false, rush: false, drift: false, steeringDamage: 0, barrierContacts: [] },
     roundaboutContacts: [],
     ...cargoState(DEFAULT_TRUCK_DYNAMICS_PROFILE, value.cargo),
     sequence: 0
@@ -160,6 +168,9 @@ export function createLongHaulTruckKit(N, options = {}) {
             longitudinalSpeed: speed,
             lateralSpeed: 0,
             driftAngle: 0,
+            drift: createDriftState(state.drift, true),
+            weightTransfer: 0,
+            cargoShift: 0,
             steeringAngle: 0,
             rollAngle: 0,
             rollVelocity: 0,
@@ -176,7 +187,7 @@ export function createLongHaulTruckKit(N, options = {}) {
             loadShift: { x: 0, z: 0 },
             loadShiftVelocity: { x: 0, z: 0 },
             loadStress: 0,
-            input: { throttle: 0, brake: 0, steer: 0, pitchControl: 0, handbrake: false, boost: false, rush: false, barrierContacts: [] },
+            input: { throttle: 0, brake: 0, steer: 0, pitchControl: 0, handbrake: false, boost: false, rush: false, drift: false, steeringDamage: 0, barrierContacts: [] },
             roundaboutContacts: [],
             tipped: false,
             grounded: request.grounded !== false && finite(request.verticalSpeed) <= 0.6,
@@ -193,6 +204,8 @@ export function createLongHaulTruckKit(N, options = {}) {
               steer: clamp(finite(request.steer), -1, 1),
               pitchControl: clamp(finite(request.pitchControl, finite(request.throttle) - finite(request.brake)), -1, 1),
               handbrake: Boolean(request.handbrake),
+              drift: Boolean(request.drift),
+              steeringDamage: clamp(finite(request.steeringDamage), -1, 1),
               boost: Boolean(request.boost),
               rush: Boolean(request.rush),
               barrierContacts: Array.isArray(request.barrierContacts) ? request.barrierContacts.map((barrier) => ({
@@ -217,7 +230,7 @@ export function createLongHaulTruckKit(N, options = {}) {
         if (teleportGround) state = { ...state, groundHeight: teleportGround.height, groundNormal: {
           x: finite(teleportGround.normal?.x), y: finite(teleportGround.normal?.y, 1), z: finite(teleportGround.normal?.z)
         }, surface: String(teleportGround.surface ?? state.surface), roadClass: String(teleportGround.roadClass ?? state.roadClass), roadMaterial: String(teleportGround.roadMaterial ?? state.roadMaterial), surfaceGrip: clamp(finite(teleportGround.grip, state.surfaceGrip), 0.12, 1.2),
-          input: { throttle: 0, brake: 0, steer: 0, pitchControl: 0, handbrake: false, boost: false, rush: false,
+          input: { throttle: 0, brake: 0, steer: 0, pitchControl: 0, handbrake: false, boost: false, rush: false, drift: false, steeringDamage: 0,
             barrierContacts: Array.isArray(teleportGround.barriers) ? teleportGround.barriers.map((barrier) => ({ id: String(barrier.id ?? "roundabout-island"), x: finite(barrier.x), z: finite(barrier.z), radius: Math.max(0, finite(barrier.radius)) })) : [] } };
         const load = cargoDynamics(profile, state.cargo);
         state = { ...state, cargoMass: load.cargoMass, effectiveMass: load.effectiveMass, loadFactors: load };
@@ -246,6 +259,7 @@ export function createLongHaulTruckKit(N, options = {}) {
             airTime: launch && state.grounded ? 0 : state.airTime,
             impactSequence: state.impactSequence + (impact ? 1 : 0),
             lastImpact: impact ? { sequence: state.impactSequence + 1, strength: impactStrength, speed: Math.abs(state.speed), kind: String(request.kind ?? "impact"), effectiveMass: load.effectiveMass, energy: 0.5 * load.effectiveMass * impactStrength * impactStrength } : state.lastImpact,
+            drift: impactStrength > 3 || launch ? createDriftState(state.drift, true) : state.drift,
             sequence: state.sequence + 1
           };
         }
@@ -286,10 +300,21 @@ export function createLongHaulTruckKit(N, options = {}) {
             if (state.grounded && axis === "z") longitudinal -= (loadShiftVelocity[axis] - previousVelocity) * load.payloadFraction * 0.25;
           }
           const loadStress = clamp((Math.abs(loadShift.x) * 0.8 + Math.abs(loadShift.z) * 0.6 - 0.3) / 0.7, 0, 1);
+          const previousPlanarSpeed = Math.hypot(longitudinal, lateral);
+          const totalMass = load.effectiveMass;
+          const loadRatio = load.payloadFraction;
+          const steeringDamage = input.steeringDamage;
+          const damageMagnitude = Math.abs(steeringDamage);
+          const driftProfile = profile.drift ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.drift;
+          let drift = prepareDrift(state.drift, input, {
+            speed: previousPlanarSpeed, longitudinal, slipAngle: Math.atan2(lateral, Math.max(0.01, Math.abs(longitudinal))),
+            grounded: state.grounded, tipped: state.tipped
+          }, dt);
           const surfaceKey = state.surface === "road" ? "road" : state.surface === "shoulder" ? "shoulder" : "offRoad";
           const gripCatalog = profile.grip ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.grip;
           const gripKey = surfaceKey !== "road" ? surfaceKey : state.roadClass === "paved-highway" ? "highway" : state.roadMaterial !== "paved" ? "rough" : "road";
-          const lateralGrip = (input.handbrake ? gripCatalog.handbrake : gripCatalog[gripKey] ?? gripCatalog.road) * state.surfaceGrip * load.gripScale * (1 - Math.abs(loadShift.x) * 0.12);
+          const driftGrip = drift.active ? clamp(finite(driftProfile.gripMultiplier, 0.16), 0.06, 0.5) : 1;
+          const lateralGrip = (input.handbrake ? gripCatalog.handbrake : gripCatalog[gripKey] ?? gripCatalog.road) * state.surfaceGrip * load.gripScale * (1 - Math.abs(loadShift.x) * 0.12) * driftGrip * (1 - damageMagnitude * 0.2);
           const boostForce = input.rush
             ? clamp(finite(profile.boost?.rushForceMultiplier, 3.8) + Math.max(0, finite(profile.boost?.forceMultiplier, 1.65) - 1.65), 1, 6)
             : input.boost ? clamp(finite(profile.boost?.forceMultiplier, 1.65), 1, 4) : 1;
@@ -300,7 +325,7 @@ export function createLongHaulTruckKit(N, options = {}) {
           const maximumReverse = finite(profile.maximumReverseSpeed, 10);
 
           const effectiveThrottle = state.tipped || !state.grounded ? 0 : input.throttle;
-          const effectiveBrake = state.tipped || !state.grounded ? 0 : input.brake;
+          const effectiveBrake = state.tipped || !state.grounded ? 0 : Math.max(input.brake, drift.active && input.drift ? 0.24 : 0);
           const normalizedSpeed = clamp(Math.abs(longitudinal) / Math.max(1, maximumForward), 0, 1);
           const torqueCurve = 1 - normalizedSpeed * 0.5;
           if (effectiveThrottle > 0) {
@@ -309,7 +334,7 @@ export function createLongHaulTruckKit(N, options = {}) {
           }
           if (effectiveBrake > 0) {
             if (longitudinal > 0.45) longitudinal = Math.max(0, longitudinal - finite(profile.brakeForce, 9.4) * load.brakeScale * effectiveBrake * dt);
-            else longitudinal -= finite(profile.reverseAcceleration, 2.6) * load.forceScale * state.surfaceGrip * effectiveBrake * dt;
+            else if (!input.drift) longitudinal -= finite(profile.reverseAcceleration, 2.6) * load.forceScale * state.surfaceGrip * effectiveBrake * dt;
           }
           if (state.grounded && !effectiveThrottle && !effectiveBrake) {
             const resistance = finite(profile.rollingResistance?.[surfaceKey], 0.48) * dt;
@@ -323,6 +348,8 @@ export function createLongHaulTruckKit(N, options = {}) {
             const gradeForce = load.effectiveMass * 9.81 * clamp(forwardGrade, -0.32, 0.32);
             longitudinal -= gradeForce / load.effectiveMass * dt;
             if (input.handbrake) longitudinal *= Math.exp(-0.85 * load.brakeScale * dt);
+            // Sliding dissipates motion before the bounded reserve recovers any.
+            if (drift.active) longitudinal *= Math.exp(-0.3 * dt);
           }
           if (state.tipped) longitudinal *= Math.exp(-5.5 * dt);
           // Ease down after a burst instead of snapping instantly to the normal cap.
@@ -331,13 +358,17 @@ export function createLongHaulTruckKit(N, options = {}) {
 
           const speedRatio = clamp(Math.abs(longitudinal) / Math.max(1, finite(profile.maximumForwardSpeed, 38)), 0, 1);
           const steering = profile.steering ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.steering;
-          const targetSteer = (state.tipped ? 0 : input.steer) * (finite(steering.lowSpeedAngle, 0.6) + (finite(steering.highSpeedAngle, 0.155) - finite(steering.lowSpeedAngle, 0.6)) * speedRatio);
-          const steeringAngle = state.steeringAngle + (targetSteer - state.steeringAngle) * (1 - Math.exp(-finite(steering.response, 11) * dt));
-          const maximumYaw = finite(steering.maximumYawRate, 1.1) * load.yawScale;
+          // Damage produces a stable, bounded pull and weaker steering. A full
+          // opposing input always retains enough authority to correct it.
+          const steerIntent = clamp(input.steer * (1 - damageMagnitude * 0.26) + steeringDamage * 0.16 * clamp(previousPlanarSpeed / 5, 0, 1), -1, 1);
+          const driftTurn = drift.active ? clamp(finite(driftProfile.turnMultiplier, 1.55), 1, 2.1) * (drift.phase === "countersteer" ? 1.22 : 1) : 1;
+          const targetSteer = (state.tipped ? 0 : steerIntent) * (finite(steering.lowSpeedAngle, 0.6) + (finite(steering.highSpeedAngle, 0.155) - finite(steering.lowSpeedAngle, 0.6)) * speedRatio) * driftTurn;
+          const steeringAngle = state.steeringAngle + (targetSteer - state.steeringAngle) * (1 - Math.exp(-finite(steering.response, 11) * (drift.phase === "countersteer" ? 1.7 : 1) * dt));
+          const maximumYaw = finite(steering.maximumYawRate, 1.1) * load.yawScale * (drift.active ? 1.4 : 1);
           const targetYawRate = state.tipped ? 0 : state.grounded
             ? Math.abs(longitudinal) > 0.08 ? clamp((longitudinal / finite(steering.wheelbase, 6.1)) * Math.tan(steeringAngle) * finite(steering.yawResponse, 0.84) * state.surfaceGrip * load.yawScale * (input.handbrake ? 1.12 : 1), -maximumYaw, maximumYaw) : 0
             : input.steer * finite(profile.air?.steering, 0.72) * load.airControlScale;
-          const yawRate = state.yawRate + (targetYawRate - state.yawRate) * (1 - Math.exp(-(state.grounded ? 10 : 4.5) * load.yawScale * dt));
+          const yawRate = state.yawRate + (targetYawRate - state.yawRate) * (1 - Math.exp(-(state.grounded ? drift.phase === "countersteer" ? 17 : 10 : 4.5) * load.yawScale * dt));
           const heading = normalizeAngle(state.heading + yawRate * dt);
           const nextForward = { x: Math.sin(heading), z: Math.cos(heading) };
           const nextRight = { x: nextForward.z, z: -nextForward.x };
@@ -349,6 +380,15 @@ export function createLongHaulTruckKit(N, options = {}) {
           let velocity;
           if (state.grounded) {
             velocity = { x: nextForward.x * turnLongitudinal + nextRight.x * turnLateral, y: state.velocity.y, z: nextForward.z * turnLongitudinal + nextRight.z * turnLateral };
+            const release = resolveDrift(drift, {
+              previousSpeed: previousPlanarSpeed, speed: Math.hypot(turnLongitudinal, turnLateral),
+              longitudinal: turnLongitudinal, slipAngle: Math.atan2(turnLateral, Math.max(0.01, Math.abs(turnLongitudinal)))
+            }, dt, driftProfile);
+            drift = release.drift;
+            if (release.released) {
+              velocity.x = nextForward.x * release.speed;
+              velocity.z = nextForward.z * release.speed;
+            }
           } else {
             // Air control bends the flight slightly, without road traction,
             // unlimited midair acceleration or snapping velocity to the nose.
@@ -440,6 +480,8 @@ export function createLongHaulTruckKit(N, options = {}) {
           if(!tipped){rollAngle=clamp(rollAngle,-maximumLean,maximumLean);if(Math.abs(rollAngle)>=maximumLean&&Math.sign(rollVelocity)===Math.sign(rollAngle))rollVelocity=0}
           if (tipped) rollAngle = clamp(rollAngle, -settledAngle * 1.05, settledAngle * 1.05);
           const acceleration = clamp((longitudinal - state.longitudinalSpeed) / dt, -40, 40);
+          const weightTransfer = state.weightTransfer + ((grounded ? clamp(-acceleration / 18, -0.6, 1) * (1 + loadRatio * 0.2) : 0) - state.weightTransfer) * (1 - Math.exp(-8 * dt));
+          const cargoShift = loadShift.x; // presentation alias of the authoritative cargo motion
           const safe = grounded && !tipped && Math.abs(rollAngle) < 0.48 && state.surface === "road" && Math.abs(lateral) < 4 && roundaboutContactImpacts.size === 0
             ? { x: position.x, y: position.y, z: position.z, heading }
             : state.lastSafe;
@@ -455,10 +497,15 @@ export function createLongHaulTruckKit(N, options = {}) {
             longitudinalSpeed: longitudinal,
             lateralSpeed: lateral,
             driftAngle,
+            drift,
+            weightTransfer,
+            cargoShift,
+            steeringDamage,
+            totalMass,
             steeringAngle,
             wheelTravel: state.wheelTravel + longitudinal * dt,
             bodyRoll: rollAngle,
-            bodyPitch: state.bodyPitch + ((grounded ? clamp(-acceleration * 0.012 + suspensionCompression * 0.13 + load.rearPitch + loadShift.z * load.payloadFraction * 0.18, -0.15 - load.payloadFraction * 0.07, 0.18 + load.payloadFraction * 0.06) : clamp(-velocity.y * 0.025 - input.pitchControl * finite(profile.air?.pitchControl, 0.24) * load.airControlScale, -0.5, 0.5)) - state.bodyPitch) * (1 - Math.exp(-6 * load.dampingScale * dt)),
+            bodyPitch: state.bodyPitch + ((grounded ? clamp(-acceleration * 0.012 + weightTransfer * 0.045 + suspensionCompression * 0.13 + load.rearPitch + loadShift.z * load.payloadFraction * 0.18, -0.15 - load.payloadFraction * 0.07, 0.22 + load.payloadFraction * 0.06) : clamp(-velocity.y * 0.025 - input.pitchControl * finite(profile.air?.pitchControl, 0.24) * load.airControlScale, -0.5, 0.5)) - state.bodyPitch) * (1 - Math.exp(-6 * load.dampingScale * dt)),
             rollAngle,
             rollVelocity,
             tipped,

@@ -55,7 +55,7 @@ export async function freightSteering(page, { route = 'safe', targetSpeed = 29, 
     const safeTarget = Math.abs(error) > .5 ? Math.min(targetSpeed, 15) : targetSpeed;
     if (truck.speed < safeTarget - .8) wanted.push('w'); else if (truck.speed > safeTarget + 1.8) wanted.push('s');
     if (error > .022) wanted.push('a'); if (error < -.022) wanted.push('d');
-    if (boost && truck.speed < targetSpeed - 2 && Math.abs(error) < .1 && !inApproach) { if (!wanted.includes('w')) wanted.push('w'); wanted.push('Shift'); }
+    if (boost && truck.speed < targetSpeed - 2 && Math.abs(error) < .1 && !inApproach) { if (!wanted.includes('w')) wanted.push('w'); wanted.push('Space'); }
     return { keys: wanted, scene: sceneId, progress, speed: truck.speed, error, station: station.id, inApproach, route, target: point, desiredLane, tipped: truck.tipped, encounter: encounter ? { id: encounter.id, kind: encounter.kind } : null };
   }, { route, targetSpeed, lane, boost, aimRamp, missPickup });
 }
@@ -68,11 +68,11 @@ export class FreightKeyboardDriver {
     // Speed regulation is ordinary key input, with intentional throttle taps at
     // least 350ms apart so control oscillation cannot accidentally request rush.
     if (command.keys.includes('w') && !this.held.has('w')) {
-      if (before.seconds - this.lastThrottleDown < .35) command.keys = command.keys.filter(key => key !== 'w' && key !== 'Shift');
+      if (before.seconds - this.lastThrottleDown < .35) command.keys = command.keys.filter(key => key !== 'w' && key !== 'Space');
       else this.lastThrottleDown = before.seconds;
     }
     this.held = await setKeyboard(this.page, this.held, command.keys);
-    if (command.tipped && before.seconds - this.lastRecovery >= 8.1) { await this.page.keyboard.press('e'); this.lastRecovery = before.seconds; }
+    if (command.tipped && before.seconds - this.lastRecovery >= 8.1) { await this.page.keyboard.press('f'); this.lastRecovery = before.seconds; }
     const clock = await stepClock(this.page, seconds);
     this.commands.push({ time: clock.seconds, ...command });
     return { command, clock };

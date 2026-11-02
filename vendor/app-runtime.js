@@ -10,7 +10,7 @@
     settings.sound=settings.sound!==false;settings.quality=settings.quality!==false;settings.motion=settings.motion!==false;settings.steering=clamp(finite(settings.steering,100),75,125);
 
     const scenes={boot:{kind:"web-canvas-scene",exits:{ready:{to:"title"}}},dispatch:{kind:"web-canvas-scene",exits:{start:{to:"generating"},back:{to:"title"}}},title:{kind:"web-canvas-scene",exits:{dispatch:{to:"dispatch"},start:{to:"generating"},settings:{to:"settings"},how:{to:"how-to-play"},credits:{to:"credits"}}},generating:{kind:"web-three-scene",exits:{ready:{to:"driving"},cancel:{to:"title"}}},driving:{kind:"web-three-scene",exits:{pause:{to:"paused"},retry:{to:"generating"},complete:{to:"results"},fail:{to:"loss"},title:{to:"title"}}},paused:{kind:"web-three-scene",exits:{resume:{to:"driving"},settings:{to:"settings"},retry:{to:"generating"},title:{to:"title"}}},results:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},loss:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},settings:{kind:"web-canvas-scene",exits:{title:{to:"title"},pause:{to:"paused"}}},credits:{kind:"web-canvas-scene",exits:{back:{to:"title"}}},"how-to-play":{kind:"web-canvas-scene",exits:{back:{to:"title"}}}};
-    const inputKit=N.createCoreInputKit({id:"long-haul-input",initialState:{intent:{throttle:0,brake:0,steer:0,boost:false,handbrake:false,interact:false}},actions:{throttle:{},brake:{},steerLeft:{},steerRight:{},boost:{},handbrake:{},interact:{},camera:{},map:{},pause:{},retry:{}},bindings:{keyboard:{throttle:["KeyW","ArrowUp"],brake:["KeyS","ArrowDown"],steerLeft:["KeyA","ArrowLeft"],steerRight:["KeyD","ArrowRight"],boost:["ShiftLeft","ShiftRight"],handbrake:["Space"],interact:["KeyE"],camera:["KeyC"],map:["KeyM"],pause:["Escape"],retry:["KeyR"]}},createApi({baseApi}){return{setIntent(intent={}){return baseApi.update({intent:clone(intent)},"updated")},getIntent(){return clone(baseApi.getState().intent??{})}}}});
+    const inputKit=N.createCoreInputKit({id:"long-haul-input",initialState:{intent:{throttle:0,brake:0,steer:0,boost:false,handbrake:false,interact:false}},actions:Object.fromEntries(Object.keys(LONG_HAUL_BINDINGS).map(action=>[action,{}])),bindings:{keyboard:LONG_HAUL_BINDINGS},createApi({baseApi}){return{setIntent(intent={}){return baseApi.update({intent:clone(intent)},"updated")},getIntent(){return clone(baseApi.getState().intent??{})}}}});
     const core=createLongHaulCoreKits(N,{seed:"long-haul-boot",timeLimitSeconds:TIME_LIMIT_SECONDS});
     const product=createLongHaulProductKits(N);
     const engine=N.createEngine({tick:{maxDelta:1/15,rejectReentry:true},kits:[N.createCoreSceneKit({scenes,initialSceneId:"boot"}),N.createCoreWorldDomain({childDomains:false}),inputKit,...core.kits,...product.kits]});
@@ -169,7 +169,12 @@
 
     function clearWorld(clearCourse=true){resetArcadeOverhaul();forwardBoost.reset();resetScrapeSparks();patchClient?.dispose();patchClient=null;activeContacts.clear();clearHorizonWorld?.();try{if(engine.n.coreWorld.getWorldDefinition(WORLD_ID))engine.n.coreWorld.removeWorld(WORLD_ID)}catch{}for(const id of [...cellHosts.keys()])releaseCell(id);resetCellStreamingQueues();cellRoot.clear();dynamicRoot.clear();for(const id of ["tree-trunks","tree-crowns-a","tree-crowns-b","grass"]){try{batches.retainCells(id,[]);flushBatch(id)}catch{}}truckRig=null;wildlifeRig=null;preparation=null;preloadedRouteCells=[];lastCellKey="";mapOpen=false;updateMapPanel();document.body.classList.remove("world-visible","driving","final-minute");if(clearCourse){course=null;courseEnvelope=null}engine.n.longHaulCourse.reset();engine.n.longHaulDelivery.reset();engine.n.longHaulWildlife.reset();engine.n.longHaulRun.reset();meters.reset()}
 
-    const keys=Object.create(null),pressed=new Set(),forwardBoost=createForwardBoost();window.addEventListener("keydown",event=>{const garage=document.getElementById("arcade-garage-panel");if(garage&&!garage.hidden&&! ["KeyE","Escape"].includes(event.code))return;if(event.target instanceof Element&&(event.target.closest("input,select,textarea,[contenteditable=true]")||((event.code==="Space"||event.code==="Enter")&&event.target.closest("button,a[href]"))))return;if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(event.code))event.preventDefault();if(!event.repeat&&!keys[event.code]){pressed.add(event.code);if(currentScene()==="driving"&&["KeyW","ArrowUp"].includes(event.code)&&!readTruck().tipped&&(meters.get("fuel")?.value??0)>0){if(forwardBoost.tap(event.code,performance.now())){audio.tone(440,.18,"triangle",.06);audio.tone(880,.25,"sine",.05,.08)}}}keys[event.code]=true;audio.ensure()},{passive:false});window.addEventListener("keyup",event=>{keys[event.code]=false});
+    const keys=Object.create(null),pressed=new Set(),forwardBoost=createForwardBoost();window.addEventListener("keydown",event=>{
+      if(event.target instanceof Element&&(event.target.closest("input,select,textarea,[contenteditable=true]")||(["Space","Enter"].includes(event.code)&&event.target.closest("button,a[href]"))))return;
+      if(Object.values(LONG_HAUL_BINDINGS).some(codes=>codes.includes(event.code)))event.preventDefault();
+      setDrivingControl(event.code,true,{repeat:event.repeat});
+    },{passive:false});
+    window.addEventListener("keyup",event=>setDrivingControl(event.code,false));
     function consume(code){if(!pressed.has(code))return false;pressed.delete(code);return true}
 
 
@@ -180,18 +185,50 @@
     function surfaceAt(position){const road=nearestRoad(course,position);if(!road)return{surface:"off-road",grip:.38,road:null};const onRoad=road.distance<=road.edge.width*.55+1.4;const shoulder=road.distance<=road.edge.width*.85+5;return{surface:onRoad?"road":shoulder?"shoulder":"off-road",grip:onRoad?(road.edge.type==="rough-shortcut"?.72:1):shoulder?.62:.38,road}}
     function groundSample(position){const e=2,h=terrainHeight(course,position.x,position.z),left=terrainHeight(course,position.x-e,position.z),right=terrainHeight(course,position.x+e,position.z),back=terrainHeight(course,position.x,position.z-e),front=terrainHeight(course,position.x,position.z+e),nx=left-right,ny=e*2,nz=back-front,length=Math.hypot(nx,ny,nz)||1;return{height:h,normal:{x:nx/length,y:ny/length,z:nz/length}}}
     function preTickDriving(dt){
-      if(!arcadeGaragePanel.hidden){holdDrivingForPanel();if(consume("KeyE")||consume("Escape"))closeArcadeGarage();return surfaceAt(readTruck().position)}
-      if(mapOpen){if(consume("KeyM")||consume("Escape")){mapOpen=false;updateMapPanel();releaseDrivingInput()}holdDrivingForPanel();return surfaceAt(readTruck().position)}
-      const state=readTruck();const run=readRun();const condition={fuel:meters.get("fuel")?.value??0,truck:meters.get("truck-condition")?.value??0,cargo:meters.get("cargo-condition")?.value??0};const surface=surfaceAt(state.position),ground=groundSample(state.position);const brake=(keys.KeyS||keys.ArrowDown)?1:0,steer=((keys.KeyA||keys.ArrowLeft)?1:0)-((keys.KeyD||keys.ArrowRight)?1:0),handbrake=Boolean(keys.Space),rush=forwardBoost.advance(dt,{cancel:Boolean(brake||handbrake||condition.fuel<=0||state.tipped)}),throttle=(keys.KeyW||keys.ArrowUp||rush)?1:0,boost=Boolean((rush||(keys.ShiftLeft||keys.ShiftRight)&&throttle)&&condition.fuel>0);const steeringScale=settings.steering/100;engine.n.coreInput.setIntent({throttle,brake,steer:steer*steeringScale,handbrake,boost});engine.n.longHaulTruck.input({throttle:condition.fuel>0?throttle:0,brake,steer:steer*steeringScale,handbrake,boost,rush,pitchControl:throttle-brake,surface:surface.surface,surfaceGrip:surface.grip,roadClass:surface.road?.edge.roadClass,roadMaterial:surface.material,groundHeight:ground.height,groundNormal:ground.normal,barrierContacts:obstacleCandidates(state.position,60).filter(obstacle=>obstacle.kind==="roundabout-island")});engine.n.longHaulCourse.sample(state.position);engine.n.longHaulRun.sample({position:state.position,speed:state.speed,surface:surface.surface,trying:Boolean(throttle||brake)});if(run.status==="running"&&condition.fuel>0){meters.spend("fuel",arcadeFuelCost(dt,state,throttle,boost),"truck-motion")}if(surface.surface==="off-road"&&state.grounded&&Math.abs(state.speed)>27&&!arcadeRecoveryGrace){const op=`off-road:${Math.floor(state.position.x/38)}:${Math.floor(state.position.z/38)}`;const result=applyLongHaulOperationOnce(engine,runKey,op,()=>({seconds:8}));if(result.applied){engine.n.longHaulRun.penalty({id:op,kind:"off-road",label:"Hard off-road impact",seconds:8,collision:true});spendTruckDamage(5,"off-road");spendCargoDamage(3,"off-road");engine.n.longHaulTruck.impulse({speedDelta:-state.speed*.3,y:1.2});toast("Hard off-road impact · +8s","bad");audio.hit()}}
-      if(consume("KeyC")){cameraMode=(cameraMode+1)%2;engine.n.coreCamera.configure({mode:cameraMode?"hood":"chase"});audio.click()}
-      if(consume("KeyM")){mapOpen=!mapOpen;releaseDrivingInput();updateMapPanel();audio.click()}
-      if(consume("Escape")){pauseGame();return surface}
-      if(consume("KeyR")){retrySame();return surface}
-      if(consume("KeyE"))handleInteraction(state,run,condition,surface);
-      updateCameraTarget(state,surface);return surface}
+      if(skillMenuOpen()){
+        if(consumeAction("upgrades")||consumeAction("pause"))closeSkillMenu();
+        return surfaceAt(readTruck().position);
+      }
+      if(!arcadeGaragePanel.hidden){
+        if(consumeAction("interact")||consumeAction("pause"))closeArcadeGarage();
+        return surfaceAt(readTruck().position);
+      }
+      if(mapOpen){
+        if(consumeAction("map")||consumeAction("pause")){mapOpen=false;updateMapPanel();releaseDrivingInput()}
+        return surfaceAt(readTruck().position);
+      }
+      const state=readTruck(),run=readRun();
+      const condition={fuel:meters.get("fuel")?.value??0,truck:meters.get("truck-condition")?.value??0,cargo:meters.get("cargo-condition")?.value??0};
+      const surface=surfaceAt(state.position),ground=groundSample(state.position);
+      // Resolve panel actions before any fuel use, abilities or driving events.
+      if(consumeAction("upgrades")){openSkillMenu();return surface}
+      if(consumeAction("pause")){pauseGame();return surface}
+      if(consumeAction("map")){mapOpen=true;releaseDrivingInput();updateMapPanel();audio.click();return surface}
+      if(consumeAction("retry")){retrySame();return surface}
+      if(consumeAction("interact")){handleInteraction(state,run,condition,surface);if(simulationFrozen())return surface}
+      const brake=heldAction(keys,"brake")?1:0,steer=(heldAction(keys,"steerLeft")?1:0)-(heldAction(keys,"steerRight")?1:0);
+      const handbrake=heldAction(keys,"handbrake"),drift=heldAction(keys,"drift");
+      const rush=forwardBoost.advance(dt,{cancel:Boolean(brake||handbrake||drift||condition.fuel<=0||state.tipped)});
+      const throttle=heldAction(keys,"throttle")||rush?1:0,boost=Boolean((rush||heldAction(keys,"boost")&&throttle)&&!brake&&!drift&&condition.fuel>0),steeringScale=settings.steering/100;
+      engine.n.coreInput.setIntent({throttle,brake,steer:steer*steeringScale,handbrake,drift,boost});
+      engine.n.longHaulTruck.input({throttle:condition.fuel>0?throttle:0,brake,steer:steer*steeringScale,handbrake,drift,boost,rush,pitchControl:throttle-brake,steeringDamage:skillSteeringDamage,surface:surface.surface,surfaceGrip:surface.grip,roadClass:surface.road?.edge.roadClass,roadMaterial:surface.material,groundHeight:ground.height,groundNormal:ground.normal,barrierContacts:obstacleCandidates(state.position,60).filter(obstacle=>obstacle.kind==="roundabout-island")});
+      engine.n.longHaulCourse.sample(state.position);
+      engine.n.longHaulRun.sample({position:state.position,speed:state.speed,surface:surface.surface,trying:Boolean(throttle||brake)});
+      if(run.status==="running"&&condition.fuel>0)meters.spend("fuel",arcadeFuelCost(dt,state,throttle,boost),"truck-motion");
+      if(surface.surface==="off-road"&&state.grounded&&Math.abs(state.speed)>27&&!arcadeRecoveryGrace){
+        const op=`off-road:${Math.floor(state.position.x/38)}:${Math.floor(state.position.z/38)}`;
+        const result=applyLongHaulOperationOnce(engine,runKey,op,()=>({seconds:8}));
+        if(result.applied){engine.n.longHaulRun.penalty({id:op,kind:"off-road",label:"Hard off-road impact",seconds:8,collision:true});spendTruckDamage(5,"off-road");spendCargoDamage(3,"off-road");engine.n.longHaulTruck.impulse({speedDelta:-state.speed*.3,y:1.2});toast("Hard off-road impact · +8s","bad");audio.hit()}
+      }
+      if(consumeAction("camera")){cameraMode=(cameraMode+1)%2;engine.n.coreCamera.configure({mode:cameraMode?"hood":"chase"});audio.click()}
+      if(consumeAction("abilityQ"))activateSkillAbility("q");
+      if(consumeAction("abilityE"))activateSkillAbility("e");
+      updateCameraTarget(state,surface);return surface;
+    }
     function preTickIdle(){engine.n.coreInput.setIntent({throttle:0,brake:0,steer:0,handbrake:false,boost:false});const state=readTruck(),ground=course?groundSample(state.position):{height:state.position.y,normal:{x:0,y:1,z:0}};engine.n.longHaulTruck.input({throttle:0,brake:0,steer:0,handbrake:false,boost:false,surface:"road",surfaceGrip:1,groundHeight:ground.height,groundNormal:ground.normal})}
-    function updateCameraTarget(state,surface){const forward={x:Math.sin(state.heading),z:Math.cos(state.heading)},right={x:forward.z,z:-forward.x};const speed=Math.hypot(state.velocity?.x??0,state.velocity?.z??0);let position,look,fov;if(cameraMode===0){let distance=22+clamp(speed/48,0,1)*7;const sideOffset=1.8,initialX=state.position.x-forward.x*distance+right.x*sideOffset,initialZ=state.position.z-forward.z*distance+right.z*sideOffset;for(const obstacle of obstacleCandidates(state.position)){const abx=initialX-state.position.x,abz=initialZ-state.position.z,length2=abx*abx+abz*abz||1,t=clamp(((obstacle.x-state.position.x)*abx+(obstacle.z-state.position.z)*abz)/length2,0,1),px=state.position.x+abx*t,pz=state.position.z+abz*t;if(t>.08&&t<.98&&Math.hypot(obstacle.x-px,obstacle.z-pz)<obstacle.radius+1.4)distance=Math.min(distance,Math.max(15,distance*t-3))}const px=state.position.x-forward.x*distance+right.x*sideOffset,pz=state.position.z-forward.z*distance+right.z*sideOffset;position=[px,Math.max(state.position.y+9.8,terrainHeight(course,px,pz)+6.5)+clamp(speed/38,0,1)*2.5,pz];look=[state.position.x+forward.x*(20+speed*.3),state.position.y+2.8,state.position.z+forward.z*(20+speed*.3)];fov=60+clamp(speed/48,0,1)*8}else{position=[state.position.x+forward.x*4.6,state.position.y+3.2,state.position.z+forward.z*4.6];look=[state.position.x+forward.x*42,state.position.y+2.7,state.position.z+forward.z*42];fov=69}position[1]=Math.max(position[1],terrainHeight(course,position[0],position[2])+3.5);if(settings.motion&&surface.road?.edge.type==="rough-shortcut")position[1]+=Math.sin(performance.now()*.018)*.1*clamp(speed/25,0,1);smoothing.setTarget("player-camera",{position,lookPoint:look,fov,mode:cameraMode?"hood":"chase"})}
+    function updateCameraTarget(state,surface){const forward={x:Math.sin(state.heading),z:Math.cos(state.heading)},right={x:forward.z,z:-forward.x};const speed=Math.hypot(state.velocity?.x??0,state.velocity?.z??0);let position,look,fov;if(cameraMode===0){let distance=22+clamp(speed/48,0,1)*7;const sideOffset=1.8,initialX=state.position.x-forward.x*distance+right.x*sideOffset,initialZ=state.position.z-forward.z*distance+right.z*sideOffset;for(const obstacle of obstacleCandidates(state.position)){const abx=initialX-state.position.x,abz=initialZ-state.position.z,length2=abx*abx+abz*abz||1,t=clamp(((obstacle.x-state.position.x)*abx+(obstacle.z-state.position.z)*abz)/length2,0,1),px=state.position.x+abx*t,pz=state.position.z+abz*t;if(t>.08&&t<.98&&Math.hypot(obstacle.x-px,obstacle.z-pz)<obstacle.radius+1.4)distance=Math.min(distance,Math.max(15,distance*t-3))}const px=state.position.x-forward.x*distance+right.x*sideOffset,pz=state.position.z-forward.z*distance+right.z*sideOffset;position=[px,Math.max(state.position.y+9.8,terrainHeight(course,px,pz)+6.5)+clamp(speed/38,0,1)*2.5,pz];look=[state.position.x+forward.x*(20+speed*.3),state.position.y+2.8,state.position.z+forward.z*(20+speed*.3)];fov=60+clamp(speed/48,0,1)*8}else{position=[state.position.x+forward.x*4.6,state.position.y+3.2,state.position.z+forward.z*4.6];look=[state.position.x+forward.x*42,state.position.y+2.7,state.position.z+forward.z*42];fov=69}position[1]=Math.max(position[1],terrainHeight(course,position[0],position[2])+3.5);if(settings.motion&&surface.road?.edge.type==="rough-shortcut")position[1]+=Math.sin(skillVisualTime*18)*.1*clamp(speed/25,0,1);smoothing.setTarget("player-camera",{position,lookPoint:look,fov,mode:cameraMode?"hood":"chase"})}
     function handleInteraction(state,run,condition,surface){const needsRecovery=run.stuckSeconds>2.8||condition.fuel<=0.01||(surface.surface==="off-road"&&Math.abs(state.speed)<.8);if(needsRecovery&&!run.recoveryUsed){const result=applyLongHaulOperationOnce(engine,runKey,"recovery",()=>({seconds:30}));if(result.applied){forwardBoost.reset();const safe=state.lastSafe;engine.n.longHaulTruck.teleport({x:safe.x,y:safe.y,z:safe.z,heading:safe.heading,speed:0});engine.n.longHaulRun.recovery(safe);engine.n.longHaulRun.penalty({id:"recovery",kind:"recovery",label:"Roadside recovery",seconds:30,collision:false});meters.restore("fuel",16,"recovery");meters.restore("truck-condition",8,"recovery");toast("Roadside recovery · +30s","bad",2600);audio.tone(180,.2,"triangle",.08)}return}const nearest=nearestDepot(course,state.position);if(!nearest||nearest.distance>nearest.depot.radius+6){toast("No receiving gate in range","bad",1400);audio.wrong();return}if(Math.abs(state.speed)>1.1){toast("Stop the truck at the gate","bad",1600);audio.wrong();return}engine.n.longHaulDelivery.check(nearest.depot.id)}
+
 
 // app-chunk-8.js
     function postTickGameplay(surface){if(course?.endless)return;const state=readTruck();const run=readRun();const delivery=readDelivery();const wildlife=readWildlife();const condition={fuel:meters.get("fuel")?.value??0,truck:meters.get("truck-condition")?.value??0,cargo:meters.get("cargo-condition")?.value??0,time:meters.get("remaining-time")?.value??0};
@@ -294,14 +331,14 @@
       rig.grounding.resolve(rig.root,rig.leanPivot,truckRenderedGroundHeight);
       for(const wheel of rig.wheels)wheel.rotation.x=state.wheelTravel/.82;
       for(const pivot of rig.steering)pivot.rotation.y=state.steeringAngle;
-      const cargo=meters.get("cargo-condition")?.value??100;for(let i=0;i<rig.crates.length;i++)rig.crates[i].rotation.z=Math.sin(performance.now()*.002+i)*(100-cargo)*.00035;
+      const cargo=meters.get("cargo-condition")?.value??100;for(let i=0;i<rig.crates.length;i++)rig.crates[i].rotation.z=Math.sin(skillVisualTime*2+i)*(100-cargo)*.00035;
       updateScrapeSparks(dt,state,rig);
       sky.position.set(state.position.x,0,state.position.z);cloudRoot.position.set(state.position.x,0,state.position.z);sun.position.set(state.position.x-150,230,state.position.z-110);sun.target.position.set(state.position.x,0,state.position.z);sun.target.updateMatrixWorld();
     }
-    const wildlifeHazardsById=new Map();function updateWildlifeVisual(){if(!wildlifeRig)return;const hazards=readWildlife().hazards,hazardById=wildlifeHazardsById;hazardById.clear();for(const hazard of hazards)hazardById.set(hazard.id,hazard);for(const animal of wildlifeRig.animals){const hazard=hazardById.get(animal.userData.id);if(!hazard){animal.visible=false;continue}animal.visible=true;animal.position.set(hazard.x,terrainHeight(course,hazard.x,hazard.z),hazard.z);const dx=(hazard.end.x-hazard.start.x)*(hazard.direction||1),dz=(hazard.end.z-hazard.start.z)*(hazard.direction||1);animal.rotation.y=Math.atan2(dx,dz);const stride=performance.now()*.004+animal.userData.phase;animal.userData.legs.forEach((leg,index)=>leg.rotation.x=Math.sin(stride+(index%2?Math.PI:0))*.48);animal.position.y+=Math.abs(Math.sin(stride))*.06}}
+    const wildlifeHazardsById=new Map();function updateWildlifeVisual(){if(!wildlifeRig)return;const hazards=readWildlife().hazards,hazardById=wildlifeHazardsById;hazardById.clear();for(const hazard of hazards)hazardById.set(hazard.id,hazard);for(const animal of wildlifeRig.animals){const hazard=hazardById.get(animal.userData.id);if(!hazard){animal.visible=false;continue}animal.visible=true;animal.position.set(hazard.x,terrainHeight(course,hazard.x,hazard.z),hazard.z);const dx=(hazard.end.x-hazard.start.x)*(hazard.direction||1),dz=(hazard.end.z-hazard.start.z)*(hazard.direction||1);animal.rotation.y=Math.atan2(dx,dz);const stride=skillVisualTime*4+animal.userData.phase;animal.userData.legs.forEach((leg,index)=>leg.rotation.x=Math.sin(stride+(index%2?Math.PI:0))*.48);animal.position.y+=Math.abs(Math.sin(stride))*.06}}
     function applyCamera(){const descriptor=smoothing.getDescriptor("player-camera");camera.position.fromArray(descriptor.position);camera.quaternion.fromArray(descriptor.quaternion);const fov=descriptor.fov+boostVisualStrength*14;if(camera.fov!==fov){camera.fov=fov;camera.updateProjectionMatrix()}applyImpactCamera()}
 
-    function interactionPrompt(){const state=readTruck(),run=readRun(),condition={fuel:meters.get("fuel")?.value??0};const surface=surfaceAt(state.position);if((condition.fuel<=0||run.stuckSeconds>2.8||(surface.surface==="off-road"&&Math.abs(state.speed)<.8))&&!run.recoveryUsed)return"E · Call roadside recovery";const nearest=nearestDepot(course,state.position);if(nearest&&nearest.distance<=nearest.depot.radius+8)return Math.abs(state.speed)>1.1?"Brake to a full stop":`E · Check ${nearest.depot.name}`;return""}
+    function interactionPrompt(){const state=readTruck(),run=readRun(),condition={fuel:meters.get("fuel")?.value??0};const surface=surfaceAt(state.position);if((condition.fuel<=0||run.stuckSeconds>2.8||(surface.surface==="off-road"&&Math.abs(state.speed)<.8))&&!run.recoveryUsed)return"F · Call roadside recovery";const nearest=nearestDepot(course,state.position);if(nearest&&nearest.distance<=nearest.depot.radius+8)return Math.abs(state.speed)>1.1?"Brake to a full stop":`F · Check ${nearest.depot.name}`;return""}
     function setMeter(element,value,warning=30){const safe=clamp(value,0,100);element.style.width=`${safe}%`;element.style.background=safe<warning?"var(--red)":safe<55?"var(--amber)":"var(--green)"}
     function updateHud(surface){if(!course)return;const state=readTruck(),run=readRun(),delivery=readDelivery();const fuel=meters.get("fuel")?.value??0,truck=meters.get("truck-condition")?.value??0,cargo=meters.get("cargo-condition")?.value??0,time=meters.get("remaining-time")?.value??0;$("#timer").textContent=formatTime(time);$("#map-time").textContent=formatTime(time);$("#speed").textContent=String(Math.round(Math.abs(state.speed)*2.237));$("#road-name").textContent=surface?.road?.edge.branchName??(surface?.surface==="shoulder"?"Road shoulder":surface?.surface==="off-road"?"Off road":"Freight Road");$("#fuel-num").textContent=`${Math.ceil(fuel)}%`;$("#truck-num").textContent=`${Math.floor(100-truck)}% damage`;$("#cargo-num").textContent=`${Math.ceil(cargo)}%`;setMeter($("#fuel-meter"),fuel,22);setMeter($("#truck-meter"),truck,35);setMeter($("#cargo-meter"),cargo,40);$("#destination-name").textContent=course.depots.find(depot=>depot.id===delivery.validDepotId)?.name??"Receiving yard";$("#checked-num").textContent=`${delivery.checkedDepotIds.length} / ${course.depots.length}`;$("#penalty-num").textContent=`+${Math.round(run.penaltyTotal)}s`;$("#recovery-num").textContent=(run.rawTime-(run.lastRecoveryTime??-100)<8)?"Resetting":"Ready";document.body.classList.toggle("final-minute",time<=60&&run.status==="running");const prompt=interactionPrompt(),interact=$("#interact");interact.textContent=prompt;interact.classList.toggle("show",Boolean(prompt))}
     function updateMapPanel(){cachedMapBounds=null;const panel=$("#map-panel");panel.classList.toggle("open",mapOpen);panel.setAttribute("aria-hidden",String(!mapOpen))}
@@ -516,14 +553,14 @@
       for(const key of activeContacts)if(!touching.has(key))activeContacts.delete(key);
       _lhImpactGameplayBase(surface);
       const after=readTruck();
-      if(after.tipped){const tip=applyLongHaulOperationOnce(engine,runKey,"truck-tip",()=>({seconds:15}));if(tip.applied){engine.n.longHaulRun.penalty({id:"truck-tip",kind:"tip",label:"Truck rollover",seconds:15,collision:true});spendTruckDamage(18,"rollover");spendCargoDamage(12,"rollover");toast("Truck rolled · E to recover and build again","bad",2400);audio.wrong()}}
+      if(after.tipped){const tip=applyLongHaulOperationOnce(engine,runKey,"truck-tip",()=>({seconds:15}));if(tip.applied){engine.n.longHaulRun.penalty({id:"truck-tip",kind:"tip",label:"Truck rollover",seconds:15,collision:true});spendTruckDamage(18,"rollover");spendCargoDamage(12,"rollover");toast("Truck rolled · F to recover and build again","bad",2400);audio.wrong()}}
     };
 
     interactionPrompt=function(){
       const state=readTruck(),run=readRun(),fuel=meters.get("fuel")?.value??0,surface=surfaceAt(state.position),nearest=nearestDepot(course,state.position),atDepot=nearest&&nearest.distance<=nearest.depot.radius+6;
       const needsRecovery=state.tipped||run.stuckSeconds>2.8||fuel<=.01||(!atDepot&&surface.surface==="off-road"&&Math.abs(state.speed)<.8);
-      if(needsRecovery){const wait=Math.max(0,8-(run.rawTime-(run.lastRecoveryTime??-100)));return wait>0?`Recovery ready in ${Math.ceil(wait)}s`:state.tipped?"E · Right the rig · combo lost":"E · Roadside recovery · time penalty"}
-      if(atDepot)return Math.abs(state.speed)>1.1?"Brake to a full stop":`E · Deliver to ${nearest.depot.name}`;
+      if(needsRecovery){const wait=Math.max(0,8-(run.rawTime-(run.lastRecoveryTime??-100)));return wait>0?`Recovery ready in ${Math.ceil(wait)}s`:state.tipped?"F · Right the rig · combo lost":"F · Roadside recovery · time penalty"}
+      if(atDepot)return Math.abs(state.speed)>1.1?"Brake to a full stop":`F · Deliver to ${nearest.depot.name}`;
       return "";
     };
     handleInteraction=function(state,run,condition,surface){
@@ -653,10 +690,10 @@
           const overlap=arcadeEncounters.find(event=>event.path===vehicle.path&&Math.abs(event.distance-vehicle.progress)<100);
           if(overlap?.kind==="ramp")vehicle.lane=-Math.sign(overlap.lane)*Math.min(5,spawn.edge.width*.22);
           if(overlap?.kind==="roadblock")vehicle.lane=overlap.safeLane;
-          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
+          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.skillDisabled=0;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
         }
         // Traffic advances in road coordinates independently of the player.
-        vehicle.progress+=vehicle.direction*vehicle.speed*dt;
+        vehicle.skillDisabled=Math.max(0,(vehicle.skillDisabled||0)-dt);vehicle.progress+=vehicle.direction*vehicle.speed*dt*(vehicle.skillDisabled>0?.35:1);
         const pos=arcadePathPoint(vehicle.path,vehicle.progress,vehicle.lane);if(!pos){vehicle.active=false;vehicle.group.visible=false;continue}
         if(course.endless&&freightProtectedProgress(-pos.z)&&Math.hypot(pos.x-truck.position.x,pos.z-truck.position.z)>60){vehicle.active=false;vehicle.group.visible=false;continue}
         const relative=(vehicle.progress-progress.distance)*direction,vehicleHeading=pos.heading+(vehicle.direction<0?Math.PI:0),height=terrainHeight(course,pos.x,pos.z)+.05;
@@ -732,7 +769,7 @@
         for(const [label,value] of [["Distance",formatDistance(traveled)],["Driving bonuses","$"+arcadeBonuses],["Cash earned",alreadyPaid?"Already paid":saved?"$"+cash:"Save unavailable"],["Best run",formatDistance(save.bestArcadeDistance)]]){const cell=document.createElement("div");cell.className="score-cell";const a=document.createElement("span"),b=document.createElement("b");a.textContent=label;b.textContent=value;cell.append(a,b);payout.append(cell)}
       }
       $("#loss-retry-btn").textContent="RETRY HIGHWAY";
-      $("#loss-new-btn").textContent="GARAGE · UPGRADE";
+      $("#loss-new-btn").textContent="GARAGF · UPGRADE";
       $("#loss-title-btn").textContent="CAMPAIGN MAP";
     }
     function arcadeSettleRoadsideRun(){
@@ -815,14 +852,14 @@
     function arcadeCullGarages(now){if(now-arcadeLastGarageCull<250)return;arcadeLastGarageCull=now;const position=readTruck().position;for(const stop of arcadeGarageStops){const dx=stop.x-position.x,dz=stop.z-position.z;stop.group.visible=dx*dx+dz*dz<650*650}}
     function arcadeShowGarage(focusItem=null){
       const wasHidden=arcadeGaragePanel.hidden,restoreFocus=wasHidden||arcadeGaragePanel.contains(document.activeElement),scrollTop=arcadeGaragePanel.scrollTop;
-      if(wasHidden){releaseDrivingInput();forwardBoost.reset({preserveCooldown:true});arcadeScore.tick(0,{active:false})}
+      if(wasHidden){releaseDrivingInput();forwardBoost.clearTaps();arcadeScore.tick(0,{active:false})}
       const save=arcadeUpgradeState(),upgrades=save.upgrades||{},cash=Number(save.cash)||0,saveAvailable=arcadeSaveWritable();
-      arcadeGaragePanel.innerHTML="";const title=document.createElement("h2");title.textContent="ROADSIDE GARAGE";const summary=document.createElement("p");summary.textContent=saveAvailable?`Available cash $${cash.toLocaleString()} · The delivery clock keeps running while you shop.`:"Save unavailable · Upgrades cannot be purchased. The delivery clock keeps running.";arcadeGaragePanel.append(title,summary);
+      arcadeGaragePanel.innerHTML="";const title=document.createElement("h2");title.textContent="ROADSIDE GARAGE";const summary=document.createElement("p");summary.textContent=saveAvailable?`Available cash $${cash.toLocaleString()} · Driving is paused while you shop.`:"Save unavailable · Upgrades cannot be purchased. Driving is paused.";arcadeGaragePanel.append(title,summary);
       for(const item of arcadeGarageCatalog){const level=Math.max(0,Number(upgrades[item.id])||0),cost=Math.round(item.base*Math.pow(1.65,level)),row=document.createElement("div");row.className="garage-row";const info=document.createElement("div"),name=document.createElement("b"),description=document.createElement("small"),button=document.createElement("button");name.textContent=`${item.label} · LEVEL ${level}/${item.max}`;description.textContent=item.description;info.append(name,description);button.dataset.upgrade=item.id;button.textContent=level>=item.max?"MAX":`UPGRADE $${cost}`;button.disabled=!saveAvailable||level>=item.max||cash<cost;button.addEventListener("click",()=>{const latest=arcadeUpgradeState(),nextCash=Number(latest.cash)||0,nextLevel=Number(latest.upgrades?.[item.id])||0;if(nextLevel!==level||nextCash<cost){arcadeShowGarage(item.id);return}if(nextLevel>=item.max)return;latest.cash=nextCash-cost;latest.upgrades={...(latest.upgrades||{}),[item.id]:nextLevel+1};try{if(!arcadeSaveWritable())throw Error("Save unavailable");localStorage.setItem("longhaul-campaign-v1",JSON.stringify(latest));arcadeCachedSave=latest;arcadeConfiguredRun="";arcadeApplyUpgrades();arcadeShowGarage(item.id)}catch{toast("Garage save unavailable","bad",1600)}});row.append(info,button);arcadeGaragePanel.append(row)}
-      const close=document.createElement("button");close.textContent="CLOSE · E TO DRIVE";close.addEventListener("click",closeArcadeGarage);arcadeGaragePanel.append(close);arcadeGaragePanel.hidden=false;arcadeGaragePanel.scrollTop=scrollTop;if(restoreFocus){const target=focusItem?arcadeGaragePanel.querySelector(`button[data-upgrade="${focusItem}"]:not(:disabled)`):arcadeGaragePanel;(target||close).focus({preventScroll:true})}
+      const close=document.createElement("button");close.textContent="CLOSE · F TO DRIVE";close.addEventListener("click",closeArcadeGarage);arcadeGaragePanel.append(close);arcadeGaragePanel.hidden=false;arcadeGaragePanel.scrollTop=scrollTop;if(restoreFocus){const target=focusItem?arcadeGaragePanel.querySelector(`button[data-upgrade="${focusItem}"]:not(:disabled)`):arcadeGaragePanel;(target||close).focus({preventScroll:true})}
     }
     const arcadeOriginalInteractionPrompt=interactionPrompt;
-    interactionPrompt=function(){const base=arcadeOriginalInteractionPrompt();if(!arcadeRoadsideMode()||currentScene()!=="driving")return base;const state=readTruck(),run=readRun(),garage=arcadeNearestGarage(state.position),depot=nearestDepot(course,state.position);if(!garage||depot&&depot.distance<=depot.depot.radius+6||(state.tipped||(meters.get("fuel")?.value??0)<=.01||run.stuckSeconds>2.8))return base;return Math.abs(state.speed)>1.1?"Brake to a full stop at the garage":arcadeGaragePanel.hidden?"E · Open roadside garage":"E · Close roadside garage"};
+    interactionPrompt=function(){const base=arcadeOriginalInteractionPrompt();if(!arcadeRoadsideMode()||currentScene()!=="driving")return base;const state=readTruck(),run=readRun(),garage=arcadeNearestGarage(state.position),depot=nearestDepot(course,state.position);if(!garage||depot&&depot.distance<=depot.depot.radius+6||(state.tipped||(meters.get("fuel")?.value??0)<=.01||run.stuckSeconds>2.8))return base;return Math.abs(state.speed)>1.1?"Brake to a full stop at the garage":arcadeGaragePanel.hidden?"F · Open roadside garage":"F · Close roadside garage"};
     const arcadeOriginalHandleInteraction=handleInteraction;
     handleInteraction=function(state,run,condition,surface){if(arcadeRoadsideMode()){const garage=arcadeNearestGarage(state.position),depot=nearestDepot(course,state.position),atDepot=depot&&depot.distance<=depot.depot.radius+6,needsRecovery=(state.tipped||condition.fuel<=.01||run.stuckSeconds>2.8);if(garage&&!atDepot&&!needsRecovery){if(Math.abs(state.speed)>1.1){toast("Stop at the garage to upgrade","bad",1500);return}if(arcadeGaragePanel.hidden)arcadeShowGarage();else closeArcadeGarage();audio.click();return}}arcadeOriginalHandleInteraction(state,run,condition,surface)};
     postTickGameplay=function(surface,dt){
@@ -852,7 +889,7 @@
       const playing=view==="driving"&&!launchIntro.active;arcadeOverlay.classList.toggle("active",playing);
       if(playing&&now-arcadeLastHud>=66){arcadeLastHud=now;const run=readRun(),fuel=meters.get("fuel")?.value??0,intent=engine.n.coreInput.getIntent(),distance=run.distance||0;
         document.getElementById("arcade-fuel").textContent=Math.ceil(fuel)+"%";
-        document.getElementById("arcade-boost").textContent=forwardBoost.remaining>0?`${forwardBoost.remaining.toFixed(1)}s`:forwardBoost.cooldown>0?`RECHARGE ${forwardBoost.cooldown.toFixed(1)}s`:intent.boost?"ACTIVE":"W ×2 / SHIFT";
+        document.getElementById("arcade-boost").textContent=forwardBoost.remaining>0?`${forwardBoost.remaining.toFixed(1)}s`:forwardBoost.cooldown>0?`RECHARGE ${forwardBoost.cooldown.toFixed(1)}s`:intent.boost?"ACTIVE":"W ×2 / SPACE";
         document.getElementById("arcade-distance").textContent=(distance/1609.344).toFixed(2)+" mi";
         document.getElementById("arcade-earnings").textContent="$"+arcadeBonuses}
     }
@@ -868,7 +905,7 @@
     let arcadeWeatherTime=0,arcadeWeatherAmount=0,arcadeTrafficSerial=0,arcadeEventLabel="OPEN ROAD";
     const arcadeEncounterHosts=new Map(),arcadeBrokenProps=new Set(),arcadeUsedRamps=new Set(),arcadeWarned=new Set(),arcadeEventHistory=[];
     function arcadeRecord(type,detail={}){arcadeEventHistory.push({type,time:Number(readRun().rawTime.toFixed(3)),...detail});if(arcadeEventHistory.length>128)arcadeEventHistory.shift()}
-    function releaseDrivingInput(){for(const key of Object.keys(keys))keys[key]=false;pressed.clear();forwardBoost.reset({preserveCooldown:true});engine.n.coreInput.setIntent({throttle:0,brake:0,steer:0,boost:false,handbrake:false})}
+    function releaseDrivingInput(){for(const key of Object.keys(keys))keys[key]=false;pressed.clear();forwardBoost.clearTaps();engine.n.coreInput.setIntent({throttle:0,brake:0,steer:0,boost:false,handbrake:false})}
     function holdDrivingForPanel(){const state=readTruck(),ground=groundSample(state.position),surface=surfaceAt(state.position);engine.n.longHaulTruck.input({throttle:0,brake:0,steer:0,boost:false,handbrake:true,surface:surface.surface,surfaceGrip:surface.grip,groundHeight:ground.height,groundNormal:ground.normal});engine.n.longHaulRun.sample({position:state.position,speed:state.speed,surface:surface.surface,trying:false})}
     function closeArcadeGarage(){arcadeGaragePanel.hidden=true;releaseDrivingInput();$("#game-canvas").focus({preventScroll:true});audio.click()}
 
@@ -908,10 +945,12 @@
     $("#dispatch-go-btn").addEventListener("click",()=>{if(currentScene()!=="dispatch"||pendingSceneTransition)return;window.longHaulContract=selectedContract;audio.ensure();startGeneration(newSeed(),false,"start")});
 
     const touchControls=document.createElement("nav");touchControls.id="touch-controls";touchControls.setAttribute("aria-label","Driving controls");
-    for(const [code,label] of [["KeyA","◀"],["KeyD","▶"],["KeyS","BRAKE"],["KeyW","GO"],["ShiftLeft","BOOST"],["KeyE","ACT"],["KeyM","MAP"],["Escape","Ⅱ"]]){
-      const button=document.createElement("button");button.type="button";button.textContent=label;button.setAttribute("aria-label",{KeyA:"Steer left",KeyD:"Steer right",KeyS:"Brake",KeyW:"Accelerate",ShiftLeft:"Boost",KeyE:"Interact",KeyM:"Map",Escape:"Pause"}[code]);
-      button.addEventListener("pointerdown",event=>{event.preventDefault();button.setPointerCapture(event.pointerId);if(!keys[code])pressed.add(code);keys[code]=true;audio.ensure()});
-      for(const name of ["pointerup","pointercancel","lostpointercapture"])button.addEventListener(name,()=>{keys[code]=false});touchControls.append(button);
+    for(const action of LONG_HAUL_TOUCH_ACTIONS){
+      const control=LONG_HAUL_CONTROLS[action],code=control.keys[0],button=document.createElement("button");
+      button.type="button";button.textContent=control.short;button.dataset.action=action;button.setAttribute("aria-label",control.label);
+      button.addEventListener("pointerdown",event=>{event.preventDefault();if(!touchDrivingAllowed(code))return;button.setPointerCapture(event.pointerId);setDrivingControl(code,true)});
+      for(const name of ["pointerup","pointercancel","lostpointercapture"])button.addEventListener(name,()=>setDrivingControl(code,false));
+      touchControls.append(button);
     }
     $("#game-stage").append(touchControls);
 
@@ -937,14 +976,14 @@
     spendTruckDamage=function(amount,reason){const result=arcadeDamageBase(amount,reason);if(amount>0){resetArcadeCombo();arcadeImpactStrength=Math.max(arcadeImpactStrength,clamp(amount/24,.2,1));arcadeRecord("impact",{reason,damage:result})}return result};
     function applyImpactCamera(){
       if(!settings.motion||arcadeImpactStrength<.015)return;
-      const now=performance.now()*.065;camera.position.x+=Math.sin(now*1.7)*arcadeImpactStrength*.24;camera.position.y+=Math.cos(now)*arcadeImpactStrength*.16;
+      const now=skillVisualTime*65;camera.position.x+=Math.sin(now*1.7)*arcadeImpactStrength*.24;camera.position.y+=Math.cos(now)*arcadeImpactStrength*.16;
     }
     function updateRiskHud(){
       const state=arcadeScore.snapshot(),playing=currentScene()==="driving"&&!launchIntro.active;
       riskHud.hidden=!playing;encounterHud.hidden=!playing;
       $("#risk-multiplier").textContent=`×${state.multiplier}`;$("#risk-label").textContent=state.pending?state.lastEvent:"BUILD A COMBO";
       $("#risk-pending").textContent=state.pending.toLocaleString();$("#risk-bank").textContent=`${state.banked.toLocaleString()} BANKED · $${arcadeBonuses}`;
-      $("#risk-meter-fill").style.transform=`scaleX(${clamp(state.remaining/4,0,1)})`;
+      $("#risk-meter-fill").style.transform=`scaleX(${clamp(state.remaining/skillProgression.effects().comboWindow,0,1)})`;
       $("#risk-hint").textContent=state.pending?`Bank in ${state.remaining.toFixed(1)}s · crash loses combo`:state.cooldown>0?"Steady the rig. Build again.":"Close passes · Clean landings";
       riskHud.classList.toggle("hot",state.multiplier>=3);encounterHud.textContent=arcadeEventLabel;
     }
@@ -1005,7 +1044,7 @@
         if(distance<440&&!host)host=createEncounterHost(event);
         if(!host)continue;host.group.visible=distance<440;
         if(distance>620){host.group.removeFromParent();arcadeEncounterHosts.delete(event.id);continue}
-        if(event.kind==="breakables")for(const prop of host.props){prop.broken=arcadeBrokenProps.has(prop.id);prop.mesh.visible=!prop.broken}
+        for(const prop of host.props){prop.broken=arcadeBrokenProps.has(prop.id);prop.mesh.visible=!prop.broken}
         if(!progress||progress.path!==event.path)continue;
         const ahead=event.distance-progress.distance;
         if(ahead>0&&ahead<event.warningLead){
@@ -1165,7 +1204,7 @@
         save.cash-=walletCost;
         const checkpoint={schema:"long-haul.freight-checkpoint/1",journey:freightJourney.snapshot(),truck:engine.n.longHaulTruck.snapshot(),run:engine.n.longHaulRun.snapshot(),
           meters:{fuel:meters.get("fuel").value,truck:meters.get("truck-condition").value,cargo:meters.get("cargo-condition").value},bankedPoints:risk.banked,bestMultiplier:risk.bestMultiplier,
-          initialType:freightInitialType,terminal:terminal||readRun().status==="failed"};
+          initialType:freightInitialType,terminal:terminal||readRun().status==="failed",skillState:skillCheckpointState()};
         const result=prepareFreightSave(save,checkpoint,{expectedRevision:freightRevision});
         if(!result.ok){if(["save-conflict","stale-contract","stale-checkpoint","inactive-session","closed-session"].includes(result.reason)){freightStorageConflict=true;freightStorageStatus="Another tab changed this haul · save paused"}else freightStorageStatus="Save unavailable · haul kept in this tab";return false}
         localStorage.setItem("longhaul-campaign-v1",JSON.stringify(result.save));
@@ -1321,9 +1360,9 @@
       // is wider than the truck, while the wide route never has these obstacles.
       {const station=state.pickupStation;if(station&&Math.abs(station.progress+truck.position.z)<48){const p=station.risky.point,dx=truck.position.x-p.x,dz=truck.position.z-p.z,along=dx*Math.sin(p.heading)+dz*Math.cos(p.heading),side=dx*Math.cos(p.heading)-dz*Math.sin(p.heading);
         const contact=truck.grounded&&Math.abs(along)<4.4&&Math.abs(side)>2.4&&Math.abs(side)<6.1;
-        if(contact&&truck.speed>3&&freightGateContact!==station.id){freightGateContact=station.id;spendTruckDamage(5,"loading-gate");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.16,kind:"prop",allowTip:false});audio.hit()}
-        if(!contact&&freightGateContact===station.id)freightGateContact=null;
-      }else freightGateContact=null}
+        if(!simulationFrozen()&&contact&&truck.speed>3&&freightGateContact!==station.id){freightGateContact=station.id;spendTruckDamage(5,"loading-gate");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.16,kind:"prop",allowTip:false});audio.hit()}
+        if(!simulationFrozen()&&!contact&&freightGateContact===station.id)freightGateContact=null;
+      }else if(!simulationFrozen())freightGateContact=null}
     }
 
     let freightCargoRoot=null;
@@ -1337,7 +1376,7 @@
           freightCargoRoot.userData.profileId=cargo.id;
         }
       }
-      if(freightCargoRoot){freightCargoRoot.position.x=(readTruck().loadShift?.x??0)*.45;freightCargoRoot.rotation.z=(readTruck().loadShift?.x??0)*.08}
+      if(freightCargoRoot){freightCargoRoot.position.x=settings.motion?(readTruck().loadShift?.x??0)*.45:0;freightCargoRoot.rotation.z=settings.motion?(readTruck().loadShift?.x??0)*.08:0}
     }
     const freightTruckVisualBase=updateTruckVisual;updateTruckVisual=function(dt){freightTruckVisualBase(dt);updateFreightCargoVisual()};
 
@@ -1387,7 +1426,7 @@
     const freightGarageShowBase=arcadeShowGarage;
     arcadeShowGarage=function(focusItem){
       freightGarageShowBase(focusItem);if(!isContinuousFreight())return;
-      const saved=arcadeUpgradeState();const summary=arcadeGaragePanel.querySelector("p");summary.textContent=`$${saved.cash.toLocaleString()} · Cargo deadline continues while shopping.`;
+      const saved=arcadeUpgradeState();const summary=arcadeGaragePanel.querySelector("p");summary.textContent=`$${saved.cash.toLocaleString()} · Driving and cargo deadline are paused.`;
       for(const [id,label,meter,cost] of [["service-fuel","REFUEL +45%","fuel",90],["service-repair","REPAIR +35%","truck-condition",120]]){
         const button=document.createElement("button");button.dataset.service=id;button.textContent=`${label} · $${cost}`;button.disabled=freightStorageConflict||!arcadeSaveWritable()||saved.cash<cost||meters.get(meter).value>=99;
         button.addEventListener("click",()=>{if(freightStorageConflict||!arcadeSaveWritable())return;const prior=meters.get(meter).value;meters.restore(meter,meter==="fuel"?45:35,"paid-garage-service");if(!saveFreightCheckpoint(false,cost)){meters.set(meter,prior,"service-rollback",{allowLockedOverride:true});toast("Service could not be saved","bad",1600)}arcadeShowGarage()});
@@ -1397,42 +1436,731 @@
     window.LongHaulFreight={getState:()=>freightState?{...clone(freightState),storage:freightStorageStatus,revision:freightRevision,road:clone(course.endless),stationHosts:freightStationHosts.size,contactLedger:engine.n.coreTransactionLedger.list(`long-haul:${runKey}`).length}:null};
 
 
-// app-chunk-11.js
-    $("#credits-btn").addEventListener("click",()=>transition("credits"));$("#credits-back-btn").addEventListener("click",()=>transition("back"));
-    $("#start-btn").addEventListener("click",()=>{audio.ensure();transition("dispatch")});$("#how-btn").addEventListener("click",()=>transition("how"));$("#settings-btn").addEventListener("click",()=>{settingsReturn="title";transition("settings")});$("#how-back-btn").addEventListener("click",()=>transition("back"));$("#settings-back-btn").addEventListener("click",()=>{saveSettings();transition(settingsReturn==="paused"?"pause":"title")});$("#sound-switch").addEventListener("click",()=>{settings.sound=!settings.sound;applySettings();audio.ensure()});$("#quality-switch").addEventListener("click",()=>{settings.quality=!settings.quality;applySettings()});$("#motion-switch").addEventListener("click",()=>{settings.motion=!settings.motion;applySettings()});$("#steer-range").addEventListener("input",event=>{settings.steering=finite(event.target.value,100)});$("#resume-btn").addEventListener("click",resumeGame);$("#pause-settings-btn").addEventListener("click",()=>{settingsReturn="paused";transition("settings")});$("#pause-retry-btn").addEventListener("click",retrySame);$("#pause-title-btn").addEventListener("click",goTitle);$("#result-retry-btn").addEventListener("click",retrySame);$("#result-new-btn").addEventListener("click",()=>{if(arcadeCampaign())location.href="./campaign.html";else newCourse()});$("#result-title-btn").addEventListener("click",()=>{if(arcadeCampaign())location.href="./campaign.html";else goTitle()});$("#loss-retry-btn").addEventListener("click",retrySame);$("#loss-new-btn").addEventListener("click",()=>{if(arcadeCampaign())location.href="./campaign.html#garage";else newCourse()});$("#loss-title-btn").addEventListener("click",()=>{if(arcadeCampaign())location.href="./campaign.html";else goTitle()});
-    function showBootError(error){console.error(error);$("#boot-error").textContent=String(error?.message??error);$("#boot-failure").classList.add("show")}
-    function resize(){const stage=document.getElementById("game-stage")||document.documentElement;const {width:rawWidth,height:rawHeight}=stage.getBoundingClientRect();const width=Math.max(1,Math.round(rawWidth)),height=Math.max(1,Math.round(rawHeight));const pixelBudget=settings.quality?2304000:1036800;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,settings.quality?1.25:.85,Math.sqrt(pixelBudget/(width*height))));renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()}addEventListener("resize",resize);resize();applySettings();
+// app-chunk-21.js
+// Skill, ability and collectible host. The engine remains the simulation clock.
+const SKILL_SAVE_KEY = "longhaul-campaign-v1";
+let skillProgression = createSkillProgression(arcadeUpgradeState().skillProgression);
+let skillSavedRevision = skillProgression.snapshot().revision;
+let skillPersistence = "saved", skillRunId = "", skillSteeringDamage = 0;
+let skillLastDrift = 0, skillLastLanding = 0, skillLastCombo = 0, skillComboStarted = 0;
+let skillTuningKey = "", skillMenuPage = 0, skillVisualTime = 0, skillProtectedImpact = null;
+let skillPreviousPosition = null, skillImpactId = 0;
+let skillLastRepairTime = -100;
+const activeAbilities = createActiveAbilities({ slots: skillProgression.snapshot().slots, levels: skillProgression.snapshot().abilities });
+const drivingPickups = createDrivingPickups();
 
-    window.render_game_to_text=()=>{const truck=readTruck(),run=readRun();return JSON.stringify({scene:currentScene(),mode:arcadeCampaign()?"campaign":"endless",coordinates:"meters; x east, y up, z south; heading 0 faces +z",player:{position:truck.position,velocity:truck.velocity,heading:truck.heading,speed:truck.speed,normalTopSpeed:readDynamics().maximumForwardSpeed,grounded:truck.grounded,tipped:truck.tipped,landingSequence:truck.landingSequence,lastLanding:truck.lastLanding},run:{status:run.status,distance:run.distance,time:run.rawTime,recoveryCount:run.recoveryCount},freight:window.LongHaulFreight?.getState(),fuel:meters.get("fuel")?.value,presentation:{contactShape:truck.contactShape,contactRadius:truck.contactRadius,lean:truckRig?.leanPivot.rotation.z,clearance:truckRig?.grounding.minimumClearance,scraping,sparks:scrapeLife.filter(n=>n>0).length},boost:{...forwardBoost.snapshot(),visualStrength:boostVisualStrength,streaks:boostStreaks.visible},cinematic:{...launchIntro},risk:arcadeScore.snapshot(),encounters:{label:arcadeEventLabel,planned:arcadeEncounters.length,active:arcadeEncounterHosts.size,rampsUsed:arcadeUsedRamps.size,propsBroken:arcadeBrokenProps.size,traffic:arcadeVehicles.filter(v=>v.active).length},weather:{rain:arcadeWeatherAmount,time:arcadeWeatherTime},events:arcadeEventHistory.slice(-16),loading:generation&&!generation.ready?generation.cursor:null})};
-    window.__longHaulBooted=true;window.longHaulBootReady?.();transition("ready");
-    const performanceStats=createPerformanceStats();let previous=performance.now(),scheduled=previous,lastHud=-Infinity,lastMap=-Infinity,frameFailed=false;
-    window.LongHaulPerformance={reset:()=>performanceStats.reset(),getState:()=>({...performanceStats.snapshot(),scene:currentScene(),cells:cellHosts.size,horizonCells:horizonHosts.size,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,patches:preparation?.getStats(),worker:patchClient?.getState(),streamingPending:cellRealizeQueue.length+cellDecorationQueue.length})};
-    window.addEventListener("blur",()=>{for(const key of Object.keys(keys))keys[key]=false;pressed.clear();forwardBoost.reset({preserveCooldown:true})});
-    document.addEventListener("visibilitychange",()=>{previous=scheduled=performance.now();if(document.hidden&&currentScene()==="driving")pauseGame()});
-    function frame(now){
-      if(frameFailed)return;requestAnimationFrame(frame);if(document.hidden){previous=scheduled=now;return}
-      const beforeScene=currentScene(),activeScene=beforeScene==="driving"||beforeScene==="generating",target=activeScene?1000/60:beforeScene==="title"?1000/30:1000/15;
-      if(now<scheduled-1.5)return;const interval=now-previous;previous=now;scheduled+=target;if(scheduled<now-target)scheduled=now+target;performanceStats.begin(beforeScene,interval);
-      const dt=clamp(interval/1000,0,1/15);
-      try{
-        if(beforeScene==="generating")performanceStats.measure("generation",stepGeneration);
-        let surface=null;if(beforeScene==="driving"){if(launchIntro.active)updateLaunchIntro(dt);if(!launchIntro.active)surface=performanceStats.measure("input",()=>preTickDriving(dt));}else if(beforeScene==="paused"&&consume("Escape"))resumeGame();
-        engine.world.__longHaulScene=launchIntro.active?"cinematic":beforeScene;
-        performanceStats.measure("simulation",()=>engine.tick(beforeScene==="driving"&&!launchIntro.active?dt:0));
-        const sceneId=updateSceneUi();
-        if(sceneId==="title"&&campaignLaunch?.course&&!campaignAutoStarted){campaignAutoStarted=true;startGeneration(campaignLaunch.course.seed,false,"start")}
-        if(sceneId==="driving"){
-          if(!launchIntro.active){performanceStats.measure("gameplay",()=>postTickGameplay(surface??surfaceAt(readTruck().position),dt));updateArcadeRules(dt)}
-          performanceStats.measure("streaming",updateWorldStreaming);performanceStats.measure("horizon",updateHorizonWorld);
-          performanceStats.measure("visuals",()=>{updateTruckVisual(dt);updateCloudLayers(readTruck(),now);updateWildlifeVisual();updateBoostVisuals(dt);applyCamera()});
-          if(now-lastHud>=66){lastHud=now;performanceStats.measure("hud",()=>updateHud(surface??surfaceAt(readTruck().position)))}
-          audio.update(readTruck().speed,launchIntro.active?.35:engine.n.coreInput.getIntent().throttle,true);
-        }else {updateBoostVisuals(dt);audio.update(0,0,false)}
-        if(sceneId==="generating")updateLoadingUi();
-        if(now-lastMap>=66){lastMap=now;drawMap()}
-        arcadeVisualFrame(now);updateRiskHud();performanceStats.measure("renderCpu",()=>renderer.render(scene,camera));
-        performanceStats.end();pressed.clear();
-      }catch(error){frameFailed=true;try{audio.update(0,0,false)}catch{}showBootError(error)}
+const skillUpgradePanel = document.createElement("section");
+skillUpgradePanel.id = "skill-upgrade-panel";
+skillUpgradePanel.hidden = true;
+skillUpgradePanel.setAttribute("role", "dialog");
+skillUpgradePanel.setAttribute("aria-modal", "true");
+skillUpgradePanel.setAttribute("aria-labelledby", "skill-menu-title");
+skillUpgradePanel.tabIndex = -1;
+$("#game-stage").append(skillUpgradePanel);
+function skillMenuOpen() { return !skillUpgradePanel.hidden; }
+function simulationFrozen() {
+  return currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
+}
+function consumeAction(action) {
+  let used = false;
+  for (const code of LONG_HAUL_BINDINGS[action] || []) if (consume(code)) used = true;
+  return used;
+}
+function touchDrivingAllowed(code) {
+  if (currentScene() !== "driving") return false;
+  if (skillMenuOpen()) return ["KeyU", "Escape"].includes(code);
+  if (!arcadeGaragePanel.hidden) return ["KeyF", "Escape"].includes(code);
+  if (mapOpen) return ["KeyM", "Escape"].includes(code);
+  return true;
+}
+function setDrivingControl(code, down, { repeat = false } = {}) {
+  if (!down) { keys[code] = false; return; }
+  if (skillMenuOpen() && !["KeyU", "Escape"].includes(code)) return;
+  if (!arcadeGaragePanel.hidden && !["KeyF", "Escape"].includes(code)) return;
+  if (mapOpen && !["KeyM", "Escape"].includes(code)) return;
+  if (!repeat && !keys[code]) {
+    pressed.add(code);
+    if (!simulationFrozen() && LONG_HAUL_BINDINGS.throttle.includes(code) && !readTruck().tipped && (meters.get("fuel")?.value ?? 0) > 0) {
+      if (forwardBoost.tap(code, performance.now())) audio.tone(660, .15, "triangle", .04);
     }
-    requestAnimationFrame(frame);
+  }
+  keys[code] = true;
+  audio.ensure();
+}
+
+function skillStoredRevision(save) {
+  const revision = save?.skillProgression?.revision;
+  return Number.isSafeInteger(revision) && revision >= 0 ? revision : 0;
+}
+function persistSkills(model = skillProgression) {
+  try {
+    if (!arcadeSaveWritable()) throw Error("Save unavailable");
+    const latest = arcadeUpgradeState();
+    if (skillStoredRevision(latest) !== skillSavedRevision) {
+      skillPersistence = "conflict";
+      return false;
+    }
+    latest.skillProgression = model.serialize();
+    localStorage.setItem(SKILL_SAVE_KEY, JSON.stringify(latest));
+    skillSavedRevision = latest.skillProgression.revision;
+    arcadeCachedSave = latest;
+    skillPersistence = "saved";
+    return true;
+  } catch {
+    skillPersistence = "unavailable";
+    return false;
+  }
+}
+function refreshSkillSave() {
+  try {
+    const read = readCampaignSave(localStorage.getItem(SKILL_SAVE_KEY));
+    if (!read.readable) { skillPersistence = "unavailable"; return false; }
+    const latest = read.save, savedRevision = skillStoredRevision(latest);
+    if (savedRevision !== skillSavedRevision) {
+      const local = skillProgression.snapshot();
+      let imported = createSkillProgression(latest.skillProgression);
+      const remote = imported.snapshot();
+      if (skillRunId) {
+        // The career is shared; maneuver receipts belong to this live run.
+        // A foreign run must neither erase our receipts nor contribute IDs
+        // from its separate sequence. Same-run tabs retain both sets.
+        const receipts = [
+          ...(local.runId === skillRunId ? local.seenIds : []),
+          ...(remote.runId === skillRunId ? remote.seenIds : []),
+        ];
+        imported.startRun(skillRunId);
+        imported = createSkillProgression({ ...imported.serialize(), seenIds: receipts });
+      }
+      skillProgression = imported;
+      // A local scope change may increment the model revision. The write
+      // lease still refers to the actual persisted revision we just read.
+      skillSavedRevision = savedRevision;
+      skillTuningKey = "";
+      activeAbilities.configure({ slots: imported.snapshot().slots, levels: imported.snapshot().abilities });
+    }
+    arcadeCachedSave = latest;
+    skillPersistence = "saved";
+    // Refresh, including a storage-event refresh, never writes. Only genuine
+    // run/XP/purchase/equipment mutations may persist and notify other tabs.
+    return true;
+  } catch {
+    skillPersistence = "unavailable";
+    return false;
+  }
+}
+window.addEventListener("storage", event => {
+  if (event.key !== SKILL_SAVE_KEY) return;
+  skillPersistence = "conflict";
+  if (skillMenuOpen()) { refreshSkillSave(); renderSkillMenu(); }
+});
+function ensureSkillRun() {
+  if (!course || !arcadeAttemptId) return;
+  // Freight resumes retain the same receipt scope. A new delivery leg retires
+  // old evidence without allowing a reload to replay its last maneuver.
+  const identity = isContinuousFreight() ? `freight:${freightState.sessionId}:leg:${freightState.ordinal}` : arcadeAttemptId;
+  if (skillRunId === identity) return;
+  skillRunId = identity;
+  skillProgression.startRun(skillRunId);
+  persistSkills();
+}
+const skillFinishIntroBase = finishLaunchIntro;
+finishLaunchIntro = function(skipped = false) {
+  const wasActive = launchIntro.active;
+  const resumedSkills = freightResumeCheckpoint?.skillState;
+  if (wasActive && resumedSkills?.version === 1) {
+    skillSteeringDamage = clamp(finite(resumedSkills.steeringDamage), -.8, .8);
+    skillLastRepairTime = Number.isFinite(resumedSkills.lastRepairTime) ? resumedSkills.lastRepairTime : -100;
+    drivingPickups.restoreCheckpoint(resumedSkills.pickups);
+    activeAbilities.restoreCheckpoint(resumedSkills.abilities);
+    arcadeTrafficSerial = Math.max(arcadeTrafficSerial, Number.isSafeInteger(resumedSkills.trafficSerial) ? resumedSkills.trafficSerial : 0);
+  }
+  skillFinishIntroBase(skipped);
+  if (!wasActive || launchIntro.active) return;
+  ensureSkillRun();
+  skillLastDrift = readTruck().drift?.lastManeuver?.sequence ?? 0;
+  skillLastLanding = readTruck().landingSequence ?? 0;
+};
+function skillCheckpointState() {
+  return { version: 1, steeringDamage: skillSteeringDamage, lastRepairTime: skillLastRepairTime, pickups: drivingPickups.checkpoint(), abilities: activeAbilities.checkpoint(), trafficSerial: arcadeTrafficSerial };
+}
+function awardSkillEvent(event) {
+  if (simulationFrozen() || readRun().status !== "running") return { accepted: false, reason: "inactive" };
+  ensureSkillRun();
+  if (skillPersistence === "conflict") refreshSkillSave();
+  const result = skillProgression.event({ ...event, active: true, xpMultiplier: drivingPickups.snapshot().xpMultiplier });
+  if (result.accepted) {
+    persistSkills();
+    arcadeRecord("skill-xp", result);
+    if (result.pointsEarned > 0) {
+      toast(`LEVEL ${result.level} · +${result.pointsEarned} SKILL POINT · U to choose`, "good", 3000);
+      audio.tone(880, .15, "triangle", .05);
+    }
+  }
+  return result;
+}
+function currentCargoMass() {
+  return readTruck().cargo?.massKg ?? 0;
+}
+
+function openSkillMenu() {
+  if (currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden) return false;
+  ensureSkillRun();
+  refreshSkillSave();
+  releaseDrivingInput();
+  skillMenuPage = 0;
+  skillUpgradePanel.hidden = false;
+  document.body.classList.add("skill-menu-open");
+  renderSkillMenu();
+  skillUpgradePanel.querySelector("button:not(:disabled)")?.focus({ preventScroll: true });
+  arcadeRecord("skills-open");
+  return true;
+}
+function closeSkillMenu() {
+  if (!skillMenuOpen()) return;
+  skillUpgradePanel.hidden = true;
+  document.body.classList.remove("skill-menu-open");
+  releaseDrivingInput();
+  $("#game-canvas").focus({ preventScroll: true });
+  arcadeRecord("skills-close");
+}
+function skillPurchase(id, slot) {
+  if (!skillMenuOpen()) return { accepted: false, reason: "menu-closed" };
+  const candidate = createSkillProgression(skillProgression.serialize());
+  const result = candidate.purchase(id, { slot, expectedRevision: skillProgression.snapshot().revision });
+  if (!result.accepted) return result;
+  if (!persistSkills(candidate)) {
+    toast(skillPersistence === "conflict" ? "Career changed in another tab. Reopen Skills." : "Save unavailable. Your point has not been spent.", "bad", 2600);
+    renderSkillMenu();
+    return { accepted: false, reason: skillPersistence };
+  }
+  skillProgression = candidate;
+  activeAbilities.configure({ slots: candidate.snapshot().slots, levels: candidate.snapshot().abilities });
+  skillTuningKey = "";
+  arcadeConfiguredRun = "";
+  arcadeApplyUpgrades();
+  updateSkillVehicleAppearance();
+  arcadeRecord("skill-purchased", result);
+  audio.good();
+  closeSkillMenu();
+  return result;
+}
+function equipSkillAbility(id, slot) {
+  if (!skillMenuOpen()) return false;
+  const candidate = createSkillProgression(skillProgression.serialize()), result = candidate.equip(id, slot);
+  if (!result.accepted || !persistSkills(candidate)) return false;
+  skillProgression = candidate;
+  activeAbilities.configure({ slots: candidate.snapshot().slots, levels: candidate.snapshot().abilities });
+  updateSkillVehicleAppearance();
+  renderSkillMenu();
+  arcadeRecord("ability-equipped", result);
+  return true;
+}
+function skillNode(tag, className, content) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (content !== undefined) node.textContent = content;
+  return node;
+}
+function renderSkillMenu() {
+  const state = skillProgression.snapshot();
+  skillUpgradePanel.replaceChildren();
+  const header = skillNode("header", "skill-menu-header"), intro = skillNode("div");
+  intro.append(skillNode("small", "eyebrow", "DRIVER DEVELOPMENT · SIMULATION PAUSED"));
+  const title = skillNode("h2", "", "Build your rig"); title.id = "skill-menu-title";
+  intro.append(title, skillNode("p", "", `${state.points} skill point${state.points === 1 ? "" : "s"} · Level ${state.level} · ${state.xpToNext.toLocaleString()} XP to next level`));
+  const close = skillNode("button", "btn skill-close", "Resume · U / Esc");
+  close.id = "skill-close"; close.addEventListener("click", closeSkillMenu);
+  header.append(intro, close); skillUpgradePanel.append(header);
+  if (skillPersistence !== "saved") skillUpgradePanel.append(skillNode("p", "skill-save-warning", skillPersistence === "conflict" ? "Career changed in another tab. Close and reopen Skills to reload." : "Save unavailable. XP is held for this session; purchases are disabled."));
+  const cards = skillNode("div", "skill-choices");
+  for (const item of skillProgression.candidates({ page: skillMenuPage })) {
+    const card = skillNode("article", "skill-choice");
+    card.append(skillNode("small", "skill-kind", item.kind === "stat" ? "TRUCK STAT" : item.kind === "modifier" ? "INDEPENDENT MODIFIER" : item.requiresSlot ? "DISCOVER ABILITY" : "ABILITY UPGRADE"));
+    card.append(skillNode("h3", "", item.label), skillNode("span", "skill-tier", `Tier ${item.level} → ${item.nextLevel}`), skillNode("p", "skill-effect", item.effectText));
+    if (item.kind === "ability") card.append(skillNode("p", "skill-description", ABILITY_DEFINITIONS[item.id]?.description || item.description));
+    const addPurchase = slot => {
+      const name = slot ? `Replace ${slot.toUpperCase()} · ${item.cost} point${item.cost === 1 ? "" : "s"}` : `Upgrade · ${item.cost} point${item.cost === 1 ? "" : "s"}`;
+      const button = skillNode("button", "btn primary", name);
+      button.dataset.upgrade = item.id;
+      if (slot) button.dataset.slot = slot;
+      button.disabled = !item.affordable || skillPersistence !== "saved";
+      button.addEventListener("click", () => skillPurchase(item.id, slot));
+      card.append(button);
+    };
+    if (item.requiresSlot) { addPurchase("q"); addPurchase("e"); } else addPurchase();
+    cards.append(card);
+  }
+  skillUpgradePanel.append(cards);
+  const footer = skillNode("div", "skill-menu-footer"), more = skillNode("button", "btn", "Other choices →");
+  more.dataset.skillRefresh = "true";
+  more.addEventListener("click", () => { skillMenuPage += 1; renderSkillMenu(); skillUpgradePanel.querySelector("[data-skill-refresh]")?.focus({ preventScroll: true }); });
+  footer.append(skillNode("span", "", "Choose any upgrade. Tiers stay independent."), more);
+  skillUpgradePanel.append(footer);
+  const loadout = skillNode("div", "skill-loadout");
+  loadout.append(skillNode("h3", "", "Equipped abilities"));
+  for (const slot of ["q", "e"]) {
+    const row = skillNode("div", "skill-slot"), id = state.slots[slot];
+    row.append(skillNode("b", "", `${slot.toUpperCase()} · ${ABILITY_DEFINITIONS[id].name} · Tier ${state.abilities[id]}`));
+    for (const [candidate, tier] of Object.entries(state.abilities)) if (tier > 0 && !Object.values(state.slots).includes(candidate)) {
+      const button = skillNode("button", "btn", `Equip ${ABILITY_DEFINITIONS[candidate].name}`);
+      button.dataset.equip = candidate; button.dataset.slot = slot;
+      button.disabled = skillPersistence !== "saved";
+      button.addEventListener("click", () => equipSkillAbility(candidate, slot));
+      row.append(button);
+    }
+    loadout.append(row);
+  }
+  skillUpgradePanel.append(loadout);
+}
+skillUpgradePanel.addEventListener("keydown", event => {
+  if (event.code !== "Tab") return;
+  const buttons = [...skillUpgradePanel.querySelectorAll("button:not(:disabled)")];
+  if (!buttons.length) return;
+  if (event.shiftKey && document.activeElement === buttons[0]) { event.preventDefault(); buttons.at(-1).focus(); }
+  else if (!event.shiftKey && document.activeElement === buttons.at(-1)) { event.preventDefault(); buttons[0].focus(); }
+});
+
+// Recompute stock + cash upgrades + career effects together; never multiply an
+// already-upgraded profile. This also preserves the existing garage economy.
+const skillLegacyApplyUpgrades = arcadeApplyUpgrades;
+arcadeApplyUpgrades = function() {
+  if (!course) return;
+  const save = arcadeCachedSave ??= arcadeUpgradeState(), effects = skillProgression.effects(), pickup = drivingPickups.snapshot();
+  const key = JSON.stringify([runKey, save.truck, save.upgrades, effects, pickup.boostMultiplier]);
+  if (skillTuningKey === key && arcadeConfiguredRun === runKey) return;
+  skillTuningKey = key;
+  arcadeConfiguredRun = "";
+  skillLegacyApplyUpgrades();
+  const level = id => clamp(Number(save.upgrades?.[id]) || 0, 0, 5), campaign = arcadeCampaign();
+  const fleet = save.truck || "delivery";
+  const base = (campaign ? { delivery: [38,5.8], box: [40,6.05], semi: [42,6.3], heavy: [44,6.55] } : { delivery: [36,5.4], box: [38,5.65], semi: [40,5.9], heavy: [42,6.15] })[fleet] || [36,5.4];
+  engine.n.longHaulTruckDynamicsProfile.configure({
+    maximumForwardSpeed: (base[0] + level("engine") * 2.8 + level("transmission") * 1.7) * effects.speedMultiplier,
+    engineAcceleration: (base[1] + level("engine") * .7 + level("transmission") * .28) * effects.accelerationMultiplier,
+    brakeForce: ((campaign ? 13 : 12) + level("brakes") * 1.5) * effects.brakeMultiplier,
+    grip: { highway: ((campaign ? 5.2 : 4.5) + level("tires") * .65) * effects.gripMultiplier, road: ((campaign ? 4.3 : 3.8) + level("tires") * .55) * effects.gripMultiplier },
+    suspension: { spring: 22 * effects.stabilityMultiplier, compressionDamping: 8.5 * effects.stabilityMultiplier, extensionDamping: 6.4 * effects.stabilityMultiplier },
+    drift: { reserveEfficiency: Math.min(.9, .72 * effects.driftReserveMultiplier) },
+    boost: { forceMultiplier: (1.8 + level("boost") * .19) * effects.boostMultiplier * pickup.boostMultiplier, rushForceMultiplier: 3.8 * effects.boostMultiplier * pickup.boostMultiplier, speedMultiplier: Math.min(1.6, 1.24 + level("boost") * .045 + (pickup.boostMultiplier - 1) * .3) },
+  });
+};
+const skillLegacyScoreEvent = awardArcadeEvent;
+awardArcadeEvent = function(event) {
+  const receipt = skillLegacyScoreEvent({ ...event, comboWindow: skillProgression.effects().comboWindow, pointMultiplier: drivingPickups.snapshot().comboMultiplier });
+  if (receipt.accepted) awardSkillEvent(event);
+  return receipt;
+};
+const skillLegacyTruckDamage = spendTruckDamage;
+spendTruckDamage = function(amount, reason) {
+  if (simulationFrozen() || !(amount > 0)) return 0;
+  const id = `impact:${skillImpactId++}`, time = readRun().rawTime;
+  const protection = activeAbilities.absorbDamage(amount, { active: true, id });
+  skillProtectedImpact = protection.shielded ? { reason, time } : null;
+  applyAbilityEvents(protection.events);
+  if (protection.shielded) { arcadeRecord("shield-protected", { amount, reason }); return 0; }
+  const damage = skillLegacyTruckDamage(protection.damage * skillProgression.effects().armorMultiplier, reason);
+  if (damage >= 6 && !["off-road", "recovery"].includes(reason)) {
+    const side = Math.sign(readTruck().input.steer) || (skillImpactId % 2 ? 1 : -1);
+    skillSteeringDamage = clamp(skillSteeringDamage + side * damage * .012, -.8, .8);
+  }
+  return damage;
+};
+const skillLegacyCargoDamage = spendCargoDamage;
+spendCargoDamage = function(amount, reason) {
+  if (skillProtectedImpact?.reason === reason && skillProtectedImpact.time === readRun().rawTime) return 0;
+  return skillLegacyCargoDamage(amount, reason);
+};
+const skillLegacyInteraction = handleInteraction;
+handleInteraction = function(state, run, condition, surface) {
+  const primaryInteraction = arcadeNearestGarage(state.position) || (!isContinuousFreight() && skillLegacyPrompt());
+  if (!primaryInteraction && Math.abs(skillSteeringDamage) > .12 && Math.abs(state.speed) < 1.1 && !state.tipped && run.stuckSeconds < 2.8 && condition.fuel > 0 && surface.surface === "road") {
+    if (run.rawTime - Math.max(run.lastRecoveryTime ?? -100, skillLastRepairTime) < 8) { toast("Recovery crew is resetting", "", 1200); return; }
+    skillLastRepairTime = run.rawTime;
+    engine.n.longHaulRun.penalty({ id: `steering-repair:${run.rawTime.toFixed(6)}`, kind: "repair", label: "Steering repair", seconds: 5, collision: false });
+    skillSteeringDamage = 0;
+    toast("STEERING REALIGNED · +5s", "good", 2200);
+    arcadeRecord("steering-repaired", { source: "roadside" });
+    return;
+  }
+  const before = readRun().recoveryCount;
+  skillLegacyInteraction(state, run, condition, surface);
+  // Recovery is queued in the engine, so its immediate grace flag is the signal.
+  if (arcadeRecoveryGrace > 1.4 || readRun().recoveryCount > before) skillSteeringDamage = 0;
+};
+const skillLegacyPrompt = interactionPrompt;
+interactionPrompt = function() {
+  if (skillMenuOpen()) return "";
+  const previous = skillLegacyPrompt();
+  const primaryInteraction = arcadeNearestGarage(readTruck().position) || (!isContinuousFreight() && previous);
+  if (!primaryInteraction && Math.abs(skillSteeringDamage) > .12) return Math.abs(readTruck().speed) < 1.1 ? "F · Repair steering · +5s" : "STEERING PULL · Stop, then F to repair";
+  return previous;
+};
+
+const abilityRoot = new THREE.Group(), pickupRoot = new THREE.Group();
+const abilityMaterials = { cyan: new THREE.MeshBasicMaterial({ color: 0x6ce9e5 }), violet: new THREE.MeshBasicMaterial({ color: 0x9c94ff }), metal: new THREE.MeshLambertMaterial({ color: 0x5e8388 }) };
+const miniHosts = Array.from({ length: 12 }, () => {
+  const group = new THREE.Group();
+  addEncounterBox(group, abilityMaterials.metal, 0,.55,0,1.25,.7,2.4);
+  addEncounterBox(group, abilityMaterials.cyan, 0,1,.5,1.15,.65,.9);
+  for (const x of [-.67,.67]) for (const z of [-.7,.7]) addEncounterBox(group, arcadeWheelMat,x,.3,z,.2,.45,.45);
+  group.visible = false; abilityRoot.add(group); return group;
+});
+const shieldMesh = new THREE.Mesh(new THREE.SphereGeometry(1,16,10), new THREE.MeshBasicMaterial({color:0x78e4ff,wireframe:true,transparent:true,opacity:.24,depthWrite:false}));
+shieldMesh.scale.set(3.1,3.7,6); shieldMesh.visible = false; abilityRoot.add(shieldMesh);
+const pulseGeometry = new THREE.RingGeometry(.92,1,48);
+const pulseHosts = Array.from({length:3},()=>{ const mesh=new THREE.Mesh(pulseGeometry,new THREE.MeshBasicMaterial({color:0xb49dff,side:THREE.DoubleSide,transparent:true,opacity:.65,depthWrite:false}));mesh.rotation.x=-Math.PI/2;mesh.visible=false;abilityRoot.add(mesh);return mesh; });
+const abilityObstacleHosts = new Map();
+function skillAbilityObstacles() {
+  const result = []; abilityObstacleHosts.clear();
+  for (const host of arcadeEncounterHosts.values()) for (const prop of host.props) {
+    if (prop.broken || !prop.mesh.visible || !host.group.visible) continue;
+    const p = new THREE.Vector3(); prop.mesh.getWorldPosition(p);
+    result.push({ id:prop.id,x:p.x,y:p.y,z:p.z,radius:prop.radius,destructible:true,kind:prop.barrier?"barrier":"crate" });
+    abilityObstacleHosts.set(prop.id,{prop,host});
+  }
+  for (const vehicle of arcadeVehicles) if (vehicle.active && vehicle.group.visible) {
+    result.push({ id:vehicle.id,x:vehicle.group.position.x,z:vehicle.group.position.z,radius:Math.min(3,vehicle.collider.length*.35),destructible:false,kind:"traffic" });
+    abilityObstacleHosts.set(vehicle.id,{vehicle});
+  }
+  return result;
+}
+function applyAbilityEvents(events = []) {
+  for (const event of events) {
+    if (event.kind === "ability-hit") {
+      const target = abilityObstacleHosts.get(event.obstacleId);
+      if (target?.prop && !target.prop.broken) {
+        target.prop.broken = true; target.prop.mesh.visible = false; arcadeBrokenProps.add(target.prop.id);
+        burstDebris(new THREE.Vector3(event.position.x,event.position.y || 1,event.position.z),readTruck().speed);
+      } else if (target?.vehicle) {
+        const vehicle=target.vehicle, side=Math.sign(vehicle.lane)||Math.sign(Math.cos(vehicle.group.rotation.y)*(vehicle.group.position.x-readTruck().position.x)-Math.sin(vehicle.group.rotation.y)*(vehicle.group.position.z-readTruck().position.z))||1;
+        vehicle.lane += side * Math.min(5,event.push*.35);
+        vehicle.hit = true; vehicle.passed = true; vehicle.skillDisabled = event.disabledSeconds;
+      }
+      arcadeRecord("ability-hit", event);
+      audio.tone(100,.065,"square",.025);
+    } else if (event.kind === "ability-start") arcadeRecord("ability-activated", event);
+  }
+}
+function activateSkillAbility(slot) {
+  const active = !simulationFrozen() && readRun().status === "running";
+  const result = activeAbilities.activate(slot,{ active, truck:readTruck(), enhancement:skillProgression.effects().abilityEnhancement+drivingPickups.snapshot().abilityEnhancement });
+  applyAbilityEvents(result.events);
+  if (result.accepted) { const id=skillProgression.snapshot().slots[slot]; toast(`${slot.toUpperCase()} · ${ABILITY_DEFINITIONS[id].name}`,"good",1000);audio.tone(slot==="q"?420:620,.14,"triangle",.04); }
+  else if(active) toast(result.reason==="cooldown"?"Ability is recharging":"Ability unavailable right now","",1000);
+  return result;
+}
+
+const pickupGeometry = new THREE.OctahedronGeometry(1,0);
+const pickupMaterials = Object.fromEntries(Object.entries(PICKUP_DEFINITIONS).map(([id,def])=>[id,new THREE.MeshBasicMaterial({color:def.color})]));
+const pickupHosts = new Map();
+let skillPickupNetwork = null, skillPickupPlan = [];
+function planSkillPickups() {
+  if (skillPickupNetwork === arcadeNetwork || !arcadeNetwork) return;
+  skillPickupNetwork = arcadeNetwork; skillPickupPlan = [];
+  const kinds = ["focus", "boost", "ability", "repair"];
+  if (course?.endless) {
+    const start = Math.max(0, Math.min(...course.edges.filter(edge => !edge.optional).map(edge => edge.startProgress)));
+    const end = Math.max(...course.edges.map(edge => edge.endProgress));
+    drivingPickups.retireThrough(Math.floor((start - 145) / 185));
+    for (let index = Math.max(0, Math.ceil((start - 145) / 185)); 145 + index * 185 < end; index++) {
+      const progress = 145 + index * 185;
+      const point = endlessHighwayPoint(course, progress, -3.5);
+      skillPickupPlan.push({ id: `pickup:endless:${index}`, kind: kinds[index % kinds.length], point });
+    }
+  } else {
+    for (const path of arcadeNetwork.paths) for (let distance = 145; distance < path.length - 65 && skillPickupPlan.length < 192; distance += 185) {
+      const point = arcadePathPoint(path, distance, -Math.min(3.5, (arcadePathPoint(path, distance)?.edge.width || 17) * .2));
+      if (!point || point.edge.optional) continue;
+      skillPickupPlan.push({ id: `pickup:${point.edge.id}:${Math.round(point.x)}:${Math.round(point.z)}`, kind: kinds[Math.floor(distance / 185) % kinds.length], point });
+    }
+  }
+  const wanted = new Set(skillPickupPlan.map(pickup => pickup.id));
+  for (const [id, host] of pickupHosts) if (!wanted.has(id)) { host.removeFromParent(); pickupHosts.delete(id); }
+}
+function collectSkillPickup(pickup, distance=0, height=0) {
+  const receipt=drivingPickups.collect({id:pickup.id,kind:pickup.kind,distance,height,active:!simulationFrozen()&&readRun().status==="running"});
+  if(!receipt.accepted)return receipt;
+  if(receipt.repair){meters.restore("truck-condition",receipt.repair,"repair-pickup");skillSteeringDamage=0;arcadeRecord("steering-repaired",{source:"pickup"})}
+  pickupHosts.get(pickup.id)?.removeFromParent();pickupHosts.delete(pickup.id);
+  toast(receipt.label,"good",2000);audio.tone(740,.12,"sine",.04);arcadeRecord("pickup",receipt);skillTuningKey="";
+  return receipt;
+}
+function updateSkillPickups(dt) {
+  drivingPickups.tick(dt,{active:true});
+  planSkillPickups();
+  const truck=readTruck(),position=truck.position,previous=skillPreviousPosition;
+  for(const pickup of skillPickupPlan){
+    const {point,id,kind}=pickup,distance=Math.hypot(point.x-position.x,point.z-position.z);
+    if(drivingPickups.has(id))continue;
+    let host=pickupHosts.get(id);
+    if(distance<340&&!host&&pickupHosts.size<28){host=new THREE.Mesh(pickupGeometry,pickupMaterials[kind]);host.scale.setScalar(1.05);pickupRoot.add(host);pickupHosts.set(id,host)}
+    if(host){host.position.set(point.x,terrainHeight(course,point.x,point.z)+1.8+(settings.motion?Math.sin(skillVisualTime*2)*.18:0),point.z);host.rotation.y=settings.motion?skillVisualTime:0;host.visible=distance<340;if(distance>420){host.removeFromParent();pickupHosts.delete(id)}}
+    let swept=distance;
+    if(previous){const dx=position.x-previous.x,dz=position.z-previous.z,length=dx*dx+dz*dz;if(length>0&&length<18*18){const t=clamp(((point.x-previous.x)*dx+(point.z-previous.z)*dz)/length,0,1);swept=Math.hypot(point.x-previous.x-dx*t,point.z-previous.z-dz*t)}}
+    if(swept<=3.3)collectSkillPickup(pickup,swept,position.y-terrainHeight(course,point.x,point.z));
+  }
+  skillPreviousPosition={x:position.x,z:position.z};
+  for(const [id,host] of pickupHosts)if(Math.hypot(host.position.x-position.x,host.position.z-position.z)>420){host.removeFromParent();pickupHosts.delete(id)}
+}
+
+const skillHud = skillNode("div", "", ""); skillHud.id="skill-hud";
+skillHud.innerHTML='<button id="skill-open" aria-label="Open skills and abilities"><b id="skill-level">LV 1</b><span id="skill-xp">0 XP</span><strong id="skill-points">U · SKILLS</strong><i><em id="skill-xp-fill"></em></i></button><div id="skill-ability-slots"></div><div id="skill-drift" role="status"></div><div id="skill-effects"></div>';
+$("#game-stage").append(skillHud);$("#skill-open").addEventListener("click",openSkillMenu);
+for(const slot of ["q","e"]){const button=skillNode("button","skill-ability");button.dataset.abilitySlot=slot;button.innerHTML=`<kbd>${slot.toUpperCase()}</kbd><span></span><small></small>`;button.addEventListener("click",()=>activateSkillAbility(slot));$("#skill-ability-slots").append(button)}
+let skillLastHud=0;
+function updateSkillHud(now) {
+  skillHud.hidden=currentScene()!=="driving"||launchIntro.active;
+  if(now-skillLastHud<66)return;skillLastHud=now;
+  const state=skillProgression.snapshot(),abilities=activeAbilities.snapshot(),truck=readTruck(),pickups=drivingPickups.snapshot();
+  $("#skill-level").textContent=`LV ${state.level}`;$("#skill-xp").textContent=`${state.xpIntoLevel.toLocaleString()} / ${state.levelSpan.toLocaleString()} XP`;
+  $("#skill-points").textContent=state.points?`U · ${state.points} POINT${state.points===1?"":"S"}`:"U · SKILLS";
+  $("#skill-xp-fill").style.transform=`scaleX(${state.levelSpan?clamp(state.xpIntoLevel/state.levelSpan,0,1):1})`;
+  $("#skill-open").classList.toggle("ready",state.points>0);
+  for(const slot of ["q","e"]){const node=skillHud.querySelector(`[data-ability-slot="${slot}"]`),id=state.slots[slot],remaining=abilities.cooldowns[id];node.querySelector("span").textContent=ABILITY_DEFINITIONS[id].shortName;node.querySelector("small").textContent=remaining>0?`${remaining.toFixed(1)}s`:"READY";node.classList.toggle("ready",remaining<=0);node.disabled=simulationFrozen()||remaining>0}
+  const drift=truck.drift||{};
+  $("#skill-drift").textContent=drift.active?`DRIFT ${Math.round((drift.charge||0)*100)}% · COUNTERSTEER`:(drift.phase==="release"||drift.phase==="released")?"MOMENTUM RELEASED":Math.abs(skillSteeringDamage)>.12?`STEERING PULL ${skillSteeringDamage>0?"LEFT":"RIGHT"} · F TO REPAIR`:"S + TURN · SHIFT TO SLIDE";
+  $("#skill-drift").classList.toggle("charged",drift.active&&drift.charge>.25);
+  const effects=Object.entries(pickups.timers).filter(([,time])=>time>0).map(([id,time])=>`${id.toUpperCase()} ${Math.ceil(time)}s`);
+  if(abilities.shield.remaining>0)effects.push(`SHIELD ${abilities.shield.charges} HITS`);
+  $("#skill-effects").textContent=effects.join(" · ");
+}
+function updateSkillVehicleAppearance() {
+  if(!truckRig)return;
+  const rig=truckRig,state=skillProgression.snapshot(),visual=skillProgression.effects().visual;
+  const signature=JSON.stringify([visual,state.slots]);
+  if(rig.skillSignature===signature)return;rig.skillSignature=signature;
+  for(const wheel of rig.wheels)wheel.scale.set(.82*visual.tires,.82,.82*visual.tires);
+  if(!rig.skillParts){
+    const group=new THREE.Group();rig.body.add(group);
+    const exhausts=[-1.25,1.25].map(x=>addEncounterBox(group,materials.chrome,x,4,-.2,.22,2,.22));
+    const armor=addEncounterBox(group,abilityMaterials.metal,0,1.5,4.25,3.5,.38,.3);
+    const suspension=addEncounterBox(group,abilityMaterials.cyan,0,1.4,-1.7,2.7,.11,3.5);
+    const equipment=[-1,1].map(x=>addEncounterBox(group,abilityMaterials.violet,x,2.1,-4.15,.5,.45,.7));
+    rig.skillParts={group,exhausts,armor,suspension,equipment};
+    for(const crate of rig.crates)crate.userData.skillBasePosition=crate.position.clone();
+  }
+  for(const exhaust of rig.skillParts.exhausts)exhaust.scale.y=2*visual.exhaust;
+  rig.skillParts.armor.visible=state.stats.armor>0||state.stats.brakes>0;
+  rig.skillParts.suspension.visible=state.stats.suspension>0;
+  rig.skillParts.suspension.scale.y=.11*visual.suspension;
+  ["q","e"].forEach((slot,index)=>{const part=rig.skillParts.equipment[index];part.material=state.slots[slot]==="mini-trucks"?abilityMaterials.cyan:state.slots[slot]==="road-shield"?abilityMaterials.metal:abilityMaterials.violet;part.scale.y=state.slots[slot]==="mini-trucks"?.45:state.slots[slot]==="road-shield"?.7:1});
+}
+function renderSkillEffects(dt=0) {
+  if(!course)return;
+  if(abilityRoot.parent!==dynamicRoot)dynamicRoot.add(abilityRoot);
+  if(pickupRoot.parent!==dynamicRoot)dynamicRoot.add(pickupRoot);
+  const state=activeAbilities.snapshot(),truck=readTruck();
+  miniHosts.forEach((host,index)=>{const mini=state.miniTrucks[index];host.visible=Boolean(mini);if(mini){host.position.set(mini.x,mini.y,mini.z);host.rotation.y=mini.heading}});
+  shieldMesh.visible=state.shield.remaining>0&&state.shield.charges>0;shieldMesh.position.set(truck.position.x,truck.position.y+1.4,truck.position.z);shieldMesh.rotation.y=truck.heading;
+  pulseHosts.forEach((host,index)=>{const pulse=state.pulses[index];host.visible=Boolean(pulse);if(pulse){host.position.set(pulse.x,terrainHeight(course,pulse.x,pulse.z)+.35,pulse.z);host.scale.setScalar(Math.max(.1,pulse.radius));host.material.opacity=settings.motion?.6:.35}});
+  updateSkillVehicleAppearance();
+  if(truckRig){
+    for(const crate of truckRig.crates){const base=crate.userData.skillBasePosition;if(!base)continue;crate.position.x=base.x+(settings.motion?clamp(truck.cargoShift||0,-.35,.35):0);crate.rotation.z=settings.motion?clamp((truck.cargoShift||0)*.18,-.12,.12):0}
+    if(!settings.motion){truckRig.leanPivot.rotation.set(0,0,truck.tipped?truck.rollAngle:0)}
+  }
+}
+function updateSkillGameplay(dt) {
+  if(simulationFrozen()||readRun().status!=="running")return;
+  ensureSkillRun();skillVisualTime+=dt;skillProgression.setActive(true);
+  const truck=readTruck(),maneuver=truck.drift?.lastManeuver;
+  if(maneuver&&maneuver.sequence!==skillLastDrift){
+    skillLastDrift=maneuver.sequence;
+    const award=awardSkillEvent({id:`drift:${maneuver.sequence}`,kind:maneuver.countersteer?"countersteer":"drift",speed:maneuver.entrySpeed,duration:maneuver.duration,distance:maneuver.distance,angle:maneuver.maxAngle,reserve:maneuver.reserve,exitSpeed:maneuver.exitSpeed,clean:!truck.tipped,forward:true});
+    if(award.accepted)toast(`${maneuver.countersteer?"COUNTERSTEER":"DRIFT"} · +${award.xp} XP`,"good",1400);
+  }
+  if(truck.landingSequence!==skillLastLanding){skillLastLanding=truck.landingSequence;const landing=truck.lastLanding;if(landing&&!arcadeActiveStunt)awardSkillEvent({id:`landing:${truck.landingSequence}`,kind:"landing",speed:Math.abs(truck.speed),forward:truck.speed>0,clean:!truck.tipped&&landing.impactSpeed<18,airTime:landing.airTime,distance:landing.distance})}
+  const combo=arcadeScore.snapshot();
+  if(combo.comboEvents===0){skillComboStarted=readRun().rawTime;skillLastCombo=0}
+  else if(combo.comboEvents>=3&&combo.comboEvents!==skillLastCombo&&readRun().rawTime-skillComboStarted>=3){skillLastCombo=combo.comboEvents;awardSkillEvent({id:`combo:${combo.bankCount}:${combo.events}`,kind:"combo",speed:truck.speed,count:combo.comboEvents,duration:readRun().rawTime-skillComboStarted,clean:true})}
+  const result=activeAbilities.tick(dt,{active:true,truck,obstacles:skillAbilityObstacles(),groundHeightAt:(x,z)=>terrainHeight(course,x,z)+.12,roadHeadingAt:(x,z,heading)=>{const road=nearestRoad(course,{x,z});return road?road.heading+(Math.cos(heading-road.heading)<0?Math.PI:0):heading}});
+  applyAbilityEvents(result.events);
+  updateSkillPickups(dt);
+  arcadeApplyUpgrades();
+}
+const skillResetArcade = resetArcadeOverhaul;
+resetArcadeOverhaul = function(){
+  skillResetArcade();skillUpgradePanel.hidden=true;document.body.classList.remove("skill-menu-open");
+  activeAbilities.reset({slots:skillProgression.snapshot().slots,levels:skillProgression.snapshot().abilities});drivingPickups.reset();
+  skillRunId="";skillSteeringDamage=0;skillLastRepairTime=-100;skillLastDrift=skillLastLanding=skillLastCombo=skillComboStarted=0;skillTuningKey="";skillVisualTime=0;skillPreviousPosition=null;skillProtectedImpact=null;
+  skillPickupNetwork=null;skillPickupPlan=[];pickupHosts.clear();pickupRoot.clear();for(const host of miniHosts)host.visible=false;shieldMesh.visible=false;for(const host of pulseHosts)host.visible=false;
+};
+function skillSnapshot(){return{progression:skillProgression.snapshot(),abilities:activeAbilities.snapshot(),pickups:drivingPickups.snapshot(),steeringDamage:skillSteeringDamage,menuOpen:skillMenuOpen(),cargoMass:currentCargoMass(),persistence:skillPersistence,visualTime:skillVisualTime,pickupHosts:pickupHosts.size,miniHosts:miniHosts.filter(host=>host.visible).length}}
+window.longHaulSkills={snapshot:skillSnapshot};
+
+
+// app-chunk-11.js
+$("#credits-btn").addEventListener("click",()=>transition("credits"));$("#credits-back-btn").addEventListener("click",()=>transition("back"));
+$("#start-btn").addEventListener("click", () => {
+  audio.ensure();
+  transition("dispatch");
+});
+$("#how-btn").addEventListener("click", () => transition("how"));
+$("#settings-btn").addEventListener("click", () => {
+  settingsReturn = "title";
+  transition("settings");
+});
+$("#how-back-btn").addEventListener("click", () => transition("back"));
+$("#settings-back-btn").addEventListener("click", () => {
+  saveSettings();
+  transition(settingsReturn === "paused" ? "pause" : "title");
+});
+$("#sound-switch").addEventListener("click", () => {
+  settings.sound = !settings.sound;
+  applySettings();
+  audio.ensure();
+});
+$("#quality-switch").addEventListener("click", () => {
+  settings.quality = !settings.quality;
+  applySettings();
+});
+$("#motion-switch").addEventListener("click", () => {
+  settings.motion = !settings.motion;
+  applySettings();
+});
+$("#steer-range").addEventListener("input", (event) => {
+  settings.steering = finite(event.target.value, 100);
+});
+$("#resume-btn").addEventListener("click", resumeGame);
+$("#pause-settings-btn").addEventListener("click", () => {
+  settingsReturn = "paused";
+  transition("settings");
+});
+$("#pause-retry-btn").addEventListener("click", retrySame);
+$("#pause-title-btn").addEventListener("click", goTitle);
+$("#result-retry-btn").addEventListener("click", retrySame);
+$("#result-new-btn").addEventListener("click", () => {
+  if (arcadeCampaign()) location.href = "./campaign.html";
+  else newCourse();
+});
+$("#result-title-btn").addEventListener("click", () => {
+  if (arcadeCampaign()) location.href = "./campaign.html";
+  else goTitle();
+});
+$("#loss-retry-btn").addEventListener("click", retrySame);
+$("#loss-new-btn").addEventListener("click", () => {
+  if (arcadeCampaign()) location.href = "./campaign.html#garage";
+  else newCourse();
+});
+$("#loss-title-btn").addEventListener("click", () => {
+  if (arcadeCampaign()) location.href = "./campaign.html";
+  else goTitle();
+});
+function showBootError(error) {
+  console.error(error);
+  $("#boot-error").textContent = String(error?.message ?? error);
+  $("#boot-failure").classList.add("show");
+}
+function resize() {
+  const stage = document.getElementById("game-stage") || document.documentElement;
+  const { width: rawWidth, height: rawHeight } = stage.getBoundingClientRect();
+  const width = Math.max(1, Math.round(rawWidth)), height = Math.max(1, Math.round(rawHeight));
+  const pixelBudget = settings.quality ? 2304e3 : 1036800;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.quality ? 1.25 : 0.85, Math.sqrt(pixelBudget / (width * height))));
+  renderer.setSize(width, height, false);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+resize();
+applySettings();
+window.render_game_to_text = () => {
+  const truck = readTruck(), run = readRun();
+  return JSON.stringify({ scene: currentScene(), mode: arcadeCampaign() ? "campaign" : "endless", coordinates: "meters; x east, y up, z south; heading 0 faces +z", player: { position: truck.position, velocity: truck.velocity, heading: truck.heading, speed: truck.speed, normalTopSpeed: readDynamics().maximumForwardSpeed, grounded: truck.grounded, tipped: truck.tipped, landingSequence: truck.landingSequence, lastLanding: truck.lastLanding }, run: { status: run.status, distance: run.distance, time: run.rawTime, recoveryCount: run.recoveryCount }, fuel: meters.get("fuel")?.value, presentation: { contactShape: truck.contactShape, contactRadius: truck.contactRadius, lean: truckRig?.leanPivot.rotation.z, clearance: truckRig?.grounding.minimumClearance, scraping, sparks: scrapeLife.filter((n) => n > 0).length }, boost: { ...forwardBoost.snapshot(), visualStrength: boostVisualStrength, streaks: boostStreaks.visible }, cinematic: { ...launchIntro }, risk: arcadeScore.snapshot(), encounters: { label: arcadeEventLabel, planned: arcadeEncounters.length, active: arcadeEncounterHosts.size, rampsUsed: arcadeUsedRamps.size, propsBroken: arcadeBrokenProps.size, traffic: arcadeVehicles.filter((v) => v.active).length }, weather: { rain: arcadeWeatherAmount, time: arcadeWeatherTime }, skills: skillSnapshot(), freight: window.LongHaulFreight?.getState(), events: arcadeEventHistory.slice(-16), loading: generation && !generation.ready ? generation.cursor : null });
+};
+window.__longHaulBooted = true;
+window.longHaulBootReady?.();
+transition("ready");
+const performanceStats = createPerformanceStats();
+let previous = performance.now(), scheduled = previous, lastHud = -Infinity, lastMap = -Infinity, frameFailed = false;
+window.LongHaulPerformance = { reset: () => performanceStats.reset(), getState: () => ({ ...performanceStats.snapshot(), scene: currentScene(), cells: cellHosts.size, horizonCells: horizonHosts.size, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, patches: preparation?.getStats(), worker: patchClient?.getState(), streamingPending: cellRealizeQueue.length + cellDecorationQueue.length }) };
+window.addEventListener("blur", () => {
+  for (const key of Object.keys(keys)) keys[key] = false;
+  pressed.clear();
+  forwardBoost.clearTaps();
+  if(currentScene() === "driving" && !simulationFrozen()) pauseGame();
+});
+document.addEventListener("visibilitychange", () => {
+  previous = scheduled = performance.now();
+  if (document.hidden && currentScene() === "driving" && !simulationFrozen()) pauseGame();
+});
+function frame(now) {
+  if (frameFailed) return;
+  requestAnimationFrame(frame);
+  if (document.hidden) {
+    previous = scheduled = now;
+    return;
+  }
+  const frozenAtStart = simulationFrozen();
+  const beforeScene = currentScene(), activeScene = beforeScene === "driving" || beforeScene === "generating", target = activeScene ? 1e3 / 60 : beforeScene === "title" ? 1e3 / 30 : 1e3 / 15;
+  if (now < scheduled - 1.5) return;
+  const interval = now - previous;
+  previous = now;
+  scheduled += target;
+  if (scheduled < now - target) scheduled = now + target;
+  performanceStats.begin(beforeScene, interval);
+  const dt = clamp(interval / 1e3, 0, 1 / 15);
+  try {
+    if (beforeScene === "generating") performanceStats.measure("generation", stepGeneration);
+    let surface = null;
+    if (beforeScene === "driving") {
+      if (launchIntro.active) updateLaunchIntro(dt);
+      if (!launchIntro.active) surface = performanceStats.measure("input", () => preTickDriving(dt));
+    } else if (beforeScene === "paused" && consume("Escape")) resumeGame();
+    const simulate = !frozenAtStart && !simulationFrozen() && currentScene() === "driving";
+    engine.world.__longHaulScene = simulate ? "driving" : beforeScene === "driving" ? "paused" : beforeScene;
+    performanceStats.measure("simulation", () => engine.tick(simulate ? dt : 0));
+    const sceneId = updateSceneUi();
+    if (sceneId === "title" && campaignLaunch?.course && !campaignAutoStarted) {
+      campaignAutoStarted = true;
+      startGeneration(campaignLaunch.course.seed, false, "start");
+    }
+    if (sceneId === "driving") {
+      if (simulate) {
+        updateSkillGameplay(dt);
+        performanceStats.measure("gameplay", () => postTickGameplay(surface ?? surfaceAt(readTruck().position), dt));
+        updateArcadeRules(dt);
+      }
+      performanceStats.measure("streaming", updateWorldStreaming);
+      performanceStats.measure("horizon", updateHorizonWorld);
+      performanceStats.measure("visuals", () => {
+        if (simulate || launchIntro.active) {
+          const visualDt = simulate ? dt : 0;
+          updateTruckVisual(visualDt);
+          updateCloudLayers(readTruck(), skillVisualTime * 1000);
+          updateWildlifeVisual();
+          updateBoostVisuals(visualDt);
+          renderSkillEffects(visualDt);
+          applyCamera();
+        } else renderSkillEffects(0);
+      });
+      if (now - lastHud >= 66) {
+        lastHud = now;
+        performanceStats.measure("hud", () => updateHud(surface ?? surfaceAt(readTruck().position)));
+      }
+      audio.update(simulate ? readTruck().speed : 0, simulate ? engine.n.coreInput.getIntent().throttle : 0, simulate);
+    } else {
+      updateBoostVisuals(dt);
+      audio.update(0, 0, false);
+    }
+    if (sceneId === "generating") updateLoadingUi();
+    if (now - lastMap >= 66) {
+      lastMap = now;
+      drawMap();
+    }
+    arcadeVisualFrame(now);
+    updateRiskHud();
+    updateSkillHud(now);
+    performanceStats.measure("renderCpu", () => renderer.render(scene, camera));
+    performanceStats.end();
+    pressed.clear();
+  } catch (error) {
+    frameFailed = true;
+    try {
+      audio.update(0, 0, false);
+    } catch {
+    }
+    showBootError(error);
+  }
+}
+requestAnimationFrame(frame);
 

@@ -119,9 +119,9 @@ export function createArcadeScore() {
     comboEvents += kind === "loading-route" ? 2 : 1;
     multiplier = Math.min(5, 1 + Math.floor(comboEvents / 2));
     bestMultiplier = Math.max(bestMultiplier, multiplier);
-    const points = basePoints * multiplier;
+    const points = Math.round(basePoints * multiplier * (Number.isFinite(input.pointMultiplier) ? Math.max(1, Math.min(1.25, input.pointMultiplier)) : 1));
     pending += points;
-    remaining = RULES.safeSeconds;
+    remaining = Number.isFinite(input.comboWindow) ? Math.max(RULES.safeSeconds, Math.min(7, input.comboWindow)) : RULES.safeSeconds;
     awardCooldown = RULES.awardInterval;
     lastEvent = LABELS[kind];
     lastPoints = points;

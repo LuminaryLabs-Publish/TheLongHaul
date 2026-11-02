@@ -232,6 +232,16 @@ const malformedTruckCases = [
   ['wrong ground-normal component', t => { t.groundNormal.x = true; }],
   ['nonfinite recovery heading', t => { t.lastSafe.heading = NaN; }],
   ['nonnumeric load shift', t => { t.loadShift.x = 'invalid'; }],
+  ['nonnumeric drift entry speed', t => { t.drift.entrySpeed = 'invalid'; }],
+  ['nonfinite drift reserve', t => { t.drift.energy = Infinity; }],
+  ['excess drift reserve', t => { t.drift.energy = 1e20; }],
+  ['wrong drift phase', t => { t.drift.phase = 'unknown'; }],
+  ['missing drift observation', t => { delete t.drift.lastManeuver; }],
+  ['invalid completed maneuver', t => { t.drift.lastManeuver = { sequence: 1, duration: NaN }; }],
+  ['nonnumeric weight transfer', t => { t.weightTransfer = 'invalid'; }],
+  ['invalid steering damage', t => { t.steeringDamage = null; }],
+  ['nonnumeric steering input damage', t => { t.input.steeringDamage = 'invalid'; }],
+  ['string drift input', t => { t.input.drift = 'true'; }],
   ['missing required position', t => { delete t.position.y; }],
 ];
 for (const [label, mutate] of malformedTruckCases) {

@@ -21,7 +21,7 @@ try {
   check('An existing garage keeps its exact position after the highway window advances', retained && retained.revision > target.revision && Math.hypot(retained.x - target.x, retained.z - target.z) < .01, { target, retained });
   await page.evaluate(target => { const ground = groundSample(target); engine.n.longHaulTruck.teleport({ x: target.x, z: target.z, y: ground.height + .92, speed: 0, heading: readTruck().heading, groundHeight: ground.height, groundNormal: ground.normal }); meters.spend('fuel', 30, 'validation-service-fixture'); meters.spend('truck-condition', 35, 'validation-service-fixture'); }, target);
   await page.waitForFunction(id => arcadeNearestGarage(readTruck().position)?.stop.id === id && Math.abs(readTruck().speed) < 1, target.id);
-  await page.keyboard.press('e'); await page.locator('#arcade-garage-panel').waitFor({ state: 'visible' });
+  await page.keyboard.press('f'); await page.locator('#arcade-garage-panel').waitFor({ state: 'visible' });
   const before = await read();
   await page.evaluate(() => { window.__serviceOriginalSetItem = Storage.prototype.setItem; Storage.prototype.setItem = function(key,value) { if (this === localStorage && key === 'longhaul-campaign-v1') throw new DOMException('Explicit service-write failure fixture', 'QuotaExceededError'); return window.__serviceOriginalSetItem.call(this,key,value); }; });
   try { await page.locator('[data-service="service-fuel"]').click(); }
@@ -35,7 +35,7 @@ try {
   await page.locator('#arcade-garage-panel [data-upgrade="engine"]').click(); const upgraded = await read();
   check('Garage upgrades retain the same freight checkpoint and service balance', upgraded.save.upgrades.engine === before.save.upgrades.engine + 1 && upgraded.save.cash < repaired.save.cash && upgraded.save.freightJourney.journey.sessionId === before.freight.sessionId, { cash: upgraded.save.cash, engine: upgraded.save.upgrades.engine });
   await page.screenshot({ path: path.join(output, 'paid-services.png') });
-  await page.getByRole('button', { name: /CLOSE.*E TO DRIVE/ }).click(); await page.reload();
+  await page.getByRole('button', { name: /CLOSE.*F TO DRIVE/ }).click(); await page.reload();
   await page.waitForFunction(() => window.__longHaulBooted && currentScene() === 'title'); await page.locator('#freight-resume-btn').click(); await page.waitForFunction(() => generation?.ready, null, { timeout: 120000 }); await page.keyboard.press('w'); await page.waitForFunction(() => !launchIntro.active && readRun().status === 'running');
   const resumed = await read();
   check('Reload and Resume retain paid services, upgrades and the original journey', resumed.freight.sessionId === before.freight.sessionId && resumed.save.cash === upgraded.save.cash && resumed.save.upgrades.engine === upgraded.save.upgrades.engine && Math.abs(resumed.fuel - repaired.fuel) < .1 && Math.abs(resumed.truck - repaired.truck) < .1 && !resumed.failed, { sessionId: resumed.freight.sessionId, cash: resumed.save.cash, fuel: resumed.fuel, truck: resumed.truck });

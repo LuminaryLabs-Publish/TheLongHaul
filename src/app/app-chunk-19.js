@@ -7,7 +7,7 @@
     let arcadeWeatherTime=0,arcadeWeatherAmount=0,arcadeTrafficSerial=0,arcadeEventLabel="OPEN ROAD";
     const arcadeEncounterHosts=new Map(),arcadeBrokenProps=new Set(),arcadeUsedRamps=new Set(),arcadeWarned=new Set(),arcadeEventHistory=[];
     function arcadeRecord(type,detail={}){arcadeEventHistory.push({type,time:Number(readRun().rawTime.toFixed(3)),...detail});if(arcadeEventHistory.length>128)arcadeEventHistory.shift()}
-    function releaseDrivingInput(){for(const key of Object.keys(keys))keys[key]=false;pressed.clear();forwardBoost.reset({preserveCooldown:true});engine.n.coreInput.setIntent({throttle:0,brake:0,steer:0,boost:false,handbrake:false})}
+    function releaseDrivingInput(){for(const key of Object.keys(keys))keys[key]=false;pressed.clear();forwardBoost.clearTaps();engine.n.coreInput.setIntent({throttle:0,brake:0,steer:0,boost:false,handbrake:false})}
     function holdDrivingForPanel(){const state=readTruck(),ground=groundSample(state.position),surface=surfaceAt(state.position);engine.n.longHaulTruck.input({throttle:0,brake:0,steer:0,boost:false,handbrake:true,surface:surface.surface,surfaceGrip:surface.grip,groundHeight:ground.height,groundNormal:ground.normal});engine.n.longHaulRun.sample({position:state.position,speed:state.speed,surface:surface.surface,trying:false})}
     function closeArcadeGarage(){arcadeGaragePanel.hidden=true;releaseDrivingInput();$("#game-canvas").focus({preventScroll:true});audio.click()}
 
@@ -47,10 +47,12 @@
     $("#dispatch-go-btn").addEventListener("click",()=>{if(currentScene()!=="dispatch"||pendingSceneTransition)return;window.longHaulContract=selectedContract;audio.ensure();startGeneration(newSeed(),false,"start")});
 
     const touchControls=document.createElement("nav");touchControls.id="touch-controls";touchControls.setAttribute("aria-label","Driving controls");
-    for(const [code,label] of [["KeyA","◀"],["KeyD","▶"],["KeyS","BRAKE"],["KeyW","GO"],["ShiftLeft","BOOST"],["KeyE","ACT"],["KeyM","MAP"],["Escape","Ⅱ"]]){
-      const button=document.createElement("button");button.type="button";button.textContent=label;button.setAttribute("aria-label",{KeyA:"Steer left",KeyD:"Steer right",KeyS:"Brake",KeyW:"Accelerate",ShiftLeft:"Boost",KeyE:"Interact",KeyM:"Map",Escape:"Pause"}[code]);
-      button.addEventListener("pointerdown",event=>{event.preventDefault();button.setPointerCapture(event.pointerId);if(!keys[code])pressed.add(code);keys[code]=true;audio.ensure()});
-      for(const name of ["pointerup","pointercancel","lostpointercapture"])button.addEventListener(name,()=>{keys[code]=false});touchControls.append(button);
+    for(const action of LONG_HAUL_TOUCH_ACTIONS){
+      const control=LONG_HAUL_CONTROLS[action],code=control.keys[0],button=document.createElement("button");
+      button.type="button";button.textContent=control.short;button.dataset.action=action;button.setAttribute("aria-label",control.label);
+      button.addEventListener("pointerdown",event=>{event.preventDefault();if(!touchDrivingAllowed(code))return;button.setPointerCapture(event.pointerId);setDrivingControl(code,true)});
+      for(const name of ["pointerup","pointercancel","lostpointercapture"])button.addEventListener(name,()=>setDrivingControl(code,false));
+      touchControls.append(button);
     }
     $("#game-stage").append(touchControls);
 
@@ -76,14 +78,14 @@
     spendTruckDamage=function(amount,reason){const result=arcadeDamageBase(amount,reason);if(amount>0){resetArcadeCombo();arcadeImpactStrength=Math.max(arcadeImpactStrength,clamp(amount/24,.2,1));arcadeRecord("impact",{reason,damage:result})}return result};
     function applyImpactCamera(){
       if(!settings.motion||arcadeImpactStrength<.015)return;
-      const now=performance.now()*.065;camera.position.x+=Math.sin(now*1.7)*arcadeImpactStrength*.24;camera.position.y+=Math.cos(now)*arcadeImpactStrength*.16;
+      const now=skillVisualTime*65;camera.position.x+=Math.sin(now*1.7)*arcadeImpactStrength*.24;camera.position.y+=Math.cos(now)*arcadeImpactStrength*.16;
     }
     function updateRiskHud(){
       const state=arcadeScore.snapshot(),playing=currentScene()==="driving"&&!launchIntro.active;
       riskHud.hidden=!playing;encounterHud.hidden=!playing;
       $("#risk-multiplier").textContent=`×${state.multiplier}`;$("#risk-label").textContent=state.pending?state.lastEvent:"BUILD A COMBO";
       $("#risk-pending").textContent=state.pending.toLocaleString();$("#risk-bank").textContent=`${state.banked.toLocaleString()} BANKED · $${arcadeBonuses}`;
-      $("#risk-meter-fill").style.transform=`scaleX(${clamp(state.remaining/4,0,1)})`;
+      $("#risk-meter-fill").style.transform=`scaleX(${clamp(state.remaining/skillProgression.effects().comboWindow,0,1)})`;
       $("#risk-hint").textContent=state.pending?`Bank in ${state.remaining.toFixed(1)}s · crash loses combo`:state.cooldown>0?"Steady the rig. Build again.":"Close passes · Clean landings";
       riskHud.classList.toggle("hot",state.multiplier>=3);encounterHud.textContent=arcadeEventLabel;
     }
@@ -144,7 +146,7 @@
         if(distance<440&&!host)host=createEncounterHost(event);
         if(!host)continue;host.group.visible=distance<440;
         if(distance>620){host.group.removeFromParent();arcadeEncounterHosts.delete(event.id);continue}
-        if(event.kind==="breakables")for(const prop of host.props){prop.broken=arcadeBrokenProps.has(prop.id);prop.mesh.visible=!prop.broken}
+        for(const prop of host.props){prop.broken=arcadeBrokenProps.has(prop.id);prop.mesh.visible=!prop.broken}
         if(!progress||progress.path!==event.path)continue;
         const ahead=event.distance-progress.distance;
         if(ahead>0&&ahead<event.warningLead){

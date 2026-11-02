@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import { createDrivingPickups } from '../src/game/driving-pickups.mjs';
+import { LONG_HAUL_BINDINGS, heldAction } from '../src/game/driving-controls.mjs';
+const pickups=createDrivingPickups();
+for(const kind of ['repair','boost','ability','focus']){
+  assert.equal(pickups.collect({id:kind,kind,distance:2,active:false}).accepted,false);
+  assert.equal(pickups.collect({id:kind,kind,distance:4}).accepted,false);
+  assert.equal(pickups.collect({id:kind,kind,distance:0,height:6}).accepted,false);
+  assert.equal(pickups.collect({id:kind,kind,distance:0}).accepted,true);
+  assert.equal(pickups.collect({id:kind,kind,distance:0}).accepted,false);
+}
+let state=pickups.snapshot();assert.equal(state.boostMultiplier,1.25);assert.equal(state.abilityEnhancement,.5);assert.equal(state.xpMultiplier,1.35);assert.equal(state.comboMultiplier,1.25);
+pickups.tick(10,{active:false});assert.deepEqual(pickups.snapshot(),state);
+for(let i=0;i<65;i++)pickups.tick(.25);
+assert.equal(pickups.snapshot().boostMultiplier,1);assert.equal(pickups.snapshot().xpMultiplier,1);assert.equal(pickups.snapshot().abilityEnhancement,0);
+assert.equal(pickups.collect({id:'focus',kind:'focus',distance:0}).accepted,false,'Expired effect cannot be recollected');
+const keys=Object.values(LONG_HAUL_BINDINGS).flat();assert.equal(new Set(keys).size,keys.length,'No key activates two actions');
+assert.equal(heldAction({ShiftLeft:true},'drift'),true);assert.equal(heldAction({ShiftLeft:true},'boost'),false);assert.equal(heldAction({Space:true},'boost'),true);
+pickups.reset();assert.equal(pickups.snapshot().collected,0);
+pickups.collect({id:'pickup:endless:40',kind:'boost',distance:0});
+pickups.retireThrough(39);
+const checkpoint=pickups.checkpoint(),resumed=createDrivingPickups();
+assert.equal(resumed.restoreCheckpoint(checkpoint),true);
+assert.deepEqual(resumed.snapshot(),pickups.snapshot(),'Resume retains pickup timers and receipts');
+assert.equal(resumed.collect({id:'pickup:endless:40',kind:'boost',distance:0}).accepted,false);
+resumed.retireThrough(50);
+assert.equal(resumed.snapshot().collected,0,'Retired road receipts use bounded storage');
+assert.equal(resumed.collect({id:'pickup:endless:40',kind:'boost',distance:0}).accepted,false,'Regenerated retired road cannot grant repeat rewards');
+resumed.retireThrough(0);assert.equal(resumed.snapshot().retiredThrough,50);
+assert.equal(resumed.restoreCheckpoint({...checkpoint,timers:{boost:Infinity,focus:0,ability:0}}),false);
+console.log('Driving pickup and authoritative control regressions passed');

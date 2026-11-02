@@ -64,14 +64,14 @@
       for(const key of activeContacts)if(!touching.has(key))activeContacts.delete(key);
       _lhImpactGameplayBase(surface);
       const after=readTruck();
-      if(after.tipped){const tip=applyLongHaulOperationOnce(engine,runKey,"truck-tip",()=>({seconds:15}));if(tip.applied){engine.n.longHaulRun.penalty({id:"truck-tip",kind:"tip",label:"Truck rollover",seconds:15,collision:true});spendTruckDamage(18,"rollover");spendCargoDamage(12,"rollover");toast("Truck rolled · E to recover and build again","bad",2400);audio.wrong()}}
+      if(after.tipped){const tip=applyLongHaulOperationOnce(engine,runKey,"truck-tip",()=>({seconds:15}));if(tip.applied){engine.n.longHaulRun.penalty({id:"truck-tip",kind:"tip",label:"Truck rollover",seconds:15,collision:true});spendTruckDamage(18,"rollover");spendCargoDamage(12,"rollover");toast("Truck rolled · F to recover and build again","bad",2400);audio.wrong()}}
     };
 
     interactionPrompt=function(){
       const state=readTruck(),run=readRun(),fuel=meters.get("fuel")?.value??0,surface=surfaceAt(state.position),nearest=nearestDepot(course,state.position),atDepot=nearest&&nearest.distance<=nearest.depot.radius+6;
       const needsRecovery=state.tipped||run.stuckSeconds>2.8||fuel<=.01||(!atDepot&&surface.surface==="off-road"&&Math.abs(state.speed)<.8);
-      if(needsRecovery){const wait=Math.max(0,8-(run.rawTime-(run.lastRecoveryTime??-100)));return wait>0?`Recovery ready in ${Math.ceil(wait)}s`:state.tipped?"E · Right the rig · combo lost":"E · Roadside recovery · time penalty"}
-      if(atDepot)return Math.abs(state.speed)>1.1?"Brake to a full stop":`E · Deliver to ${nearest.depot.name}`;
+      if(needsRecovery){const wait=Math.max(0,8-(run.rawTime-(run.lastRecoveryTime??-100)));return wait>0?`Recovery ready in ${Math.ceil(wait)}s`:state.tipped?"F · Right the rig · combo lost":"F · Roadside recovery · time penalty"}
+      if(atDepot)return Math.abs(state.speed)>1.1?"Brake to a full stop":`F · Deliver to ${nearest.depot.name}`;
       return "";
     };
     handleInteraction=function(state,run,condition,surface){

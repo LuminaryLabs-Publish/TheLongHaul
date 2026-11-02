@@ -13,13 +13,14 @@ export const DEFAULT_TRUCK_DYNAMICS_PROFILE = Object.freeze({
   rollingResistance: Object.freeze({ road: 0.32, shoulder: 0.72, offRoad: 1.2 }),
   steering: Object.freeze({ response: 11, lowSpeedAngle: 0.6, highSpeedAngle: 0.155, wheelbase: 6.1, yawResponse: 0.84, maximumYawRate: 1.1 }),
   grip: Object.freeze({ highway: 6.5, road: 5.8, rough: 3.8, shoulder: 3, offRoad: 2, handbrake: 0.65 }),
+  drift: Object.freeze({ gripMultiplier: 0.16, turnMultiplier: 1.55, reserveEfficiency: 0.72, maximumReserveSpeed: 17 }),
   suspension: Object.freeze({ travel: 0.92, spring: 22, compressionDamping: 8.5, extensionDamping: 6.4, landingRestitution: 0.065, maximumRebound: 1 }),
   roll: Object.freeze({ spring: 19, damping: 8.8, lateralScale: 0.034, maximumAngle: 0.62, slopeScale: 0.72, warningAngle: 0.52, tipAngle: 0.9, settledAngle: 1.48 }),
   air: Object.freeze({ gravity: 11.5, steering: 0.72, pitchControl: 0.24, velocitySteering: 0.18, drag: 0.025, maximumSubsteps: 8, maximumSubstep: 1 / 120 }),
   boost: Object.freeze({ forceMultiplier: 1.65, speedMultiplier: 1.22, rushForceMultiplier: 3.8, rushSpeedMultiplier: 1.8 })
 });
 
-const profileGroups = ["load", "rollingResistance", "steering", "grip", "suspension", "roll", "air", "boost"];
+const profileGroups = ["load", "rollingResistance", "steering", "grip", "drift", "suspension", "roll", "air", "boost"];
 function mergeProfile(previous, request = {}) {
   const result = { ...clone(previous), ...clone(request) };
   for (const key of profileGroups) result[key] = { ...(previous[key] ?? {}), ...(clone(request[key]) ?? {}) };
