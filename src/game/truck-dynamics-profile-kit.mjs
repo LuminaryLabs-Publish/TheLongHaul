@@ -3,6 +3,7 @@ const clone = (value) => value === undefined ? undefined : structuredClone(value
 export const DEFAULT_TRUCK_DYNAMICS_PROFILE = Object.freeze({
   id: "arcade-freight",
   mass: 7800,
+  load: Object.freeze({ baseCenterOfMassHeight: 1.35, ratedPayload: 6500, loadedBrakeAssist: 0.28, suspensionSag: 0.14, shiftResponse: 3.4, shiftDamping: 4.8 }),
   maximumForwardSpeed: 34,
   maximumReverseSpeed: 7.5,
   engineAcceleration: 6.1,
@@ -18,7 +19,7 @@ export const DEFAULT_TRUCK_DYNAMICS_PROFILE = Object.freeze({
   boost: Object.freeze({ forceMultiplier: 1.65, speedMultiplier: 1.22, rushForceMultiplier: 3.8, rushSpeedMultiplier: 1.8 })
 });
 
-const profileGroups = ["rollingResistance", "steering", "grip", "suspension", "roll", "air", "boost"];
+const profileGroups = ["load", "rollingResistance", "steering", "grip", "suspension", "roll", "air", "boost"];
 function mergeProfile(previous, request = {}) {
   const result = { ...clone(previous), ...clone(request) };
   for (const key of profileGroups) result[key] = { ...(previous[key] ?? {}), ...(clone(request[key]) ?? {}) };
@@ -35,7 +36,7 @@ export function createLongHaulTruckDynamicsProfileKit(N, options = {}) {
     apiName: "longHaulTruckDynamicsProfile",
     services: ["powertrain-profile", "tire-profile", "suspension-profile", "air-control-profile"],
     stability: "game-stable",
-    version: "4.0.0",
+    version: "4.1.0",
     resources: { TruckDynamicsProfileState },
     events: { ConfigureTruckDynamics },
     systems: [{ phase: "resolve", name: "longHaulTruckDynamicsProfileSystem", system(world) {

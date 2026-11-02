@@ -103,7 +103,7 @@ export async function layoutEvidence(page) {
   return page.evaluate(() => {
     const stage = document.querySelector('#game-stage'), canvas = document.querySelector('#game-canvas');
     const rect = node => { const value = node.getBoundingClientRect(); return { x: value.x, y: value.y, width: value.width, height: value.height, right: value.right, bottom: value.bottom }; };
-    return { viewport: { width: innerWidth, height: innerHeight }, stage: rect(stage), canvas: rect(canvas), stageScroll: { x: stage.scrollLeft, y: stage.scrollTop }, hud: ['#condition-box', '#timer-box', '#risk-hud', '#drive-box', '#run-box'].map(selector => ({ selector, ...rect(document.querySelector(selector)) })) };
+    return { viewport: { width: innerWidth, height: innerHeight }, stage: rect(stage), canvas: rect(canvas), stageScroll: { x: stage.scrollLeft, y: stage.scrollTop }, hud: ['#condition-box', '#timer-box', '#risk-hud', '#drive-box', course?.endless ? '#freight-hud' : '#run-box'].map(selector => ({ selector, ...rect(document.querySelector(selector)) })) };
   });
 }
 
@@ -152,10 +152,12 @@ export async function steeringCommand(page, elapsed, { boost = true, weave = fal
   }, { elapsed, boost, weave, aimRamps, targetLane });
 }
 
-export async function driveWithKeyboard(page, seconds, { boost = true, weave = false, aimRamps = true, targetLane = null, onSample = null } = {}) {
-  let held = new Set(); const start = Date.now(), samples = []; let nextSample = 0, lastRecovery = -Infinity;
-  while ((Date.now() - start) / 1000 < seconds) {
-    const elapsed = (Date.now() - start) / 1000, command = await steeringCommand(page, elapsed, { boost, weave, aimRamps, targetLane }), wanted = new Set(command.keys);
+export async function driveWithKeyboard(page, seconds, { boost = true, weave = false, aimRamps = true, targetLane = null, onSample = null, simulationTime = false } = {}) {
+  let held = new Set(); const start = Date.now(), initialRunTime = await page.evaluate(() => readRun().rawTime), samples = []; let nextSample = 0, lastRecovery = -Infinity;
+  while ((Date.now() - start) / 1000 < Math.max(45, seconds * 15)) {
+    const elapsed = simulationTime ? await page.evaluate(initial => readRun().rawTime - initial, initialRunTime) : (Date.now() - start) / 1000;
+    if (elapsed >= seconds) break;
+    const command = await steeringCommand(page, elapsed, { boost, weave, aimRamps, targetLane }), wanted = new Set(command.keys);
     for (const key of held) if (!wanted.has(key)) await page.keyboard.up(key);
     for (const key of wanted) if (!held.has(key)) await page.keyboard.down(key);
     held = wanted;
@@ -169,10 +171,11 @@ export async function driveWithKeyboard(page, seconds, { boost = true, weave = f
 }
 
 async function validate() {
+  const continuation = argValue('--section', 'full') === 'portrait-campaign';
   const generatedId = 'gameplay-' + new Date().toISOString().replace(/[:.]/g, '-'), output = path.resolve(argValue('--output', path.join(projectRoot, '.cache/validation', generatedId))), runId = path.basename(output);
   await mkdir(path.dirname(output), { recursive: true });
   await mkdir(output, { recursive: false });
-  const startedAt = new Date().toISOString(), source = await sourceIdentity(), requested = { mode: 'local', target: projectRoot, revision: source.revision, expectedSurface: 'mixed', expectedState: 'Playable cinematic, responsive driving, score and encounter feedback, recovery, garage, delivery, progression, and next run.', interaction: 'Actual browser clicks and keys; isolated endpoint fixtures use the real game services.' };
+  const startedAt = new Date().toISOString(), source = await sourceIdentity(), requested = { mode: 'local', target: projectRoot, revision: source.revision, expectedSurface: 'mixed', expectedState: continuation ? 'Portrait layout, touch input, reduced motion, real geographic Campaign launch, failure and delivery settlement.' : 'Playable cinematic, responsive driving, score and encounter feedback, recovery, garage, delivery, progression, and next run.', interaction: 'Actual browser clicks and keys; isolated endpoint fixtures use the real game services.' };
   const decisions = [{ at: startedAt, stage: 'inspect', kind: 'fact', statement: 'Validate this local working tree, including source hashes; no live deployment substitution.', basis: source, effect: 'none' }, { at: startedAt, stage: 'route', kind: 'decision', statement: 'The application requires DOM menus, CanvasTexture and arbitrary GLSL; use sandbox-record-browser-it plus webgl-render-sandbox-it with the real browser page.', basis: 'Source inspected and render-3d-sandbox-it browser-dependent boundary.', effect: 'route-change' }];
   await saveJson(path.join(output, 'target-lock.json'), { runId, requested, source });
   await saveJson(path.join(output, 'decision-log.json'), decisions);
@@ -185,10 +188,11 @@ async function validate() {
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
     observations = await preparePage(context, server.url); page = observations.page;
     await page.screenshot({ path: path.join(output, 'before.png') });
+    if (!continuation) {
     await beginRun(page); interactions.push({ action: 'Click Endless, select Standard contract, click Drive', boundary: 'Browser DOM and keyboard' });
     const entry = await gameSnapshot(page);
     check('First-run cinematic uses the actual scene', entry.intro.active && entry.intro.duration === 2.4, entry.intro);
-    await page.waitForTimeout(300); const cinematicMotion = await gameSnapshot(page);
+    await page.waitForFunction(elapsed => launchIntro.elapsed > elapsed + .1, entry.intro.elapsed, { timeout: 15000 }); const cinematicMotion = await gameSnapshot(page);
     check('Cinematic animates the camera without consuming the run', cinematicMotion.intro.active && cinematicMotion.runDetails.rawTime === entry.runDetails.rawTime && cinematicMotion.remainingTime === entry.remainingTime && JSON.stringify(cinematicMotion.player.position) === JSON.stringify(entry.player.position) && cinematicMotion.camera.position.some((value, i) => Math.abs(value - entry.camera.position[i]) > .05), { before: entry, after: cinematicMotion });
     await page.screenshot({ path: path.join(output, 'cinematic.png') });
     await page.locator('#launch-skip').click();
@@ -198,11 +202,11 @@ async function validate() {
     check('Fresh 1280x720 launch keeps the stage unscrolled and every essential HUD visible', launchLayout.stageScroll.x === 0 && launchLayout.stageScroll.y === 0 && Math.abs(launchLayout.canvas.x - launchLayout.stage.x) < 1 && Math.abs(launchLayout.canvas.y - launchLayout.stage.y) < 1 && launchLayout.hud.every(box => box.width > 0 && box.height > 0 && box.x >= 0 && box.y >= 0 && box.right <= 1281 && box.bottom <= 721), launchLayout);
     const gl = await webglEvidence(page); await saveJson(path.join(output, 'webgl-render-report.json'), gl);
     check('Real software WebGL renders non-empty gameplay', gl.available && !gl.lost && /swiftshader/i.test(gl.renderer) && gl.pixels.distinctColors > 40 && gl.triangles > 0, gl);
-    const start = await gameSnapshot(page), movement = await driveWithKeyboard(page, 9, { boost: true });
+    const start = await gameSnapshot(page), movement = await driveWithKeyboard(page, 9, { boost: true, simulationTime: true });
     const driven = await gameSnapshot(page); await page.screenshot({ path: path.join(output, 'driving.png') });
     check('Keyboard throttle and steering move the actual truck', driven.runDetails.distance > start.runDetails.distance + 15 && !driven.frameFailed, { before: start.player, after: driven.player, movement });
     const planned = await page.evaluate(() => arcadeEncounters.map(event => ({ id: event.id, kind: event.kind, distance: event.distance, path: event.path.id, warningLead: event.warningLead, clearWidth: event.clearWidth })));
-    check('Generated encounters include paced ramps, cargo, blocks and weaving', ['ramp', 'breakables', 'roadblock', 'weave'].every(kind => planned.some(event => event.kind === kind)) && planned.every(event => event.warningLead >= 150 && event.clearWidth >= 7), planned);
+    check('The current highway window contains readable paced encounters', planned.length >= 2 && new Set(planned.map(event => event.kind)).size >= 2 && planned.every(event => event.warningLead >= 150 && event.clearWidth >= 7), planned);
     await page.keyboard.press('Escape'); await page.waitForFunction(() => currentScene() === 'paused');
     const paused = await gameSnapshot(page); await page.waitForTimeout(450); const stillPaused = await gameSnapshot(page);
     check('Pause freezes the run clock and vehicle', Math.abs(paused.runDetails.rawTime - stillPaused.runDetails.rawTime) < .01 && Math.abs(paused.player.position.x - stillPaused.player.position.x) < .01 && Math.abs(paused.player.position.z - stillPaused.player.position.z) < .01, { paused, stillPaused });
@@ -236,14 +240,25 @@ async function validate() {
     }
     await page.setViewportSize({ width: 1280, height: 720 }); await page.locator('#resume-btn').click(); await page.waitForFunction(() => currentScene() === 'driving');
 
-    const trafficFixture = await fixture('Place one real traffic actor ahead on its route and the truck in an adjacent lane; actual movement must create the near miss.', () => {
-      const path = arcadeNetwork.paths.find(value => value.id.startsWith('trunk:')) ?? arcadeNetwork.paths[0], point = arcadePathPoint(path, 100, -1.85), ground = groundSample(point), surface = surfaceAt(point);
+    const trafficSection = await fixture('Choose the next clear highway section between loading zones; allow the real streaming window to refresh before positioning the traffic actor.', () => {
+      releaseDrivingInput(); forwardBoost.reset();
+      const progress = Math.max(992, Math.ceil((-readTruck().position.z - 32) / 960) * 960 + 32), point = endlessHighwayPoint(course, progress, -1.85), ground = groundSample(point);
+      engine.n.longHaulTruck.teleport({ ...point, y: ground.height + readDynamics().suspension.travel, speed: 0, groundHeight: ground.height, groundNormal: ground.normal });
+      return { progress, section: Math.floor(progress / 320) };
+    });
+    await page.waitForFunction(section => course.endless.centerSection === section, trafficSection.section, { timeout: 15000 });
+    const trafficFixture = await fixture('Place one real traffic actor ahead on the settled clear route and the truck in an adjacent lane; actual movement must create the near miss.', () => {
+      const current = arcadeRoadProgress(nearestRoad(course, readTruck().position), arcadeNetwork), path = current.path, base = current.distance, point = arcadePathPoint(path, base, -1.85), ground = groundSample(point), surface = surfaceAt(point);
       releaseDrivingInput(); forwardBoost.reset(); engine.n.longHaulTruck.teleport({ ...point, y: ground.height + readDynamics().suspension.travel, speed: 32, groundHeight: ground.height, groundNormal: ground.normal, surface: surface.surface, surfaceGrip: surface.grip });
       for (const vehicle of arcadeVehicles) vehicle.active = false;
-      const vehicle = arcadeVehicles[0]; Object.assign(vehicle, { id: `traffic:${++arcadeTrafficSerial}`, path, progress: 129, direction: 1, speed: 12, lane: 1.85, hit: false, passed: false, minClearance: Infinity, nearSpeed: 0, active: true });
-      return { id: vehicle.id, truckLane: -1.85, trafficLane: vehicle.lane, gap: 3.7 - (LONG_HAUL_TRUCK_COLLIDER.width + vehicle.collider.width) / 2 };
+      const vehicle = arcadeVehicles[0]; Object.assign(vehicle, { id: `traffic:${++arcadeTrafficSerial}`, path, progress: base + 29, direction: 1, speed: 12, lane: 1.85, hit: false, passed: false, minClearance: Infinity, nearSpeed: 0, active: true });
+      return { id: vehicle.id, truckLane: -1.85, trafficLane: vehicle.lane, gap: 3.7 - (LONG_HAUL_TRUCK_COLLIDER.width + vehicle.collider.width) / 2, runTime: readRun().rawTime };
     });
-    await driveWithKeyboard(page, 5, { boost: false, aimRamps: false, targetLane: -1.85 });
+    // This short corridor is nearly straight: a held forward key avoids making
+    // the endpoint check depend on the wall-clock latency of A/D feedback.
+    await page.keyboard.down('w');
+    try { await page.waitForFunction(({ id, start }) => arcadeEventHistory.some(event => event.type === 'score-event' && event.kind === 'near-miss' && event.id === id) || readRun().rawTime - start >= 3.5, { id: trafficFixture.id, start: trafficFixture.runTime }, { timeout: 45000 }); }
+    finally { await page.keyboard.up('w'); }
     const nearMiss = await gameSnapshot(page); await page.screenshot({ path: path.join(output, 'near-miss.png') });
     check('A real forward traffic overtake awards a bounded near miss', nearMiss.eventHistory.some(event => event.type === 'score-event' && event.kind === 'near-miss' && event.id === trafficFixture.id), { trafficFixture, risk: nearMiss.risk, events: nearMiss.eventHistory });
 
@@ -255,7 +270,7 @@ async function validate() {
       return { id: event.id, position: { x: point.x, z: point.z }, lane: event.lane };
     });
     check('Ramp fixture identifies actual generated geometry', Boolean(rampFixture), rampFixture);
-    const rampMovement = await driveWithKeyboard(page, 11, { boost: false, aimRamps: true });
+    const rampMovement = await driveWithKeyboard(page, 11, { boost: false, aimRamps: true, simulationTime: true });
     const rampState = await gameSnapshot(page); await page.screenshot({ path: path.join(output, 'stunt.png') });
     check('Driving across the generated ramp produces a real airborne landing', rampState.eventHistory.some(event => event.type === 'ramp-launch' && event.id === rampFixture.id) && rampState.eventHistory.some(event => event.type === 'stunt-landed' && event.airTime >= .6 && event.distance >= 8), { rampFixture, events: rampState.eventHistory, samples: rampMovement.map(value => ({ elapsed: value.elapsed, height: value.snapshot.player.position.y, airborne: !value.snapshot.truckDetails.grounded })) });
 
@@ -272,7 +287,7 @@ async function validate() {
       for (const [index, vehicle] of arcadeVehicles.entries()) { vehicle.path = progress.path; vehicle.progress = progress.distance + 220 + index * 40; vehicle.direction = 1; vehicle.active = true; vehicle.hit = vehicle.passed = false; vehicle.minClearance = Infinity; vehicle.nearSpeed = 0; }
     });
     await page.waitForFunction(() => arcadeScore.snapshot().cooldown === 0);
-    await driveWithKeyboard(page, 6, { boost: false, aimRamps: false, targetLane: crateFixture.lane });
+    await driveWithKeyboard(page, 6, { boost: false, aimRamps: false, targetLane: crateFixture.lane, simulationTime: true });
     const scored = await gameSnapshot(page); await page.screenshot({ path: path.join(output, 'risk-reward.png') });
     const destructionScores = scored.eventHistory.filter(event => event.type === 'score-event' && event.kind === 'destruction' && event.id.startsWith(crateFixture.id));
     check('Destructible cargo produces visible score and multiplier feedback', destructionScores.length >= 2 && destructionScores.some(event => event.multiplier >= 2) && scored.risk.pending > 0 && await page.locator('#risk-multiplier').isVisible(), { risk: scored.risk, destructionScores, events: scored.eventHistory });
@@ -300,44 +315,62 @@ async function validate() {
     const weather = await gameSnapshot(page); await page.screenshot({ path: path.join(output, 'weather.png') });
     check('Weather transition produces actual rain and changed conditions', weather.weather.rainVisible && weather.weather.amount > .4, weather.weather);
 
-    const garageFixture = await fixture('Position stopped truck at a generated roadside garage; opening and purchasing use browser input.', () => { const stop = arcadeGarageStops[0]; if (!stop) return null; for (const key of Object.keys(keys)) keys[key] = false; forwardBoost.reset(); engine.n.longHaulTruck.teleport({ x: stop.x, y: terrainHeight(course, stop.x, stop.z) + .85, z: stop.z, heading: readTruck().heading, speed: 0 }); return { id: stop.id, x: stop.x, z: stop.z }; });
+    const garageFixture = await fixture('Position stopped truck at a generated roadside garage; opening and purchasing use browser input.', () => { const stop = arcadeGarageStops.filter(value => -value.z >= Math.max(0, -readTruck().position.z - 20)).sort((a,b) => -a.z + b.z)[0]; if (!stop) return null; for (const key of Object.keys(keys)) keys[key] = false; forwardBoost.reset(); engine.n.longHaulTruck.teleport({ x: stop.x, y: terrainHeight(course, stop.x, stop.z) + .85, z: stop.z, heading: readTruck().heading, speed: 0 }); return { id: stop.id, x: stop.x, z: stop.z }; });
     check('A real roadside garage exists in the generated course', Boolean(garageFixture), garageFixture);
+    await page.waitForFunction(expected => Math.hypot(readTruck().position.x - expected.x, readTruck().position.z - expected.z) < 1 && Math.abs(readTruck().speed) < 1.1, garageFixture, { timeout: 15000 });
+    await page.waitForFunction(section => course.endless.centerSection === section, Math.floor(-garageFixture.z / 320), { timeout: 15000 });
+    const garageArrival = await page.evaluate(expected => ({ expected, truck: readTruck(), run: readRun(), nearest: arcadeNearestGarage(readTruck().position)?.stop.id, stops: arcadeGarageStops.map(stop => ({ id: stop.id, x: stop.x, z: stop.z })), prompt: interactionPrompt() }), garageFixture);
+    check('A generated garage keeps its identity and position when the window advances', garageArrival.nearest === garageFixture.id && garageArrival.stops.some(stop => stop.id === garageFixture.id && Math.hypot(stop.x - garageFixture.x, stop.z - garageFixture.z) < .01), garageArrival);
     await page.waitForTimeout(200); await page.keyboard.press('e'); await page.locator('#arcade-garage-panel').waitFor({ state: 'visible' });
     const beforePurchase = await page.evaluate(() => arcadeUpgradeState()); await page.locator('#arcade-garage-panel button[data-upgrade="engine"]').click(); const afterPurchase = await page.evaluate(() => arcadeUpgradeState());
     check('Garage purchase persists cash and the selected upgrade', afterPurchase.cash < beforePurchase.cash && afterPurchase.upgrades.engine === beforePurchase.upgrades.engine + 1, { beforePurchase, afterPurchase });
     await page.screenshot({ path: path.join(output, 'garage.png') }); await page.getByRole('button', { name: /CLOSE.*E TO DRIVE/ }).click();
     check('Closing the garage immediately returns control', !(await gameSnapshot(page)).garage.visible);
 
-    await fixture('Position stopped truck at the assigned receiving gate; delivery uses the real E key path.', () => { const depot = course.depots.find(value => value.id === course.validDepotId); for (const key of Object.keys(keys)) keys[key] = false; forwardBoost.reset(); engine.n.longHaulTruck.teleport({ x: depot.x, y: terrainHeight(course, depot.x, depot.z) + .85, z: depot.z, heading: readTruck().heading, speed: 0 }); return depot; });
-    await page.waitForTimeout(250); await page.keyboard.press('e'); await page.waitForFunction(() => currentScene() === 'results', null, { timeout: 10000 });
-    await page.locator('#results-screen').evaluate(async node => { await Promise.all(node.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {}))); });
-    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('#results-screen')).opacity) >= .99 && !document.querySelector('#toast').classList.contains('show'), null, { timeout: 6000 });
-    const delivered = await gameSnapshot(page); await page.screenshot({ path: path.join(output, 'delivery.png') });
-    check('Delivery resolves through the retained progression loop', delivered.runDetails.status === 'completed' && delivered.delivery.delivered && delivered.save.cash >= afterPurchase.cash, delivered);
-    const cash = delivered.save.cash;
-    await fixture('Re-render the same settled result to verify payment idempotency.', () => { showResults(readRun().result); arcadeSettleRoadsideRun(); });
-    check('Repeated settlement does not duplicate cash', (await gameSnapshot(page)).save.cash === cash);
-    await page.locator('#result-retry-btn').click(); await page.waitForFunction(() => generation?.ready && currentScene() === 'driving', null, { timeout: 120000 });
+    const continuous = await page.evaluate(() => ({ freight: LongHaulFreight.getState(), run: readRun(), cash: arcadeUpgradeState().cash }));
+    check('Endless remains a continuous freight journey after interactions', continuous.run.status === 'running' && continuous.freight.contract && !continuous.freight.road.geography, continuous);
+    const checkpoint = await fixture('Save the real continuous checkpoint twice; this must never pay the same ledger twice.', () => {
+      const first = saveFreightCheckpoint(), before = arcadeUpgradeState().cash, id = freightState.sessionId;
+      const second = saveFreightCheckpoint(), after = arcadeUpgradeState().cash;
+      return { first, second, before, after, id, snapshot: JSON.parse(localStorage.getItem('longhaul-campaign-v1')).freightJourney };
+    });
+    check('Continuous checkpoint and payment writes are idempotent', checkpoint.first && checkpoint.second && checkpoint.before === checkpoint.after && checkpoint.snapshot.journey.sessionId === checkpoint.id, checkpoint);
+    await page.reload(); await page.waitForFunction(() => window.__longHaulBooted && currentScene() === 'title');
+    check('Reload offers the saved continuous haul', await page.locator('#freight-resume-btn').isVisible());
+    await page.locator('#freight-resume-btn').click();
+    await page.waitForFunction(() => generation?.ready && currentScene() === 'driving', null, { timeout: 120000 });
     check('Returning drivers get a shortened cinematic', (await gameSnapshot(page)).intro.duration <= .7);
     await page.keyboard.press('w'); await page.waitForFunction(() => !launchIntro.active && readRun().status === 'running');
-    const nextRun = await gameSnapshot(page); check('Next run starts with retained garage progression', nextRun.runDetails.status === 'running' && nextRun.save.upgrades.engine === afterPurchase.upgrades.engine && !nextRun.delivery.delivered, nextRun);
+    const resumed = await page.evaluate(() => ({ freight: LongHaulFreight.getState(), run: readRun(), truck: readTruck(), save: arcadeUpgradeState() }));
+    check('Resume retains contract identity, cash and garage progression', resumed.freight.sessionId === checkpoint.id && resumed.save.cash === checkpoint.after && resumed.save.upgrades.engine === afterPurchase.upgrades.engine && resumed.run.status === 'running', resumed);
+    await page.keyboard.press('Escape'); await page.waitForFunction(() => currentScene() === 'paused'); await page.locator('#pause-title-btn').click(); await page.waitForFunction(() => currentScene() === 'title');
+    await beginRun(page); await page.waitForFunction(() => generation?.ready && currentScene() === 'driving', null, { timeout: 120000 });
+    await page.keyboard.press('w'); await page.waitForFunction(() => !launchIntro.active && readRun().status === 'running');
+    const nextRun = await gameSnapshot(page), nextFreight = await page.evaluate(() => LongHaulFreight.getState());
+    check('An explicit new haul uses a fresh identity and retained upgrades', nextFreight.sessionId !== checkpoint.id && nextFreight.ordinal === 1 && nextRun.save.upgrades.engine === afterPurchase.upgrades.engine, { nextRun, nextFreight });
     await page.screenshot({ path: path.join(output, 'after.png') });
-    await saveJson(path.join(output, 'states.json'), { entry, cinematicMotion, start, driven, nearMiss, rampState, scored, recovered, weather, delivered, nextRun });
+    await saveJson(path.join(output, 'states.json'), { entry, cinematicMotion, start, driven, nearMiss, rampState, scored, recovered, weather, continuous, checkpoint, resumed, nextRun });
 
     await page.setViewportSize({ width: 960, height: 540 });
     await page.screenshot({ path: path.join(output, 'driving-960x540.png') });
-    const compactHud = await page.evaluate(() => ['#timer-box', '#risk-hud', '#drive-box'].map(selector => { const node = document.querySelector(selector), box = node.getBoundingClientRect(); return { selector, visible: getComputedStyle(node).display !== 'none', x: box.x, y: box.y, width: box.width, height: box.height }; }));
+    const compactHud = await page.evaluate(() => ['#timer-box', '#risk-hud', '#drive-box', '#freight-hud'].map(selector => { const node = document.querySelector(selector), box = node.getBoundingClientRect(); return { selector, visible: getComputedStyle(node).display !== 'none', x: box.x, y: box.y, width: box.width, height: box.height }; }));
     check('Active driving HUD fits the compact desktop display', compactHud.every(box => box.visible && box.x >= 0 && box.y >= 0 && box.x + box.width <= 961 && box.y + box.height <= 541), compactHud);
     await page.keyboard.press('Escape'); await page.waitForFunction(() => currentScene() === 'paused');
 
+    }
     const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
     const mobileObservation = await preparePage(mobileContext, server.url, { returning: true }); const mobile = mobileObservation.page;
     await mobile.locator('#settings-btn').click(); await mobile.waitForFunction(() => currentScene() === 'settings');
     await mobile.locator('#motion-switch').click(); await mobile.locator('#settings-back-btn').click(); await mobile.waitForFunction(() => currentScene() === 'title');
     await beginRun(mobile); await mobile.waitForFunction(() => !launchIntro.active && readRun().status === 'running');
+    if (continuation) {
+      const gl = await webglEvidence(mobile); await saveJson(path.join(output, 'webgl-render-report.json'), gl);
+      check('Actual portrait WebGL pixels are non-empty', gl.available && !gl.lost && gl.pixels.distinctColors > 40 && gl.triangles > 0, gl);
+    }
     const reducedMotion = await mobile.evaluate(() => ({ enabled: !settings.motion, intro: { ...launchIntro }, hidden: cinematic.hidden, stored: JSON.parse(localStorage.getItem('the-long-haul-settings-v2')).motion, events: arcadeEventHistory.filter(value => value.type.startsWith('cinematic')) }));
     check('Reduced camera motion gives an unobtrusive short launch and immediate control', reducedMotion.enabled && reducedMotion.stored === false && reducedMotion.intro.duration === .12 && !reducedMotion.intro.active && reducedMotion.hidden && reducedMotion.events.some(value => value.type === 'cinematic-start' && value.duration === .12), reducedMotion);
-    const mobileHud = await mobile.evaluate(() => ({ coarse: matchMedia('(pointer:coarse)').matches, keyboardBoostHintVisible: getComputedStyle(document.querySelector('#arcade-overlay .arcade-stat:nth-child(2)')).display !== 'none', boxes: ['#condition-box', '#timer-box', '#risk-hud', '#drive-box', '#touch-controls'].map(selector => { const node = document.querySelector(selector), box = node.getBoundingClientRect(); return { selector, visible: getComputedStyle(node).display !== 'none', x: box.x, y: box.y, width: box.width, height: box.height }; }) }));
+    const mobileHud = await mobile.evaluate(() => ({ coarse: matchMedia('(pointer:coarse)').matches, keyboardBoostHintVisible: getComputedStyle(document.querySelector('#arcade-overlay .arcade-stat:nth-child(2)')).display !== 'none', boxes: ['#condition-box', '#timer-box', '#risk-hud', '#drive-box', '#freight-hud', '#touch-controls'].map(selector => { const node = document.querySelector(selector), box = node.getBoundingClientRect(); return { selector, visible: getComputedStyle(node).display !== 'none', x: box.x, y: box.y, width: box.width, height: box.height }; }) }));
+    await mobile.screenshot({ path: path.join(output, 'driving-390x844.png') });
     const overlap = mobileHud.boxes.some((a, i) => mobileHud.boxes.slice(i + 1).some(b => Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 1 && Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 1));
     check('Portrait driving HUD and coarse-pointer controls are visible without overlap', mobileHud.coarse && !mobileHud.keyboardBoostHintVisible && !overlap && mobileHud.boxes.every(box => box.visible && box.x >= 0 && box.y >= 0 && box.x + box.width <= 391 && box.y + box.height <= 845), mobileHud);
     const go = await mobile.getByRole('button', { name: 'Accelerate', exact: true }).boundingBox(), touch = await mobileContext.newCDPSession(mobile);
@@ -353,14 +386,15 @@ async function validate() {
     observations.consoleLog.push(...mobileObservation.consoleLog.map(value => ({ ...value, page: 'portrait-touch' }))); observations.networkFailures.push(...mobileObservation.networkFailures);
     await mobileContext.close();
 
-    const campaign = await context.newPage(); campaign.on('pageerror', error => observations.consoleLog.push({ type: 'pageerror', text: String(error), page: 'campaign' }));
-    campaign.on('console', message => observations.consoleLog.push({ type: message.type(), text: message.text(), page: 'campaign' }));
-    campaign.on('requestfailed', request => observations.networkFailures.push({ url: request.url(), error: request.failure()?.errorText, page: 'campaign' }));
-    await campaign.goto(server.url + 'campaign.html#map'); await campaign.locator('#selectedRouteHeading').waitFor(); await campaign.locator('#nextRoute').click(); const routeAfter = await campaign.locator('#selectedRouteHeading').textContent();
+    // Follow the actual same-tab menu route. Opening another tab and then
+    // closing an active freight page correctly triggers the save-conflict guard.
+    const campaign = page;
+    if (await page.evaluate(() => currentScene() === 'paused')) { await page.locator('#pause-title-btn').click(); await page.waitForFunction(() => currentScene() === 'title'); }
+    await campaign.getByRole('link', { name: 'Campaign', exact: true }).click(); await campaign.waitForURL(/campaign\.html/);
+    await campaign.locator('#selectedRouteHeading').waitFor(); await campaign.locator('#nextRoute').click(); const routeAfter = await campaign.locator('#selectedRouteHeading').textContent();
     await campaign.locator('#garageFromMap').click(); await campaign.locator('#garageBack').waitFor({ state: 'visible' }); await campaign.locator('#garageBack').click();
     check('Campaign route selection and garage navigation remain usable', Boolean(routeAfter) && await campaign.locator('#startRoute').isVisible(), routeAfter);
     await campaign.screenshot({ path: path.join(output, 'campaign.png') });
-    await page.close(); page = campaign;
     await campaign.locator('#previousRoute').click(); await campaign.locator('#startRoute').click();
     await campaign.waitForURL(/index\.html\?campaign=1/, { timeout: 25000 });
     await campaign.waitForFunction(() => window.__longHaulBooted && generation?.ready && !launchIntro.active && readRun().status === 'running', null, { timeout: 120000 });
@@ -389,20 +423,21 @@ async function validate() {
     await campaign.locator('#results-screen').evaluate(async node => { await Promise.all(node.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {}))); });
     await campaign.waitForFunction(() => Number(getComputedStyle(document.querySelector('#results-screen')).opacity) >= .99 && !document.querySelector('#toast').classList.contains('show'), null, { timeout: 6000 });
     const campaignComplete = await gameSnapshot(campaign); await campaign.screenshot({ path: path.join(output, 'campaign-delivery.png') });
+    if (continuation) await campaign.screenshot({ path: path.join(output, 'after.png') });
     check('Fresh Campaign delivery advances location and pays its own receipt once', campaignComplete.delivery.delivered && campaignComplete.save.completedCampaignAttempts.includes(freshAttempt) && campaignComplete.save.deliveries === campaignFailed.save.deliveries + 1 && campaignComplete.save.cash > campaignFailed.save.cash, campaignComplete.save);
     const duplicateCampaign = await campaign.evaluate(() => { const before = arcadeUpgradeState().cash; completeCampaignDelivery(readRun().result); return { before, after: arcadeUpgradeState().cash }; });
     check('Repeated successful Campaign settlement cannot pay twice', duplicateCampaign.before === duplicateCampaign.after, duplicateCampaign);
     await saveJson(path.join(output, 'campaign-receipts.json'), { campaignStart, campaignFailed, afterFailureReload, freshAttempt, staleReplay, campaignComplete, duplicateCampaign });
     check('No fatal application or WebGL errors', !observations.consoleLog.some(value => value.type === 'pageerror' || value.type === 'error' && !/favicon|404/.test(value.text)), observations.consoleLog.filter(value => ['error', 'pageerror'].includes(value.type)));
     const endSource = await sourceIdentity(); check('Validated source stayed identical throughout capture', source.aggregate === endSource.aggregate, { before: source.aggregate, after: endSource.aggregate });
-  } catch (error) { failure = String(error.stack || error); console.error(failure); if (page) await page.screenshot({ path: path.join(output, 'failure.png') }).catch(() => {}); }
+  } catch (error) { failure = String(error.stack || error); console.error(failure); if (page) { await page.screenshot({ path: path.join(output, 'failure.png') }).catch(() => {}); await saveJson(path.join(output, 'failure-state.json'), await gameSnapshot(page).catch(() => null)); } }
   finally { await browser?.close().catch(() => {}); await server?.close().catch(() => {}); cleaned = true; }
   const completedAt = new Date().toISOString(), fatal = observations?.consoleLog.filter(value => value.type === 'pageerror' || value.type === 'error' && !/favicon|404/.test(value.text)) ?? [];
   const artifacts = { before: path.join(output, 'before.png'), after: path.join(output, 'after.png'), decisionLog: path.join(output, 'decision-log.json'), console: path.join(output, 'console.json'), networkFailures: path.join(output, 'network-failures.json'), interaction: path.join(output, 'interaction.json') };
   await saveJson(artifacts.console, observations?.consoleLog ?? []); await saveJson(artifacts.networkFailures, observations?.networkFailures ?? []); await saveJson(artifacts.interaction, { actions: interactions, checks });
   decisions.push({ at: completedAt, stage: 'cleanup', kind: 'fact', statement: 'Task-local browser and HTTP server closed.', basis: { cleaned }, effect: 'none' }); await saveJson(artifacts.decisionLog, decisions);
   const passed = !failure && checks.every(check => check.passed), verdict = passed ? 'pass' : page ? 'fail' : 'blocked';
-  const report = { schemaVersion: 'sandbox.web-render-validation/1', runId, startedAt, completedAt, runDirectory: output, requested, observed: { target: projectRoot, revision: source.revision, finalUrl: server?.url + 'index.html', surface: 'mixed' }, source, runtime, identity: { matchesRequestedMode: true, matchesRequestedTarget: true, matchesRequestedRevision: true }, freshness: { currentRunOnly: true, historicalEvidenceExcluded: true }, render: { visible: passed, nonEmpty: passed, surfaceProven: passed, fatalErrors: fatal }, interaction: { required: true, performed: interactions.length > 0, changeProven: passed }, children: [{ name: 'sandbox-record-browser-it', verdict, evidence: artifacts.interaction }, { name: 'webgl-render-sandbox-it', verdict, evidence: path.join(output, 'webgl-render-report.json') }], artifacts, supplementalRuns: [], cleanup: { required: true, completed: cleaned }, verdict, checks, failure, coverageBoundary: 'Actual local working-tree browser DOM, keyboard, WebGL pixels, garage and delivery progression. Endpoint setup uses declared real-service teleport fixtures; this is not human feel testing or hardware GPU performance certification.' };
+  const report = { schemaVersion: 'sandbox.web-render-validation/1', runId, startedAt, completedAt, runDirectory: output, requested, observed: { target: projectRoot, revision: source.revision, finalUrl: server?.url + 'index.html', surface: 'mixed' }, source, runtime, identity: { matchesRequestedMode: true, matchesRequestedTarget: true, matchesRequestedRevision: true }, freshness: { currentRunOnly: true, historicalEvidenceExcluded: true }, render: { visible: passed, nonEmpty: passed, surfaceProven: passed, fatalErrors: fatal }, interaction: { required: true, performed: interactions.length > 0, changeProven: passed }, children: [{ name: 'sandbox-record-browser-it', verdict, evidence: artifacts.interaction }, { name: 'webgl-render-sandbox-it', verdict, evidence: path.join(output, 'webgl-render-report.json') }], artifacts, supplementalRuns: [], cleanup: { required: true, completed: cleaned }, verdict, checks, failure, section: continuation ? 'portrait-campaign' : 'full', coverageBoundary: continuation ? 'Targeted actual portrait WebGL, touch/reduced-motion controls and live geographic Campaign receipts. Desktop core driving and garage acceptance are retained in separate evidence; no broader coverage is implied.' : 'Actual local working-tree browser DOM, keyboard, WebGL pixels, garage and delivery progression. Endpoint setup uses declared real-service teleport fixtures; this is not human feel testing or hardware GPU performance certification.' };
   await saveJson(path.join(output, 'validation-report.json'), report); console.log(JSON.stringify({ verdict, output, checks: checks.length, failure })); if (!passed) process.exitCode = 1;
 }
 

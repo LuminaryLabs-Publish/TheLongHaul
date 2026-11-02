@@ -48,6 +48,9 @@ export function terrainNoise(x, z, seed) {
 export function roadElevation(course, road) {
   if (!road) return 0;
   const base = terrainNoise(road.x, road.z, course?.seed ?? "long-haul") * 0.72;
+  // Endless sections share an absolute phase. Edge-local phases produce a
+  // small but repeated suspension kick whenever a generated boundary is crossed.
+  if (course?.endless && road.edge?.endless) return base + Math.sin(-road.z * 0.025) ** 4 * 0.08;
   const phase = Number(road.segmentIndex ?? 0) + Number(road.t ?? 0);
   const seedPhase = (hashText(road.edge?.id ?? "road") % 6283) / 1000;
   const wave = Math.max(0, Math.sin(phase * 0.9 + seedPhase));

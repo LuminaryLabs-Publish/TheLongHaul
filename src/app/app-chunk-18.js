@@ -1,9 +1,9 @@
     // Arcade Campaign and Endless enhancement layer. Both modes share the Nexus route and truck contracts.
     const arcadeCampaign=()=>Boolean(campaignLaunch?.route&&course?.geography);
     const arcadeRoadsideMode=()=>Boolean(course&&!arcadeCampaign());
-    const arcadeFreshSave=()=>({location:"NJ",visited:["NJ"],mastered:[],cash:1800,truck:"delivery",ownedTrucks:["delivery"],upgrades:{engine:0,brakes:0,handling:0,fuel:0,efficiency:0,transmission:0,tires:0,suspension:0,armor:0,boost:0},deliveries:0,careerMiles:0,coast:false});
-    const arcadeUpgradeState=()=>{const defaults=arcadeFreshSave();try{const saved=JSON.parse(localStorage.getItem("longhaul-campaign-v1")||"null");if(!saved||typeof saved!=="object"||Array.isArray(saved))return defaults;const result={...defaults,...saved},cash=Number(saved.cash);result.cash=Number.isFinite(cash)&&cash>=0?cash:defaults.cash;const upgrades=saved.upgrades&&typeof saved.upgrades==="object"&&!Array.isArray(saved.upgrades)?saved.upgrades:{};result.upgrades={};for(const id of Object.keys(defaults.upgrades)){const value=Number(upgrades[id]);result.upgrades[id]=Number.isFinite(value)?Math.max(0,Math.min(5,Math.floor(value))):0}return result}catch{return defaults}};
-    function arcadeSaveWritable(){try{const raw=localStorage.getItem("longhaul-campaign-v1");if(raw===null)return true;const value=JSON.parse(raw);if(!value||typeof value!=="object"||Array.isArray(value))return false;if(value.cash!==undefined&&(!Number.isFinite(Number(value.cash))||Number(value.cash)<0))return false;if(value.upgrades!==undefined){if(!value.upgrades||typeof value.upgrades!=="object"||Array.isArray(value.upgrades))return false;for(const level of Object.values(value.upgrades)){const n=Number(level);if(!Number.isInteger(n)||n<0||n>5)return false}}return true}catch{return false}}
+    const arcadeFreshSave=freshCampaignSave;
+    const arcadeUpgradeState=()=>{try{return readCampaignSave(localStorage.getItem("longhaul-campaign-v1")).save}catch{return arcadeFreshSave()}};
+    function arcadeSaveWritable(){try{return readCampaignSave(localStorage.getItem("longhaul-campaign-v1")).readable}catch{return false}}
     let arcadeConfiguredRun="",arcadeSettledRun="";
     const arcadeTrafficRoot=new THREE.Group();dynamicRoot.add(arcadeTrafficRoot);
     const arcadeTrafficGeometry=new THREE.BoxGeometry(1,1,1);
@@ -84,27 +84,28 @@
       ensureArcadeNetwork();arcadeTrafficRoot.visible=true;if(arcadeTrafficRoot.parent!==dynamicRoot)dynamicRoot.add(arcadeTrafficRoot);
       const truck=readTruck(),road=nearestRoad(course,truck.position),progress=arcadeRoadProgress(road,arcadeNetwork);
       if(!progress){for(const vehicle of arcadeVehicles)vehicle.group.visible=false;return}
-      const direction=arcadeRoadForward(road,truck.heading),difficulty=Math.min(3,readRun().rawTime/75),nearEvent=arcadeEncounters.find(event=>event.path===progress.path&&event.distance-progress.distance>-55&&event.distance-progress.distance<200);
-      const count=nearEvent?.kind==="weave"?6:nearEvent&&nearEvent.kind!=="breakables"?2:4+Math.floor(difficulty/2);
+      const direction=arcadeRoadForward(road,truck.heading),freightPacing=course.endless?(freightState?.difficulty??freightDifficulty(-truck.position.z)):null,difficulty=freightPacing?.level??Math.min(3,readRun().rawTime/75),nearEvent=arcadeEncounters.find(event=>event.path===progress.path&&event.distance-progress.distance>-55&&event.distance-progress.distance<200);
+      const count=freightPacing?(Math.floor(Math.max(0,-truck.position.z)/960)%4===3?2:nearEvent&&nearEvent.kind!=="weave"?2:freightPacing.trafficLimit):(nearEvent?.kind==="weave"?6:nearEvent&&nearEvent.kind!=="breakables"?2:4+Math.floor(difficulty/2));
       const truckCollider=createVehicleCollider(truck.position,truck.heading,LONG_HAUL_TRUCK_COLLIDER);
       for(let i=0;i<arcadeVehicles.length;i++){
         const vehicle=arcadeVehicles[i];
         const oldRelative=vehicle.path===progress.path?(vehicle.progress-progress.distance)*direction:Infinity;
         if(!vehicle.active||vehicle.path!==progress.path||oldRelative < -90||oldRelative>720){
           if(i>=count){vehicle.active=false;vehicle.group.visible=false;continue}
-          vehicle.path=progress.path;vehicle.progress=progress.distance+direction*(110+i*46);vehicle.direction=direction;
-          if(i===5&&progress.distance>800)vehicle.direction=-direction;
-          const spawn=arcadePathPoint(vehicle.path,vehicle.progress);if(!spawn){vehicle.active=false;vehicle.group.visible=false;continue}
+          vehicle.path=progress.path;vehicle.progress=progress.distance+direction*(110+i*(freightPacing?.minimumGap??46));vehicle.direction=direction;
+          if(i===5&&progress.distance>800&&(!freightPacing||difficulty>=3))vehicle.direction=-direction;
+          const spawn=arcadePathPoint(vehicle.path,vehicle.progress);if(!spawn||(course.endless&&freightProtectedProgress(-spawn.z))){vehicle.active=false;vehicle.group.visible=false;continue}
           const laneCount=Math.max(2,Math.min(5,Math.floor((spawn.edge.width-5)/3.7))),laneIndex=i%laneCount;
           vehicle.lane=(laneIndex-(laneCount-1)/2)*3.7;
           const overlap=arcadeEncounters.find(event=>event.path===vehicle.path&&Math.abs(event.distance-vehicle.progress)<100);
           if(overlap?.kind==="ramp")vehicle.lane=-Math.sign(overlap.lane)*Math.min(5,spawn.edge.width*.22);
           if(overlap?.kind==="roadblock")vehicle.lane=overlap.safeLane;
-          vehicle.speed=12+vehicle.kind*2+difficulty;vehicle.hit=false;vehicle.passed=false;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
+          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
         }
         // Traffic advances in road coordinates independently of the player.
         vehicle.progress+=vehicle.direction*vehicle.speed*dt;
         const pos=arcadePathPoint(vehicle.path,vehicle.progress,vehicle.lane);if(!pos){vehicle.active=false;vehicle.group.visible=false;continue}
+        if(course.endless&&freightProtectedProgress(-pos.z)&&Math.hypot(pos.x-truck.position.x,pos.z-truck.position.z)>60){vehicle.active=false;vehicle.group.visible=false;continue}
         const relative=(vehicle.progress-progress.distance)*direction,vehicleHeading=pos.heading+(vehicle.direction<0?Math.PI:0),height=terrainHeight(course,pos.x,pos.z)+.05;
         vehicle.group.visible=Math.abs(relative)<540;vehicle.group.position.set(pos.x,height,pos.z);vehicle.group.rotation.y=vehicleHeading;
         const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz),truckAbove=truck.position.y-height>4.8;
@@ -182,6 +183,7 @@
       $("#loss-title-btn").textContent="CAMPAIGN MAP";
     }
     function arcadeSettleRoadsideRun(){
+      if(course?.endless)return;
       if(!arcadeRoadsideMode()||arcadeSettledRun===runKey)return;
       const run=readRun();if(run.status!=="completed"&&run.status!=="failed")return;
       arcadeSettledRun=runKey;
@@ -235,15 +237,15 @@
       arcadeGarageCourse=course;arcadeGarageStops=[];arcadeGarageRoot.clear();if(arcadeGarageRoot.parent!==dynamicRoot)dynamicRoot.add(arcadeGarageRoot);
       const eligibleEdges=(course.edges??[]).filter(edge=>edge.surface==="paved"&&edge.type!=="roundabout"&&!String(edge.type||"").includes("ramp")&&Number(edge.width||0)<=32);
       for(let index=0;index<eligibleEdges.length;index++){
-        const edge=eligibleEdges[index],seed=hashText(`${course.seed}:roadside-garage:${edge.id}`);if(edge.id!=="trunk-edge-1"&&seed%6!==0)continue;
+        const edge=eligibleEdges[index],seed=hashText(`${course.seed}:roadside-garage:${edge.id}`);if(course.endless?(edge.optional||edge.sectionIndex<0||edge.sectionIndex%3!==2):(edge.id!=="trunk-edge-1"&&seed%6!==0))continue;
         const data=arcadeEdgeData(edge);if(data.total<100)continue;
-        const site=arcadeGarageSite(edge,.24+((seed>>>8)%520)/1000,(seed>>>19)&1?1:-1);if(!site)continue;const {progress,lane,pos}=site;
+        const site=arcadeGarageSite(edge,course.endless?.72:.24+((seed>>>8)%520)/1000,(seed>>>19)&1?1:-1);if(!site)continue;const {progress,lane,pos}=site;
         const group=new THREE.Group(),{paint,roof,sign,dark}=arcadeGarageMaterials;
         const add=(mat,w,h,d,x,y,z)=>{const mesh=new THREE.Mesh(arcadeTrafficGeometry,mat);mesh.scale.set(w,h,d);mesh.position.set(x,y,z);group.add(mesh)};
         add(paint,8,3.6,6,0,2,0);add(roof,8.5,.45,6.5,0,4,0);add(dark,2.4,2.5,.2,-2,1.45,3.08);add(dark,2.4,2.5,.2,2,1.45,3.08);add(sign,4.8,.7,.2,0,4.9,3.25);
         arcadeLabelGarage(group,lane);group.position.set(pos.x,pos.y,pos.z);group.rotation.y=pos.heading;group.visible=false;arcadeGarageRoot.add(group);arcadeGarageStops.push({id:`roadside-garage:${edge.id}`,edge,progress,lane,x:pos.x,z:pos.z,group});
       }
-      if(!arcadeGarageStops.length){
+      if(!arcadeGarageStops.length&&!course.endless){
         const edges=eligibleEdges,start=hashText(`${course.seed}:roadside-garage:fallback`)%Math.max(1,edges.length);
         for(let step=0;step<edges.length&&!arcadeGarageStops.length;step++){
           const edge=edges[(start+step)%edges.length],data=arcadeEdgeData(edge);if(data.total<100)continue;

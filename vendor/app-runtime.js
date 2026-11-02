@@ -9,7 +9,7 @@
     try{Object.assign(settings,JSON.parse(localStorage.getItem("the-long-haul-settings-v2")||"{}"))}catch{}
     settings.sound=settings.sound!==false;settings.quality=settings.quality!==false;settings.motion=settings.motion!==false;settings.steering=clamp(finite(settings.steering,100),75,125);
 
-    const scenes={boot:{kind:"web-canvas-scene",exits:{ready:{to:"title"}}},dispatch:{kind:"web-canvas-scene",exits:{start:{to:"generating"},back:{to:"title"}}},title:{kind:"web-canvas-scene",exits:{dispatch:{to:"dispatch"},start:{to:"generating"},settings:{to:"settings"},how:{to:"how-to-play"}}},generating:{kind:"web-three-scene",exits:{ready:{to:"driving"},cancel:{to:"title"}}},driving:{kind:"web-three-scene",exits:{pause:{to:"paused"},retry:{to:"generating"},complete:{to:"results"},fail:{to:"loss"},title:{to:"title"}}},paused:{kind:"web-three-scene",exits:{resume:{to:"driving"},settings:{to:"settings"},retry:{to:"generating"},title:{to:"title"}}},results:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},loss:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},settings:{kind:"web-canvas-scene",exits:{title:{to:"title"},pause:{to:"paused"}}},"how-to-play":{kind:"web-canvas-scene",exits:{back:{to:"title"}}}};
+    const scenes={boot:{kind:"web-canvas-scene",exits:{ready:{to:"title"}}},dispatch:{kind:"web-canvas-scene",exits:{start:{to:"generating"},back:{to:"title"}}},title:{kind:"web-canvas-scene",exits:{dispatch:{to:"dispatch"},start:{to:"generating"},settings:{to:"settings"},how:{to:"how-to-play"},credits:{to:"credits"}}},generating:{kind:"web-three-scene",exits:{ready:{to:"driving"},cancel:{to:"title"}}},driving:{kind:"web-three-scene",exits:{pause:{to:"paused"},retry:{to:"generating"},complete:{to:"results"},fail:{to:"loss"},title:{to:"title"}}},paused:{kind:"web-three-scene",exits:{resume:{to:"driving"},settings:{to:"settings"},retry:{to:"generating"},title:{to:"title"}}},results:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},loss:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},settings:{kind:"web-canvas-scene",exits:{title:{to:"title"},pause:{to:"paused"}}},credits:{kind:"web-canvas-scene",exits:{back:{to:"title"}}},"how-to-play":{kind:"web-canvas-scene",exits:{back:{to:"title"}}}};
     const inputKit=N.createCoreInputKit({id:"long-haul-input",initialState:{intent:{throttle:0,brake:0,steer:0,boost:false,handbrake:false,interact:false}},actions:{throttle:{},brake:{},steerLeft:{},steerRight:{},boost:{},handbrake:{},interact:{},camera:{},map:{},pause:{},retry:{}},bindings:{keyboard:{throttle:["KeyW","ArrowUp"],brake:["KeyS","ArrowDown"],steerLeft:["KeyA","ArrowLeft"],steerRight:["KeyD","ArrowRight"],boost:["ShiftLeft","ShiftRight"],handbrake:["Space"],interact:["KeyE"],camera:["KeyC"],map:["KeyM"],pause:["Escape"],retry:["KeyR"]}},createApi({baseApi}){return{setIntent(intent={}){return baseApi.update({intent:clone(intent)},"updated")},getIntent(){return clone(baseApi.getState().intent??{})}}}});
     const core=createLongHaulCoreKits(N,{seed:"long-haul-boot",timeLimitSeconds:TIME_LIMIT_SECONDS});
     const product=createLongHaulProductKits(N);
@@ -124,7 +124,7 @@
       return{realized,released,pending:cellRealizeQueue.length+cellReleaseQueue.length+cellDecorationQueue.length};
     }
 
-    const audio={context:null,master:null,engineOsc:null,engineGain:null,windSource:null,windGain:null,enabled:settings.sound,ensure(){if(!this.enabled||this.context){try{this.context?.resume()}catch{}return}try{const Context=window.AudioContext||window.webkitAudioContext;if(!Context)return;this.context=new Context();this.master=this.context.createGain();this.master.gain.value=.55;this.master.connect(this.context.destination);this.engineOsc=this.context.createOscillator();this.engineOsc.type="sawtooth";const filter=this.context.createBiquadFilter();filter.type="lowpass";filter.frequency.value=420;this.engineGain=this.context.createGain();this.engineGain.gain.value=0;this.engineOsc.connect(filter).connect(this.engineGain).connect(this.master);this.engineOsc.start();const length=this.context.sampleRate*2,buffer=this.context.createBuffer(1,length,this.context.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*.25;this.windSource=this.context.createBufferSource();this.windSource.buffer=buffer;this.windSource.loop=true;const windFilter=this.context.createBiquadFilter();windFilter.type="lowpass";windFilter.frequency.value=800;this.windGain=this.context.createGain();this.windGain.gain.value=.01;this.windSource.connect(windFilter).connect(this.windGain).connect(this.master);this.windSource.start()}catch{this.context=null}},update(speed,throttle,active){if(!this.context||!this.engineGain)return;const now=this.context.currentTime,gain=this.enabled&&active?.018+clamp(Math.abs(speed)/32,0,1)*.045:0;this.engineGain.gain.setTargetAtTime(gain,now,.07);this.engineOsc.frequency.setTargetAtTime(52+Math.abs(speed)*2.7+throttle*15,now,.05);this.windGain?.gain.setTargetAtTime(this.enabled&&active?.008+clamp(Math.abs(speed)/30,0,1)*.03:0,now,.1)},tone(f=440,d=.12,type="sine",g=.1,delay=0){if(!this.enabled)return;this.ensure();if(!this.context||!this.master)return;try{const o=this.context.createOscillator(),a=this.context.createGain(),now=this.context.currentTime+delay;o.type=type;o.frequency.setValueAtTime(f,now);a.gain.setValueAtTime(.0001,now);a.gain.exponentialRampToValueAtTime(g,now+.012);a.gain.exponentialRampToValueAtTime(.0001,now+d);o.connect(a).connect(this.master);o.start(now);o.stop(now+d+.03)}catch{}},wrong(){this.tone(150,.22,"square",.08);this.tone(108,.28,"square",.07,.13)},good(){this.tone(330,.28,"sine",.12);this.tone(440,.38,"sine",.11,.1);this.tone(660,.48,"sine",.1,.2)},hit(){this.tone(72,.18,"sawtooth",.15)},click(){this.tone(260,.06,"square",.04)}};
+    const audio={context:null,master:null,engineOsc:null,engineGain:null,windSource:null,windGain:null,enabled:settings.sound,ensure(){if(!this.enabled)return;if(this.context){try{if(this.context.state!=="running")this.context.resume()?.catch(()=>{})}catch{}return}try{const Context=window.AudioContext||window.webkitAudioContext;if(!Context)return;this.context=new Context();this.master=this.context.createGain();this.master.gain.value=.55;this.master.connect(this.context.destination);this.engineOsc=this.context.createOscillator();this.engineOsc.type="sawtooth";const filter=this.context.createBiquadFilter();filter.type="lowpass";filter.frequency.value=420;this.engineGain=this.context.createGain();this.engineGain.gain.value=0;this.engineOsc.connect(filter).connect(this.engineGain).connect(this.master);this.engineOsc.start();const length=this.context.sampleRate*2,buffer=this.context.createBuffer(1,length,this.context.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*.25;this.windSource=this.context.createBufferSource();this.windSource.buffer=buffer;this.windSource.loop=true;const windFilter=this.context.createBiquadFilter();windFilter.type="lowpass";windFilter.frequency.value=800;this.windGain=this.context.createGain();this.windGain.gain.value=.01;this.windSource.connect(windFilter).connect(this.windGain).connect(this.master);this.windSource.start()}catch{this.context=null}},update(speed,throttle,active){if(!this.context||!this.engineGain)return;const now=this.context.currentTime,gain=this.enabled&&active?.018+clamp(Math.abs(speed)/32,0,1)*.045:0;this.engineGain.gain.setTargetAtTime(gain,now,.07);this.engineOsc.frequency.setTargetAtTime(52+Math.abs(speed)*2.7+throttle*15,now,.05);this.windGain?.gain.setTargetAtTime(this.enabled&&active?.008+clamp(Math.abs(speed)/30,0,1)*.03:0,now,.1)},tone(f=440,d=.12,type="sine",g=.1,delay=0){if(!this.enabled)return;this.ensure();if(!this.context||!this.master)return;try{const o=this.context.createOscillator(),a=this.context.createGain(),now=this.context.currentTime+delay;o.type=type;o.frequency.setValueAtTime(f,now);a.gain.setValueAtTime(.0001,now);a.gain.exponentialRampToValueAtTime(g,now+.012);a.gain.exponentialRampToValueAtTime(.0001,now+d);o.connect(a).connect(this.master);o.start(now);o.stop(now+d+.03)}catch{}},wrong(){this.tone(150,.22,"square",.08);this.tone(108,.28,"square",.07,.13)},good(){this.tone(330,.28,"sine",.12);this.tone(440,.38,"sine",.11,.1);this.tone(660,.48,"sine",.1,.2)},hit(){this.tone(72,.18,"sawtooth",.15)},click(){this.tone(260,.06,"square",.04)}};
 
     function newSeed(previous=""){const values=new Uint32Array(2);try{crypto.getRandomValues(values)}catch{values[0]=Date.now()>>>0;values[1]=Math.floor(Math.random()*0xffffffff)}let seed=`haul-${values[0].toString(36)}-${values[1].toString(36)}`;if(seed===previous)seed+="-next";return seed}function seedCode(seed){return hashText(seed).toString(36).toUpperCase().padStart(7,"0").slice(0,7)}function formatTime(seconds){const safe=Math.max(0,finite(seconds));const min=Math.floor(safe/60),sec=Math.floor(safe%60),tenths=Math.floor((safe-Math.floor(safe))*10);return safe<60?`${min}:${String(sec).padStart(2,"0")}.${tenths}`:`${min}:${String(sec).padStart(2,"0")}`}function formatDistance(value){return `${(Math.max(0,finite(value))/1609.344).toFixed(2)} mi`}
 
@@ -143,13 +143,13 @@
     function createResolvedCoursePatch(cell){return createCourseCellDescriptor(course,cell,course?.geography?{terrainSegments:12}:{terrainSegments:16})}
     function createRouteCells(value){const coordinates=new Set();for(const edge of value.edges??[]){for(const sample of edge.samples??[]){const cx=Math.floor(sample.x/CELL_SIZE),cz=Math.floor(sample.z/CELL_SIZE);for(let z=-1;z<=1;z++)for(let x=-1;x<=1;x++)coordinates.add(`${cx+x}:${cz+z}`)}}return [...coordinates].map(key=>{const [x,z]=key.split(":").map(Number);return cellFromCoordinates(x,z)})}
     function buildGenerationSteps(){const windowSize=(ACTIVE_RADIUS*2+1)**2;return[
-      {phase:"Choosing course",run(){if(!generation.generatedCourse)generation.generatedCourse=(campaignLaunch?.course&&generation.seed===campaignLaunch.course.seed)?campaignLaunch.course:generateCourse(engine,generation.seed);course=generation.generatedCourse}},
+      {phase:"Choosing course",run(){if(!generation.generatedCourse)generation.generatedCourse=(campaignLaunch?.course&&generation.seed===campaignLaunch.course.seed)?campaignLaunch.course:generateEndlessCourse(generation.seed);course=generation.generatedCourse}},
       {phase:"Building roads",run(){const payload=packagePayload(course);courseEnvelope=createLongHaulCourseEnvelope(engine,payload,{game:"The Long Haul"});verifyLongHaulCourseEnvelope(engine,courseEnvelope)}},
       {phase:"Placing depots",run(){engine.n.longHaulCourse.load(course);engine.n.longHaulDelivery.load(course.depots.map(d=>d.id),course.validDepotId)}},
       {phase:"Shaping terrain",run(){const client=patchClient=createPatchWorkerClient(course,{quality:settings.quality});preparation=createLongHaulPatchPreparation(N,{id:`long-haul-${course.packageId}`,patchSize:CELL_SIZE,retainRadius:ACTIVE_RADIUS+4,prefetchDistance:0,cacheLimit:104,generationBudget:1,activationBudget:1,generatorVersion:course.generatorVersion,settingsHash:course.seed,generatePatch(request){return client.prepare(cellFromCoordinates(request.x,request.z)).then(patch=>{if(patchClient===client)cellTargetsDirty=true;return patch})}});generation.initialCells=[];const originCellX=Math.floor(course.origin.x/CELL_SIZE),originCellZ=Math.floor(course.origin.z/CELL_SIZE);for(let z=-ACTIVE_RADIUS;z<=ACTIVE_RADIUS;z++)for(let x=-ACTIVE_RADIUS;x<=ACTIVE_RADIUS;x++)generation.initialCells.push(cellFromCoordinates(originCellX+x,originCellZ+z));generation.initialCursor=0}},
       ...Array.from({length:windowSize},(_,index)=>({phase:index<Math.floor(windowSize*.45)?"Shaping terrain":"Growing forests",run(){const current=generation,client=patchClient,cell=current.initialCells[current.initialCursor++];current.initialPatches??=[];return client.prepare(cell).then(patch=>{if(generation===current)current.initialPatches.push(patch)})}})),
       {phase:"Adding wildlife",run(){engine.n.longHaulWildlife.load(course.wildlife)}},
-      {phase:"Preparing truck",run(){const ground=terrainHeight(course,course.origin.x,course.origin.z);engine.n.longHaulTruck.reset({x:course.origin.x,y:ground+.85,z:course.origin.z,heading:course.geography?Math.atan2(course.edges[0].samples[1].x-course.origin.x,course.edges[0].samples[1].z-course.origin.z):Math.PI});buildTruck();meters.reset();if(!course.geography){const contract=["standard","fragile","express"].includes(window.longHaulContract)?window.longHaulContract:"standard";course.contractId=contract;meters.spend("remaining-time",contract==="fragile"?30:contract==="express"?120:0,"contract-time-limit",{allowLockedOverride:true})}engine.n.longHaulRun.reset();arcadeApplyUpgrades()}},
+      {phase:"Preparing truck",run(){const ground=terrainHeight(course,course.origin.x,course.origin.z);engine.n.longHaulTruck.reset({x:course.origin.x,y:ground+.85,z:course.origin.z,heading:course.endless?course.origin.heading:course.geography?Math.atan2(course.edges[0].samples[1].x-course.origin.x,course.edges[0].samples[1].z-course.origin.z):Math.PI});buildTruck();meters.reset();if(!course.geography){const contract=["standard","fragile","express"].includes(window.longHaulContract)?window.longHaulContract:"standard";course.contractId=contract;meters.spend("remaining-time",contract==="fragile"?30:contract==="express"?120:0,"contract-time-limit",{allowLockedOverride:true})}engine.n.longHaulRun.reset();arcadeApplyUpgrades()}},
       {phase:"Checking course",run(){preloadedRouteCells=[];for(const patch of generation.initialPatches){const [x,z]=patch.coordinates;preparation.prime({id:patch.cellId,x,z},patch)}engine.n.coreWorld.registerWorld({id:WORLD_ID,seed:course.seed,partition:N.createUniformGridPartition({cellSize:CELL_SIZE,radius:ACTIVE_RADIUS}),surface:N.createFlatWorldSurface(),providers:[createProvider()]});engine.n.coreWorld.setFocus(WORLD_ID,{position:{x:course.origin.x,y:0,z:course.origin.z}});engine.n.coreWorld.updateWorld(WORLD_ID);refreshActiveWorldCells();setCellStreamingTargets(generation.initialCells);reconcileCells(windowSize)}},
       ...Array.from({length:windowSize},()=>({phase:"Checking course",run(){reconcileCells(1)}})),
       {phase:"Checking course",run(){const expected=(ACTIVE_RADIUS*2+1)**2;if(activeWorldCells.length!==expected||cellHosts.size<expected){reconcileCells(9);return false}lastCellKey=`${Math.floor(course.origin.x/CELL_SIZE)}:${Math.floor(course.origin.z/CELL_SIZE)}`;registerHorizonWorld();buildWildlife()}},
@@ -194,7 +194,7 @@
     function handleInteraction(state,run,condition,surface){const needsRecovery=run.stuckSeconds>2.8||condition.fuel<=0.01||(surface.surface==="off-road"&&Math.abs(state.speed)<.8);if(needsRecovery&&!run.recoveryUsed){const result=applyLongHaulOperationOnce(engine,runKey,"recovery",()=>({seconds:30}));if(result.applied){forwardBoost.reset();const safe=state.lastSafe;engine.n.longHaulTruck.teleport({x:safe.x,y:safe.y,z:safe.z,heading:safe.heading,speed:0});engine.n.longHaulRun.recovery(safe);engine.n.longHaulRun.penalty({id:"recovery",kind:"recovery",label:"Roadside recovery",seconds:30,collision:false});meters.restore("fuel",16,"recovery");meters.restore("truck-condition",8,"recovery");toast("Roadside recovery · +30s","bad",2600);audio.tone(180,.2,"triangle",.08)}return}const nearest=nearestDepot(course,state.position);if(!nearest||nearest.distance>nearest.depot.radius+6){toast("No receiving gate in range","bad",1400);audio.wrong();return}if(Math.abs(state.speed)>1.1){toast("Stop the truck at the gate","bad",1600);audio.wrong();return}engine.n.longHaulDelivery.check(nearest.depot.id)}
 
 // app-chunk-8.js
-    function postTickGameplay(surface){const state=readTruck();const run=readRun();const delivery=readDelivery();const wildlife=readWildlife();const condition={fuel:meters.get("fuel")?.value??0,truck:meters.get("truck-condition")?.value??0,cargo:meters.get("cargo-condition")?.value??0,time:meters.get("remaining-time")?.value??0};
+    function postTickGameplay(surface){if(course?.endless)return;const state=readTruck();const run=readRun();const delivery=readDelivery();const wildlife=readWildlife();const condition={fuel:meters.get("fuel")?.value??0,truck:meters.get("truck-condition")?.value??0,cargo:meters.get("cargo-condition")?.value??0,time:meters.get("remaining-time")?.value??0};
       if(delivery.lastCheck&&delivery.lastCheck.sequence!==lastDeliverySequence){lastDeliverySequence=delivery.lastCheck.sequence;if(delivery.lastCheck.accepted&&run.status==="running"&&(course?.geography||condition.time>0)&&condition.cargo>0&&condition.truck>0&&(!run.recoveryUsed||(!state.tipped&&condition.fuel>0&&run.stuckSeconds<=10))){bankArcadeScore("DELIVERY");const op="delivery:complete";const result=applyLongHaulOperationOnce(engine,runKey,op,()=>buildRunResult(course,run,delivery,meters));if(result.applied){const finalResult=result.result??result.value??buildRunResult(course,run,delivery,meters);engine.n.longHaulTruck.teleport({x:state.position.x,z:state.position.z,heading:state.heading,speed:0});engine.n.longHaulRun.complete(finalResult);meters.setLocked("remaining-time",true,"delivery-complete");toast("Delivery accepted","good",2800);audio.good()}}else if(delivery.lastCheck.accepted){/* The run has already expired or failed; do not award a delivery. */}else if(delivery.lastCheck.duplicate){toast("This yard already rejected the load","bad",1800)}else{const op=`depot:${delivery.lastCheck.depotId}:check`;const result=applyLongHaulOperationOnce(engine,runKey,op,()=>({seconds:20}));if(result.applied){engine.n.longHaulRun.penalty({id:op,kind:"wrong-depot",label:"Wrong yard",seconds:20,collision:false});toast("Wrong yard · +20s","bad",2600);audio.wrong()}}}
       const latestRun=readRun();if(latestRun.status==="completed"&&latestRun.result&&!resultTransitioned){resultTransitioned=true;bankArcadeScore("DELIVERY");mapOpen=false;updateMapPanel();transition("complete",{result:latestRun.result});showResults(latestRun.result)}if(latestRun.status==="running"){if(!course?.geography&&condition.time<=0)engine.n.longHaulRun.fail("Time ran out before the freight reached its yard.");else if(condition.cargo<=0)engine.n.longHaulRun.fail("The freight was destroyed before delivery.");else if(condition.truck<=0)engine.n.longHaulRun.fail("The truck could not continue after the damage.");else if(condition.fuel<=0&&latestRun.recoveryUsed)engine.n.longHaulRun.fail("The truck ran dry after roadside recovery.");}const finalRun=readRun();if(finalRun.status==="failed"&&!lossTransitioned){lossTransitioned=true;resetArcadeCombo("RUN ENDED");engine.n.longHaulTruck.teleport({x:state.position.x,z:state.position.z,heading:state.heading,speed:0});meters.setLocked("remaining-time",true,"run-failed");mapOpen=false;updateMapPanel();transition("fail",{reason:finalRun.failureReason});$("#loss-reason").textContent=finalRun.failureReason;audio.wrong()}}
 
@@ -331,7 +331,7 @@
     function showResults(result){completeCampaignDelivery(result);$("#score-name").textContent=result.score;const versus=result.versusPar,cells=[["Driving points",arcadeScore.snapshot().banked.toLocaleString()],["Best multiplier",`×${arcadeScore.snapshot().bestMultiplier}`],["Driving bonus",`$${arcadeBonuses}`],["Par",`${formatTime(result.parTime)} · ${formatDistance(result.parDistance)}`],["Raw time",formatTime(result.rawTime)],["Distance",formatDistance(result.distance)],["Depots checked",`${result.depotsChecked} / ${course.depots.length}`],["Collisions",String(result.collisions)],["Cargo condition",`${Math.round(result.cargoCondition)}%`],["Penalty total",`+${Math.round(result.penaltyTotal)}s`],["Adjusted time",formatTime(result.adjustedTime),true],[versus<=0?"Under par":"Over par",`${versus<=0?"−":"+"}${formatTime(Math.abs(versus))}`,true]];$("#score-grid").innerHTML=cells.map(([label,value,major])=>`<div class="score-cell${major?" major":""}"><span>${label}</span><b>${value}</b></div>`).join("");try{const key="the-long-haul-best-v2",prior=JSON.parse(localStorage.getItem(key)||"null");if(!prior||result.adjustedTime<finite(prior.adjustedTime,Infinity))localStorage.setItem(key,JSON.stringify({adjustedTime:result.adjustedTime,score:result.score,courseCode:seedCode(course.seed)}))}catch{}}
     let toastTimer=0;function toast(message,tone="",duration=1800){const element=$("#toast");element.textContent=message;element.className=`show ${tone}`.trim();clearTimeout(toastTimer);toastTimer=setTimeout(()=>{element.className=""},duration)}
 
-    const screenByScene={dispatch:"#dispatch-screen",title:"#title-screen",generating:"#generating-screen",paused:"#pause-screen",results:"#results-screen",loss:"#loss-screen",settings:"#settings-screen","how-to-play":"#how-screen"};function updateSceneUi(){const id=currentScene();if(id===lastSceneId)return id;pendingSceneTransition=null;releaseDrivingInput();lastSceneId=id;for(const element of $$(".screen")){element.classList.remove("active");element.inert=true}const selector=screenByScene[id];if(selector){const panel=$(selector);panel.classList.add("active");panel.inert=false;panel.querySelector("button:not(:disabled),a[href],input")?.focus({preventScroll:true})}else $("#game-canvas").focus({preventScroll:true});document.body.classList.toggle("driving",id==="driving");return id}
+    const screenByScene={credits:"#credits-screen",dispatch:"#dispatch-screen",title:"#title-screen",generating:"#generating-screen",paused:"#pause-screen",results:"#results-screen",loss:"#loss-screen",settings:"#settings-screen","how-to-play":"#how-screen"};function updateSceneUi(){const id=currentScene();if(id===lastSceneId)return id;pendingSceneTransition=null;releaseDrivingInput();lastSceneId=id;for(const element of $$(".screen")){element.classList.remove("active");element.inert=true}const selector=screenByScene[id];if(selector){const panel=$(selector);panel.classList.add("active");panel.inert=false;panel.querySelector("button:not(:disabled),a[href],input")?.focus({preventScroll:true})}else $("#game-canvas").focus({preventScroll:true});document.body.classList.toggle("driving",id==="driving");return id}
     function pauseGame(){if(currentScene()!=="driving"||pendingSceneTransition||launchIntro.active)return;releaseDrivingInput();forwardBoost.clearTaps();for(const key of Object.keys(keys))keys[key]=false;pressed.clear();engine.n.longHaulTruck.input({throttle:0,brake:0,steer:0,boost:false,surface:"road",surfaceGrip:1});engine.n.longHaulRun.pause();meters.setLocked("remaining-time",true,"pause");mapOpen=false;updateMapPanel();transition("pause");audio.click()}
     function resumeGame(){if(currentScene()!=="paused"||pendingSceneTransition)return;releaseDrivingInput();engine.n.longHaulRun.resume(readTruck().position);meters.setLocked("remaining-time",false,"resume");transition("resume");audio.click()}
     function retrySame(){if(!course)return;const id=currentScene();if(campaignLaunch?.route&&course.geography){campaignLaunch.attemptId=globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(36).slice(2)}`;try{sessionStorage.setItem("longhaul-active-campaign",JSON.stringify(campaignLaunch))}catch{}}startGeneration(course.seed,true,["driving","paused","results","loss"].includes(id)?"retry":"start")}
@@ -554,9 +554,9 @@
     // Arcade Campaign and Endless enhancement layer. Both modes share the Nexus route and truck contracts.
     const arcadeCampaign=()=>Boolean(campaignLaunch?.route&&course?.geography);
     const arcadeRoadsideMode=()=>Boolean(course&&!arcadeCampaign());
-    const arcadeFreshSave=()=>({location:"NJ",visited:["NJ"],mastered:[],cash:1800,truck:"delivery",ownedTrucks:["delivery"],upgrades:{engine:0,brakes:0,handling:0,fuel:0,efficiency:0,transmission:0,tires:0,suspension:0,armor:0,boost:0},deliveries:0,careerMiles:0,coast:false});
-    const arcadeUpgradeState=()=>{const defaults=arcadeFreshSave();try{const saved=JSON.parse(localStorage.getItem("longhaul-campaign-v1")||"null");if(!saved||typeof saved!=="object"||Array.isArray(saved))return defaults;const result={...defaults,...saved},cash=Number(saved.cash);result.cash=Number.isFinite(cash)&&cash>=0?cash:defaults.cash;const upgrades=saved.upgrades&&typeof saved.upgrades==="object"&&!Array.isArray(saved.upgrades)?saved.upgrades:{};result.upgrades={};for(const id of Object.keys(defaults.upgrades)){const value=Number(upgrades[id]);result.upgrades[id]=Number.isFinite(value)?Math.max(0,Math.min(5,Math.floor(value))):0}return result}catch{return defaults}};
-    function arcadeSaveWritable(){try{const raw=localStorage.getItem("longhaul-campaign-v1");if(raw===null)return true;const value=JSON.parse(raw);if(!value||typeof value!=="object"||Array.isArray(value))return false;if(value.cash!==undefined&&(!Number.isFinite(Number(value.cash))||Number(value.cash)<0))return false;if(value.upgrades!==undefined){if(!value.upgrades||typeof value.upgrades!=="object"||Array.isArray(value.upgrades))return false;for(const level of Object.values(value.upgrades)){const n=Number(level);if(!Number.isInteger(n)||n<0||n>5)return false}}return true}catch{return false}}
+    const arcadeFreshSave=freshCampaignSave;
+    const arcadeUpgradeState=()=>{try{return readCampaignSave(localStorage.getItem("longhaul-campaign-v1")).save}catch{return arcadeFreshSave()}};
+    function arcadeSaveWritable(){try{return readCampaignSave(localStorage.getItem("longhaul-campaign-v1")).readable}catch{return false}}
     let arcadeConfiguredRun="",arcadeSettledRun="";
     const arcadeTrafficRoot=new THREE.Group();dynamicRoot.add(arcadeTrafficRoot);
     const arcadeTrafficGeometry=new THREE.BoxGeometry(1,1,1);
@@ -637,27 +637,28 @@
       ensureArcadeNetwork();arcadeTrafficRoot.visible=true;if(arcadeTrafficRoot.parent!==dynamicRoot)dynamicRoot.add(arcadeTrafficRoot);
       const truck=readTruck(),road=nearestRoad(course,truck.position),progress=arcadeRoadProgress(road,arcadeNetwork);
       if(!progress){for(const vehicle of arcadeVehicles)vehicle.group.visible=false;return}
-      const direction=arcadeRoadForward(road,truck.heading),difficulty=Math.min(3,readRun().rawTime/75),nearEvent=arcadeEncounters.find(event=>event.path===progress.path&&event.distance-progress.distance>-55&&event.distance-progress.distance<200);
-      const count=nearEvent?.kind==="weave"?6:nearEvent&&nearEvent.kind!=="breakables"?2:4+Math.floor(difficulty/2);
+      const direction=arcadeRoadForward(road,truck.heading),freightPacing=course.endless?(freightState?.difficulty??freightDifficulty(-truck.position.z)):null,difficulty=freightPacing?.level??Math.min(3,readRun().rawTime/75),nearEvent=arcadeEncounters.find(event=>event.path===progress.path&&event.distance-progress.distance>-55&&event.distance-progress.distance<200);
+      const count=freightPacing?(Math.floor(Math.max(0,-truck.position.z)/960)%4===3?2:nearEvent&&nearEvent.kind!=="weave"?2:freightPacing.trafficLimit):(nearEvent?.kind==="weave"?6:nearEvent&&nearEvent.kind!=="breakables"?2:4+Math.floor(difficulty/2));
       const truckCollider=createVehicleCollider(truck.position,truck.heading,LONG_HAUL_TRUCK_COLLIDER);
       for(let i=0;i<arcadeVehicles.length;i++){
         const vehicle=arcadeVehicles[i];
         const oldRelative=vehicle.path===progress.path?(vehicle.progress-progress.distance)*direction:Infinity;
         if(!vehicle.active||vehicle.path!==progress.path||oldRelative < -90||oldRelative>720){
           if(i>=count){vehicle.active=false;vehicle.group.visible=false;continue}
-          vehicle.path=progress.path;vehicle.progress=progress.distance+direction*(110+i*46);vehicle.direction=direction;
-          if(i===5&&progress.distance>800)vehicle.direction=-direction;
-          const spawn=arcadePathPoint(vehicle.path,vehicle.progress);if(!spawn){vehicle.active=false;vehicle.group.visible=false;continue}
+          vehicle.path=progress.path;vehicle.progress=progress.distance+direction*(110+i*(freightPacing?.minimumGap??46));vehicle.direction=direction;
+          if(i===5&&progress.distance>800&&(!freightPacing||difficulty>=3))vehicle.direction=-direction;
+          const spawn=arcadePathPoint(vehicle.path,vehicle.progress);if(!spawn||(course.endless&&freightProtectedProgress(-spawn.z))){vehicle.active=false;vehicle.group.visible=false;continue}
           const laneCount=Math.max(2,Math.min(5,Math.floor((spawn.edge.width-5)/3.7))),laneIndex=i%laneCount;
           vehicle.lane=(laneIndex-(laneCount-1)/2)*3.7;
           const overlap=arcadeEncounters.find(event=>event.path===vehicle.path&&Math.abs(event.distance-vehicle.progress)<100);
           if(overlap?.kind==="ramp")vehicle.lane=-Math.sign(overlap.lane)*Math.min(5,spawn.edge.width*.22);
           if(overlap?.kind==="roadblock")vehicle.lane=overlap.safeLane;
-          vehicle.speed=12+vehicle.kind*2+difficulty;vehicle.hit=false;vehicle.passed=false;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
+          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
         }
         // Traffic advances in road coordinates independently of the player.
         vehicle.progress+=vehicle.direction*vehicle.speed*dt;
         const pos=arcadePathPoint(vehicle.path,vehicle.progress,vehicle.lane);if(!pos){vehicle.active=false;vehicle.group.visible=false;continue}
+        if(course.endless&&freightProtectedProgress(-pos.z)&&Math.hypot(pos.x-truck.position.x,pos.z-truck.position.z)>60){vehicle.active=false;vehicle.group.visible=false;continue}
         const relative=(vehicle.progress-progress.distance)*direction,vehicleHeading=pos.heading+(vehicle.direction<0?Math.PI:0),height=terrainHeight(course,pos.x,pos.z)+.05;
         vehicle.group.visible=Math.abs(relative)<540;vehicle.group.position.set(pos.x,height,pos.z);vehicle.group.rotation.y=vehicleHeading;
         const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz),truckAbove=truck.position.y-height>4.8;
@@ -735,6 +736,7 @@
       $("#loss-title-btn").textContent="CAMPAIGN MAP";
     }
     function arcadeSettleRoadsideRun(){
+      if(course?.endless)return;
       if(!arcadeRoadsideMode()||arcadeSettledRun===runKey)return;
       const run=readRun();if(run.status!=="completed"&&run.status!=="failed")return;
       arcadeSettledRun=runKey;
@@ -788,15 +790,15 @@
       arcadeGarageCourse=course;arcadeGarageStops=[];arcadeGarageRoot.clear();if(arcadeGarageRoot.parent!==dynamicRoot)dynamicRoot.add(arcadeGarageRoot);
       const eligibleEdges=(course.edges??[]).filter(edge=>edge.surface==="paved"&&edge.type!=="roundabout"&&!String(edge.type||"").includes("ramp")&&Number(edge.width||0)<=32);
       for(let index=0;index<eligibleEdges.length;index++){
-        const edge=eligibleEdges[index],seed=hashText(`${course.seed}:roadside-garage:${edge.id}`);if(edge.id!=="trunk-edge-1"&&seed%6!==0)continue;
+        const edge=eligibleEdges[index],seed=hashText(`${course.seed}:roadside-garage:${edge.id}`);if(course.endless?(edge.optional||edge.sectionIndex<0||edge.sectionIndex%3!==2):(edge.id!=="trunk-edge-1"&&seed%6!==0))continue;
         const data=arcadeEdgeData(edge);if(data.total<100)continue;
-        const site=arcadeGarageSite(edge,.24+((seed>>>8)%520)/1000,(seed>>>19)&1?1:-1);if(!site)continue;const {progress,lane,pos}=site;
+        const site=arcadeGarageSite(edge,course.endless?.72:.24+((seed>>>8)%520)/1000,(seed>>>19)&1?1:-1);if(!site)continue;const {progress,lane,pos}=site;
         const group=new THREE.Group(),{paint,roof,sign,dark}=arcadeGarageMaterials;
         const add=(mat,w,h,d,x,y,z)=>{const mesh=new THREE.Mesh(arcadeTrafficGeometry,mat);mesh.scale.set(w,h,d);mesh.position.set(x,y,z);group.add(mesh)};
         add(paint,8,3.6,6,0,2,0);add(roof,8.5,.45,6.5,0,4,0);add(dark,2.4,2.5,.2,-2,1.45,3.08);add(dark,2.4,2.5,.2,2,1.45,3.08);add(sign,4.8,.7,.2,0,4.9,3.25);
         arcadeLabelGarage(group,lane);group.position.set(pos.x,pos.y,pos.z);group.rotation.y=pos.heading;group.visible=false;arcadeGarageRoot.add(group);arcadeGarageStops.push({id:`roadside-garage:${edge.id}`,edge,progress,lane,x:pos.x,z:pos.z,group});
       }
-      if(!arcadeGarageStops.length){
+      if(!arcadeGarageStops.length&&!course.endless){
         const edges=eligibleEdges,start=hashText(`${course.seed}:roadside-garage:fallback`)%Math.max(1,edges.length);
         for(let step=0;step<edges.length&&!arcadeGarageStops.length;step++){
           const edge=edges[(start+step)%edges.length],data=arcadeEdgeData(edge);if(data.total<100)continue;
@@ -880,12 +882,12 @@
       $("#launch-route").textContent=arcadeCampaign()?`${campaignLaunch.route.from.code} → ${campaignLaunch.route.to.code}`:`${course.contractId??"standard"} freight`;
       ensureArcadeNetwork();updateLaunchIntro(0);arcadeRecord("cinematic-start",{duration:launchIntro.duration});
     }
-    function finishLaunchIntro(skipped=false){
+    function finishLaunchIntro(skipped=false,preserveRun=false){
       if(!launchIntro.active)return;launchIntro.active=false;cinematic.hidden=true;document.body.classList.remove("cinematic");
       try{localStorage.setItem("longhaul-launch-seen-v1","1")}catch{}
       const state=readTruck(),launchSpeed=readDynamics().maximumForwardSpeed*.5,ground=groundSample(state.position);
-      engine.n.longHaulTruck.teleport({x:state.position.x,y:ground.height+readDynamics().suspension.travel,z:state.position.z,heading:state.heading,speed:launchSpeed,groundHeight:ground.height,groundNormal:ground.normal});
-      engine.n.longHaulRun.start(state.position);meters.setLocked("remaining-time",false,"run-start");
+      if(!preserveRun){engine.n.longHaulTruck.teleport({x:state.position.x,y:ground.height+readDynamics().suspension.travel,z:state.position.z,heading:state.heading,speed:launchSpeed,groundHeight:ground.height,groundNormal:ground.normal});engine.n.longHaulRun.start(state.position)}
+      meters.setLocked("remaining-time",false,"run-start");
       updateCameraTarget(state,surfaceAt(state.position));arcadeScore.tick(0,{active:true});
       audio.tone(130,.18,"sawtooth",.045);audio.tone(260,.15,"triangle",.04,.09);
       arcadeRecord("cinematic-finish",{skipped});$("#game-canvas").focus({preventScroll:true});
@@ -901,7 +903,7 @@
     }
 
     let selectedContract="standard";
-    for(const card of $$(".contract-card"))card.addEventListener("click",()=>{selectedContract=card.dataset.contract;for(const other of $$(".contract-card")){other.classList.toggle("selected",other===card);other.setAttribute("aria-pressed",String(other===card))}$("#contract-note").textContent=selectedContract==="fragile"?"Protect the glass. Earn 25% more.":selectedContract==="express"?"Beat the deadline. Earn 50% more.":"A reliable first run.";audio.click()});
+    for(const card of $$(".contract-card"))card.addEventListener("click",()=>{selectedContract=card.dataset.contract;for(const other of $$(".contract-card")){other.classList.toggle("selected",other===card);other.setAttribute("aria-pressed",String(other===card))}$("#contract-note").textContent=getCargoProfile(selectedContract)?.handlingHint??"A balanced first load.";audio.click()});
     $("#dispatch-back-btn").addEventListener("click",()=>transition("back"));
     $("#dispatch-go-btn").addEventListener("click",()=>{if(currentScene()!=="dispatch"||pendingSceneTransition)return;window.longHaulContract=selectedContract;audio.ensure();startGeneration(newSeed(),false,"start")});
 
@@ -1007,7 +1009,7 @@
         if(!progress||progress.path!==event.path)continue;
         const ahead=event.distance-progress.distance;
         if(ahead>0&&ahead<event.warningLead){
-          const label=event.kind==="ramp"?`RAMP · ${event.lane>0?"LEFT":"RIGHT"} LANE`:event.kind==="roadblock"?`ROADBLOCK · PASS ${event.safeLane>0?"LEFT":"RIGHT"}`:event.kind==="breakables"?"BREAKABLE CARGO · PICK A LINE":"TRAFFIC WEAVE · CLOSE PASSES";
+          const label=event.kind==="ramp"?`RAMP · ${event.lane>0?"RIGHT":"LEFT"} LANE`:event.kind==="roadblock"?`ROADBLOCK · PASS ${event.safeLane>0?"RIGHT":"LEFT"}`:event.kind==="breakables"?"BREAKABLE CARGO · PICK A LINE":"TRAFFIC WEAVE · CLOSE PASSES";
           arcadeEventLabel=`${label} · ${Math.round(ahead)} m`;
           if(!arcadeWarned.has(event.id)){arcadeWarned.add(event.id);audio.tone(540,.055,"sine",.025);arcadeRecord("encounter-warning",{id:event.id,kind:event.kind,distance:ahead})}
         }
@@ -1071,12 +1073,337 @@
     }
 
 
+// app-chunk-20.js
+    // Continuous freight composition. Geographic Campaign keeps its existing
+    // route, depot and result lifecycle; Endless runs one ongoing simulation.
+    let freightJourney=null,freightState=null,freightResumeCheckpoint=null,freightRevision=0;
+    let freightSaveElapsed=0,freightLastPenalty=0,freightLandingSequence=0,freightDamageRevision=0;
+    let freightStorageStatus="",freightStorageConflict=false,freightLastSavedSequence=-1;
+    let freightNetworkRevision=-1,freightHorizonKey="",freightLastVisualKey="",freightLastStage=-1;
+    let freightGateContact=null,freightInitialType="standard";
+    const freightStationRoot=new THREE.Group(),freightStationHosts=new Map();
+    const freightColors={safe:new THREE.MeshBasicMaterial({color:0x6ee4c2}),risky:new THREE.MeshBasicMaterial({color:0xffc273}),delivery:new THREE.MeshBasicMaterial({color:0x81cfff}),dark:new THREE.MeshLambertMaterial({color:0x213d45})};
+    const freightLabelAssets=new Map();
+    const isContinuousFreight=()=>Boolean(course?.endless&&freightJourney);
+    function freightProtectedProgress(progress){
+      if(!course?.endless)return false;
+      return isEndlessLoadingZone(progress)||Boolean(freightState?.onboard&&Math.abs(progress-freightState.contract.deliveryProgress)<110);
+    }
+    $("#fullscreen-btn").addEventListener("click",async()=>{try{const stage=$("#game-stage");if(document.fullscreenElement)await document.exitFullscreen();else if(stage.requestFullscreen)await stage.requestFullscreen();else{toast("Fullscreen is unavailable in this browser","",1800);return}resize()}catch{toast("Fullscreen could not be opened here","",1800)}});
+    document.addEventListener("fullscreenchange",()=>{$("#fullscreen-btn").setAttribute("aria-pressed",String(Boolean(document.fullscreenElement)));resize()});
+
+    function readFreightCheckpoint(){
+      try{
+        if(!arcadeSaveWritable())return null;
+        const saved=readCampaignSave(localStorage.getItem("longhaul-campaign-v1")).save,checkpoint=saved?.freightJourney;
+        if(!checkpoint||checkpoint.schema!=="long-haul.freight-checkpoint/1"||checkpoint.terminal)return null;
+        if(!checkpoint.truck?.position||![checkpoint.truck.position.x,checkpoint.truck.position.y,checkpoint.truck.position.z,checkpoint.truck.heading].every(Number.isFinite))return null;
+        if(!checkpoint.meters||![checkpoint.meters.fuel,checkpoint.meters.truck,checkpoint.meters.cargo].every(v=>Number.isFinite(v)&&v>=0&&v<=100)||checkpoint.meters.truck<=0)return null;
+        createFreightJourney({seed:checkpoint.journey.seed,sessionId:checkpoint.journey.sessionId,initialType:checkpoint.initialType,snapshot:checkpoint.journey});
+        if(!prepareFreightSave(saved,checkpoint,{expectedRevision:checkpoint.revision}).ok)return null;
+        return checkpoint;
+      }catch{return null}
+    }
+    function generateEndlessCourse(seed){
+      const saved=freightResumeCheckpoint,progress=saved?.journey?.progress??0,value=createEndlessHighway(seed,{progress});
+      if(saved){value.origin={...value.origin,x:saved.truck.position.x,z:saved.truck.position.z,heading:saved.truck.heading}}
+      return value;
+    }
+    const freightResumeButton=document.createElement("button");freightResumeButton.id="freight-resume-btn";freightResumeButton.className="btn";
+    freightResumeButton.textContent="Resume haul";$("#title-screen .menu-actions").append(freightResumeButton);
+    function refreshFreightResume(){freightResumeButton.hidden=!readFreightCheckpoint()}
+    freightResumeButton.addEventListener("click",()=>{const saved=readFreightCheckpoint();if(!saved){refreshFreightResume();toast("This haul cannot be resumed. Your garage balance is preserved.","",2500);return}freightResumeCheckpoint=saved;audio.ensure();startGeneration(saved.journey.seed,false,"start")});
+    refreshFreightResume();
+
+    const freightStartGenerationBase=startGeneration;
+    startGeneration=function(seed,reuse=false,exit="start"){
+      if(generation&&!generation.ready&&!generation.error)return;
+      if(isContinuousFreight())saveFreightCheckpoint();
+      // A retry deliberately starts a new contract identity, with fresh roads.
+      return freightStartGenerationBase(seed,course?.geography?reuse:false,exit);
+    };
+    const freightBeginIntroBase=beginLaunchIntro;
+    beginLaunchIntro=function(){
+      if(course?.endless){
+        const saved=freightResumeCheckpoint;
+        freightInitialType=saved?.initialType??selectedContract;
+        freightJourney=createFreightJourney({seed:course.seed,sessionId:saved?.journey.sessionId??(globalThis.crypto?.randomUUID?.()??`haul-${Date.now()}-${runSerial}`),initialType:freightInitialType,snapshot:saved?.journey??null});
+        freightState=freightJourney.getState();freightStorageStatus="";freightStorageConflict=false;freightDamageRevision=0;
+        try{freightRevision=JSON.parse(localStorage.getItem("longhaul-campaign-v1")||"null")?.freightJourney?.revision??0}catch{freightRevision=0}
+        if(saved){engine.n.longHaulTruck.loadSnapshot(saved.truck);arcadeScore.restoreBanked(saved.bankedPoints??0,saved.bestMultiplier??1)}
+        engine.n.longHaulTruck.setCargo(freightState.cargo);arcadeScore.beginLeg(freightState.ordinal);syncArcadeCash();
+        freightLastPenalty=saved?.run?.penaltyTotal??0;freightLandingSequence=readTruck().landingSequence??0;
+        freightSaveElapsed=0;freightLastStage=-1;freightNetworkRevision=-1;document.body.classList.add("continuous-freight");
+      }
+      freightBeginIntroBase();if(course?.endless)$("#launch-route").textContent=freightResumeCheckpoint?"YOUR HAUL CONTINUES":"ENDLESS FREIGHT · KEEP ROLLING";
+    };
+    const freightFinishIntroBase=finishLaunchIntro;
+    finishLaunchIntro=function(skipped=false){
+      const wasActive=launchIntro.active;freightFinishIntroBase(skipped,Boolean(freightResumeCheckpoint));
+      if(!wasActive||!isContinuousFreight())return;
+      const saved=freightResumeCheckpoint;
+      if(saved){
+        engine.n.longHaulTruck.loadSnapshot(saved.truck);
+        engine.n.longHaulRun.loadSnapshot({...saved.run,status:"running",lastPosition:{x:saved.truck.position.x,z:saved.truck.position.z}});
+        for(const [id,value] of [["fuel",saved.meters.fuel],["truck-condition",saved.meters.truck],["cargo-condition",saved.meters.cargo]])meters.set(id,value,"freight-resume",{allowLockedOverride:true});
+        updateCameraTarget(readTruck(),surfaceAt(readTruck().position));
+        toast("HAUL RESUMED · KEEP ROLLING","good",2000);
+      }else toast("PICK UP AHEAD · WIDE LEFT / EXPRESS RIGHT","",3000);
+      engine.n.longHaulTruck.setCargo(freightState.cargo);
+      freightJourney.resetPosition?.(readTruck().position);
+      meters.setLocked("remaining-time",true,"continuous-contract-clock");
+      meters.setRate("remaining-time",0,"continuous-contract-clock");
+      freightResumeCheckpoint=null;saveFreightCheckpoint();
+    };
+
+    function saveFreightCheckpoint(terminal=false,walletCost=0){
+      if(!isContinuousFreight()||launchIntro.active||freightStorageConflict)return false;
+      try{
+        if(!arcadeSaveWritable())throw Error("invalid-or-unavailable-save");
+        const raw=localStorage.getItem("longhaul-campaign-v1"),save=readCampaignSave(raw).save,risk=arcadeScore.snapshot();
+        if(!Number.isSafeInteger(walletCost)||walletCost<0||save.cash<walletCost)return false;
+        save.cash-=walletCost;
+        const checkpoint={schema:"long-haul.freight-checkpoint/1",journey:freightJourney.snapshot(),truck:engine.n.longHaulTruck.snapshot(),run:engine.n.longHaulRun.snapshot(),
+          meters:{fuel:meters.get("fuel").value,truck:meters.get("truck-condition").value,cargo:meters.get("cargo-condition").value},bankedPoints:risk.banked,bestMultiplier:risk.bestMultiplier,
+          initialType:freightInitialType,terminal:terminal||readRun().status==="failed"};
+        const result=prepareFreightSave(save,checkpoint,{expectedRevision:freightRevision});
+        if(!result.ok){if(["save-conflict","stale-contract","stale-checkpoint","inactive-session","closed-session"].includes(result.reason)){freightStorageConflict=true;freightStorageStatus="Another tab changed this haul · save paused"}else freightStorageStatus="Save unavailable · haul kept in this tab";return false}
+        localStorage.setItem("longhaul-campaign-v1",JSON.stringify(result.save));
+        freightRevision=result.revision;arcadeCachedSave=result.save;freightSaveElapsed=0;freightStorageStatus="";freightLastSavedSequence=freightState.sequence;
+        return true;
+      }catch{freightStorageStatus="Save unavailable · haul kept in this tab";return false}
+    }
+    addEventListener("pagehide",()=>saveFreightCheckpoint());
+    addEventListener("storage",event=>{if(event.key!=="longhaul-campaign-v1"||!isContinuousFreight())return;try{const value=JSON.parse(event.newValue||"null");if((value?.freightJourney?.revision??0)!==freightRevision){freightStorageConflict=true;freightStorageStatus="Another tab changed this haul · save paused"}arcadeCachedSave=null}catch{freightStorageStatus="Save unavailable · haul kept in this tab"}});
+    const freightPauseBase=pauseGame;pauseGame=function(){if(isContinuousFreight())saveFreightCheckpoint();return freightPauseBase()};
+    const freightTitleBase=goTitle;goTitle=function(){saveFreightCheckpoint();freightTitleBase();refreshFreightResume()};
+    const freightClearBase=clearWorld;
+    clearWorld=function(clearCourse=true){
+      if(course?.endless){try{engine.n.coreTransactionLedger.clear(`long-haul:${runKey}`)}catch{}}
+      freightClearBase(clearCourse);freightJourney=null;freightState=null;freightNetworkRevision=-1;freightHorizonKey="";freightLastVisualKey="";freightGateContact=null;
+      freightStationHosts.clear();freightStationRoot.clear();freightCargoRoot=null;document.body.classList.remove("continuous-freight");freightHud.hidden=true;
+    };
+
+    const freightCargoDamageBase=spendCargoDamage;
+    spendCargoDamage=function(amount,reason){if(!isContinuousFreight())return freightCargoDamageBase(amount,reason);if(!freightJourney.cargoOnboard())return 0;const damage=Math.max(0,finite(amount))*cargoDamageMultiplier(freightState.cargo,reason);meters.spend("cargo-condition",damage,reason);return damage};
+    const freightTruckDamageBase=spendTruckDamage;
+    spendTruckDamage=function(amount,reason){if(isContinuousFreight()&&amount>0)freightDamageRevision++;return freightTruckDamageBase(amount,reason)};
+    const freightAwardBase=awardArcadeEvent;
+    awardArcadeEvent=function(event){
+      if(isContinuousFreight()){
+        const p=-readTruck().position.z;if(p<freightState.highWaterProgress-8||readTruck().speed<=0)return{accepted:false,reason:"retired-road"};
+      }
+      return freightAwardBase(event);
+    };
+
+    function updateFreightJourney(dt){
+      if(!isContinuousFreight()||readRun().status!=="running")return;
+      const truck=readTruck(),run=readRun(),before=freightState;
+      const landed=truck.landingSequence!==freightLandingSequence;freightLandingSequence=truck.landingSequence;
+      if(freightJourney.cargoOnboard()){
+        if(landed){const impact=truck.lastLanding?.impactSpeed??0;if(impact>8)spendCargoDamage(Math.min(18,(impact-8)*.7),"bad-landing")}
+        if(truck.loadStress>.55)spendCargoDamage((truck.loadStress-.55)*dt*3.5,"cargo-shift");
+      }
+      const events=freightJourney.tick({dt,progress:-truck.position.z,position:truck.position,speed:truck.speed,heading:truck.heading,grounded:truck.grounded,
+        cargoCondition:meters.get("cargo-condition").value,truckCondition:meters.get("truck-condition").value,collisionCount:run.collisions+freightDamageRevision,
+        penaltySeconds:Math.max(0,run.penaltyTotal-freightLastPenalty),active:true});
+      freightLastPenalty=run.penaltyTotal;freightState=freightJourney.getState();
+      for(const event of events){
+        arcadeRecord(event.type,event);
+        if(event.type==="contract-assigned"){
+          arcadeScore.beginLeg(freightState.ordinal);engine.n.longHaulTruck.setCargo(null);
+          toast(`${getCargoProfile(event.profileId).label.toUpperCase()} · PICKUP AHEAD`,"",2300);
+        }else if(event.type==="cargo-picked-up"){
+          meters.set("cargo-condition",100,"cargo-loaded");engine.n.longHaulTruck.setCargo({profileId:event.profileId,massKg:event.massKg});
+          arcadeFlashBonus(`${(event.massKg/1000).toFixed(1)} t LOADED · KEEP ROLLING`);audio.good();freightLastVisualKey="";
+        }else if(event.type==="cargo-delivered"){
+          bankArcadeScore("DELIVERY");engine.n.longHaulTruck.setCargo(null);meters.restore("fuel",22,"delivery-service");meters.restore("truck-condition",8,"delivery-service");
+          arcadeFlashBonus(`DELIVERED +$${event.cash} · NEXT LOAD AHEAD`);audio.good();saveFreightCheckpoint();freightLastVisualKey="";
+        }else if(event.type==="cargo-lost"){
+          engine.n.longHaulTruck.setCargo(null);resetArcadeCombo("CARGO LOST");
+          const hazard=getCargoProfile(event.profileId)?.hazardousFailureDamage??0;if(hazard&&event.reason==="cargo-destroyed")spendTruckDamage(hazard,"hazardous-spill");
+          arcadeFlashBonus(event.reason==="deadline-expired"?"CONTRACT EXPIRED · KEEP DRIVING":"CARGO LOST · NEXT LOAD AHEAD");audio.wrong();saveFreightCheckpoint();freightLastVisualKey="";
+        }else if(event.type==="pickup-missed"){
+          const rescue=event.offerRecovery&&arcadeScore.offerRecovery(event.contractId);
+          toast(rescue?"MISSED LOAD · CLEAN EXPRESS PICKUP SAVES MULTIPLIER":"MISSED LOAD · ANOTHER PICKUP AHEAD","",2600);
+        }else if(event.type==="loading-route-complete"){
+          awardArcadeEvent({id:event.id,kind:"loading-route",route:"risky",speed:event.speed,distance:event.distance,clean:event.clean,forward:true,recovery:event.recovery,contractId:event.contractId});
+        }else if(event.type==="receiver-missed")toast("MISSED RECEIVER · FOLLOW THE NEXT BLUE GATE","",2400);
+      }
+      if(freightState.difficulty.level!==freightLastStage){freightLastStage=freightState.difficulty.level;freightNetworkRevision=-1;if(freightLastStage>0)toast(`HIGHWAY LEVEL ${freightLastStage+1} · READ THE ROAD`,"",1800)}
+      freightSaveElapsed+=dt;if(freightSaveElapsed>=5)saveFreightCheckpoint();
+      if((meters.get("truck-condition")?.value??0)<=0||((meters.get("fuel")?.value??0)<=0&&run.recoveryUsed)){
+        const reason=meters.get("truck-condition").value<=0?"The truck could not continue. Your completed freight is saved.":"The tank is empty after roadside recovery. Completed freight is saved.";
+        bankArcadeScore("JOURNEY ENDED");saveFreightCheckpoint(true);engine.n.longHaulRun.fail(reason);
+      }
+      if(before?.onboard!==freightState.onboard)freightLastVisualKey="";
+    }
+    const freightPostTickBase=postTickGameplay;
+    postTickGameplay=function(surface,dt){
+      freightPostTickBase(surface,dt);if(!isContinuousFreight())return;
+      updateFreightJourney(dt);
+      if(readRun().status==="failed"&&!lossTransitioned){lossTransitioned=true;saveFreightCheckpoint(true);releaseDrivingInput();mapOpen=false;updateMapPanel();transition("fail");$("#loss-reason").textContent=readRun().failureReason;audio.wrong()}
+    };
+
+    function planFreightEncounters(){
+      const events=[];const first=Math.max(0,Math.floor((course.endless.windowStart-820)/960)),last=Math.ceil((course.endless.windowEnd-820)/960),kinds=["ramp","breakables","roadblock","weave"];
+      for(let index=first;index<=last;index++){
+        if(index%5===3)continue;const p=820+index*960;if(p<course.endless.windowStart+60||p>course.endless.windowEnd-100)continue;
+        const point=endlessHighwayPoint(course,p),road=nearestRoad(course,point),pathProgress=arcadeRoadProgress(road,arcadeNetwork);if(!pathProgress)continue;
+        const difficulty=freightState?.difficulty??freightDifficulty(p),kind=kinds[index%4],side=hashText(`${course.seed}:freight-event:${index}`)%2?1:-1;
+        events.push({id:`endless-encounter:${index}`,kind,path:pathProgress.path,distance:pathProgress.distance,absoluteProgress:p,lane:side*3.5,safeLane:side*6.2,warningLead:difficulty.warningLead,clearWidth:difficulty.minimumClearWidth,point:{...point,edge:road.edge}});
+      }
+      return events;
+    }
+    const freightNetworkBase=ensureArcadeNetwork;
+    ensureArcadeNetwork=function(){
+      if(!course?.endless)return freightNetworkBase();
+      if(freightNetworkRevision===course.endless.revision&&arcadeNetwork)return;
+      const oldVehicles=arcadeVehicles.filter(v=>v.active).map(v=>({v,point:arcadePathPoint(v.path,v.progress,v.lane)}));
+      arcadeNetwork=buildArcadeRoutes(course);arcadeNetworkCourse=course;freightNetworkRevision=course.endless.revision;
+      arcadeEncounters=planFreightEncounters();if(encounterRoot.parent!==dynamicRoot)dynamicRoot.add(encounterRoot);
+      const ids=new Set(arcadeEncounters.map(e=>e.id));
+      for(const [id,host] of arcadeEncounterHosts){const fresh=arcadeEncounters.find(e=>e.id===id);if(!fresh){host.group.removeFromParent();arcadeEncounterHosts.delete(id)}else host.event=fresh}
+      for(const set of [arcadeUsedRamps,arcadeWarned])for(const id of set)if(!ids.has(id))set.delete(id);
+      for(const id of arcadeBrokenProps)if(!arcadeEncounters.some(e=>id.startsWith(e.id+":")))arcadeBrokenProps.delete(id);
+      for(const {v,point} of oldVehicles){const next=point&&arcadeRoadProgress(nearestRoad(course,point),arcadeNetwork);if(next){v.path=next.path;v.progress=next.distance}else{v.active=false;v.group.visible=false}}
+    };
+    const freightStreamingBase=updateWorldStreaming;
+    updateWorldStreaming=function(){
+      if(course?.endless){
+        const change=advanceEndlessHighway(course,readTruck().position);
+        if(change.changed){
+          patchClient?.updateCourse(course);engine.n.longHaulCourse.refreshWindow(course);ensureArcadeNetwork();arcadeEdgeCache=null;arcadeGarageCourse=null;mapLayerCourse=null;
+          courseEnvelope=createLongHaulCourseEnvelope(engine,packagePayload(course),{game:"The Long Haul",continuous:true,revision:change.revision});
+          pruneLongHaulContactLedger(engine,runKey,{limit:256,activeContacts:[...activeContacts]});
+          arcadeRecord("highway-extended",{revision:change.revision,edges:change.edgeCount,windowEnd:course.endless.windowEnd});
+        }
+      }
+      freightStreamingBase();if(isContinuousFreight())updateFreightStations();
+    };
+
+    const freightRegisterHorizonBase=registerHorizonWorld;
+    registerHorizonWorld=function(){
+      if(!course?.endless){freightHorizonKey="";return freightRegisterHorizonBase()}
+      clearHorizonWorld();const profile=engine.n.longHaulWorldProfile.getState(),rootBounds=endlessHorizonBounds(readTruck().position);freightHorizonKey=JSON.stringify(rootBounds);
+      engine.n.coreWorld.registerWorld({id:HORIZON_WORLD_ID,seed:course.seed,partition:N.createQuadtreePartition({id:"long-haul-horizon-tree",rootBounds,maxDepth:profile.horizon.maxDepth,minCellSize:profile.horizon.minCellSize,refineRadius:profile.horizon.refineRadius}),surface:N.createCurvedHorizonSurface({id:"long-haul-curved-horizon",curveStart:profile.horizon.curveStart,curveEnd:profile.horizon.curveEnd,visualRadius:profile.horizon.visualRadius}),providers:[createHorizonProvider()]});
+      engine.n.coreWorld.setFocus(HORIZON_WORLD_ID,{position:readTruck().position});engine.n.coreWorld.updateWorld(HORIZON_WORLD_ID);
+    };
+    const freightHorizonBase=updateHorizonWorld;
+    updateHorizonWorld=function(){if(course?.endless&&JSON.stringify(endlessHorizonBounds(readTruck().position))!==freightHorizonKey)registerHorizonWorld();freightHorizonBase()};
+
+    function freightLabel(text,color){
+      const key=`${text}:${color}`;if(freightLabelAssets.has(key))return freightLabelAssets.get(key);
+      const canvas=document.createElement("canvas");canvas.width=512;canvas.height=128;const ctx=canvas.getContext("2d");
+      ctx.fillStyle="#102d35";ctx.fillRect(0,0,512,128);ctx.strokeStyle=color;ctx.lineWidth=7;ctx.strokeRect(6,6,500,116);ctx.fillStyle="#f4fbf4";ctx.font="900 43px system-ui";ctx.textAlign="center";ctx.fillText(text,256,79);
+      const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});freightLabelAssets.set(key,material);return material;
+    }
+    function makeFreightGate(gate,kind){
+      const group=new THREE.Group(),point=gate.point,width=kind==="risky"?6.4:24,color=freightColors[kind],title=kind==="delivery"?"DELIVER → KEEP GOING":kind==="risky"?"EXPRESS · +COMBO":"WIDE · PICK UP";
+      group.position.set(point.x,terrainHeight(course,point.x,point.z)+.15,point.z);group.rotation.y=point.heading;
+      for(const side of [-1,1]){addEncounterBox(group,color,side*(width/2+1),3.3,0,.45,6.6,.45);for(let z=-24;z<=12;z+=6)addEncounterBox(group,color,side*(width/2+.4),.16,z,.2,.22,3.5)}
+      addEncounterBox(group,color,0,6.6,0,width+2.5,.35,.45);
+      const label=new THREE.Mesh(geometries.plane,freightLabel(title,kind==="risky"?"#ffc273":kind==="delivery"?"#81cfff":"#6ee4c2"));label.position.set(0,7.8,0);label.rotation.y=Math.PI;label.scale.set(kind==="risky"?10:16,3.2,1);group.add(label);
+      for(let z=-10;z<=10;z+=5)addEncounterBox(group,color,0,.04,z,Math.min(width,12),.035,.7);
+      return group;
+    }
+    function updateFreightStations(){
+      if(freightStationRoot.parent!==dynamicRoot)dynamicRoot.add(freightStationRoot);
+      const state=freightState,truck=readTruck(),wanted=new Map();
+      for(const station of course.loadingStations??[]){
+        if(Math.abs(station.progress+truck.position.z)>750)continue;
+        for(const route of ["safe","risky"]){const id=`${station.id}:${route}`;wanted.set(id,{gate:station[route],kind:route,active:state.contract?.stationIndex===station.index&&-truck.position.z<station.progress+60,station})}
+      }
+      if(state.onboard&&Math.abs(state.contract.deliveryProgress+truck.position.z)<850)wanted.set(state.deliveryGate.id,{gate:state.deliveryGate,kind:"delivery",active:true});
+      for(const [id,group] of freightStationHosts)if(!wanted.has(id)){group.removeFromParent();freightStationHosts.delete(id)}
+      for(const [id,entry] of wanted){let group=freightStationHosts.get(id);if(!group){group=makeFreightGate(entry.gate,entry.kind);freightStationHosts.set(id,group);freightStationRoot.add(group)}const point=entry.gate.point;group.position.set(point.x,terrainHeight(course,point.x,point.z)+.15,point.z);group.rotation.y=point.heading;group.visible=entry.active;}
+      // Only the active express route has solid side barriers. The centre opening
+      // is wider than the truck, while the wide route never has these obstacles.
+      {const station=state.pickupStation;if(station&&Math.abs(station.progress+truck.position.z)<48){const p=station.risky.point,dx=truck.position.x-p.x,dz=truck.position.z-p.z,along=dx*Math.sin(p.heading)+dz*Math.cos(p.heading),side=dx*Math.cos(p.heading)-dz*Math.sin(p.heading);
+        const contact=truck.grounded&&Math.abs(along)<4.4&&Math.abs(side)>2.4&&Math.abs(side)<6.1;
+        if(contact&&truck.speed>3&&freightGateContact!==station.id){freightGateContact=station.id;spendTruckDamage(5,"loading-gate");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.16,kind:"prop",allowTip:false});audio.hit()}
+        if(!contact&&freightGateContact===station.id)freightGateContact=null;
+      }else freightGateContact=null}
+    }
+
+    let freightCargoRoot=null;
+    function updateFreightCargoVisual(){
+      if(!truckRig||!isContinuousFreight())return;
+      const key=`${runKey}:${freightState.cargo?.id??"empty"}`;
+      if(key!==freightLastVisualKey){
+        freightLastVisualKey=key;freightCargoRoot?.removeFromParent();freightCargoRoot=new THREE.Group();truckRig.body.add(freightCargoRoot);
+        const cargo=freightState.cargo;for(const crate of truckRig.crates)crate.visible=false;
+        if(cargo){for(let i=0;i<4;i++){const part=new THREE.Mesh(arcadeTrafficGeometry,freightColors.dark);part.position.set(i%2?1:-1,3.1,-1.7-Math.floor(i/2)*1.9);part.scale.set(1.65,cargo.id==="heavy"?1:1.6,1.5);freightCargoRoot.add(part);const marker=new THREE.Mesh(arcadeTrafficGeometry,freightColors[cargo.id==="hazardous"?"risky":"safe"]);marker.position.set(0,.54,.51);marker.scale.set(.8,.16,.06);part.add(marker)}
+          freightCargoRoot.userData.profileId=cargo.id;
+        }
+      }
+      if(freightCargoRoot){freightCargoRoot.position.x=(readTruck().loadShift?.x??0)*.45;freightCargoRoot.rotation.z=(readTruck().loadShift?.x??0)*.08}
+    }
+    const freightTruckVisualBase=updateTruckVisual;updateTruckVisual=function(dt){freightTruckVisualBase(dt);updateFreightCargoVisual()};
+
+    const freightHud=document.createElement("section");freightHud.id="freight-hud";freightHud.hidden=true;freightHud.setAttribute("aria-label","Continuous freight");
+    freightHud.innerHTML='<div class="freight-top"><span id="freight-state">PICKUP AHEAD</span><b id="freight-leg">01</b></div><strong id="freight-cargo">General freight</strong><div id="freight-next">Drive through the marked gate</div><div class="freight-meta"><span id="freight-mass">EMPTY</span><span id="freight-pay">$0 DELIVERED</span></div><small id="freight-advice">WIDE LEFT / EXPRESS RIGHT</small><small id="freight-save" role="status"></small>';
+    $("#game-stage").append(freightHud);
+    const freightHudBase=updateHud;
+    const freightVisualFrameBase=arcadeVisualFrame;
+    arcadeVisualFrame=function(now){freightVisualFrameBase(now);if(currentScene()!=="driving"||launchIntro.active)freightHud.hidden=true};
+    updateHud=function(surface){
+      freightHudBase(surface);freightHud.hidden=!isContinuousFreight()||currentScene()!=="driving"||launchIntro.active;
+      if(!isContinuousFreight())return;
+      const f=freightState,c=f.contract,p=-readTruck().position.z,target=f.onboard?c.deliveryProgress:c.pickupProgress,remaining=Math.max(0,target-p),profile=getCargoProfile(c.profileId);
+      const labels={"awaiting-pickup":"PICKUP AHEAD","awaiting-replacement":"REPLACEMENT AHEAD","cargo-onboard":"FREIGHT LOADED","in-transit":"DELIVER WHILE DRIVING",delivered:"DELIVERED · KEEP ROLLING","cargo-lost":"LOAD LOST · KEEP ROLLING"};
+      $("#freight-state").textContent=labels[f.status]??"KEEP ROLLING";$("#freight-leg").textContent=String(c.ordinal).padStart(2,"0");$("#freight-cargo").textContent=profile.label;
+      $("#freight-next").textContent=f.status==="delivered"?`+$${f.lastOutcome.cash} · next contract incoming`:f.status==="cargo-lost"?"No delivery pay · replacement incoming":`${f.onboard?"BLUE RECEIVER":"LOADING FORK"} · ${Math.round(remaining)} m`;
+      $("#freight-mass").textContent=f.onboard?`${(c.massKg/1000).toFixed(1)} t · ${Math.round(meters.get("cargo-condition").value)}%`:`EMPTY · ${(c.massKg/1000).toFixed(1)} t NEXT`;
+      $("#freight-pay").textContent=`$${f.earnedCash.toLocaleString()} · ${f.completed} DELIVERED`;
+      $("#freight-advice").textContent=arcadeScore.snapshot().recovery?"CLEAN EXPRESS ROUTE RESCUES MULTIPLIER":f.onboard?profile.handlingHint:"WIDE LEFT / EXPRESS RIGHT +COMBO";
+      $("#freight-save").textContent=freightStorageStatus;
+      $("#timer-label").textContent=f.onboard?"Cargo deadline":"Journey time";$("#timer").textContent=formatTime(f.onboard?c.remaining:readRun().rawTime);$("#map-time").textContent=f.onboard?`LOAD ${formatTime(c.remaining)}`:"KEEP ROLLING";
+      $("#cargo-num").textContent=f.onboard?`${Math.round(meters.get("cargo-condition").value)}%`:"EMPTY";$("#cargo-meter").style.width=f.onboard?`${meters.get("cargo-condition").value}%`:"0%";
+      $("#destination-name").textContent=`${f.onboard?"Receiver":"Freight relay"} · ${Math.round(remaining)} m`;
+      document.body.classList.toggle("final-minute",f.onboard&&c.remaining<20);
+    };
+
+    const freightMapBase=drawMap;
+    drawMap=function(){
+      if(!isContinuousFreight())return freightMapBase();if(!mapOpen)return;
+      const canvas=$("#map-canvas"),rect=canvas.getBoundingClientRect();if(rect.width<2||rect.height<2)return;const ratio=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
+      const ctx=canvas.getContext("2d");ctx.setTransform(ratio,0,0,ratio,0,0);const w=rect.width,h=rect.height,p=-readTruck().position.z,start=Math.max(-160,p-250),end=p+1350,center=endlessHighwayPoint(course,p).x,scale=Math.min((w-40)/210,(h-40)/(end-start)),project=(x,z)=>({x:w/2+(x-center)*scale,y:h-20-(-z-start)*scale});
+      ctx.clearRect(0,0,w,h);for(const route of ["safe","risky"]){ctx.beginPath();for(let q=start;q<=end;q+=8){const v=endlessHighwayPoint(course,q,0,route),s=project(v.x,v.z);q===start?ctx.moveTo(s.x,s.y):ctx.lineTo(s.x,s.y)}ctx.strokeStyle=route==="safe"?"#287d72":"#cb822e";ctx.lineWidth=route==="safe"?6:2;ctx.stroke()}
+      const target=freightState.onboard?freightState.deliveryGate.point:freightState.pickupStation.safe.point,at=project(target.x,target.z);ctx.fillStyle=freightState.onboard?"#3387ba":"#21866c";ctx.beginPath();ctx.arc(at.x,at.y,7,0,Math.PI*2);ctx.fill();ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillText(freightState.onboard?"DELIVER":"PICK UP",at.x,at.y-12);
+      for(const garage of arcadeGarageStops){const pt=project(garage.x,garage.z);ctx.fillStyle="#315d79";ctx.fillRect(pt.x-4,pt.y-4,8,8)}drawMapTruck(ctx,project);
+    };
+    const freightPromptBase=interactionPrompt;
+    interactionPrompt=function(){const prompt=freightPromptBase();if(!isContinuousFreight())return prompt;return /Deliver to|full stop/.test(prompt)&&!arcadeNearestGarage(readTruck().position)?"Drive through marked freight gates":prompt};
+    const freightInteractionBase=handleInteraction;
+    handleInteraction=function(state,run,condition,surface){
+      const recovery=state.tipped||run.stuckSeconds>2.8||condition.fuel<=.01||(surface.surface==="off-road"&&Math.abs(state.speed)<.8);
+      if(isContinuousFreight()&&!recovery&&!arcadeNearestGarage(state.position)){toast("Keep rolling through the marked freight gates","",1400);return}
+      freightInteractionBase(state,run,condition,surface);if(isContinuousFreight()&&recovery)freightJourney.resetPosition?.(readTruck().position);
+    };
+
+    const freightGarageSiteBase=arcadeGarageSite;
+    arcadeGarageSite=function(edge,fraction,side){const site=freightGarageSiteBase(edge,fraction,side);if(!site||!course?.endless)return site;const p=-site.pos.z;return isEndlessLoadingZone(p)||Math.abs(p-(freightState?.contract?.deliveryProgress??-1000))<90?null:site};
+    const freightGarageShowBase=arcadeShowGarage;
+    arcadeShowGarage=function(focusItem){
+      freightGarageShowBase(focusItem);if(!isContinuousFreight())return;
+      const saved=arcadeUpgradeState();const summary=arcadeGaragePanel.querySelector("p");summary.textContent=`$${saved.cash.toLocaleString()} · Cargo deadline continues while shopping.`;
+      for(const [id,label,meter,cost] of [["service-fuel","REFUEL +45%","fuel",90],["service-repair","REPAIR +35%","truck-condition",120]]){
+        const button=document.createElement("button");button.dataset.service=id;button.textContent=`${label} · $${cost}`;button.disabled=freightStorageConflict||!arcadeSaveWritable()||saved.cash<cost||meters.get(meter).value>=99;
+        button.addEventListener("click",()=>{if(freightStorageConflict||!arcadeSaveWritable())return;const prior=meters.get(meter).value;meters.restore(meter,meter==="fuel"?45:35,"paid-garage-service");if(!saveFreightCheckpoint(false,cost)){meters.set(meter,prior,"service-rollback",{allowLockedOverride:true});toast("Service could not be saved","bad",1600)}arcadeShowGarage()});
+        arcadeGaragePanel.insertBefore(button,arcadeGaragePanel.lastElementChild);
+      }
+    };
+    window.LongHaulFreight={getState:()=>freightState?{...clone(freightState),storage:freightStorageStatus,revision:freightRevision,road:clone(course.endless),stationHosts:freightStationHosts.size,contactLedger:engine.n.coreTransactionLedger.list(`long-haul:${runKey}`).length}:null};
+
+
 // app-chunk-11.js
+    $("#credits-btn").addEventListener("click",()=>transition("credits"));$("#credits-back-btn").addEventListener("click",()=>transition("back"));
     $("#start-btn").addEventListener("click",()=>{audio.ensure();transition("dispatch")});$("#how-btn").addEventListener("click",()=>transition("how"));$("#settings-btn").addEventListener("click",()=>{settingsReturn="title";transition("settings")});$("#how-back-btn").addEventListener("click",()=>transition("back"));$("#settings-back-btn").addEventListener("click",()=>{saveSettings();transition(settingsReturn==="paused"?"pause":"title")});$("#sound-switch").addEventListener("click",()=>{settings.sound=!settings.sound;applySettings();audio.ensure()});$("#quality-switch").addEventListener("click",()=>{settings.quality=!settings.quality;applySettings()});$("#motion-switch").addEventListener("click",()=>{settings.motion=!settings.motion;applySettings()});$("#steer-range").addEventListener("input",event=>{settings.steering=finite(event.target.value,100)});$("#resume-btn").addEventListener("click",resumeGame);$("#pause-settings-btn").addEventListener("click",()=>{settingsReturn="paused";transition("settings")});$("#pause-retry-btn").addEventListener("click",retrySame);$("#pause-title-btn").addEventListener("click",goTitle);$("#result-retry-btn").addEventListener("click",retrySame);$("#result-new-btn").addEventListener("click",()=>{if(arcadeCampaign())location.href="./campaign.html";else newCourse()});$("#result-title-btn").addEventListener("click",()=>{if(arcadeCampaign())location.href="./campaign.html";else goTitle()});$("#loss-retry-btn").addEventListener("click",retrySame);$("#loss-new-btn").addEventListener("click",()=>{if(arcadeCampaign())location.href="./campaign.html#garage";else newCourse()});$("#loss-title-btn").addEventListener("click",()=>{if(arcadeCampaign())location.href="./campaign.html";else goTitle()});
     function showBootError(error){console.error(error);$("#boot-error").textContent=String(error?.message??error);$("#boot-failure").classList.add("show")}
     function resize(){const stage=document.getElementById("game-stage")||document.documentElement;const {width:rawWidth,height:rawHeight}=stage.getBoundingClientRect();const width=Math.max(1,Math.round(rawWidth)),height=Math.max(1,Math.round(rawHeight));const pixelBudget=settings.quality?2304000:1036800;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,settings.quality?1.25:.85,Math.sqrt(pixelBudget/(width*height))));renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()}addEventListener("resize",resize);resize();applySettings();
 
-    window.render_game_to_text=()=>{const truck=readTruck(),run=readRun();return JSON.stringify({scene:currentScene(),mode:arcadeCampaign()?"campaign":"endless",coordinates:"meters; x east, y up, z south; heading 0 faces +z",player:{position:truck.position,velocity:truck.velocity,heading:truck.heading,speed:truck.speed,normalTopSpeed:readDynamics().maximumForwardSpeed,grounded:truck.grounded,tipped:truck.tipped,landingSequence:truck.landingSequence,lastLanding:truck.lastLanding},run:{status:run.status,distance:run.distance,time:run.rawTime,recoveryCount:run.recoveryCount},fuel:meters.get("fuel")?.value,presentation:{contactShape:truck.contactShape,contactRadius:truck.contactRadius,lean:truckRig?.leanPivot.rotation.z,clearance:truckRig?.grounding.minimumClearance,scraping,sparks:scrapeLife.filter(n=>n>0).length},boost:{...forwardBoost.snapshot(),visualStrength:boostVisualStrength,streaks:boostStreaks.visible},cinematic:{...launchIntro},risk:arcadeScore.snapshot(),encounters:{label:arcadeEventLabel,planned:arcadeEncounters.length,active:arcadeEncounterHosts.size,rampsUsed:arcadeUsedRamps.size,propsBroken:arcadeBrokenProps.size,traffic:arcadeVehicles.filter(v=>v.active).length},weather:{rain:arcadeWeatherAmount,time:arcadeWeatherTime},events:arcadeEventHistory.slice(-16),loading:generation&&!generation.ready?generation.cursor:null})};
+    window.render_game_to_text=()=>{const truck=readTruck(),run=readRun();return JSON.stringify({scene:currentScene(),mode:arcadeCampaign()?"campaign":"endless",coordinates:"meters; x east, y up, z south; heading 0 faces +z",player:{position:truck.position,velocity:truck.velocity,heading:truck.heading,speed:truck.speed,normalTopSpeed:readDynamics().maximumForwardSpeed,grounded:truck.grounded,tipped:truck.tipped,landingSequence:truck.landingSequence,lastLanding:truck.lastLanding},run:{status:run.status,distance:run.distance,time:run.rawTime,recoveryCount:run.recoveryCount},freight:window.LongHaulFreight?.getState(),fuel:meters.get("fuel")?.value,presentation:{contactShape:truck.contactShape,contactRadius:truck.contactRadius,lean:truckRig?.leanPivot.rotation.z,clearance:truckRig?.grounding.minimumClearance,scraping,sparks:scrapeLife.filter(n=>n>0).length},boost:{...forwardBoost.snapshot(),visualStrength:boostVisualStrength,streaks:boostStreaks.visible},cinematic:{...launchIntro},risk:arcadeScore.snapshot(),encounters:{label:arcadeEventLabel,planned:arcadeEncounters.length,active:arcadeEncounterHosts.size,rampsUsed:arcadeUsedRamps.size,propsBroken:arcadeBrokenProps.size,traffic:arcadeVehicles.filter(v=>v.active).length},weather:{rain:arcadeWeatherAmount,time:arcadeWeatherTime},events:arcadeEventHistory.slice(-16),loading:generation&&!generation.ready?generation.cursor:null})};
     window.__longHaulBooted=true;window.longHaulBootReady?.();transition("ready");
     const performanceStats=createPerformanceStats();let previous=performance.now(),scheduled=previous,lastHud=-Infinity,lastMap=-Infinity,frameFailed=false;
     window.LongHaulPerformance={reset:()=>performanceStats.reset(),getState:()=>({...performanceStats.snapshot(),scene:currentScene(),cells:cellHosts.size,horizonCells:horizonHosts.size,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,patches:preparation?.getStats(),worker:patchClient?.getState(),streamingPending:cellRealizeQueue.length+cellDecorationQueue.length})};

@@ -13,6 +13,7 @@ const LABELS = Object.freeze({
   stunt: "AIRTIME",
   landing: "AIRTIME",
   destruction: "SMASH",
+  "loading-route": "EXPRESS LINE",
 });
 
 /**
@@ -37,12 +38,16 @@ export function createArcadeScore() {
   let active;
   let bankCount;
   let lostTotal;
+  let leg;
+  let recovery;
+  let recoveryOffered;
 
   function snapshot() {
     return {
       multiplier, pending, banked, events, comboEvents, destructionEvents,
       remaining, bestMultiplier, lastEvent, lastPoints, cooldown,
       awardCooldown, active, bankCount, lostTotal, seenIds: seen.size,
+      leg, recovery: recovery ? { ...recovery } : null,
     };
   }
 
@@ -54,6 +59,9 @@ export function createArcadeScore() {
     lastEvent = "";
     lastPoints = 0;
     active = true;
+    leg = 0;
+    recovery = null;
+    recoveryOffered = false;
     return snapshot();
   }
 
@@ -92,6 +100,13 @@ export function createArcadeScore() {
       if (speed < 10 || !Number.isFinite(airTime) || airTime < 0.6 ||
           !Number.isFinite(distance) || distance < 8 || !clean) return reject("unsafe-landing");
       basePoints = 150 + Math.round(Math.min(2.4, airTime - 0.6) * 50);
+    } else if (kind === "loading-route") {
+      if (speed < 9 || !Number.isFinite(distance) || distance < 210 || !clean || input.route !== "risky") return reject("incomplete-route");
+      basePoints = 220;
+      if (input.recovery === true && recovery && recovery.id === input.contractId && recovery.remaining > 0) {
+        comboEvents = Math.max(comboEvents, recovery.comboEvents);
+        recovery = null;
+      }
     } else {
       if (speed < 10 || !clean) return reject("unsafe-destruction");
       if (destructionEvents >= RULES.maxDestructionAwards) return reject("destruction-capacity");
@@ -101,7 +116,7 @@ export function createArcadeScore() {
 
     seen.add(key);
     events += 1;
-    comboEvents += 1;
+    comboEvents += kind === "loading-route" ? 2 : 1;
     multiplier = Math.min(5, 1 + Math.floor(comboEvents / 2));
     bestMultiplier = Math.max(bestMultiplier, multiplier);
     const points = basePoints * multiplier;
@@ -129,6 +144,7 @@ export function createArcadeScore() {
     active = (options?.active ?? true) === true;
     if (!active || !Number.isFinite(dt) || dt <= 0) return null;
     const step = Math.min(dt, RULES.maxStep);
+    if (recovery) { recovery.remaining = Math.max(0, recovery.remaining - step); if (!recovery.remaining) recovery = null; }
     cooldown = Math.max(0, cooldown - step);
     awardCooldown = Math.max(0, awardCooldown - step);
     if (cooldown < 1e-9) cooldown = 0;
@@ -147,9 +163,28 @@ export function createArcadeScore() {
     lostTotal += lost;
     lastEvent = lost ? "COMBO LOST" : "RECOVER";
     lastPoints = 0;
+    recovery = null;
     return { lost, banked, reason, cooldown };
   }
 
+  // Only the forward-moving freight authority can advance this epoch. The host
+  // rejects reward evidence from retired/backtracked road before calling event.
+  function beginLeg(ordinal) {
+    if (!Number.isInteger(ordinal) || ordinal <= leg) return false;
+    leg = ordinal; seen.clear(); destructionEvents = 0; recovery = null; recoveryOffered = false;
+    return true;
+  }
+  function offerRecovery(id) {
+    if (!active || cooldown > 0 || recoveryOffered || multiplier < 2 || typeof id !== "string" || !id || id.length > 160) return false;
+    recoveryOffered = true; recovery = { id, comboEvents, multiplier, remaining: 48 };
+    return true;
+  }
+  function restoreBanked(points, best = 1) {
+    if (!Number.isFinite(points) || points < 0 || points > 1e12) return false;
+    reset(); banked = Math.floor(points); bestMultiplier = Math.max(1, Math.min(5, Math.floor(Number(best) || 1)));
+    return true;
+  }
+
   reset();
-  return { snapshot, event, tick, crash, bank, reset };
+  return { snapshot, event, tick, crash, bank, reset, beginLeg, offerRecovery, restoreBanked };
 }

@@ -21,12 +21,12 @@
       $("#launch-route").textContent=arcadeCampaign()?`${campaignLaunch.route.from.code} → ${campaignLaunch.route.to.code}`:`${course.contractId??"standard"} freight`;
       ensureArcadeNetwork();updateLaunchIntro(0);arcadeRecord("cinematic-start",{duration:launchIntro.duration});
     }
-    function finishLaunchIntro(skipped=false){
+    function finishLaunchIntro(skipped=false,preserveRun=false){
       if(!launchIntro.active)return;launchIntro.active=false;cinematic.hidden=true;document.body.classList.remove("cinematic");
       try{localStorage.setItem("longhaul-launch-seen-v1","1")}catch{}
       const state=readTruck(),launchSpeed=readDynamics().maximumForwardSpeed*.5,ground=groundSample(state.position);
-      engine.n.longHaulTruck.teleport({x:state.position.x,y:ground.height+readDynamics().suspension.travel,z:state.position.z,heading:state.heading,speed:launchSpeed,groundHeight:ground.height,groundNormal:ground.normal});
-      engine.n.longHaulRun.start(state.position);meters.setLocked("remaining-time",false,"run-start");
+      if(!preserveRun){engine.n.longHaulTruck.teleport({x:state.position.x,y:ground.height+readDynamics().suspension.travel,z:state.position.z,heading:state.heading,speed:launchSpeed,groundHeight:ground.height,groundNormal:ground.normal});engine.n.longHaulRun.start(state.position)}
+      meters.setLocked("remaining-time",false,"run-start");
       updateCameraTarget(state,surfaceAt(state.position));arcadeScore.tick(0,{active:true});
       audio.tone(130,.18,"sawtooth",.045);audio.tone(260,.15,"triangle",.04,.09);
       arcadeRecord("cinematic-finish",{skipped});$("#game-canvas").focus({preventScroll:true});
@@ -42,7 +42,7 @@
     }
 
     let selectedContract="standard";
-    for(const card of $$(".contract-card"))card.addEventListener("click",()=>{selectedContract=card.dataset.contract;for(const other of $$(".contract-card")){other.classList.toggle("selected",other===card);other.setAttribute("aria-pressed",String(other===card))}$("#contract-note").textContent=selectedContract==="fragile"?"Protect the glass. Earn 25% more.":selectedContract==="express"?"Beat the deadline. Earn 50% more.":"A reliable first run.";audio.click()});
+    for(const card of $$(".contract-card"))card.addEventListener("click",()=>{selectedContract=card.dataset.contract;for(const other of $$(".contract-card")){other.classList.toggle("selected",other===card);other.setAttribute("aria-pressed",String(other===card))}$("#contract-note").textContent=getCargoProfile(selectedContract)?.handlingHint??"A balanced first load.";audio.click()});
     $("#dispatch-back-btn").addEventListener("click",()=>transition("back"));
     $("#dispatch-go-btn").addEventListener("click",()=>{if(currentScene()!=="dispatch"||pendingSceneTransition)return;window.longHaulContract=selectedContract;audio.ensure();startGeneration(newSeed(),false,"start")});
 
@@ -148,7 +148,7 @@
         if(!progress||progress.path!==event.path)continue;
         const ahead=event.distance-progress.distance;
         if(ahead>0&&ahead<event.warningLead){
-          const label=event.kind==="ramp"?`RAMP · ${event.lane>0?"LEFT":"RIGHT"} LANE`:event.kind==="roadblock"?`ROADBLOCK · PASS ${event.safeLane>0?"LEFT":"RIGHT"}`:event.kind==="breakables"?"BREAKABLE CARGO · PICK A LINE":"TRAFFIC WEAVE · CLOSE PASSES";
+          const label=event.kind==="ramp"?`RAMP · ${event.lane>0?"RIGHT":"LEFT"} LANE`:event.kind==="roadblock"?`ROADBLOCK · PASS ${event.safeLane>0?"RIGHT":"LEFT"}`:event.kind==="breakables"?"BREAKABLE CARGO · PICK A LINE":"TRAFFIC WEAVE · CLOSE PASSES";
           arcadeEventLabel=`${label} · ${Math.round(ahead)} m`;
           if(!arcadeWarned.has(event.id)){arcadeWarned.add(event.id);audio.tone(540,.055,"sine",.025);arcadeRecord("encounter-warning",{id:event.id,kind:event.kind,distance:ahead})}
         }

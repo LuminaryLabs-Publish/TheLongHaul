@@ -23,6 +23,7 @@ export function createPatchWorkerClient(course,{quality=true}={}) {
     worker.onmessageerror=failWorker;
   }catch{failed=true;worker?.terminate();worker=null}
   return {
+    updateCourse(nextCourse){if(disposed)return false;course=nextCourse;if(worker){try{worker.postMessage({type:'update-course',course})}catch{failWorker()}}return true},
     prepare(cell){if(disposed)return Promise.reject(new Error('Retired patch generation'));if(!worker)return fallback(cell);const id=++sequence;return new Promise((resolve,reject)=>{const timer=setTimeout(failWorker,15000);pending.set(id,{cell,resolve,reject,timer});try{worker.postMessage({id,cell})}catch{failWorker()}})},
     getState:()=>({worker:!!worker,fallback:failed,pending:pending.size+fallbackPending}),
     dispose(){disposed=true;worker?.terminate();worker=null;for(const job of pending.values()){clearTimeout(job.timer);job.reject(new Error('Retired patch generation'))}pending.clear()}

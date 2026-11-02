@@ -48,6 +48,13 @@ export function createLongHaulCourseKit(N) {
         getState: get,
         getExploration() { const s=world.getResource(CourseState);return {exploredEdgeIds:[...s.exploredEdgeIds],discoveredDepotIds:[...s.discoveredDepotIds],sequence:s.sequence}; },
         load(course) { world.emit(CourseLoad, { course: clone(course) }); return get(); },
+        refreshWindow(course) {
+          const previous = world.getResource(CourseState);
+          if (!course?.endless || previous.course?.seed !== course.seed) return false;
+          const edges = new Set(course.edges.map(edge => edge.id)), depots = new Set(course.depots.map(depot => depot.id));
+          world.setResource(CourseState, { course: clone(course), exploredEdgeIds: previous.exploredEdgeIds.filter(id => edges.has(id)), discoveredDepotIds: previous.discoveredDepotIds.filter(id => depots.has(id)), sequence: previous.sequence + 1 });
+          return true;
+        },
         sample(position) { world.emit(CourseSample, clone(position)); },
         reset() { world.emit(CourseReset, {}); return get(); },
         nearestRoad(point) { return nearestRoad(world.getResource(CourseState)?.course, point); },

@@ -3,6 +3,7 @@ import { prepareTreeData } from './patch-geometry.mjs';
 let course,quality=true;
 self.onmessage=({data})=>{
   if(data.type==='init'){course=data.course;quality=data.quality;return}
+  if(data.type==='update-course'){course=data.course;return}
   try {
     const patch=prepareTreeData(createCourseCellDescriptor(course,data.cell,{terrainSegments:course.geography?12:16}),quality);
     const transfer=[];for(const key of ['nearTrees','farTrees'])for(const field of ['positions','colors','indices','normals'])transfer.push(patch[key][field].buffer);
