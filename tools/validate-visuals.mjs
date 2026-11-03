@@ -63,12 +63,30 @@ try{
     // more space than idle; verify the same layout without changing rewards.
     await page.evaluate(()=>{document.querySelector('#risk-hud').classList.remove('idle');document.querySelector('#risk-multiplier').textContent='×5';document.querySelector('#risk-pending').textContent='9,999';document.querySelector('#timer-box').hidden=false;document.querySelector('#objective-cargo-meter').hidden=false;});
     checkLayout(`${viewport.width}x${viewport.height} expanded`,await geometry());
-    if(viewport.width<600)check('Portrait deadline remains readable above warnings',await page.evaluate(()=>{
-      const deadline=document.querySelector('#timer-box'),warning=document.querySelector('#encounter-hud');
-      const a=deadline.getBoundingClientRect(),b=warning.getBoundingClientRect();
-      return a.width>0&&a.height>0&&(warning.hidden||a.bottom+4<=b.top);
-    }));
-    await screenshot(`layout-${viewport.width}-expanded`);
+    if(viewport.width<600){
+      // Explicit simultaneous presentation fixture: old specificity rules and
+      // a separate toast previously evaded a hidden-encounter-only check.
+      await page.evaluate(()=>{
+        const message=document.querySelector('#toast');message.className='show';message.textContent='ROADBLOCK AHEAD · KEEP RIGHT';
+        const warning=document.querySelector('#encounter-hud');warning.hidden=false;warning.textContent='Freight pickup ahead';
+        document.querySelector('#timer-label').textContent='CARGO DEADLINE';
+        document.querySelector('#timer').textContent='0:28';
+      });
+      const layout=await page.evaluate(()=>{
+        const rect=id=>{const e=document.querySelector(id),r=e.getBoundingClientRect(),s=getComputedStyle(e);return{top:r.top,bottom:r.bottom,width:r.width,height:r.height,visible:!e.hidden&&s.display!=='none'&&s.visibility!=='hidden'};};
+        return{deadline:rect('#timer-box'),toast:rect('#toast'),warning:rect('#encounter-hud'),drive:rect('#drive-box'),flash:rect('#arcade-flash')};
+      });
+      check('Portrait cargo deadline remains visible',layout.deadline.visible&&layout.deadline.height>0,layout);
+      check('Portrait priority toast clears cargo and driving controls',layout.toast.visible&&layout.toast.top>=layout.deadline.bottom+8&&layout.toast.bottom+8<=layout.drive.top,layout);
+      check('Portrait shows only one priority notification',!layout.warning.visible&&!layout.flash.visible,layout);
+      await screenshot(`layout-${viewport.width}-expanded`);
+      await page.evaluate(()=>{document.querySelector('#toast').className='';});
+      check('Portrait encounter returns in the same clear notification lane',await page.evaluate(()=>{
+        const a=document.querySelector('#timer-box').getBoundingClientRect(),w=document.querySelector('#encounter-hud'),b=w.getBoundingClientRect(),s=getComputedStyle(w);
+        return !w.hidden&&s.display!=='none'&&s.visibility==='visible'&&b.top>=a.bottom+8;
+      }));
+      await screenshot(`layout-${viewport.width}-encounter`);
+    }else await screenshot(`layout-${viewport.width}-expanded`);
     fixtures.push({setup:'DOM-only expanded combo/cargo/deadline layout fixture',viewport});
     await step(2);
   }
