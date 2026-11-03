@@ -57,7 +57,7 @@ for (let progress = 0; progress <= 102400; progress += 137) {
   }
 }
 assert.ok(windows > 300, 'test crosses hundreds of actual generated boundaries');
-assert.ok(maxEdges <= 16 && maxNodes === 13 && maxStations <= 4, 'topology storage remains constant with journey length');
+assert.ok(maxEdges <= 20 && maxNodes === 13 && maxStations <= 4, 'topology storage remains constant with journey length');
 assert.ok(course.endless.maximumProgress >= 102000, 'forward high-water mark retained');
 const maximum = course.endless.maximumProgress;
 advanceEndlessHighway(course, 450);

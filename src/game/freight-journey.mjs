@@ -1,5 +1,6 @@
 // One continuous product-owned freight state machine. It has no DOM, storage,
 // renderer or engine authority: the host supplies physical crossing evidence.
+import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION } from './road-chunks.mjs';
 import { getCargoProfile } from './cargo-profiles.mjs';
 import { ENDLESS_HIGHWAY_RULES, endlessHighwayPoint, endlessHighwayStation, nextEndlessLoadingStation } from './endless-highway.mjs';
 
@@ -73,6 +74,7 @@ function validTruckSnapshot(truck) {
 
 function validJourney(value) {
   if (!value || value.schema !== 'long-haul.freight/1' || !validId(value.sessionId) || typeof value.seed !== 'string' || !statuses.includes(value.status)) return false;
+  if (value.generatorVersion !== undefined && ![ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION].includes(value.generatorVersion)) return false;
   if (!integer(value.ordinal) || value.ordinal < 1 || !integer(value.sequence) || value.sequence < 1) return false;
   if (!['earnedCash', 'completed', 'lost', 'missed'].every(k => integer(value[k]))) return false;
   if (!['highWaterProgress', 'elapsed', 'totalLoadedDistance', 'transitionRemaining'].every(k => nonnegative(value[k])) || !Number.isFinite(value.progress)) return false;
@@ -128,10 +130,11 @@ export function freightGateCrossing(previous, current, gate, { speed = 0, headin
   return Math.abs(side) <= gate.halfWidth;
 }
 
-export function createFreightJourney({ seed = 'long-haul', sessionId, initialType = 'standard', snapshot = null } = {}) {
+export function createFreightJourney({ seed = 'long-haul', sessionId, initialType = 'standard', snapshot = null, generatorVersion = snapshot ? snapshot.generatorVersion ?? LEGACY_ROAD_VERSION : ROAD_GENERATOR_VERSION } = {}) {
   if (!validId(sessionId)) throw new Error('A valid freight session identity is required');
-  const course = { seed: String(seed), endless: true };
-  let state = { schema: 'long-haul.freight/1', sessionId, seed: String(seed), ordinal: 0,
+  if (![ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION].includes(generatorVersion)) throw new Error('Unsupported freight road generator');
+  const course = { seed: String(seed), endless: true, generatorVersion };
+  let state = { schema: 'long-haul.freight/1', sessionId, seed: String(seed), generatorVersion, ordinal: 0,
     status: 'assigned', contract: null, completed: 0, lost: 0, missed: 0,
     earnedCash: 0, highWaterProgress: 0, progress: 0, elapsed: 0, totalLoadedDistance: 0,
     lastOutcome: null, transitionRemaining: 0, routeAttempt: null, sequence: 0 };
@@ -280,8 +283,8 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
   }
 
   function restore(value) {
-    if (!validJourney(value) || value.seed !== state.seed || value.sessionId !== sessionId) return false;
-    state = clone(value); state.routeAttempt = null; previousPosition = null;
+    if (!validJourney(value) || value.seed !== state.seed || value.sessionId !== sessionId || (value.generatorVersion ?? LEGACY_ROAD_VERSION) !== course.generatorVersion) return false;
+    state = { ...clone(value), generatorVersion: course.generatorVersion }; state.routeAttempt = null; previousPosition = null;
     return true;
   }
 
@@ -319,6 +322,7 @@ export function prepareFreightSave(save, checkpoint, { expectedRevision = null }
     || x.paid !== Math.floor(x.earnedCash + x.bankedPoints / 20) || x.completed + x.lost > x.ordinal || x.totalLoadedDistance > x.highWaterProgress + 1)
     || new Set(receipts.map(x => x.sessionId)).size !== receipts.length) return { ok: false, reason: 'invalid-receipts' };
   if (old && (!validId(old.journey?.sessionId) || !receipts.some(x => x.sessionId === old.journey.sessionId))) return { ok: false, reason: 'invalid-receipts' };
+  if (old?.journey?.sessionId === journey.sessionId && (old.journey.generatorVersion ?? LEGACY_ROAD_VERSION) !== (journey.generatorVersion ?? LEGACY_ROAD_VERSION)) return { ok: false, reason: 'generator-conflict' };
   if (old && validJourney(old.journey)) {
     const activeReceipt = receipts.find(x => x.sessionId === old.journey.sessionId);
     if (activeReceipt.ordinal !== old.journey.ordinal || activeReceipt.earnedCash !== old.journey.earnedCash || activeReceipt.bankedPoints !== old.bankedPoints

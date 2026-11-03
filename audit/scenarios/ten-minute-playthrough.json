@@ -1,199 +1,53 @@
 {
-  "schema": "thelonghaul.audit.timeline.v1",
+  "schema": "thelonghaul.audit.journey.v2",
   "id": "TLH-PLAY-600",
-  "title": "Ten-minute end-to-end gameplay and checkpoint audit",
-  "status": "planned-adapter-required",
+  "title": "Continuous illustrated highway journey",
+  "status": "implemented-pending-browser-acceptance",
   "durationSeconds": 600,
   "simulationHz": 60,
-  "renderFps": 30,
-  "sourcePolicy": "local-only; existing game; no position/cargo/score injection",
-  "seed": "nexus-auditor-ten-minute-v1",
-  "driver": {
-    "mode": "authored-tick-input",
-    "format": "pressed/released/analog-steering",
-    "maxSteeringReversalsPer10Seconds": 3,
-    "neutralSettleTicks": 12
-  },
-  "segments": [
-    {
-      "id": "launch-and-controls",
-      "start": "00:00",
-      "end": "00:40",
-      "seconds": 40,
-      "checks": [
-        "intro-skipped-or-completed",
-        "driving-scene",
-        "forward-speed",
-        "steering-settles",
-        "no-fatal-errors"
-      ]
-    },
-    {
-      "id": "boost-and-lane-change",
-      "start": "00:40",
-      "end": "01:30",
-      "seconds": 50,
-      "checks": [
-        "boost-activated",
-        "speed-gain",
-        "lane-clearance",
-        "steering-reversals-bounded",
-        "camera-settles"
-      ]
-    },
-    {
-      "id": "standard-freight-pickup",
-      "start": "01:30",
-      "end": "02:20",
-      "seconds": 50,
-      "checks": [
-        "valid-forward-gate",
-        "cargo-onboard",
-        "mass-changed",
-        "no-duplicate-pickup",
-        "truck-motion-retained"
-      ]
-    },
-    {
-      "id": "traffic-and-risk",
-      "start": "02:20",
-      "end": "03:10",
-      "seconds": 50,
-      "checks": [
-        "near-miss-qualified",
-        "encounter-readable",
-        "combo-earned-once",
-        "no-collision-teleport",
-        "traffic-not-blocking-station"
-      ]
-    },
-    {
-      "id": "loaded-ramp",
-      "start": "03:10",
-      "end": "04:00",
-      "seconds": 50,
-      "checks": [
-        "airborne-detected",
-        "grounded-landing",
-        "cargo-damage-consistent",
-        "landing-score-qualified",
-        "no-frame-failure"
-      ]
-    },
-    {
-      "id": "first-delivery",
-      "start": "04:00",
-      "end": "04:50",
-      "seconds": 50,
-      "checks": [
-        "receiver-crossed",
-        "receipt-issued-once",
-        "wallet-increased",
-        "next-contract-issued",
-        "same-run-continues"
-      ]
-    },
-    {
-      "id": "heavy-cargo",
-      "start": "04:50",
-      "end": "05:40",
-      "seconds": 50,
-      "checks": [
-        "heavy-load-collected",
-        "stopping-distance-increased",
-        "yaw-within-limit",
-        "no-velocity-reset",
-        "timing-check"
-      ]
-    },
-    {
-      "id": "express-route",
-      "start": "05:40",
-      "end": "06:30",
-      "seconds": 50,
-      "checks": [
-        "shortcut-choice-visible",
-        "gate-forward-eligibility",
-        "reward-qualified-once",
-        "failed-choice-no-reward",
-        "no-oscillation"
-      ]
-    },
-    {
-      "id": "crash-and-recovery",
-      "start": "06:30",
-      "end": "07:20",
-      "seconds": 50,
-      "checks": [
-        "damage-applied",
-        "combo-risk-applied",
-        "recovery-cooldown",
-        "road-position-valid",
-        "journey-still-active"
-      ]
-    },
-    {
-      "id": "cargo-loss-and-replacement",
-      "start": "07:20",
-      "end": "08:10",
-      "seconds": 50,
-      "checks": [
-        "cargo-forfeited",
-        "no-delivery-payout",
-        "replacement-offered",
-        "new-pickup-reachable",
-        "same-session"
-      ]
-    },
-    {
-      "id": "garage-save-and-resume",
-      "start": "08:10",
-      "end": "09:00",
-      "seconds": 50,
-      "checks": [
-        "purchase-atomic",
-        "state-persisted",
-        "reload-consistent",
-        "no-payout-replay",
-        "controls-cleared"
-      ]
-    },
-    {
-      "id": "weather-menus-campaign-compat",
-      "start": "09:00",
-      "end": "10:00",
-      "seconds": 60,
-      "checks": [
-        "weather-changed",
-        "pause-resume-correct",
-        "map-input-safe",
-        "campaign-open-return",
-        "bounded-resources",
-        "zero-fatal-errors"
-      ]
-    }
+  "referenceFps": 10,
+  "highlightFps": 30,
+  "highlightSeconds": 60,
+  "resolution": [
+    1920,
+    1080
   ],
-  "eventReactions": {
-    "onPass": "continue-and-log",
-    "onExpectedEvent": "checkpoint-and-continue",
-    "onRecoverableFailure": "capture-evidence; retry once from clean checkpoint; label retry",
-    "onAssertionFailure": "stop-scenario; capture-trace-screenshot-console; do-not-render-as-pass",
-    "onFatal": "terminate-and-preserve-evidence"
+  "seed": "road-matrix-1",
+  "adapter": "tools/record-visual-journey.mjs",
+  "driver": {
+    "steering": "bounded analog input through existing TruckInput contract",
+    "throttleBrakesAbilities": "ordinary keyboard events",
+    "steeringRateLimit": 2.5
   },
-  "replayIntegrity": {
-    "record": [
-      "build-sha",
-      "scenario-sha",
-      "seed",
-      "tick",
-      "held-inputs",
-      "state-hash",
-      "events",
-      "screenshot-ids",
-      "browser-console",
-      "performance"
-    ],
-    "compare": "same inputs and seed must reproduce event order and within-tolerance physics observations"
-  },
-  "note": "These checks are design contracts; the current NexusAuditor runner does not support tick-key replay/branching and the driver is not yet implemented."
+  "forbiddenDuringPlay": [
+    "position injection",
+    "cargo injection",
+    "score injection",
+    "health restoration fixtures",
+    "weather forcing",
+    "session reset"
+  ],
+  "checks": [
+    "600 simulation seconds",
+    "same session",
+    "five genuine deliveries",
+    "eight road families",
+    "bounded road and cell windows",
+    "zero fatal application errors",
+    "all assets resolve",
+    "1800 unique highlight frames",
+    "60.000-second final encode",
+    "synchronized non-silent original game audio"
+  ],
+  "events": [
+    "pickup",
+    "delivery",
+    "cargo loss",
+    "recovery",
+    "road feature",
+    "weather",
+    "ability activation"
+  ],
+  "failurePolicy": "Preserve inputs, screenshots, logs and partial clips. Do not report or publish a failed run as accepted.",
+  "presentationBoundary": "Reference is silent 10 fps audit footage; highlights are 1080p30 with game audio. Simulation-timed rendering is not native frame-rate performance."
 }

@@ -1,3 +1,5 @@
+import { landscapeRelief } from './landscape-style.mjs';
+import { roadCrossSection, roadPlaneHeight, roadTerrainHeight } from "./road-surface.mjs";
 import { candidateRoadSegments, terrainRoadSegments } from "./road-spatial-index.mjs";
 import { clamp, hashText, segmentInfo } from "./shared.mjs";
 
@@ -7,6 +9,7 @@ export function nearestRoad(course, point) {
     const info=segmentInfo(point,a,b);
     if(!best||info.distance<best.distance)best={...info,edge,segmentIndex};
   }
+  if (best?.edge.modular) { const cross = roadCrossSection(best.edge, best.segmentIndex, best.t); best.edge = { ...best.edge, width: cross.width }; }
   return best;
 }
 
@@ -47,6 +50,7 @@ export function terrainNoise(x, z, seed) {
 
 export function roadElevation(course, road) {
   if (!road) return 0;
+  if (road.edge?.modular) return roadPlaneHeight(road);
   const base = terrainNoise(road.x, road.z, course?.seed ?? "long-haul") * 0.72;
   // Endless sections share an absolute phase. Edge-local phases produce a
   // small but repeated suspension kick whenever a generated boundary is crossed.
@@ -61,14 +65,20 @@ export function roadElevation(course, road) {
   return base + crest;
 }
 
+export function naturalTerrainHeight(course, x, z) {
+  const seed = course?.seed ?? "long-haul";
+  return terrainNoise(x, z, seed) + (course?.generatorVersion === 'long-haul-endless-v2' ? landscapeRelief(seed, x, z) : 0);
+}
+
 export function terrainHeight(course, x, z) {
-  const natural = terrainNoise(x, z, course?.seed ?? "long-haul");
+  const natural = naturalTerrainHeight(course, x, z);
   let road = null;
   for(const {a,b,edge,segmentIndex} of terrainRoadSegments(course,{x,z})) {
     const info=segmentInfo({x,z},a,b);
     if(!road||info.distance<road.distance)road={...info,edge,segmentIndex};
   }
   if (!road) return natural;
+  if (road.edge?.modular) return roadTerrainHeight(natural, road, x, z);
   const flattenRadius = road.edge.width * 0.78 + 16;
   if (road.distance >= flattenRadius) return natural;
   const blend = clamp(1 - road.distance / flattenRadius, 0, 1);

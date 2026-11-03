@@ -126,20 +126,24 @@ export function* buildTreeMeshSteps(trees, { visualOnly = false, pointLimit = 96
     const rotation = Number(tree.rotation) || 0;
     const cos = Math.cos(rotation), sin = Math.sin(rotation);
     const tint = 0.78 + randomUnit(seed, 3) * 0.32;
-    const leafRadius = height * profile.leafRadius;
-    const pointCount = Math.min(visualOnly ? 12 : pointLimit, profile.points.length);
-    const stride = profile.points.length / pointCount;
+    const cedar = tree.variant === "b";
     const used = [];
-
-    for (let index = 0; index < pointCount; index += 1) {
-      const point = profile.points[Math.floor(index * stride)];
-      if (point[1] < profile.crownBase * 0.72) continue;
-      const anchor = toWorld(tree, profile, point, height, cos, sin);
-      const radius = leafRadius * (0.82 + randomUnit(seed, index + 31) * 0.42);
-      const sourceColor = [point[3], point[4], point[5]];
-      addLeafBlob(positions, colors, indices, anchor,
-        [radius * tree.scale[0], radius * 0.78, radius * tree.scale[2]], sourceColor, tint, seed + index * 13);
-      used.push(point);
+    const crownColor = cedar ? [.17, .43, .32] : [.30, .53, .20];
+    // Both detail levels retain a broad canopy envelope. Far meshes use
+    // merged canopy masses, never disconnected leaf specks.
+    const detailedCrowns = cedar
+      ? Array.from({length: 5}, (_, i) => [0, .40 + i * .13, 0, .27 - i * .043, .18, .27 - i * .043])
+      : [[0,.70,0,.25,.25,.25],[-.16,.63,0,.21,.20,.22],[.17,.65,.03,.22,.21,.20],
+         [0,.68,-.17,.22,.23,.20],[.02,.79,.10,.21,.20,.22],[-.10,.81,-.02,.20,.19,.21],
+         [.16,.75,-.13,.19,.19,.19]];
+    const crowns = visualOnly
+      ? (cedar ? [[0,.45,0,.27,.24,.27],[0,.77,0,.17,.24,.17]] : [[0,.72,0,.36,.29,.34]])
+      : detailedCrowns;
+    for (let index=0; index<crowns.length; index++) {
+      const [x,y,z,rx,ry,rz]=crowns[index], point=[x,y,z];
+      const anchor=toWorld(tree,profile,point,height,cos,sin);
+      addLeafBlob(positions,colors,indices,anchor,[height*rx*tree.scale[0],height*ry,height*rz*tree.scale[2]],
+        crownColor,tint,seed+index*13);used.push(point);
     }
 
     addTrunk(positions, colors, indices, tree, profile, height, cos, sin, seed);

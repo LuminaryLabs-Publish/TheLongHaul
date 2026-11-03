@@ -1,0 +1,4 @@
+{"test":"TLH-VISUAL-001","name":"Actual illustrated highway DOM and WebGL checks","suite":"visuals","services":[]}
+{"do":"command","command":["node","tools/validate-visuals.mjs","--output=audit/runs/visual-browser"],"cwd":".","timeout_seconds":1800}
+{"test":"TLH-PLAY-600","name":"Uninterrupted ten-minute game and sixty-second highlight","suite":"journey","services":[]}
+{"do":"command","command":["node","tools/record-visual-journey.mjs","--output=audit/runs/visual-journey"],"cwd":".","timeout_seconds":14400}
