@@ -164,6 +164,13 @@ export async function validateSkills() {
   const roadFixture = async (speed = 30, distance = 120) => {
     const placed = await fixture('Position the actual truck on the generated highway at a known initial speed; the maneuver itself uses normal keyboard input.', ({ speed, distance }) => {
     releaseDrivingInput(); forwardBoost.reset();
+    // Resolve the fixture's road window before querying its physical surface.
+    // A stale distant window returns terrain height instead of the road deck.
+    if (course?.endless) {
+      advanceEndlessHighway(course, distance);
+      patchClient?.updateCourse(course); engine.n.longHaulCourse.refreshWindow(course);
+      ensureArcadeNetwork();
+    }
     const route = arcadeNetwork.paths.find(route => route.id.startsWith('trunk:')) ?? arcadeNetwork.paths[0];
     const point = course.endless ? endlessHighwayPoint(course, distance) : arcadePathPoint(route, distance, 0), ground = groundSample(point), surface = surfaceAt(point);
     engine.n.longHaulTruck.teleport({ ...point, y: ground.height + readDynamics().suspension.travel, speed, groundHeight: ground.height, groundNormal: ground.normal, surface: surface.surface, surfaceGrip: surface.grip });
@@ -460,6 +467,7 @@ export async function validateSkills() {
       collectSkillPickup({ id: 'acceptance:resume-boost', kind: 'boost' });
       collectSkillPickup({ id: 'acceptance:resume-ability', kind: 'ability' });
     });
+    await page.waitForFunction(() => readTruck().grounded && !readTruck().tipped && !skillMenuOpen(), null, { timeout: 20000 });
     await page.keyboard.press('q'); await page.keyboard.press('e');
     await page.waitForFunction(() => activeAbilities.snapshot().cooldowns['mini-trucks'] > 0 && activeAbilities.snapshot().cooldowns['road-shield'] > 0);
     await openSkills(page);
