@@ -324,7 +324,7 @@
       rig.root.rotation.set(0,state.heading,0);
       const normal=state.groundNormal??{x:0,y:1,z:0},s=Math.sin(state.heading),c=Math.cos(state.heading),forwardSlope=normal.x*s+normal.z*c,rightSlope=normal.x*c-normal.z*s;
       const pitch=state.grounded?Math.atan2(forwardSlope,Math.max(.25,normal.y)):0,slopeRoll=state.grounded?-Math.atan2(rightSlope,Math.max(.25,normal.y)):0;
-      const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-.62,.62);
+      const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-1.12,1.12);
       rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lerp(rig.leanPivot.rotation.z,lean+slopeRoll,1-Math.exp(-8*dt)));
       rig.leanPivot.position.y=1.5-clamp(state.suspensionCompression??0,-1,1)*.12;
       truckSurfaceEntries.length=0;const cx=Math.floor(state.position.x/CELL_SIZE),cz=Math.floor(state.position.z/CELL_SIZE);for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){const entry=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${x}:${z}`);if(entry)truckSurfaceEntries.push(entry)}
@@ -1918,7 +1918,7 @@ function updateSkillHud(now) {
   $("#skill-open").classList.toggle("ready",state.points>0);
   for(const slot of ["q","e"]){const node=skillHud.querySelector(`[data-ability-slot="${slot}"]`),id=state.slots[slot],remaining=abilities.cooldowns[id];node.querySelector("span").textContent=ABILITY_DEFINITIONS[id].shortName;node.querySelector("small").textContent=remaining>0?`${remaining.toFixed(1)}s`:"READY";node.classList.toggle("ready",remaining<=0);node.disabled=simulationFrozen()||remaining>0}
   const drift=truck.drift||{};
-  $("#skill-drift").textContent=drift.active?`DRIFT ${Math.round((drift.charge||0)*100)}% · COUNTERSTEER`:(drift.phase==="release"||drift.phase==="released")?"MOMENTUM RELEASED":Math.abs(skillSteeringDamage)>.12?`STEERING PULL ${skillSteeringDamage>0?"LEFT":"RIGHT"} · F TO REPAIR`:"S + TURN · SHIFT TO SLIDE";
+  $("#skill-drift").textContent=truck.tipped?"ROLLOVER · F TO RECOVER":truck.rollMode==="critical"?"TIP RISK · COUNTERSTEER":truck.rollMode==="wheel-lift"?`WHEELS LIFTING · ${Math.round(Math.max(truck.wheelLiftLeft||0,truck.wheelLiftRight||0)*100)} CM`:drift.active?`DRIFT ${Math.round((drift.charge||0)*100)}% · COUNTERSTEER`:(drift.phase==="release"||drift.phase==="released")?"MOMENTUM RELEASED":Math.abs(skillSteeringDamage)>.12?`STEERING PULL ${skillSteeringDamage>0?"LEFT":"RIGHT"} · F TO REPAIR`:"S + TURN · SHIFT TO SLIDE";
   $("#skill-drift").classList.toggle("charged",drift.active&&drift.charge>.25);
   const effects=Object.entries(pickups.timers).filter(([,time])=>time>0).map(([id,time])=>`${id.toUpperCase()} ${Math.ceil(time)}s`);
   if(abilities.shield.remaining>0)effects.push(`SHIELD ${abilities.shield.charges} HITS`);
