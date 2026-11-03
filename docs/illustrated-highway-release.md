@@ -10,7 +10,7 @@ Authority: LUM-000154; existing TLH-001–009. Target: LuminaryLabs-Publish/TheL
 
 ## Renderer routing
 
-The shipped host is Three.js WebGL plus DOM/CSS, CanvasTexture, arbitrary GLSL, browser input, storage and Web Audio. No ready direct renderer maps the whole host faithfully. The requested HUD, input and browser-presentation claims require the actual browser. Container loopback navigation was stopped by administrative policy before page load; no policy bypass is permitted. The same-repository validation branch runs the actual reviewed application in an ordinary GitHub Actions browser runner. This is a separate authorized execution environment, not a substitution of a lookalike scene. Source identity and exact staged patch hashes accompany results. Main stays unchanged until evidence is inspected.
+The shipped host is Three.js WebGL plus DOM/CSS, CanvasTexture, arbitrary GLSL, browser input, storage and Web Audio. No ready direct renderer maps the whole host faithfully. The requested HUD, input and browser-presentation claims require the actual browser. Container loopback navigation was stopped by administrative policy before page load; no policy bypass is permitted. The same-repository validation branch runs the actual reviewed application in an ordinary GitHub Actions browser runner. This is a separate authorized execution environment, not a substitution of a lookalike scene. Source identity and exact staged patch hashes accompany results. Validation was performed before promotion. The illustrated source was integrated into `main` after the actual browser, road and HUD checks; the previous validation workflows are not part of the production workflow set.
 
 ## Implementation boundaries
 
@@ -26,6 +26,11 @@ The shipped host is Three.js WebGL plus DOM/CSS, CanvasTexture, arbitrary GLSL, 
 
 Output reports, screenshots, original reference, clip timing, source hashes, inputs and media probes are retained as CI artifacts and project evidence, not committed media binaries. Failure exits nonzero and blocks promotion. Numerical acceptance is not visual inspection or human play sign-off.
 
-## Status
+## Publication receipt — November 3, 2026
 
-Implementation and local deterministic checks are complete. Actual rendered acceptance and publication are pending the validation runner. This status must be superseded by a verified publication receipt, not assumed from build success.
+- The illustrated/cloud/road/HUD source was integrated on `main` in commit `0af3e8c8cdacdb7e4cf1d6170bac519c79459491`, **without overwriting** the newer rollover physics, content or packaged game runtime. The existing `deploy-pages.yml` file is retained byte-for-byte.
+- Combined `main` regression run [41722761399](https://github.com/LuminaryLabs-Publish/TheLongHaul/actions/runs/41722761399) **passed** all `npm test` groups, including rollover and modular-road regressions. GitHub Pages deployment run [41722761212](https://github.com/LuminaryLabs-Publish/TheLongHaul/actions/runs/41722761212) **passed**.
+- Earlier full browser-rendered visual/portrait run [41561744411](https://github.com/LuminaryLabs-Publish/TheLongHaul/actions/runs/41561744411) **passed**. Previous independent skill and persistence run [41560570907](https://github.com/LuminaryLabs-Publish/TheLongHaul/actions/runs/41560570907) **passed**. These browser checks exercised the illustrated candidate, before the later `main` rollover integration; they are not a physical-device signoff.
+- Earlier `600`-second continuous game recording and `60`-second `1920×1080@30` H.264/AAC gameplay edit passed capture/media tests in the `illustrated-gameplay-film` artifact of [run 41559216123](https://github.com/LuminaryLabs-Publish/TheLongHaul/actions/runs/41559216123). The film source was the illustrated candidate `bcf48570dbaa9ed7d66a99bce1cf29f7f571f9d1`, so it does not demonstrate newly merged rollover dynamics.
+- Local Chromium navigation to localhost remained blocked by administrator policy after integration. Do not describe local browser checks as successful. Human handling, physical Mac/Safari frame time, final LUM-000162 assets, and subjective art review remain open.
+- Final branch workflow policy: only the **existing** `.github/workflows/deploy-pages.yml` is retained. Commands for tests/recording remain available in `package.json`, `tools/`, and `audit/` without separate Actions workflows.
