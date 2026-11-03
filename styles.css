@@ -150,3 +150,159 @@ body.cinematic #freight-hud{display:none!important}
   #skill-effects{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .skill-choices{grid-template-columns:1fr}.skill-choice{min-height:0;padding:13px}.skill-choice h3{font-size:18px;margin:8px 0 4px}.skill-kind{font-size:9px}.skill-effect{font-size:12px;margin:8px 0}.skill-description{font-size:11px}.skill-choice .btn{font-size:12px;min-height:40px}.skill-slot{flex-wrap:wrap}
 }
+
+/* Illustrated arcade presentation: four stable, contextual information groups. */
+.visual-refresh{--hud-ink:#fff4db;--hud-muted:#d3dfdb;--hud-cyan:#8ce4d4;--hud-gold:#ffd28a;--hud-bg:rgba(14,31,40,.91)}
+.visual-refresh #vignette{opacity:.16;background:radial-gradient(ellipse at center,transparent 55%,rgba(8,20,35,.38) 100%)}
+.visual-refresh #grain{display:none}
+.visual-refresh .hud-box{backdrop-filter:none;box-shadow:none;border:0;background:var(--hud-bg);color:var(--hud-ink)}
+.visual-refresh #journey-objective{position:absolute;z-index:8;top:22px;left:22px;width:310px;pointer-events:none;color:var(--hud-ink)}
+.visual-refresh #journey-objective[hidden],.visual-refresh #journey-receipt[hidden],.visual-refresh #driving-onboarding[hidden],.visual-refresh #objective-cargo-meter[hidden],.visual-refresh #timer-box[hidden],.visual-refresh #skill-effects[hidden],.visual-refresh #skill-drift[hidden]{display:none!important}
+.visual-refresh #freight-hud{position:relative;inset:auto;max-width:none;width:100%;padding:15px 17px 13px;border:0;border-left:3px solid var(--hud-cyan);box-shadow:none;background:linear-gradient(100deg,rgba(17,42,46,.94),rgba(16,32,43,.86));border-radius:0 8px 8px 0}
+.visual-refresh #freight-state{font-size:11px;letter-spacing:.08em;line-height:1.5;color:var(--hud-cyan);font-weight:800}
+.visual-refresh #freight-leg{font-size:12px;color:#c5d5cf;opacity:.8}
+.visual-refresh #freight-cargo{font-size:23px;line-height:1.2;margin:7px 0 5px;letter-spacing:-.03em}
+.visual-refresh #freight-next{font-size:15px;line-height:1.4;color:#fff5dc}
+.visual-refresh .freight-meta{margin-top:9px;padding-top:8px;font-size:11px;color:var(--hud-muted);gap:8px;border-top:1px solid #a7d4c82b;line-height:1.4}
+.visual-refresh #freight-pay{white-space:nowrap;font-size:10px}
+.visual-refresh #freight-advice{font-size:12px;line-height:1.45;letter-spacing:0;color:var(--hud-muted);margin-top:6px;text-transform:none}
+.visual-refresh #freight-advice:empty,.visual-refresh #freight-save:empty{display:none}
+.visual-refresh #freight-save{font-size:12px;line-height:1.4;color:#ffd28a}
+.visual-refresh #objective-cargo-meter{margin-top:10px}
+.visual-refresh #objective-cargo-meter .meter-label{font-size:11px;letter-spacing:.04em}
+.visual-refresh #objective-cargo-meter .meter{height:4px;margin-top:4px}
+.visual-refresh #timer-box{position:relative;inset:auto;transform:none;min-width:0;padding:7px 12px;text-align:left;display:flex;gap:12px;align-items:center;width:fit-content;border:0;border-radius:0 0 6px 6px;background:#142934e0;animation:none}
+.visual-refresh #timer-label{font:600 11px system-ui;letter-spacing:.05em;color:#d4dfd9}
+.visual-refresh #timer{font:800 17px system-ui;letter-spacing:.02em;color:#fff4da}
+.visual-refresh #timer-box.urgent{background:#652d2e;border-left:3px solid #ff987e}
+.visual-refresh #timer-box.urgent #timer{color:#ffd1b9}
+.visual-refresh #journey-receipt{font-size:16px;font-weight:850;color:#122c2d;background:#9ee9cd;padding:10px 15px;border-radius:6px;margin-bottom:7px;box-shadow:0 4px 18px #17263025}
+.visual-refresh #journey-receipt.loss{background:#ffc092;color:#462419}
+.visual-refresh #run-box{position:relative;inset:auto;max-width:none;width:100%;padding:15px;border-left:3px solid var(--hud-cyan)}
+.visual-refresh #drive-box{left:22px;bottom:22px;width:235px;padding:13px 17px 11px;border-left:3px solid var(--hud-gold);border-radius:0 8px 8px 0;max-width:none}
+.visual-refresh .speed-readout{align-items:baseline;gap:9px;line-height:1}
+.visual-refresh #speed{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:62px;letter-spacing:-.03em;font-weight:400}
+.visual-refresh .speed-readout .unit{font-size:12px;font-weight:700;letter-spacing:.1em;color:#e8dbc0}
+.visual-refresh #road-name{font-size:11px;font-weight:750;letter-spacing:.04em;line-height:1.5;color:var(--hud-gold);margin:6px 0 9px;border:0;padding:0;white-space:normal}
+.visual-refresh #condition-box{position:static;inset:auto;width:100%;padding:0;max-width:none;border:0;background:none;box-shadow:none}
+.visual-refresh #condition-box .meter-row{margin:7px 0 0}
+.visual-refresh #condition-box .meter-label{font-size:11px;letter-spacing:.04em;color:var(--hud-muted)}
+.visual-refresh #condition-box .meter{height:4px;margin-top:4px;background:#657a7440}
+.visual-refresh #condition-box .meter i{background:#a2dcb3}
+.visual-refresh #condition-box.critical .meter-label{color:#ffd0a9}
+.visual-refresh #drive-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.visual-refresh #drive-meta .arcade-stat{display:block!important;position:static;padding:0;background:none;border:0;font-size:11px;color:#ecdbc0;box-shadow:none}
+.visual-refresh #drive-meta .arcade-stat b{font-size:11px;font-weight:750}
+.visual-refresh #journey-session{display:block;font-size:10px;letter-spacing:.04em;color:#bacbc7;margin-top:8px}
+.visual-refresh #risk-hud{top:22px;right:22px;width:230px;min-width:0;max-width:none;padding:12px 16px;border:0;border-right:3px solid var(--hud-cyan);border-radius:8px 0 0 8px;background:var(--hud-bg);box-shadow:none}
+.visual-refresh #risk-hud .risk-heading{gap:10px;align-items:center}
+.visual-refresh #risk-multiplier{font-size:30px;line-height:1;color:var(--hud-cyan)}
+.visual-refresh #risk-label{font-size:10px;letter-spacing:.04em;line-height:1.35}
+.visual-refresh #risk-pending{font-size:30px;margin:5px 0}
+.visual-refresh #risk-bank{font-size:11px;letter-spacing:.04em;color:var(--hud-gold)}
+.visual-refresh #risk-hint{font-size:11px;line-height:1.4;color:var(--hud-muted)}
+.visual-refresh #risk-hud.idle{width:auto;padding:9px 13px;border-right:2px solid #9dccc78c;background:#122b34d4}
+.visual-refresh #risk-hud.idle .risk-heading,.visual-refresh #risk-hud.idle #risk-pending,.visual-refresh #risk-hud.idle .risk-meter,.visual-refresh #risk-hud.idle #risk-hint{display:none}
+.visual-refresh #skill-hud{left:auto;right:22px;bottom:22px;transform:none;width:300px;max-width:none;text-align:left}
+.visual-refresh #skill-ability-slots{gap:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.visual-refresh #skill-hud .skill-ability{display:grid;grid-template-columns:26px 1fr;grid-template-rows:auto auto;gap:3px 8px;min-height:58px;padding:10px;border:1px solid #8fd8cd66;border-radius:7px;background:#122d38ee;font-size:12px!important;text-align:left;line-height:1.3}
+.visual-refresh .skill-ability kbd{grid-row:1/3;width:25px;height:27px;align-self:center;display:grid;place-items:center;font-size:13px;border-radius:4px;background:#32565c;border:1px solid #8bc0be;color:#fff4da}
+.visual-refresh .skill-ability span{font-weight:850;font-size:12px;letter-spacing:.02em;overflow-wrap:anywhere}
+.visual-refresh .skill-ability small{font-size:10px;color:var(--hud-cyan)}
+.visual-refresh #skill-hud .skill-ability:disabled{opacity:.78}
+.visual-refresh #skill-open{margin-top:7px;display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:9px 11px 12px;border:0;border-radius:5px;background:#142c36e8;min-height:40px;text-align:left;position:relative}
+.visual-refresh #skill-open b{font-size:11px;color:var(--hud-cyan)}
+.visual-refresh #skill-open span{font-size:10px;grid-row:2;color:#c4d4ce}
+.visual-refresh #skill-open strong{grid-column:2;grid-row:1/3;align-self:center;font-size:11px;letter-spacing:.03em;color:#e6d7b7}
+.visual-refresh #skill-open.ready strong{color:var(--hud-gold)}
+.visual-refresh #skill-open i{position:absolute;bottom:0;left:0;right:0;height:3px;background:#527a7840;overflow:hidden}
+.visual-refresh #skill-open i em{height:100%;display:block;background:var(--hud-cyan);transform-origin:left}
+.visual-refresh #skill-drift,.visual-refresh #skill-effects{font-size:11px;line-height:1.5;letter-spacing:.02em;margin-top:7px;padding:6px 9px;border-radius:5px;background:#122b34de;color:#d6d7ff}
+.visual-refresh #skill-drift{color:#ffe0a8}
+.visual-refresh #arcade-overlay,.visual-refresh #boost-readout{display:none!important}
+.visual-refresh #risk-hud #arcade-flash{position:absolute;top:calc(100% + 9px);bottom:auto;left:auto;right:0;width:280px;max-width:40vw;transform:none;white-space:normal;text-align:right;font-size:16px;line-height:1.35;color:#fff2c8;text-shadow:0 2px 5px #12303d;pointer-events:none}
+.visual-refresh #encounter-hud{top:22px;left:50%;max-width:calc(100% - 670px);font-size:12px;padding:9px 12px;line-height:1.4;white-space:normal;border-radius:5px}
+.visual-refresh #encounter-hud[hidden]{display:none!important}
+.visual-refresh #interact{bottom:25%;max-width:40%;font-size:13px;line-height:1.4}
+.visual-refresh #driving-onboarding{position:absolute;left:50%;top:auto;bottom:25px;transform:translateX(-50%);max-width:38%;padding:7px 12px;border-radius:5px;background:#122b34bf;color:#edf4e7;font-size:11px;line-height:1.5;text-align:center;pointer-events:none;z-index:7}
+.visual-refresh #toast{top:23%;bottom:auto;max-width:46%;font-size:14px;line-height:1.4}
+.visual-refresh .hud-box .meter-row[hidden]{display:none}
+.visual-refresh #title-screen .eyebrow{color:var(--hud-cyan)}
+@container(max-width:1050px){
+ .visual-refresh #journey-objective{top:12px;left:12px;width:260px}
+ .visual-refresh #freight-hud{padding:11px 13px}
+ .visual-refresh #freight-cargo{font-size:20px}.visual-refresh #freight-next{font-size:13px}
+ .visual-refresh #freight-advice{font-size:11px}.visual-refresh #freight-state{font-size:10px}
+ .visual-refresh #drive-box{left:12px;bottom:12px;width:195px;padding:10px 13px}
+ .visual-refresh #speed{font-size:48px}.visual-refresh #road-name{font-size:10px}
+ .visual-refresh #skill-hud{right:12px;bottom:12px;width:260px}
+ .visual-refresh #risk-hud{right:12px;top:12px;width:195px}.visual-refresh #risk-hud.idle{width:auto}
+ .visual-refresh #risk-multiplier{font-size:25px}.visual-refresh #risk-pending{font-size:25px}
+ .visual-refresh #encounter-hud{top:12px;max-width:calc(100% - 540px);font-size:10px}
+ .visual-refresh #driving-onboarding{max-width:33%;font-size:10px}
+}
+@container(max-height:480px){
+ .visual-refresh #journey-objective{width:230px;top:9px;left:9px}
+ .visual-refresh #freight-cargo{font-size:17px;margin:3px 0}.visual-refresh #freight-advice{display:none}
+ .visual-refresh .freight-meta{font-size:10px;margin-top:5px;padding-top:5px}
+ .visual-refresh #drive-box{width:178px;left:9px;bottom:9px;padding:8px 11px}
+ .visual-refresh #speed{font-size:40px}.visual-refresh #road-name{margin:4px 0}
+ .visual-refresh #journey-session{display:none}
+ .visual-refresh #condition-box .meter-row{margin:5px 0 0}
+ .visual-refresh #skill-hud{right:9px;bottom:9px;width:235px}
+ .visual-refresh #skill-hud .skill-ability{min-height:48px;padding:7px;gap:2px 5px}
+ .visual-refresh #skill-open{min-height:35px;padding:6px 9px 9px}
+ .visual-refresh #skill-drift,.visual-refresh #skill-effects{font-size:10px;margin-top:4px;padding:4px 6px}
+ .visual-refresh #driving-onboarding{bottom:12px;max-width:29%}
+ .visual-refresh #risk-hud{top:9px;right:9px}
+ .visual-refresh #encounter-hud{max-width:calc(100% - 470px);top:9px}
+ .visual-refresh #timer-box{padding:4px 9px}.visual-refresh #timer{font-size:14px}
+}
+@media(pointer:coarse){
+ .visual-refresh #drive-box,.visual-refresh #skill-hud{bottom:108px}
+ .visual-refresh #driving-onboarding{display:none}
+ .visual-refresh #touch-controls{bottom:10px;row-gap:6px;column-gap:5px}
+ .visual-refresh #touch-controls button{min-height:44px}
+}
+@media(max-width:600px) and (orientation:portrait){
+ .visual-refresh #journey-objective{top:53px;left:12px;width:calc(100% - 24px);padding-top:0}
+ .visual-refresh #freight-hud{padding:11px 13px;right:auto;bottom:auto;top:auto;left:auto;width:100%;max-width:none}
+ .visual-refresh #freight-cargo{font-size:21px}.visual-refresh #freight-advice{font-size:11px;display:block}
+ .visual-refresh #freight-next{font-size:14px}.visual-refresh .freight-meta{font-size:11px}
+ .visual-refresh #risk-hud{top:12px;right:12px;width:auto;padding:6px 10px}
+ .visual-refresh #risk-hud:not(.idle){top:12px;left:12px;right:12px;width:auto;display:flex;align-items:center;gap:10px;min-height:32px;padding:5px 10px}
+ .visual-refresh #risk-hud:not(.idle) #risk-pending{font-size:19px;margin:0}
+ .visual-refresh #risk-hud:not(.idle) #risk-bank{margin-left:auto}
+ .visual-refresh #risk-hud:not(.idle) .risk-meter,.visual-refresh #risk-hud:not(.idle) #risk-hint{display:none}
+ .visual-refresh #risk-hud:not(.idle) .risk-heading{gap:5px}
+ .visual-refresh #risk-hud #arcade-flash{top:235px;max-width:65vw;width:220px;font-size:13px}
+ .visual-refresh #drive-box{left:12px;bottom:166px;width:142px;padding:9px 10px}
+ .visual-refresh #speed{font-size:43px}.visual-refresh #road-name{font-size:10px}
+ .visual-refresh #journey-session{display:none}
+ .visual-refresh #drive-meta{gap:5px}.visual-refresh #drive-meta .arcade-stat{font-size:10px}
+ .visual-refresh #skill-hud{left:auto;right:12px;bottom:166px;width:calc(100% - 178px);transform:none}
+ .visual-refresh #skill-ability-slots{grid-template-columns:1fr;gap:6px}
+ .visual-refresh #skill-hud .skill-ability{min-height:45px;grid-template-columns:24px 1fr;padding:6px 9px}
+ .visual-refresh #skill-open{grid-template-columns:1fr;margin-top:6px;padding:7px 9px 10px}
+ .visual-refresh #skill-open strong{grid-column:1;grid-row:2;font-size:10px}
+ .visual-refresh #skill-open span{display:none}
+ .visual-refresh #skill-effects,.visual-refresh #skill-drift{font-size:10px;padding:5px 7px}
+ body.visual-refresh #encounter-hud{top:340px;max-width:calc(100% - 24px);font-size:12px}
+ .visual-refresh #timer-box{padding:5px 12px;min-height:28px}
+ .visual-refresh #timer{font-size:15px}
+ .visual-refresh #timer-label{font-size:10px;letter-spacing:.05em}
+ .visual-refresh #interact{bottom:43%;max-width:90%;font-size:12px}
+ body.visual-refresh.driving #toast{position:absolute;top:340px;max-width:90%;font-size:13px}
+ body.visual-refresh:has(#toast.show) #encounter-hud{visibility:hidden}
+ .visual-refresh #risk-hud #arcade-flash{display:none}
+ .visual-refresh #touch-controls{bottom:15px;width:calc(100% - 20px);gap:6px}
+ .visual-refresh #touch-controls button{min-width:48px!important;min-height:44px!important}
+}
+/* A narrow desktop window has no touch controls to reserve space for. */
+@media(max-width:600px) and (orientation:portrait) and (pointer:fine){
+ .visual-refresh #drive-box,.visual-refresh #skill-hud{bottom:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .visual-refresh #risk-hud #arcade-flash.active{animation:none;opacity:1}
+ .visual-refresh #timer-box,.visual-refresh #journey-receipt{animation:none;transition:none}
+}

@@ -1,6 +1,8 @@
+import { landscapeTint } from './landscape-style.mjs';
+import { roadCrossSection, roadTerrainHeight } from "./road-surface.mjs";
 import { roadSegmentsNear } from "./road-spatial-index.mjs";
 import { CELL_SIZE, TAU, clone, clamp, hashText, segmentInfo } from "./shared.mjs";
-import { roadElevation, terrainNoise } from "./world-base.mjs";
+import { roadElevation, terrainNoise, naturalTerrainHeight } from "./world-base.mjs";
 
 export function createCourseCellDescriptor(course, cell, options = {}) {
   const bounds = cell.bounds;
@@ -17,9 +19,10 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       const minX = Math.min(sourceA.x, sourceB.x), maxX = Math.max(sourceA.x, sourceB.x), minZ = Math.min(sourceA.z, sourceB.z), maxZ = Math.max(sourceA.z, sourceB.z);
       if (maxX < bounds.minX - 48 || minX > bounds.maxX + 48 || maxZ < bounds.minZ - 48 || minZ > bounds.maxZ + 48) continue;
       const heightAtRoadPoint = (point, t) => suppliedSampleHeight?.(point.x, point.z) ?? roadElevation(course, { x: point.x, z: point.z, t, distance: 0, edge, segmentIndex });
-      const a = { x: sourceA.x, y: heightAtRoadPoint(sourceA, 0) + 0.12, z: sourceA.z };
-      const b = { x: sourceB.x, y: heightAtRoadPoint(sourceB, 1) + 0.12, z: sourceB.z };
-      const segment = { id: `${edge.id}:${index - 1}`, edgeId: edge.id, branchId: edge.branchId, branchName: edge.branchName, type: edge.type, roadClass: edge.roadClass ?? "paved-regional", surface: edge.surface ?? (edge.type === "rough-shortcut" ? "dirt" : "paved"), width: edge.width, laneCount: edge.laneCount, laneWidth: edge.laneWidth, roughness: edge.roughness, a, b };
+      const a = edge.modular ? { ...sourceA, y: sourceA.y - .12 } : { x: sourceA.x, y: heightAtRoadPoint(sourceA, 0) + 0.12, z: sourceA.z };
+      const b = edge.modular ? { ...sourceB, y: sourceB.y - .12 } : { x: sourceB.x, y: heightAtRoadPoint(sourceB, 1) + 0.12, z: sourceB.z };
+      const segment = { id: `${edge.id}:${index - 1}`, edgeId: edge.id, branchId: edge.branchId, branchName: edge.branchName, type: edge.type, roadClass: edge.roadClass ?? "paved-regional", surface: edge.surface ?? (edge.type === "rough-shortcut" ? "dirt" : "paved"), width: edge.width, laneCount: edge.laneCount, laneWidth: edge.laneWidth, roughness: edge.roughness, a, b, modular: Boolean(edge.modular), chunk: edge.chunk };
+      if (edge.modular) { segment.width = roadCrossSection(edge, segmentIndex, .5).width; segment.laneFactor = (a.laneFactor + b.laneFactor) / 2; }
       terrainRoadSegments.push(segment);
       localRoadSamples.push({ a: sourceA, b: sourceB, edge, segmentIndex });
       const midpointX = (a.x + b.x) * 0.5, midpointZ = (a.z + b.z) * 0.5;
@@ -27,13 +30,14 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
   }
 
   const localHeight = suppliedSampleHeight ?? ((x, z) => {
-    const natural = terrainNoise(x, z, course?.seed ?? "long-haul");
+    const natural = naturalTerrainHeight(course, x, z);
     let best = null;
     for (const road of localRoadSamples) {
       const info = segmentInfo({ x, z }, road.a, road.b);
       if (!best || info.distance < best.distance) best = { ...info, edge: road.edge, segmentIndex: road.segmentIndex };
     }
     if (!best) return natural;
+    if (best.edge?.modular) return roadTerrainHeight(natural, best, x, z, true, CELL_SIZE / terrainSegments * Math.SQRT2);
     const flattenRadius = best.edge.width * 0.78 + 16;
     const blend = clamp(1 - best.distance / flattenRadius, 0, 1);
     const smoothBlend = blend * blend * (3 - 2 * blend);
@@ -83,7 +87,9 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       const moisture = (hashText(`${course.seed}:moisture:${Math.floor(x / 24)}:${Math.floor(z / 24)}`) & 0xffff) / 0xffff;
       const elevation = clamp((y + 18) / 46, 0, 1);
       const roadTint = surface?.surface === "road" ? 0.045 : surface?.surface === "shoulder" ? 0.02 : 0;
-      colors.push({ r: 0.19 + moisture * 0.1 + elevation * 0.09 + roadTint, g: 0.32 + moisture * 0.19 - elevation * 0.035 - roadTint * 0.7, b: 0.15 + moisture * 0.07 + elevation * 0.07 - roadTint * 0.5 });
+      if (course.generatorVersion === 'long-haul-endless-v2') {
+        const [r, g, b] = landscapeTint(course.seed, x, z, y); colors.push({r, g, b});
+      } else colors.push({ r: 0.19 + moisture * 0.1 + elevation * 0.09 + roadTint, g: 0.32 + moisture * 0.19 - elevation * 0.035 - roadTint * 0.7, b: 0.15 + moisture * 0.07 + elevation * 0.07 - roadTint * 0.5 });
     }
   }
 

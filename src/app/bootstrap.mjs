@@ -1,3 +1,7 @@
+import * as LongHaulArt from '../game/landscape-style.mjs';
+import { resolveRoadStructureContact } from "../game/road-structure-contact.mjs";
+import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample } from "../game/road-chunks.mjs";
+import { roadRibbonData } from "../game/road-surface.mjs";
 import { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction } from "../game/driving-controls.mjs";
 import { createSkillProgression, SKILL_UPGRADES } from "../game/skill-progression.mjs";
 import { createActiveAbilities, ABILITY_DEFINITIONS } from "../game/active-abilities.mjs";
@@ -25,9 +29,37 @@ Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TO
 Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction, createSkillProgression, SKILL_UPGRADES, createActiveAbilities, ABILITY_DEFINITIONS, createDrivingPickups, PICKUP_DEFINITIONS, createEndlessHighway, advanceEndlessHighway, endlessHighwayPoint, endlessHighwayProgress, endlessHighwayStation, nextEndlessLoadingStation, endlessHorizonBounds, isEndlessLoadingZone, createFreightJourney, freightDifficulty, prepareFreightSave, CARGO_PROFILES, getCargoProfile, cargoDamageMultiplier, pruneLongHaulContactLedger });
 Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction, createSkillProgression, SKILL_UPGRADES, createActiveAbilities, ABILITY_DEFINITIONS, createDrivingPickups, PICKUP_DEFINITIONS, freshCampaignSave, readCampaignSave });
 
+Object.assign(globalThis, { LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact });
+// Guard dynamically-created Resume as well as Start until both host layers
+// are ready. This never changes disabled states owned by an existing control.
+const blockEarlyEntry = event => {
+  if (event.target?.closest?.('#start-btn, #freight-resume-btn')) {
+    event.preventDefault(); event.stopImmediatePropagation();
+  }
+};
+document.addEventListener('click', blockEarlyEntry, true);
+const entryButtons = [...document.querySelectorAll("#start-btn, #freight-resume-btn")];
+entryButtons.forEach(button => button.disabled = true);
 await new Promise((resolve, reject) => {
   const script=document.createElement("script");
   script.src=new URL("../../vendor/app-runtime.js",import.meta.url).href;
   script.async=false;script.onload=resolve;script.onerror=()=>reject(new Error("The local game runtime could not load."));
   document.head.append(script);
 });
+
+await new Promise((resolve, reject) => {
+  const script = document.createElement("script");
+  script.src = new URL("./endless-roads.js", import.meta.url).href;
+  script.async = false; script.onload = resolve;
+  script.onerror = () => reject(new Error("The Endless road host could not load."));
+  document.head.append(script);
+});
+await new Promise((resolve, reject) => {
+  const script = document.createElement("script");
+  script.src = new URL("./visual-presentation.js", import.meta.url).href;
+  script.async = false; script.onload = resolve;
+  script.onerror = () => reject(new Error("The visual presentation host could not load."));
+  document.head.append(script);
+});
+entryButtons.forEach(button => button.disabled = false);
+document.removeEventListener('click', blockEarlyEntry, true);

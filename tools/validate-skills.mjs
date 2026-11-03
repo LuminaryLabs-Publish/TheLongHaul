@@ -164,13 +164,27 @@ export async function validateSkills() {
   const roadFixture = async (speed = 30, distance = 120) => {
     const placed = await fixture('Position the actual truck on the generated highway at a known initial speed; the maneuver itself uses normal keyboard input.', ({ speed, distance }) => {
     releaseDrivingInput(); forwardBoost.reset();
+    // Resolve the fixture's road window before querying its physical surface.
+    // A stale distant window returns terrain height instead of the road deck.
+    if (course?.endless) {
+      advanceEndlessHighway(course, distance);
+      patchClient?.updateCourse(course); engine.n.longHaulCourse.refreshWindow(course);
+      ensureArcadeNetwork();
+    }
     const route = arcadeNetwork.paths.find(route => route.id.startsWith('trunk:')) ?? arcadeNetwork.paths[0];
     const point = course.endless ? endlessHighwayPoint(course, distance) : arcadePathPoint(route, distance, 0), ground = groundSample(point), surface = surfaceAt(point);
+    const beforeSequence = readTruck().sequence;
     engine.n.longHaulTruck.teleport({ ...point, y: ground.height + readDynamics().suspension.travel, speed, groundHeight: ground.height, groundNormal: ground.normal, surface: surface.surface, surfaceGrip: surface.grip });
     for (const vehicle of arcadeVehicles) vehicle.active = false;
-    return { route: route.id, point, speed, surface: surface.surface, cargoMass: currentCargoMass() };
+    return { route: route.id, point, speed, beforeSequence, surface: surface.surface, cargoMass: currentCargoMass() };
     }, { speed, distance });
-    await awaitTeleport(placed.point);
+    // Wait for the queued teleport to commit, not a previous pose that happens
+    // to be within the broad moving-vehicle tolerance of the new fixture.
+    await page.waitForFunction(({ point, speed, beforeSequence }) => {
+      const truck = readTruck();
+      return truck.sequence > beforeSequence && truck.grounded
+        && Math.hypot(truck.position.x - point.x, truck.position.z - point.z) < (speed === 0 ? .15 : 4);
+    }, placed, { timeout: 20000 });
     return placed;
   };
 
@@ -244,14 +258,25 @@ export async function validateSkills() {
     await page.keyboard.down('d'); await page.waitForTimeout(350); await page.keyboard.up('d');
     check('A complete stop expires momentum and countersteering cannot resurrect it', states.stopped.truck.drift.momentum === 0 && !states.stopped.truck.drift.active && await page.evaluate(sequence => readTruck().drift.releaseSequence === sequence, stopSequence), states.stopped.truck);
 
-    const miniSetup = await fixture('Position the truck 24 metres before an existing generated breakable encounter. Its real meshes and collision records remain in use.', () => {
+    const miniSetup = await fixture('Locate a genuine breakable encounter in at most twelve production road windows, then position the truck 24 metres before it. This declared fixture prepares the same streaming topology and real collision records; it never inserts a test obstacle.', () => {
       releaseDrivingInput(); forwardBoost.reset(); activeAbilities.reset({ slots: skillProgression.snapshot().slots, levels: skillProgression.snapshot().abilities });
-      const event = arcadeEncounters.find(event => event.kind === 'breakables');
+      // Modular districts intentionally omit obstacles on roofs, bridges and
+      // tapers. Search actual future production windows instead of assuming
+      // the first retained window contains every encounter kind.
+      let event = arcadeEncounters.find(event => event.kind === 'breakables');
+      const searched = [];
+      for (let i = 0; !event && course?.endless && i < 12; i++) {
+        const progress = course.endless.windowEnd + 320;
+        advanceEndlessHighway(course, progress);
+        patchClient?.updateCourse(course); engine.n.longHaulCourse.refreshWindow(course);
+        ensureArcadeNetwork(); searched.push(progress);
+        event = arcadeEncounters.find(value => value.kind === 'breakables');
+      }
       if (!event) return null;
       const host = arcadeEncounterHosts.get(event.id) ?? createEncounterHost(event);
       const point = arcadePathPoint(event.path, event.distance - 24, event.lane), ground = groundSample(point), surface = surfaceAt(point);
       engine.n.longHaulTruck.teleport({ ...point, y: ground.height + readDynamics().suspension.travel, speed: 10, groundHeight: ground.height, groundNormal: ground.normal, surface: surface.surface, surfaceGrip: surface.grip });
-      return { event: event.id, propIds: host.props.map(prop => prop.id), point };
+      return { event: event.id, propIds: host.props.map(prop => prop.id), point, searched };
     });
     check('The ability scenario targets actual generated obstacles', miniSetup?.propIds.length > 0, miniSetup);
     await awaitTeleport(miniSetup.point);
@@ -361,11 +386,25 @@ export async function validateSkills() {
     for (const kind of ['focus', 'boost', 'ability', 'repair']) {
       const setup = await fixture(`Place the truck before one uncollected generated ${kind} pickup; driving across it uses the ordinary swept pickup path.`, kind => {
         releaseDrivingInput(); forwardBoost.reset(); planSkillPickups();
-        const pickup = skillPickupPlan.find(pickup => pickup.kind === kind && !drivingPickups.has(pickup.id));
-        if (!pickup) return null;
+        // Earlier obstacle fixtures legitimately advance the bounded contact
+        // ledger. Returning to retired road must not resurrect a collectible.
+        // Find a real, uncollected production pickup ahead of that watermark.
+        const retiredBefore = drivingPickups.snapshot().retiredThrough;
+        const searched = [];
+        let pickup = skillPickupPlan.find(pickup => pickup.kind === kind && !drivingPickups.has(pickup.id));
+        for (let attempt = 0; !pickup && course?.endless && attempt < 12; attempt++) {
+          const progress = Math.max(course.endless.windowEnd + 320, 145 + (drivingPickups.snapshot().retiredThrough + 12) * 185);
+          advanceEndlessHighway(course, progress);
+          patchClient?.updateCourse(course);
+          engine.n.longHaulCourse.refreshWindow(course);
+          ensureArcadeNetwork(); planSkillPickups();
+          searched.push(progress);
+          pickup = skillPickupPlan.find(value => value.kind === kind && !drivingPickups.has(value.id));
+        }
+        if (!pickup) throw new Error(`No unretired generated ${kind} pickup after ${searched.length} production windows; watermark ${retiredBefore}`);
         const point = pickup.point, start = { x: point.x - Math.sin(point.heading) * 10, z: point.z - Math.cos(point.heading) * 10 }, ground = groundSample(start), surface = surfaceAt(start);
         engine.n.longHaulTruck.teleport({ ...start, heading: point.heading, y: ground.height + readDynamics().suspension.travel, speed: 7, groundHeight: ground.height, groundNormal: ground.normal, surface: surface.surface, surfaceGrip: surface.grip });
-        return { id: pickup.id, kind, point, start, before: { pickups: drivingPickups.snapshot(), steeringDamage: skillSteeringDamage, hull: meters.get('truck-condition').value } };
+        return { id: pickup.id, kind, point, start, searched, retiredBefore, before: { pickups: drivingPickups.snapshot(), steeringDamage: skillSteeringDamage, hull: meters.get('truck-condition').value } };
       }, kind);
       check(`A generated ${kind} pickup exists`, Boolean(setup), setup);
       await awaitTeleport(setup.start);
@@ -435,6 +474,7 @@ export async function validateSkills() {
       collectSkillPickup({ id: 'acceptance:resume-boost', kind: 'boost' });
       collectSkillPickup({ id: 'acceptance:resume-ability', kind: 'ability' });
     });
+    await page.waitForFunction(() => readTruck().grounded && !readTruck().tipped && !skillMenuOpen(), null, { timeout: 20000 });
     await page.keyboard.press('q'); await page.keyboard.press('e');
     await page.waitForFunction(() => activeAbilities.snapshot().cooldowns['mini-trucks'] > 0 && activeAbilities.snapshot().cooldowns['road-shield'] > 0);
     await openSkills(page);

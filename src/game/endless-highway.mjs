@@ -1,6 +1,9 @@
 // Product-owned, deterministic highway topology. World and rendering kits still
 // own patch realization; this module only retains the nearby drivable corridor.
 import { hashText, edgeLength } from './shared.mjs';
+import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, ROAD_LIMITS, roadChunkAt, roadChunkSample, roadChunkContract } from './road-chunks.mjs';
+const roadVersion = value => typeof value === 'object' ? value.generatorVersion ?? ROAD_GENERATOR_VERSION : ROAD_GENERATOR_VERSION;
+const modular = value => roadVersion(value) === ROAD_GENERATOR_VERSION;
 
 export const ENDLESS_HIGHWAY_RULES = Object.freeze({
   sectionLength: 320,
@@ -49,7 +52,12 @@ function centerX(seed, progress, route = 'safe') {
 /** World position and forward heading at an absolute highway metre. */
 export function endlessHighwayPoint(courseOrSeed, progress, lateral = 0, route = 'safe') {
   const seed = typeof courseOrSeed === 'object' ? courseOrSeed.seed : String(courseOrSeed ?? 'long-haul');
-  const s = number(progress), x = centerX(seed, s, route), z = -s;
+  const s = number(progress);
+  if (modular(courseOrSeed)) {
+    const p = roadChunkSample(seed, s, route), offset = number(lateral);
+    return { ...p, x: p.x + p.nx * offset, y: p.y + p.bank * offset, z: (p.z + p.nz * offset) || 0 };
+  }
+  const x = centerX(seed, s, route), z = -s;
   const dx = centerX(seed, s + 0.25, route) - centerX(seed, s - 0.25, route);
   const heading = Math.atan2(dx, -0.5), offset = number(lateral);
   return { x: x + Math.cos(heading) * offset, z: z - Math.sin(heading) * offset, heading, progress: s };
@@ -61,14 +69,17 @@ export function endlessHighwayProgress(course, position) {
   return -Number(position.z) || 0;
 }
 
-function makeEdge(seed, index, route = 'safe') {
+function makeEdge(courseOrSeed, index, route = 'safe') {
+  const seed = typeof courseOrSeed === 'object' ? courseOrSeed.seed : String(courseOrSeed);
+  const isModular = modular(courseOrSeed);
   const r = ENDLESS_HIGHWAY_RULES, start = index * r.sectionLength, end = start + r.sectionLength;
   const stationIndex = stationIndexAtProgress((start + end) / 2);
   const risky = route === 'risky';
   const id = risky ? `${stationId(stationIndex)}:shortcut` : edgeId(index);
-  const samples = Array.from({ length: r.sectionLength / r.sampleSpacing + 1 }, (_, i) => {
-    const point = endlessHighwayPoint(seed, start + i * r.sampleSpacing, 0, route);
-    return { x: point.x, y: 0, z: point.z };
+  const spacing = isModular ? ROAD_LIMITS.sampleSpacing : r.sampleSpacing;
+  const samples = Array.from({ length: r.sectionLength / spacing + 1 }, (_, i) => {
+    const point = endlessHighwayPoint(courseOrSeed, start + i * spacing, 0, route);
+    return isModular ? point : { x: point.x, y: 0, z: point.z };
   });
   const edge = {
     id, from: nodeId(index), to: nodeId(index + 1),
@@ -81,7 +92,8 @@ function makeEdge(seed, index, route = 'safe') {
     optional: risky, endless: true, sectionIndex: index,
     startProgress: start, endProgress: end,
     stationId: stationIndex >= 0 ? stationId(stationIndex) : null,
-    samples, length: 0
+    samples, length: 0,
+    ...(isModular ? { modular: true, generatorVersion: ROAD_GENERATOR_VERSION, chunk: roadChunkAt(seed, (start + end) / 2) } : {})
   };
   edge.length = edgeLength(edge);
   return edge;
@@ -94,13 +106,13 @@ export function endlessLoadingStation(courseOrSeed, index) {
   const progress = r.firstStationProgress + i * r.stationSpacing;
   const entryProgress = progress - r.stationHalfSpan, exitProgress = progress + r.stationHalfSpan;
   const sectionIndex = Math.round(entryProgress / r.sectionLength), id = stationId(i);
-  const safePoint = endlessHighwayPoint(seed, progress), riskyPoint = endlessHighwayPoint(seed, progress, 0, 'risky');
-  const safeEdge = makeEdge(seed, sectionIndex), riskyEdge = makeEdge(seed, sectionIndex, 'risky');
+  const safePoint = endlessHighwayPoint(courseOrSeed, progress), riskyPoint = endlessHighwayPoint(courseOrSeed, progress, 0, 'risky');
+  const safeEdge = makeEdge(courseOrSeed, sectionIndex), riskyEdge = makeEdge(courseOrSeed, sectionIndex, 'risky');
   return {
     id, index: i, progress, name: `Freight Relay ${i + 1}`,
     entryProgress, exitProgress, warningProgress: entryProgress - 220,
     exclusion: { start: entryProgress - 100, end: exitProgress + 100 },
-    entry: endlessHighwayPoint(seed, entryProgress), exit: endlessHighwayPoint(seed, exitProgress),
+    entry: endlessHighwayPoint(courseOrSeed, entryProgress), exit: endlessHighwayPoint(courseOrSeed, exitProgress),
     safe: { point: safePoint, width: r.safeWidth, halfWidth: 11, length: 44, routeLength: safeEdge.length, edgeIds: [safeEdge.id], clearance: { width: 24, height: 7 } },
     risky: { point: riskyPoint, width: r.riskyWidth, halfWidth: 3.2, length: 32, routeLength: riskyEdge.length, edgeIds: [riskyEdge.id], clearance: { width: 6.4, height: 5.5 } },
     // The loaded truck always has a wide, paved fallback. These side gates
@@ -150,12 +162,12 @@ function rebuildWindow(course, centerSection) {
     nodes.push({ id: nodeId(index), x: point.x, z: point.z, branchId: 'trunk', progress: index * r.sectionLength });
   }
   for (let index = first; index <= last; index++) {
-    const main = oldEdges.get(edgeId(index)) ?? makeEdge(course.seed, index);
+    const main = oldEdges.get(edgeId(index)) ?? makeEdge(course, index);
     edges.push(main);
     const stationIndex = stationIndexAtProgress((index + 0.5) * r.sectionLength);
     if (stationIndex < 0) continue;
     const station = endlessLoadingStation(course, stationIndex);
-    const risky = oldEdges.get(station.risky.edgeIds[0]) ?? makeEdge(course.seed, index, 'risky');
+    const risky = oldEdges.get(station.risky.edgeIds[0]) ?? makeEdge(course, index, 'risky');
     // Keep trunk order uninterrupted for buildArcadeRoutes. Branches append below.
     stations.push({ ...station, riskyEdge: risky });
   }
@@ -170,6 +182,38 @@ function rebuildWindow(course, centerSection) {
     signs.push({ id: `${station.id}:approach`, x: point.x, z: point.z, heading: point.heading + Math.PI,
       title: 'Freight ahead', subtitle: 'WIDE LEFT / EXPRESS RIGHT', color: '#67d9c0', stationId: station.id });
   }
+  const chunks = [];
+  if (modular(course)) {
+    const seen = new Set();
+    for (const edge of edges.filter(e => !e.optional)) {
+      const chunk = edge.chunk;
+      if (seen.has(chunk.id)) continue;
+      seen.add(chunk.id);
+      chunks.push({ ...chunk, entry: roadChunkContract(course.seed, chunk), exit: roadChunkContract(course.seed, chunk, true) });
+      const entrance = Math.round(chunk.start / r.sectionLength), exit = Math.round(chunk.end / r.sectionLength);
+      // Only realize whole optional features when both joins are retained.
+      // The 1.28 km rear / 2.24 km forward windows exceed the feature length.
+      if (chunk.branch && entrance >= first && exit <= last + 1) {
+        const id = `${chunk.id}:bypass`, samples = [];
+        for (let p = chunk.start; p <= chunk.end; p += ROAD_LIMITS.sampleSpacing) samples.push(roadChunkSample(course.seed, p, 'branch'));
+        const branch = oldEdges.get(id) ?? { id, from: nodeId(entrance), to: nodeId(exit), branchId: id,
+          branchName: chunk.name, type: 'scenic-bypass', roadClass: chunk.kind === 'gravel-detour' ? 'gravel' : 'paved-regional',
+          surface: chunk.kind === 'gravel-detour' ? 'gravel' : 'paved', width: 12, laneCount: 2, laneWidth: 3.4,
+          roughness: chunk.kind === 'gravel-detour' ? .18 : .04, optional: true, endless: true, modular: true,
+          generatorVersion: ROAD_GENERATOR_VERSION, chunk, samples, startProgress: chunk.start, endProgress: chunk.end };
+        branch.length = edgeLength(branch); edges.push(branch);
+        routeChoices.push({ id: `${id}:choice`, kind: 'scenic-bypass', label: chunk.name,
+          entryEdgeId: id, exitEdgeId: id, fallbackEdgeIds: edges.filter(e => !e.optional && e.startProgress >= chunk.start && e.endProgress <= chunk.end).map(e => e.id),
+          entryProgress: chunk.start, exitProgress: chunk.end });
+      }
+      if (chunk.index >= 0 && chunk.kind !== 'freight') {
+        const p = endlessHighwayPoint(course, chunk.start + 35, -21);
+        signs.push({ id: `${chunk.id}:sign`, x: p.x, z: p.z, heading: p.heading + Math.PI,
+          title: chunk.name, subtitle: chunk.branch ? 'OPTIONAL ROUTE / HIGHWAY OPEN' : chunk.kind === 'lane-transition' || chunk.kind === 'construction' ? 'LANES MERGE / KEEP CLEAR' : 'DRIVE THE NEXT HORIZON', color: '#e6b747' });
+      }
+    }
+  }
+  course.roadChunks = chunks;
   const depots = stations.map(station => {
     const point = endlessHighwayPoint(course, station.progress, 68);
     return { id: `${station.id}:relay`, nodeId: nodeId(Math.round(station.entryProgress / r.sectionLength)),
@@ -182,7 +226,7 @@ function rebuildWindow(course, centerSection) {
     const point = endlessHighwayPoint(course, centerSection * r.sectionLength, 68);
     depots.push({ id: `endless:relay:${centerSection}`, nodeId: nodeId(centerSection), branchId: 'trunk', name: 'Freight relay', kind: 'endless-relay', x: point.x, z: point.z, heading: point.heading, radius: 18 });
   }
-  const xs = [...nodes.map(n => n.x), ...depots.map(d => d.x)];
+  const xs = [...nodes.map(n => n.x), ...depots.map(d => d.x), ...edges.flatMap(e => e.samples.map(p => p.x))];
   course.nodes = nodes;
   course.edges = edges; // Replacing the array invalidates the existing spatial index.
   course.loadingStations = stations;
@@ -193,6 +237,8 @@ function rebuildWindow(course, centerSection) {
   course.hub = nodes[r.sectionsBehind];
   course.branches = [{ id: 'trunk', name: 'Continuous Highway', roadClass: 'paved-highway', surface: 'paved', width: r.safeWidth,
     nodeIds: nodes.map(n => n.id), edgeIds: edges.filter(e => !e.optional).map(e => e.id), length: edges.filter(e => !e.optional).reduce((sum, edge) => sum + edge.length, 0) }];
+  course.optionalRoads = edges.filter(e => e.type === 'scenic-bypass').map(e => ({ id: e.id, name: e.branchName, entryNodeId: e.from, exitNodeId: e.to, entryEdgeId: e.id, exitEdgeId: e.id }));
+  course.branches.push(...edges.filter(e => e.type === 'scenic-bypass').map(e => ({ id: e.branchId, name: e.branchName, nodeIds: [e.from, e.to], edgeIds: [e.id], length: e.length, optional: true })));
   course.bounds = { minX: Math.min(...xs) - 180, maxX: Math.max(...xs) + 180, minZ: -(last + 1) * r.sectionLength - 180, maxZ: -first * r.sectionLength + 180 };
   course.endless = { ...course.endless, centerSection, firstSection: first, lastSection: last,
     windowStart: first * r.sectionLength, windowEnd: (last + 1) * r.sectionLength,
@@ -205,12 +251,13 @@ function rebuildWindow(course, centerSection) {
 }
 
 /** A course-compatible bounded window, without a finite destination terminus. */
-export function createEndlessHighway(seed, { progress = 0 } = {}) {
+export function createEndlessHighway(seed, { progress = 0, generatorVersion = ROAD_GENERATOR_VERSION } = {}) {
+  if (![ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION].includes(generatorVersion)) throw new Error('Unsupported highway generator version');
   const text = String(seed ?? 'long-haul'), initialProgress = number(progress);
-  const spawn = endlessHighwayPoint(text, 0);
+  const spawn = endlessHighwayPoint({ seed: text, generatorVersion }, 0);
   const course = {
     schema: 'long-haul.course-package/1', packageId: `endless-${hashText(text).toString(36)}`,
-    seed: text, generatorVersion: 'long-haul-endless-v1',
+    seed: text, generatorVersion,
     origin: { id: 'origin', x: spawn.x, z: spawn.z, heading: spawn.heading }, hub: null,
     nodes: [], edges: [], branches: [], depots: [], signs: [], optionalRoads: [], roundabouts: [], routeChoices: [], wildlife: [],
     validDepotId: null, scoring: { parTimeSeconds: 600, parDistance: ENDLESS_HIGHWAY_RULES.stationSpacing }, bounds: null,
