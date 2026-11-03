@@ -1,0 +1,53 @@
+name: Truck rollover gameplay video
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rollover-video.yml'
+      - 'src/game/truck-rollover.mjs'
+      - 'src/game/truck-kit.mjs'
+      - 'src/app/app-chunk-9.js'
+      - 'src/app/app-chunk-21.js'
+      - 'tools/record-skills.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Verify source and regression tests
+        run: |
+          npm test
+          npm run build
+          npm test
+      - name: Record real browser gameplay
+        run: npm run record:skills -- --seconds=60 --fps=30 --frame-format=jpeg --width=1280 --height=720
+      - name: Collect video and capture evidence
+        if: always()
+        run: |
+          mkdir -p release-evidence
+          find .cache/validation -type f \( -name 'TheLongHaul-Skill-Gameplay.mp4' -o -name 'media-validation.json' -o -name 'report.json' -o -name 'review-summary.md' -o -name 'start.png' -o -name 'middle.png' -o -name 'end.png' \) -exec cp --parents '{}' release-evidence/ \; || true
+      - name: Upload 60-second video and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LongHaul-Weight-Transfer-60s
+          path: release-evidence/
+          if-no-files-found: error
+          retention-days: 30
