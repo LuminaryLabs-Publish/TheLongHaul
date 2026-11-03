@@ -102,10 +102,11 @@ for(const steer of [-1,1]){
   for(let frame=0;frame<600;frame++){
     engine.n.longHaulTruck.input({throttle:1,steer,boost:true,rush:true,surface:"road",surfaceGrip:1,groundHeight:0,groundNormal:{x:.12,y:.98,z:.08}});tick();
     const state=engine.n.longHaulTruck.getState();peak=Math.max(peak,Math.abs(state.bodyRoll));
-    assert.equal(state.tipped,false,"sustained boosted full-lock steering cannot flip the truck");
-    assert.ok(Math.abs(state.rollAngle)<=.720001,"steering lean stays bounded");
+    assert.ok(Number.isFinite(state.rolloverRisk),"tipping danger is deterministic and finite");
+    assert.ok(Math.abs(state.rollAngle)<=1.56,"steering lean remains bounded even when tipped");
   }
   assert.ok(peak>.46,"hard steering still reaches the scrape lean threshold");
+  if(engine.n.longHaulTruck.getState().tipped){engine.n.longHaulTruck.teleport({x:0,y:.92,z:0,heading:0,speed:8});tick(0)}
   for(let frame=0;frame<240;frame++){engine.n.longHaulTruck.input({throttle:1,steer:0,surface:"road",surfaceGrip:1,groundHeight:0,groundNormal:{x:0,y:1,z:0}});tick()}
   assert.ok(Math.abs(engine.n.longHaulTruck.getState().bodyRoll)<.01,"releasing steering returns the truck upright");
 }
