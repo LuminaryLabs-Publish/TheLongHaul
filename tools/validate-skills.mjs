@@ -372,11 +372,25 @@ export async function validateSkills() {
     for (const kind of ['focus', 'boost', 'ability', 'repair']) {
       const setup = await fixture(`Place the truck before one uncollected generated ${kind} pickup; driving across it uses the ordinary swept pickup path.`, kind => {
         releaseDrivingInput(); forwardBoost.reset(); planSkillPickups();
-        const pickup = skillPickupPlan.find(pickup => pickup.kind === kind && !drivingPickups.has(pickup.id));
-        if (!pickup) return null;
+        // Earlier obstacle fixtures legitimately advance the bounded contact
+        // ledger. Returning to retired road must not resurrect a collectible.
+        // Find a real, uncollected production pickup ahead of that watermark.
+        const retiredBefore = drivingPickups.snapshot().retiredThrough;
+        const searched = [];
+        let pickup = skillPickupPlan.find(pickup => pickup.kind === kind && !drivingPickups.has(pickup.id));
+        for (let attempt = 0; !pickup && course?.endless && attempt < 12; attempt++) {
+          const progress = Math.max(course.endless.windowEnd + 320, 145 + (drivingPickups.snapshot().retiredThrough + 12) * 185);
+          advanceEndlessHighway(course, progress);
+          patchClient?.updateCourse(course);
+          engine.n.longHaulCourse.refreshWindow(course);
+          ensureArcadeNetwork(); planSkillPickups();
+          searched.push(progress);
+          pickup = skillPickupPlan.find(value => value.kind === kind && !drivingPickups.has(value.id));
+        }
+        if (!pickup) throw new Error(`No unretired generated ${kind} pickup after ${searched.length} production windows; watermark ${retiredBefore}`);
         const point = pickup.point, start = { x: point.x - Math.sin(point.heading) * 10, z: point.z - Math.cos(point.heading) * 10 }, ground = groundSample(start), surface = surfaceAt(start);
         engine.n.longHaulTruck.teleport({ ...start, heading: point.heading, y: ground.height + readDynamics().suspension.travel, speed: 7, groundHeight: ground.height, groundNormal: ground.normal, surface: surface.surface, surfaceGrip: surface.grip });
-        return { id: pickup.id, kind, point, start, before: { pickups: drivingPickups.snapshot(), steeringDamage: skillSteeringDamage, hull: meters.get('truck-condition').value } };
+        return { id: pickup.id, kind, point, start, searched, retiredBefore, before: { pickups: drivingPickups.snapshot(), steeringDamage: skillSteeringDamage, hull: meters.get('truck-condition').value } };
       }, kind);
       check(`A generated ${kind} pickup exists`, Boolean(setup), setup);
       await awaitTeleport(setup.start);
