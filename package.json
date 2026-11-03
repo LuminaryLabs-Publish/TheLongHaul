@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/atomic-domain-kits-smoke.mjs && node tests/long-haul-game-smoke.mjs && node tests/vehicle-feel-regression.mjs && node tests/arcade-score-regression.mjs && node tests/encounter-regression.mjs && node tests/endless-highway-regression.mjs && node tests/cargo-physics-regression.mjs && node tests/freight-journey-regression.mjs && node tests/freight-score-regression.mjs && node tests/campaign-policy-regression.mjs && node tests/drift-regression.mjs && node tests/skill-progression-regression.mjs && node tests/skill-storage-boundary-regression.mjs && node tests/active-abilities-regression.mjs && node tests/driving-pickups-regression.mjs && node tests/static-shell-smoke.mjs",
+    "test": "node tests/atomic-domain-kits-smoke.mjs && node tests/long-haul-game-smoke.mjs && node tests/vehicle-feel-regression.mjs && node tests/arcade-score-regression.mjs && node tests/encounter-regression.mjs && node tests/endless-highway-regression.mjs && node tests/cargo-physics-regression.mjs && node tests/freight-journey-regression.mjs && node tests/freight-score-regression.mjs && node tests/campaign-policy-regression.mjs && node tests/drift-regression.mjs && node tests/rollover-regression.mjs && node tests/skill-progression-regression.mjs && node tests/skill-storage-boundary-regression.mjs && node tests/active-abilities-regression.mjs && node tests/driving-pickups-regression.mjs && node tests/static-shell-smoke.mjs",
     "build": "node tools/build-runtime.mjs",
     "perf": "node tools/capture-performance.mjs",
     "validate:gameplay": "node tools/validate-gameplay.mjs",
