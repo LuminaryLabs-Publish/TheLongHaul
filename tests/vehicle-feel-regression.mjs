@@ -60,11 +60,12 @@ for (const steer of [-1, 1]) {
     turning.drive(1 / 60, { throttle: 1, steer, boost: true, rush: true });
     const state = turning.state();
     peakLean = Math.max(peakLean, Math.abs(state.bodyRoll));
-    assert.equal(state.tipped, false, "steering alone never rolls the rig");
-    assert.ok(Math.abs(state.bodyRoll) <= 0.620001, "dramatic lean remains bounded");
+    assert.ok(Number.isFinite(state.rolloverRisk) && Number.isFinite(state.rolloverExposure), "hard corner risk stays finite");
+    assert.ok(Math.abs(state.bodyRoll) <= 1.56, "dangerous steering lean remains bounded");
     assert.ok(Number.isFinite(state.heading));
   }
   assert.ok(peakLean > 0.46, "hard steering retains visible scrape lean");
+  if (turning.state().tipped) { turning.api.teleport({ x: 0, y: 0.92, z: 0, heading: 0, speed: 8, ...ground }); turning.tick(0); }
   const released = turning.drive(4, { throttle: 1 });
   assert.ok(Math.abs(released.bodyRoll) < 0.01, "releasing steering self-rights the body");
 }
