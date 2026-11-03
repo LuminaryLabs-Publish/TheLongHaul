@@ -1,0 +1,68 @@
+name: Illustrated highway matched performance
+on:
+  push:
+    branches: ['validation/illustrated-performance-20261103']
+  create:
+permissions:
+  contents: read
+concurrency:
+  group: illustrated-performance-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/playwright
+jobs:
+  measure:
+    if: github.ref == 'refs/heads/validation/illustrated-performance-20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Preserve published baseline
+        run: |
+          git fetch --depth=1 origin d5c5667126869cfb826e10c5d039b27a6b280d29
+          mkdir -p .cache/published-baseline .cache/matched-performance
+          git archive d5c5667126869cfb826e10c5d039b27a6b280d29 | tar -x -C .cache/published-baseline
+      - name: Baseline then candidate
+        run: |
+          node tools/measure-skills-performance.mjs --root=.cache/published-baseline --revision=d5c5667126869cfb826e10c5d039b27a6b280d29 --seconds=15 --warmup=5 --label=baseline-1 --output=.cache/matched-performance/baseline-1
+          node tools/measure-skills-performance.mjs --seconds=15 --warmup=5 --label=candidate-1 --output=.cache/matched-performance/candidate-1 --compare=.cache/matched-performance/baseline-1/performance-report.json
+      - name: Candidate then baseline confirmation
+        run: |
+          node tools/measure-skills-performance.mjs --seconds=15 --warmup=5 --label=candidate-2 --output=.cache/matched-performance/candidate-2
+          node tools/measure-skills-performance.mjs --root=.cache/published-baseline --revision=d5c5667126869cfb826e10c5d039b27a6b280d29 --seconds=15 --warmup=5 --label=baseline-2 --output=.cache/matched-performance/baseline-2
+      - name: Retain measurements and actual screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: illustrated-matched-performance
+          include-hidden-files: true
+          path: .cache/matched-performance/
+          retention-days: 14
+  skills-regression:
+    if: github.ref == 'refs/heads/validation/illustrated-performance-20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Existing skills and persistence browser acceptance
+        run: node tools/validate-skills.mjs --output=.cache/skills-regression
+      - name: Retain all regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: illustrated-skills-regression
+          include-hidden-files: true
+          path: .cache/skills-regression/
+          retention-days: 14
