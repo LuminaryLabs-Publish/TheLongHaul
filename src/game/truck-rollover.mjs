@@ -55,6 +55,6 @@ export function advanceTruckRollover(previous, motion, dt, profile) {
     rolloverRisk: Number.isFinite(risk) ? risk : 0,
     wheelLiftLeft: rollAngle < 0 ? lift : 0,
     wheelLiftRight: rollAngle > 0 ? lift : 0,
-    rollMode: tipped ? "tipped" : atRisk ? "critical" : lift > 0 ? "wheel-lift" : drift.active ? "controlled-drift" : "planted"
+    rollMode: tipped ? "tipped" : atRisk ? "critical" : lift > 0.12 ? "wheel-lift" : drift.active ? "controlled-drift" : "planted"
   };
 }
