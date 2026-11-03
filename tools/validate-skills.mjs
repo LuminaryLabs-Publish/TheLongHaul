@@ -244,14 +244,25 @@ export async function validateSkills() {
     await page.keyboard.down('d'); await page.waitForTimeout(350); await page.keyboard.up('d');
     check('A complete stop expires momentum and countersteering cannot resurrect it', states.stopped.truck.drift.momentum === 0 && !states.stopped.truck.drift.active && await page.evaluate(sequence => readTruck().drift.releaseSequence === sequence, stopSequence), states.stopped.truck);
 
-    const miniSetup = await fixture('Position the truck 24 metres before an existing generated breakable encounter. Its real meshes and collision records remain in use.', () => {
+    const miniSetup = await fixture('Locate a genuine breakable encounter in at most twelve production road windows, then position the truck 24 metres before it. This declared fixture prepares the same streaming topology and real collision records; it never inserts a test obstacle.', () => {
       releaseDrivingInput(); forwardBoost.reset(); activeAbilities.reset({ slots: skillProgression.snapshot().slots, levels: skillProgression.snapshot().abilities });
-      const event = arcadeEncounters.find(event => event.kind === 'breakables');
+      // Modular districts intentionally omit obstacles on roofs, bridges and
+      // tapers. Search actual future production windows instead of assuming
+      // the first retained window contains every encounter kind.
+      let event = arcadeEncounters.find(event => event.kind === 'breakables');
+      const searched = [];
+      for (let i = 0; !event && course?.endless && i < 12; i++) {
+        const progress = course.endless.windowEnd + 320;
+        advanceEndlessHighway(course, progress);
+        patchClient?.updateCourse(course); engine.n.longHaulCourse.refreshWindow(course);
+        ensureArcadeNetwork(); searched.push(progress);
+        event = arcadeEncounters.find(value => value.kind === 'breakables');
+      }
       if (!event) return null;
       const host = arcadeEncounterHosts.get(event.id) ?? createEncounterHost(event);
       const point = arcadePathPoint(event.path, event.distance - 24, event.lane), ground = groundSample(point), surface = surfaceAt(point);
       engine.n.longHaulTruck.teleport({ ...point, y: ground.height + readDynamics().suspension.travel, speed: 10, groundHeight: ground.height, groundNormal: ground.normal, surface: surface.surface, surfaceGrip: surface.grip });
-      return { event: event.id, propIds: host.props.map(prop => prop.id), point };
+      return { event: event.id, propIds: host.props.map(prop => prop.id), point, searched };
     });
     check('The ability scenario targets actual generated obstacles', miniSetup?.propIds.length > 0, miniSetup);
     await awaitTeleport(miniSetup.point);

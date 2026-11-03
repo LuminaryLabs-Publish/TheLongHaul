@@ -146,8 +146,19 @@
   _lhBuildHorizonGeometry = function(patch) {
     const geometry=new THREE.BufferGeometry(), indices=[], n=patch.segments;
     for(let z=0;z<n;z++) for(let x=0;x<n;x++) { const a=z*(n+1)+x,b=a+1,c=a+n+1,d=c+1; indices.push(a,c,b,b,c,d); }
-    geometry.setAttribute('position',new THREE.Float32BufferAttribute(patch.positions,3));
-    geometry.setAttribute('color',new THREE.Float32BufferAttribute(patch.colors,3));
+    // Neighboring LOD grids sample the same continuous ground at different
+    // spacings. Downward skirts cover their T-junctions, never raising the
+    // visible surface or changing collision heights.
+    const positions=[...patch.positions],colors=[...patch.colors],edge=[];
+    for(let x=0;x<=n;x++)edge.push(x);
+    for(let z=1;z<=n;z++)edge.push(z*(n+1)+n);
+    for(let x=n-1;x>=0;x--)edge.push(n*(n+1)+x);
+    for(let z=n-1;z>0;z--)edge.push(z*(n+1));
+    const bottom=positions.length/3,depth=45+Math.min(5,patch.lod||0)*10;
+    for(const a of edge){positions.push(positions[a*3],positions[a*3+1]-depth,positions[a*3+2]);colors.push(colors[a*3],colors[a*3+1],colors[a*3+2]);}
+    for(let i=0;i<edge.length;i++){const j=(i+1)%edge.length;indices.push(edge[i],bottom+j,bottom+i,edge[i],edge[j],bottom+j);}
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
     geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere(); return geometry;
   };
 
@@ -174,7 +185,7 @@
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1500,32,18),domeMaterial); dome.renderOrder=-100; atmosphere.add(dome);
   const clouds = new THREE.Group(); clouds.name='shaped-cloud-banks'; atmosphere.add(clouds);
   const cloudGeometry=new THREE.SphereGeometry(1,12,7);
-  const cloudMaterial=new THREE.MeshToonMaterial({color:0xffe5c5,gradientMap:gradient,flatShading:true,fog:true});
+  const cloudMaterial=new THREE.MeshToonMaterial({color:0xffe5c5,gradientMap:gradient,fog:true});
   const descriptors=cloudBankDescriptors(), count=descriptors.reduce((n,b)=>n+b.lobes.length,0);
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count); cloudMesh.name='cloud-lobes';
   const dummy=new THREE.Object3D();let instance=0;

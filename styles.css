@@ -265,14 +265,17 @@ body.cinematic #freight-hud{display:none!important}
  .visual-refresh #touch-controls button{min-height:44px}
 }
 @media(max-width:600px) and (orientation:portrait){
- .visual-refresh #journey-objective{top:12px;left:12px;width:calc(100% - 24px);padding-top:29px}
+ .visual-refresh #journey-objective{top:53px;left:12px;width:calc(100% - 24px);padding-top:0}
  .visual-refresh #freight-hud{padding:11px 13px;right:auto;bottom:auto;top:auto;left:auto;width:100%;max-width:none}
  .visual-refresh #freight-cargo{font-size:21px}.visual-refresh #freight-advice{font-size:11px;display:block}
  .visual-refresh #freight-next{font-size:14px}.visual-refresh .freight-meta{font-size:11px}
  .visual-refresh #risk-hud{top:12px;right:12px;width:auto;padding:6px 10px}
- .visual-refresh #risk-hud:not(.idle){top:260px;width:162px}
+ .visual-refresh #risk-hud:not(.idle){top:12px;left:12px;right:12px;width:auto;display:flex;align-items:center;gap:10px;min-height:32px;padding:5px 10px}
+ .visual-refresh #risk-hud:not(.idle) #risk-pending{font-size:19px;margin:0}
+ .visual-refresh #risk-hud:not(.idle) #risk-bank{margin-left:auto}
+ .visual-refresh #risk-hud:not(.idle) .risk-meter,.visual-refresh #risk-hud:not(.idle) #risk-hint{display:none}
  .visual-refresh #risk-hud:not(.idle) .risk-heading{gap:5px}
- .visual-refresh #risk-hud #arcade-flash{max-width:65vw;width:220px;font-size:13px}
+ .visual-refresh #risk-hud #arcade-flash{top:235px;max-width:65vw;width:220px;font-size:13px}
  .visual-refresh #drive-box{left:12px;bottom:166px;width:142px;padding:9px 10px}
  .visual-refresh #speed{font-size:43px}.visual-refresh #road-name{font-size:10px}
  .visual-refresh #journey-session{display:none}
