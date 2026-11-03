@@ -1,0 +1,122 @@
+name: Illustrated highway acceptance
+on:
+  push:
+    branches: ['validation/illustrated-highway-20261103']
+  create:
+concurrency:
+  group: illustrated-highway-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: github.ref == 'refs/heads/validation/illustrated-highway-20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: write
+    outputs:
+      candidate: ${{ steps.candidate.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: validation/illustrated-highway-20261103
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Materialize hash-locked reviewed source
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,lzma,pathlib,shutil,subprocess
+          root=pathlib.Path.cwd().resolve()
+          stage=root/'.agent/visual-transfer'
+          if stage.exists():
+              payload=b''.join((stage/f'{i:02}.part').read_bytes() for i in range(7))
+              assert hashlib.sha256(payload).hexdigest()=='be60dd3ee84d5c279f79b87c42825187cfb0b663da3b8598ee176a00a7ed49ed', 'Transfer digest mismatch'
+              data=json.loads(lzma.decompress(payload))
+              assert data['schema']==1 and data['base']=='d5c5667126869cfb826e10c5d039b27a6b280d29'
+              seen=set()
+              for item in data['changes']:
+                  rel=pathlib.PurePosixPath(item['path'])
+                  assert not rel.is_absolute() and '..' not in rel.parts and '.git' not in rel.parts
+                  assert rel.parts[0] in ('src','tools','tests','docs','audit','index.html','styles.css','package.json')
+                  target=(root/rel).resolve()
+                  assert target.is_relative_to(root) and item['path'] not in seen
+                  seen.add(item['path'])
+                  old=target.read_text() if target.exists() else ''
+                  if item['base_sha256'] is None: assert not target.exists(), f'New path conflict: {rel}'
+                  else: assert hashlib.sha256(old.encode()).hexdigest()==item['base_sha256'], f'Base conflict: {rel}'
+                  result=old
+                  for start,end,text in reversed(item['edits']):
+                      assert 0<=start<=end<=len(old)
+                      result=result[:start]+text+result[end:]
+                  assert hashlib.sha256(result.encode()).hexdigest()==item['sha256'], f'Result mismatch: {rel}'
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  target.write_text(result)
+              shutil.rmtree(stage)
+              print('Verified and materialized',len(seen),'reviewed source files')
+          PY
+      - run: npm ci
+      - run: npm run build:host
+      - name: Commit materialized candidate on validation branch only
+        id: candidate
+        run: |
+          test "$(git branch --show-current)" = validation/illustrated-highway-20261103
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'Materialize reviewed modular roads and illustrated HUD/environment candidate'
+            git push origin HEAD:refs/heads/validation/illustrated-highway-20261103
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          mkdir -p .cache/acceptance
+          git rev-parse HEAD > .cache/acceptance/revision.txt
+      - name: Deterministic regression suites
+        run: npm test 2>&1 | tee .cache/acceptance/tests.log
+      - name: Full engine six-hundred-second road traversal
+        run: npm run test:roads:traverse 2>&1 | tee .cache/acceptance/road-traversal.log
+      - name: Install actual browser
+        run: npx playwright install --with-deps chromium
+      - name: Render and inspect actual game contracts
+        run: npm run validate:visuals -- --output=.cache/visual-validation 2>&1 | tee .cache/acceptance/browser.log
+      - name: Retain browser evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: illustrated-browser-evidence
+          include-hidden-files: true
+          path: |
+            .cache/acceptance/
+            .cache/visual-validation/
+          retention-days: 14
+  film:
+    needs: inspect
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.inspect.outputs.candidate }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Install media tools
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Continuous gameplay and sixty-second edit
+        run: |
+          mkdir -p .cache/visual-film
+          npm run record:visuals -- --output=.cache/visual-film 2>&1 | tee .cache/visual-film/capture.log
+      - name: Retain film and complete run provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: illustrated-gameplay-film
+          include-hidden-files: true
+          path: .cache/visual-film/
+          retention-days: 14
