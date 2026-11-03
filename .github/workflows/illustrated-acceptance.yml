@@ -1,48 +1,46 @@
-name: Illustrated highway acceptance
+name: Illustrated skill acceptance
 on:
   push:
     branches: ['validation/illustrated-highway-20261103']
   workflow_dispatch:
-concurrency:
-  group: illustrated-highway-${{ github.ref }}
-  cancel-in-progress: true
 permissions:
   contents: read
 defaults:
   run:
     shell: bash
+concurrency:
+  group: illustrated-highway-${{ github.ref }}
+  cancel-in-progress: true
 env:
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/playwright
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 35
     permissions:
       contents: write
-    outputs:
-      candidate: ${{ steps.candidate.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-      - name: Apply exact reviewed material compatibility repair
-        if: hashFiles('.agent/visual-hotfix.json') != ''
+      - name: Ground test fixtures on the actual road window
+        if: hashFiles('.agent/skill-ground-fix.json') != ''
         run: |
-          test "${GITHUB_REF}" = refs/heads/validation/illustrated-highway-20261103
+          test "$GITHUB_REF" = refs/heads/validation/illustrated-highway-20261103
           python3 - <<'PY'
-          import hashlib,json,pathlib
-          instruction=pathlib.Path('.agent/visual-hotfix.json')
-          fix=json.loads(instruction.read_text())
-          assert fix['path']=='src/app/visual-presentation.js'
-          target=pathlib.Path(fix['path']);old=target.read_text()
-          assert hashlib.sha256(old.encode()).hexdigest()==fix['before']
-          assert old.count(fix['old'])==1
-          new=old.replace(fix['old'],fix['new'])
-          assert hashlib.sha256(new.encode()).hexdigest()==fix['after']
-          target.write_text(new);instruction.unlink()
+          import pathlib,json,hashlib
+          instruction=pathlib.Path('.agent/skill-ground-fix.json');fix=json.loads(instruction.read_text())
+          assert fix['schema']==1 and fix['path']=='tools/validate-skills.mjs'
+          target=pathlib.Path(fix['path']);text=target.read_text()
+          assert hashlib.sha256(text.encode()).hexdigest()==fix['before']
+          for change in fix['replacements']:
+              assert text.count(change['old'])==1
+              text=text.replace(change['old'],change['new'])
+          assert hashlib.sha256(text.encode()).hexdigest()==fix['after']
+          target.write_text(text);instruction.unlink()
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/app/visual-presentation.js .agent/visual-hotfix.json
-          git commit -m 'Use supported toon material properties without renderer warnings'
+          git add tools/validate-skills.mjs .agent/skill-ground-fix.json
+          git commit -m 'Ground browser fixtures using the correct modular road window before ability activation'
           git push origin HEAD:refs/heads/validation/illustrated-highway-20261103
       - uses: actions/setup-node@v4
         with:
@@ -50,69 +48,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:host
-      - name: Lock candidate source
-        id: candidate
-        run: |
-          git diff --exit-code -- src vendor index.html campaign.html styles.css
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          mkdir -p .cache/acceptance
-          git rev-parse HEAD > .cache/acceptance/revision.txt
-      - name: Deterministic regression suites
-        run: npm test 2>&1 | tee .cache/acceptance/tests.log
-      - name: Full engine six-hundred-second road traversal
-        run: npm run test:roads:traverse 2>&1 | tee .cache/acceptance/road-traversal.log
-      - name: Install actual browser
-        run: npx playwright install --with-deps chromium
-      - name: Render and inspect actual game contracts
-        run: |
-          npm run validate:visuals -- --output=.cache/visual-validation 2>&1 | tee .cache/acceptance/browser.log
-          node -e "if(require('./.cache/visual-validation/report.json').verdict!=='PASS')process.exit(1)"
-      - name: Retain browser evidence before further checks
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: illustrated-browser-evidence
-          include-hidden-files: true
-          path: |
-            .cache/acceptance/
-            .cache/visual-validation/
-          retention-days: 14
-      - name: Preserve skills, abilities and persistence
+      - run: git diff --exit-code -- src vendor index.html campaign.html styles.css
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: Existing skill, ability, storage and input contracts
         run: node tools/validate-skills.mjs --output=.cache/skills-regression
-      - name: Retain skill regression evidence
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: illustrated-skills-regression
           include-hidden-files: true
           path: .cache/skills-regression/
-          retention-days: 14
-  film:
-    needs: inspect
-    runs-on: ubuntu-latest
-    timeout-minutes: 150
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.inspect.outputs.candidate }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - name: Install media tools
-        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
-      - name: Continuous gameplay and sixty-second edit
-        run: |
-          mkdir -p .cache/visual-film
-          npm run record:visuals -- --output=.cache/visual-film 2>&1 | tee .cache/visual-film/capture.log
-          node -e "if(require('./.cache/visual-film/report.json').verdict!=='PASS')process.exit(1)"
-      - name: Retain film and complete run provenance
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: illustrated-gameplay-film
-          include-hidden-files: true
-          path: .cache/visual-film/
           retention-days: 14

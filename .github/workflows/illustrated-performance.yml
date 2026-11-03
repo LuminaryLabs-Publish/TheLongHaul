@@ -1,0 +1,172 @@
+name: Illustrated final evidence
+on:
+  push:
+    branches: ['validation/illustrated-performance-20261103']
+  workflow_dispatch:
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: illustrated-final-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/playwright
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      candidate: ${{ steps.lock.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize exact screenshot-backed horizon repair
+        if: hashFiles('.agent/horizon-fix.json') != ''
+        run: |
+          test "$GITHUB_REF" = refs/heads/validation/illustrated-performance-20261103
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          instruction=pathlib.Path('.agent/horizon-fix.json')
+          data=json.loads(instruction.read_text());assert data['schema']==1
+          allowed={'src/app/visual-presentation.js','tools/validate-visuals.mjs'}
+          assert len(data['changes'])==2 and {x['path'] for x in data['changes']}==allowed
+          for fix in data['changes']:
+              target=pathlib.Path(fix['path']);text=target.read_text()
+              assert hashlib.sha256(text.encode()).hexdigest()==fix['before']
+              for change in fix['replacements']:
+                  assert text.count(change['old'])==1
+                  text=text.replace(change['old'],change['new'])
+              assert hashlib.sha256(text.encode()).hexdigest()==fix['after']
+              target.write_text(text)
+          instruction.unlink()
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/app/visual-presentation.js tools/validate-visuals.mjs .agent/horizon-fix.json
+          git commit -m 'Close elevated horizon terrain boundaries and assert coverage in rendered road inspections'
+          git push origin HEAD:refs/heads/validation/illustrated-performance-20261103
+      - id: lock
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  visuals:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    outputs:
+      candidate: ${{ needs.prepare.outputs.candidate }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.candidate }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:host
+      - run: git diff --exit-code -- src vendor index.html campaign.html styles.css
+      - name: Deterministic regression and six-hundred-second traversal
+        run: |
+          mkdir -p .cache/acceptance
+          npm test 2>&1 | tee .cache/acceptance/tests.log
+          npm run test:roads:traverse 2>&1 | tee .cache/acceptance/road-traversal.log
+      - run: npx playwright install --with-deps chromium
+      - name: Actual browser and rendered terrain acceptance
+        run: |
+          npm run validate:visuals -- --output=.cache/visual-validation 2>&1 | tee .cache/acceptance/browser.log
+          node -e "if(require('./.cache/visual-validation/report.json').verdict!=='PASS')process.exit(1)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: illustrated-browser-evidence
+          include-hidden-files: true
+          path: |
+            .cache/acceptance/
+            .cache/visual-validation/
+          retention-days: 14
+  measure:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.candidate }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Preserve published baseline
+        run: |
+          git fetch --depth=1 origin d5c5667126869cfb826e10c5d039b27a6b280d29
+          mkdir -p .cache/published-baseline .cache/matched-performance
+          git archive d5c5667126869cfb826e10c5d039b27a6b280d29 | tar -x -C .cache/published-baseline
+      - name: Baseline then candidate
+        run: |
+          node tools/measure-skills-performance.mjs --root=.cache/published-baseline --revision=d5c5667126869cfb826e10c5d039b27a6b280d29 --seconds=15 --warmup=5 --label=baseline-1 --output=.cache/matched-performance/baseline-1
+          node tools/measure-skills-performance.mjs --seconds=15 --warmup=5 --label=candidate-1 --output=.cache/matched-performance/candidate-1 --compare=.cache/matched-performance/baseline-1/performance-report.json
+      - name: Candidate then baseline confirmation
+        run: |
+          node tools/measure-skills-performance.mjs --seconds=15 --warmup=5 --label=candidate-2 --output=.cache/matched-performance/candidate-2
+          node tools/measure-skills-performance.mjs --root=.cache/published-baseline --revision=d5c5667126869cfb826e10c5d039b27a6b280d29 --seconds=15 --warmup=5 --label=baseline-2 --output=.cache/matched-performance/baseline-2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: illustrated-matched-performance
+          include-hidden-files: true
+          path: .cache/matched-performance/
+          retention-days: 14
+  skills-regression:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.candidate }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Existing skill, ability, storage and input contracts
+        run: node tools/validate-skills.mjs --output=.cache/skills-regression
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: illustrated-skills-regression
+          include-hidden-files: true
+          path: .cache/skills-regression/
+          retention-days: 14
+  film:
+    needs: [prepare, visuals]
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.candidate }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Render full continuous journey and highlight evidence
+        run: |
+          mkdir -p .cache/visual-film
+          npm run record:visuals -- --output=.cache/visual-film 2>&1 | tee .cache/visual-film/capture.log
+          node -e "if(require('./.cache/visual-film/report.json').verdict!=='PASS')process.exit(1)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: illustrated-gameplay-film
+          include-hidden-files: true
+          path: .cache/visual-film/
+          retention-days: 14

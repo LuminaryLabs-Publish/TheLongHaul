@@ -102,7 +102,7 @@
     blue: 0x3689a3, yellow: 0xf6ba4f, white: 0xf2e9d6 })) {
     materials[key] = toon(materials[key], color);
   }
-  const distantTerrain = toon(_lhUnifiedHorizonMaterial, 0xffffff, { side: THREE.FrontSide });
+  const distantTerrain = toon(_lhUnifiedHorizonMaterial, 0xffffff, { side: THREE.DoubleSide });
   distantTerrain.onBeforeCompile = _lhUnifiedHorizonMaterial.onBeforeCompile;
   distantTerrain.customProgramCacheKey = () => 'long-haul-toon-horizon-v1';
   const applyMaterials = root => root.traverse(object => {
@@ -154,8 +154,11 @@
     for(let z=1;z<=n;z++)edge.push(z*(n+1)+n);
     for(let x=n-1;x>=0;x--)edge.push(n*(n+1)+x);
     for(let z=n-1;z>0;z--)edge.push(z*(n+1));
-    const bottom=positions.length/3,depth=45+Math.min(5,patch.lod||0)*10;
-    for(const a of edge){positions.push(positions[a*3],positions[a*3+1]-depth,positions[a*3+2]);colors.push(colors[a*3],colors[a*3+1],colors[a*3+2]);}
+    // Close every terrain boundary below the lowest nearby landscape, not
+    // merely a fixed distance below a high ridge. Shallow skirts left sky
+    // visible under elevated distant tiles while their neighbours streamed.
+    const bottom=positions.length/3;
+    for(const a of edge){const x=positions[a*3],z=positions[a*3+2],floor=-256-atmosphericRollOff(Math.hypot(x-patch.focus.x,z-patch.focus.z));positions.push(x,Math.min(floor,positions[a*3+1]-64),z);colors.push(colors[a*3],colors[a*3+1],colors[a*3+2]);}
     for(let i=0;i<edge.length;i++){const j=(i+1)%edge.length;indices.push(edge[i],bottom+j,bottom+i,edge[i],edge[j],bottom+j);}
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
     geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
