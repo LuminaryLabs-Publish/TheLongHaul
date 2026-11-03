@@ -173,11 +173,18 @@ export async function validateSkills() {
     }
     const route = arcadeNetwork.paths.find(route => route.id.startsWith('trunk:')) ?? arcadeNetwork.paths[0];
     const point = course.endless ? endlessHighwayPoint(course, distance) : arcadePathPoint(route, distance, 0), ground = groundSample(point), surface = surfaceAt(point);
+    const beforeSequence = readTruck().sequence;
     engine.n.longHaulTruck.teleport({ ...point, y: ground.height + readDynamics().suspension.travel, speed, groundHeight: ground.height, groundNormal: ground.normal, surface: surface.surface, surfaceGrip: surface.grip });
     for (const vehicle of arcadeVehicles) vehicle.active = false;
-    return { route: route.id, point, speed, surface: surface.surface, cargoMass: currentCargoMass() };
+    return { route: route.id, point, speed, beforeSequence, surface: surface.surface, cargoMass: currentCargoMass() };
     }, { speed, distance });
-    await awaitTeleport(placed.point);
+    // Wait for the queued teleport to commit, not a previous pose that happens
+    // to be within the broad moving-vehicle tolerance of the new fixture.
+    await page.waitForFunction(({ point, speed, beforeSequence }) => {
+      const truck = readTruck();
+      return truck.sequence > beforeSequence && truck.grounded
+        && Math.hypot(truck.position.x - point.x, truck.position.z - point.z) < (speed === 0 ? .15 : 4);
+    }, placed, { timeout: 20000 });
     return placed;
   };
 
