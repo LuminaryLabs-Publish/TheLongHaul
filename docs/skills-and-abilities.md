@@ -50,6 +50,10 @@ During a frozen driving view, the engine receives zero simulation delta and a no
 
 This contract also freezes the freight deadline in the map and garage. It supersedes the earlier active-clock wording in the continuous-freight implementation notes.
 
+## Recoverable weight transfer and rollover
+
+The existing drift reserve remains bounded and energy-dissipating. The single truck step now also advances authoritative roll, side-specific wheel unloading and cumulative rollover exposure via [the rollover model](../src/game/truck-rollover.mjs). Normal high-speed turns lean outward; an active controlled drift biases roll inward to the slide. A countersteer opposite the established lean, excessive lateral acceleration, heavy or shifted cargo, and roll velocity increase tip risk. Settling the maneuver decays exposure before the truck tips. Crossing the stability threshold latches a real tipped state, stops drive torque, clears active drift, and retains existing F roadside recovery. The wheel meshes share the same render-body pose; no random wobble or separate physics clock is introduced. See [the agent feature contract](../.agent/feature-weight-transfer-rollover.md) and [lessons](../.agent/lessons.md).
+
 ## Momentum-responsive drift
 
 ### Motion model
