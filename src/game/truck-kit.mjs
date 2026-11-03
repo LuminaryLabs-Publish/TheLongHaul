@@ -2,6 +2,7 @@ import { clone, clamp, finite, normalizeAngle } from "./shared.mjs";
 import { DEFAULT_TRUCK_DYNAMICS_PROFILE } from "./truck-dynamics-profile-kit.mjs";
 import { LONG_HAUL_TRUCK_COLLIDER } from "./vehicle-collider.mjs";
 import { createDriftState, prepareDrift, resolveDrift } from "./drift-behavior.mjs";
+import { advanceTruckRollover } from "./truck-rollover.mjs";
 import { cargoDynamics, normalizeCargoLoad } from "./cargo-profiles.mjs";
 
 function cargoState(profile, value, previous = null) {
@@ -108,6 +109,11 @@ export function createLongHaulTruckKit(N, options = {}) {
     bodyPitch: 0,
     rollAngle: 0,
     rollVelocity: 0,
+    rolloverExposure: 0,
+    rolloverRisk: 0,
+    wheelLiftLeft: 0,
+    wheelLiftRight: 0,
+    rollMode: "planted",
     tipped: false,
     grounded: true,
     groundHeight: finite(value.y)-DEFAULT_TRUCK_DYNAMICS_PROFILE.suspension.travel,
@@ -174,6 +180,11 @@ export function createLongHaulTruckKit(N, options = {}) {
             steeringAngle: 0,
             rollAngle: 0,
             rollVelocity: 0,
+            rolloverExposure: 0,
+            rolloverRisk: 0,
+            wheelLiftLeft: 0,
+            wheelLiftRight: 0,
+            rollMode: "planted",
             bodyRoll: 0,
             bodyPitch: 0,
             suspensionCompression: 0,
@@ -464,21 +475,12 @@ export function createLongHaulTruckKit(N, options = {}) {
           const driftAngle = Math.atan2(lateral, Math.max(0.01, Math.abs(longitudinal)));
           const rollProfile = profile.roll ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.roll;
           const lateralAcceleration = yawRate * longitudinal;
-          let tipped = state.tipped;
-          let rollAngle = state.rollAngle;
-          let rollVelocity = state.rollVelocity;
-          // Steering lean is cosmetic and self-righting; only impact requests can tip the truck.
-          const maximumLean = clamp(finite(rollProfile.maximumAngle, 0.62), 0.25, 0.72);
-          const naturalTarget = clamp((Math.abs(input.steer) > .01 ? -lateralAcceleration * finite(rollProfile.lateralScale, 0.034) * load.rollScale : 0) + loadShift.x * load.payloadFraction * 0.32, -maximumLean, maximumLean);
-          const settledAngle = finite(rollProfile.settledAngle, 1.48);
-          const targetRoll = tipped ? Math.sign(rollAngle || rollVelocity || 1) * settledAngle : naturalTarget;
-          const rollSpring=Math.max(.01,finite(rollProfile.spring,19) * load.springScale);
-          const rollDamping=tipped?finite(rollProfile.damping,8.8):Math.max(finite(rollProfile.damping,8.8),2*Math.sqrt(rollSpring));
-          const rollAcceleration = (targetRoll - rollAngle) * rollSpring - rollVelocity * rollDamping;
-          rollVelocity += rollAcceleration * dt;
-          rollAngle += rollVelocity * dt;
-          if(!tipped){rollAngle=clamp(rollAngle,-maximumLean,maximumLean);if(Math.abs(rollAngle)>=maximumLean&&Math.sign(rollVelocity)===Math.sign(rollAngle))rollVelocity=0}
-          if (tipped) rollAngle = clamp(rollAngle, -settledAngle * 1.05, settledAngle * 1.05);
+          // Wheel unloading and tip risk share the same authoritative lean.
+          const rollState = advanceTruckRollover(state, {
+            grounded, longitudinal, lateral, yawRate, drift, loadShift, load
+          }, dt, profile);
+          const { tipped, rollAngle, rollVelocity } = rollState;
+          if (tipped && !state.tipped) drift = createDriftState(drift, true);
           const acceleration = clamp((longitudinal - state.longitudinalSpeed) / dt, -40, 40);
           const weightTransfer = state.weightTransfer + ((grounded ? clamp(-acceleration / 18, -0.6, 1) * (1 + loadRatio * 0.2) : 0) - state.weightTransfer) * (1 - Math.exp(-8 * dt));
           const cargoShift = loadShift.x; // presentation alias of the authoritative cargo motion
@@ -488,6 +490,7 @@ export function createLongHaulTruckKit(N, options = {}) {
 
           state = {
             ...state,
+            ...rollState,
             position,
             velocity,
             roundaboutContacts: [...roundaboutContactImpacts].map(([id, impactSpeed]) => ({ id, impactSpeed })),
