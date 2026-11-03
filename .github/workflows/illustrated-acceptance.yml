@@ -23,7 +23,8 @@ jobs:
       candidate: ${{ steps.candidate.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-      - name: Materialize exact inspected repairs on validation branch
+      - name: Materialize exact inspected source repairs on validation branch
+        if: hashFiles('.agent/visual-repair/0.part') != ''
         run: |
           test "${GITHUB_REF}" = refs/heads/validation/illustrated-highway-20261103
           python3 - <<'PY'
@@ -48,14 +49,13 @@ jobs:
                   result=result[:start]+text+result[end:]
               assert hashlib.sha256(result.encode()).hexdigest()==item['after'],str(rel)
               target.parent.mkdir(parents=True,exist_ok=True);target.write_text(result)
-          (root/'.github/workflows/illustrated-acceptance.yml').write_text(data['finalWorkflow'])
           shutil.rmtree(stage)
-          print('Exact verified repairs:',len(seen))
+          print('Exact verified source repairs:',len(seen))
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git commit -m 'Repair rendered road subgrade, portrait HUD, cloud silhouettes and acceptance failure propagation'
+          git add src tools tests styles.css package.json .agent/visual-repair
+          git commit -m 'Repair rendered road subgrade, portrait HUD, cloud silhouettes and test fixtures'
           git push origin HEAD:refs/heads/validation/illustrated-highway-20261103
       - uses: actions/setup-node@v4
         with:
