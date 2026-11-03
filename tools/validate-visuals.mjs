@@ -62,7 +62,13 @@ try{
     // Presentation-only state fixture: full combo and onboard deadline occupy
     // more space than idle; verify the same layout without changing rewards.
     await page.evaluate(()=>{document.querySelector('#risk-hud').classList.remove('idle');document.querySelector('#risk-multiplier').textContent='×5';document.querySelector('#risk-pending').textContent='9,999';document.querySelector('#timer-box').hidden=false;document.querySelector('#objective-cargo-meter').hidden=false;});
-    checkLayout(`${viewport.width}x${viewport.height} expanded`,await geometry());await screenshot(`layout-${viewport.width}-expanded`);
+    checkLayout(`${viewport.width}x${viewport.height} expanded`,await geometry());
+    if(viewport.width<600)check('Portrait deadline remains readable above warnings',await page.evaluate(()=>{
+      const deadline=document.querySelector('#timer-box'),warning=document.querySelector('#encounter-hud');
+      const a=deadline.getBoundingClientRect(),b=warning.getBoundingClientRect();
+      return a.width>0&&a.height>0&&(warning.hidden||a.bottom+4<=b.top);
+    }));
+    await screenshot(`layout-${viewport.width}-expanded`);
     fixtures.push({setup:'DOM-only expanded combo/cargo/deadline layout fixture',viewport});
     await step(2);
   }
