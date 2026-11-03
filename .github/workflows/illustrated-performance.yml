@@ -23,30 +23,69 @@ jobs:
       candidate: ${{ steps.lock.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-      - name: Materialize exact test-only fixture repair
-        if: hashFiles('.agent/skill-fixture-fix.json') != ''
+      - name: Materialize exact screenshot-backed horizon repair
+        if: hashFiles('.agent/horizon-fix.json') != ''
         run: |
           test "$GITHUB_REF" = refs/heads/validation/illustrated-performance-20261103
           python3 - <<'PY'
           import pathlib,json,hashlib
-          instruction=pathlib.Path('.agent/skill-fixture-fix.json')
-          data=json.loads(instruction.read_text())
-          assert data['schema']==1 and data['path']=='tools/validate-skills.mjs'
-          target=pathlib.Path(data['path']);text=target.read_text()
-          assert hashlib.sha256(text.encode()).hexdigest()==data['before']
-          for change in data['replacements']:
-              assert text.count(change['old'])==1
-              text=text.replace(change['old'],change['new'])
-          assert hashlib.sha256(text.encode()).hexdigest()==data['after']
-          target.write_text(text);instruction.unlink()
+          instruction=pathlib.Path('.agent/horizon-fix.json')
+          data=json.loads(instruction.read_text());assert data['schema']==1
+          allowed={'src/app/visual-presentation.js','tools/validate-visuals.mjs'}
+          assert len(data['changes'])==2 and {x['path'] for x in data['changes']}==allowed
+          for fix in data['changes']:
+              target=pathlib.Path(fix['path']);text=target.read_text()
+              assert hashlib.sha256(text.encode()).hexdigest()==fix['before']
+              for change in fix['replacements']:
+                  assert text.count(change['old'])==1
+                  text=text.replace(change['old'],change['new'])
+              assert hashlib.sha256(text.encode()).hexdigest()==fix['after']
+              target.write_text(text)
+          instruction.unlink()
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tools/validate-skills.mjs .agent/skill-fixture-fix.json
-          git commit -m 'Select real forward pickups without resetting the anti-replay ledger in browser acceptance'
+          git add src/app/visual-presentation.js tools/validate-visuals.mjs .agent/horizon-fix.json
+          git commit -m 'Close elevated horizon terrain boundaries and assert coverage in rendered road inspections'
           git push origin HEAD:refs/heads/validation/illustrated-performance-20261103
       - id: lock
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  visuals:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    outputs:
+      candidate: ${{ needs.prepare.outputs.candidate }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.candidate }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:host
+      - run: git diff --exit-code -- src vendor index.html campaign.html styles.css
+      - name: Deterministic regression and six-hundred-second traversal
+        run: |
+          mkdir -p .cache/acceptance
+          npm test 2>&1 | tee .cache/acceptance/tests.log
+          npm run test:roads:traverse 2>&1 | tee .cache/acceptance/road-traversal.log
+      - run: npx playwright install --with-deps chromium
+      - name: Actual browser and rendered terrain acceptance
+        run: |
+          npm run validate:visuals -- --output=.cache/visual-validation 2>&1 | tee .cache/acceptance/browser.log
+          node -e "if(require('./.cache/visual-validation/report.json').verdict!=='PASS')process.exit(1)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: illustrated-browser-evidence
+          include-hidden-files: true
+          path: |
+            .cache/acceptance/
+            .cache/visual-validation/
+          retention-days: 14
   measure:
     needs: prepare
     runs-on: ubuntu-latest
@@ -105,7 +144,7 @@ jobs:
           path: .cache/skills-regression/
           retention-days: 14
   film:
-    needs: prepare
+    needs: [prepare, visuals]
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
