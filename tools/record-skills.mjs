@@ -43,7 +43,7 @@ let held = new Set(), menu = null, boughtUpgrade = null, menuProof = null;
 let driftAttempt = null, nextDrift = 5, driftAttempts = 0, recoveryStage = null;
 let nextMini = 11, nextShield = 18, lastRecovery = -100, previousState = null;
 let lastThrottleDown = -100;
-const coverage = { drift: false, countersteer: false, xp: false, upgrade: false, miniTrucks: false, shield: false, recovery: false };
+const coverage = { drift: false, countersteer: false, wheelLift: false, xp: false, upgrade: false, miniTrucks: false, shield: false, recovery: false };
 
 async function step(count = 1) {
   return page.evaluate(({ dt, count }) => {
@@ -73,6 +73,8 @@ async function driverState() {
     return {
       scene: currentScene(), intro: launchIntro.active, failed: frameFailed,
       speed: truck.speed, tipped: truck.tipped, grounded: truck.grounded,
+      rollAngle: truck.rollAngle, rollMode: truck.rollMode,
+      wheelLiftLeft: truck.wheelLiftLeft, wheelLiftRight: truck.wheelLiftRight, rolloverRisk: truck.rolloverRisk,
       position: { ...truck.position }, velocity: { ...truck.velocity }, heading: truck.heading,
       drift: structuredClone(truck.drift || null), surface: surface.surface,
       roadWidth: surface.road?.edge.width || 24,
@@ -126,6 +128,7 @@ try {
       assert.ok(!['loss', 'results', 'title'].includes(state.scene), `Gameplay ended early in ${state.scene}.`);
       coverage.drift ||= Boolean(state.drift?.active && state.drift.maxAngle >= .12);
       coverage.countersteer ||= (state.drift?.releaseSequence || 0) > 0;
+      coverage.wheelLift ||= Math.max(state.wheelLiftLeft || 0, state.wheelLiftRight || 0) > 0.12;
       coverage.xp ||= state.progression.totalXp > 0;
       coverage.miniTrucks ||= state.abilities.miniTrucks.length > 0;
       coverage.shield ||= state.abilities.shield.remaining > 0;
@@ -225,6 +228,7 @@ try {
   const final = await driverState();
   coverage.xp ||= final.progression.totalXp > 0;
   coverage.countersteer ||= (final.drift?.releaseSequence || 0) > 0;
+  coverage.wheelLift ||= Math.max(final.wheelLiftLeft || 0, final.wheelLiftRight || 0) > 0.12;
   coverage.recovery ||= final.run.recoveryCount > 0;
   snapshots.push({ time: seconds, state: final });
   await page.screenshot({ path: path.join(output, 'after.png') });
