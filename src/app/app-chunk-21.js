@@ -479,7 +479,7 @@ function updateSkillHud(now) {
   $("#skill-open").classList.toggle("ready",state.points>0);
   for(const slot of ["q","e"]){const node=skillHud.querySelector(`[data-ability-slot="${slot}"]`),id=state.slots[slot],remaining=abilities.cooldowns[id];node.querySelector("span").textContent=ABILITY_DEFINITIONS[id].shortName;node.querySelector("small").textContent=remaining>0?`${remaining.toFixed(1)}s`:"READY";node.classList.toggle("ready",remaining<=0);node.disabled=simulationFrozen()||remaining>0}
   const drift=truck.drift||{};
-  $("#skill-drift").textContent=drift.active?`DRIFT ${Math.round((drift.charge||0)*100)}% · COUNTERSTEER`:(drift.phase==="release"||drift.phase==="released")?"MOMENTUM RELEASED":Math.abs(skillSteeringDamage)>.12?`STEERING PULL ${skillSteeringDamage>0?"LEFT":"RIGHT"} · F TO REPAIR`:"S + TURN · SHIFT TO SLIDE";
+  $("#skill-drift").textContent=truck.tipped?"ROLLOVER · F TO RECOVER":truck.rollMode==="critical"?"TIP RISK · COUNTERSTEER":truck.rollMode==="wheel-lift"?`WHEELS LIFTING · ${Math.round(Math.max(truck.wheelLiftLeft||0,truck.wheelLiftRight||0)*100)} CM`:drift.active?`DRIFT ${Math.round((drift.charge||0)*100)}% · COUNTERSTEER`:(drift.phase==="release"||drift.phase==="released")?"MOMENTUM RELEASED":Math.abs(skillSteeringDamage)>.12?`STEERING PULL ${skillSteeringDamage>0?"LEFT":"RIGHT"} · F TO REPAIR`:"S + TURN · SHIFT TO SLIDE";
   $("#skill-drift").classList.toggle("charged",drift.active&&drift.charge>.25);
   const effects=Object.entries(pickups.timers).filter(([,time])=>time>0).map(([id,time])=>`${id.toUpperCase()} ${Math.ceil(time)}s`);
   if(abilities.shield.remaining>0)effects.push(`SHIELD ${abilities.shield.charges} HITS`);
