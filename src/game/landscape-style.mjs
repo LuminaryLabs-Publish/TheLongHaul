@@ -52,13 +52,17 @@ export function cloudBankDescriptors(seed = 'long-haul-sky') {
     const radius = 610 + unit(id, 'distance') * 290;
     return { id, x: Math.sin(angle) * radius, z: Math.cos(angle) * radius,
       y: 210 + unit(id, 'height') * 155, yaw: unit(id, 'yaw') * Math.PI,
-      lobes: Array.from({ length: ATMOSPHERE_PROFILE.lobesPerBank }, (_, j) => ({
-        x: (j - 3) * 36, y: Math.sin(j * 1.6 + id) * 9 + (j % 2) * 14,
-        z: (unit(id * 9 + j, 'z') - .5) * 42,
-        sx: 38 + unit(id * 9 + j, 'sx') * 27,
-        sy: 15 + unit(id * 9 + j, 'sy') * 20,
-        sz: 26 + unit(id * 9 + j, 'sz') * 18,
-      })) };
+      // One connected bank: four broad base lobes and three taller billows.
+      // Overlap is intentional; a straight row of flattened ellipsoids reads
+      // as separate flying disks instead of an illustrated cloud silhouette.
+      lobes: [[-70,0,0,43,20,29],[-25,2,0,52,24,33],[25,0,0,50,22,32],[67,0,0,39,19,27],
+        [-35,22,3,38,31,29],[8,34,0,41,39,33],[46,23,2,34,29,27]].map(([x,y,z,sx,sy,sz],j) => ({
+          x, y: y + (unit(id * 9 + j,'rise') - .5) * 5,
+          z: z + (unit(id * 9 + j,'z') - .5) * 8,
+          sx: sx * (.95 + unit(id * 9 + j,'sx') * .1),
+          sy: sy * (.95 + unit(id * 9 + j,'sy') * .1),
+          sz: sz * (.95 + unit(id * 9 + j,'sz') * .1),
+        })) };
   });
 }
 

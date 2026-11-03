@@ -37,7 +37,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       if (!best || info.distance < best.distance) best = { ...info, edge: road.edge, segmentIndex: road.segmentIndex };
     }
     if (!best) return natural;
-    if (best.edge?.modular) return roadTerrainHeight(natural, best, x, z, true);
+    if (best.edge?.modular) return roadTerrainHeight(natural, best, x, z, true, CELL_SIZE / terrainSegments * Math.SQRT2);
     const flattenRadius = best.edge.width * 0.78 + 16;
     const blend = clamp(1 - best.distance / flattenRadius, 0, 1);
     const smoothBlend = blend * blend * (3 - 2 * blend);

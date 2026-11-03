@@ -59,10 +59,17 @@ try{
   for(const viewport of [{width:960,height:540},{width:390,height:844}]){
     await page.setViewportSize(viewport);await page.evaluate(()=>resize());await step(3);
     checkLayout(`${viewport.width}x${viewport.height}`,await geometry());await screenshot(`layout-${viewport.width}`);
+    // Presentation-only state fixture: full combo and onboard deadline occupy
+    // more space than idle; verify the same layout without changing rewards.
+    await page.evaluate(()=>{document.querySelector('#risk-hud').classList.remove('idle');document.querySelector('#risk-multiplier').textContent='×5';document.querySelector('#risk-pending').textContent='9,999';document.querySelector('#timer-box').hidden=false;document.querySelector('#objective-cargo-meter').hidden=false;});
+    checkLayout(`${viewport.width}x${viewport.height} expanded`,await geometry());await screenshot(`layout-${viewport.width}-expanded`);
+    fixtures.push({setup:'DOM-only expanded combo/cargo/deadline layout fixture',viewport});
+    await step(2);
   }
   await page.setViewportSize({width:1920,height:1080});await page.evaluate(()=>resize());await step(2);
   check('No frame failure',await page.evaluate(()=>!frameFailed));
   check('No failed asset requests',observed.networkFailures.length===0,observed.networkFailures);
+  check('No unsupported material properties',!observed.consoleLog.some(e=>/not a property of THREE/i.test(e.text)),observed.consoleLog);
   check('No fatal JS/shader errors',!observed.consoleLog.some(e=>e.type==='pageerror'||e.type==='error'),observed.consoleLog);
   check('Source identity unchanged',(await sourceIdentity()).aggregate===source.aggregate);
 }catch(error){failure=String(error.stack??error);if(page)await screenshot('failure').catch(()=>{});}

@@ -27,10 +27,14 @@ export function roadPlaneHeight(road, x = road.x, z = road.z) {
   const p = roadCrossSection(road.edge, road.segmentIndex, road.t);
   return p ? p.y + ((x - road.x) * p.nx + (z - road.z) * p.nz) * p.bank : null;
 }
-export function roadTerrainHeight(natural, road, x, z, bedOnly = false) {
+export function roadTerrainHeight(natural, road, x, z, bedOnly = false, meshMargin = 0) {
   const p = roadCrossSection(road.edge, road.segmentIndex, road.t);
   if (!p) return null;
-  const half = p.width * .68, radius = half + 22;
+  // A grass grid triangle may span past the edge of the paved footprint.
+  // Extend ONLY its subgrade flattening by one mesh-cell diagonal so no
+  // interpolated earth triangle can rise through the canonical driving deck.
+  // Physical road/shoulder sampling stays exactly on the existing contract.
+  const half = p.width * .68 + (bedOnly ? Math.max(0, meshMargin) : 0), radius = half + 22;
   const q = Math.max(0, Math.min(1, (road.distance - half) / (radius - half)));
   const blend = 1 - q * q * (3 - 2 * q);
   const height = roadPlaneHeight(road, x, z);
@@ -40,5 +44,6 @@ export function roadTerrainHeight(natural, road, x, z, bedOnly = false) {
   const bridge = a?.structure === 'bridge' && b?.structure === 'bridge';
   const valley = Math.min(natural, height - 9);
   if (bridge && !bedOnly && road.distance > half) return natural + (valley - natural) * blend;
-  return natural + ((bedOnly && bridge ? valley : height) - natural) * blend;
+  const bed = bedOnly ? (bridge ? valley : height - .45) : height;
+  return natural + (bed - natural) * blend;
 }
