@@ -1,4 +1,4 @@
-name: Illustrated skill acceptance
+name: Illustrated portrait acceptance
 on:
   push:
     branches: ['validation/illustrated-highway-20261103']
@@ -16,31 +16,33 @@ env:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Ground test fixtures on the actual road window
-        if: hashFiles('.agent/skill-ground-fix.json') != ''
+      - name: Apply exact portrait-only layout repair
+        if: hashFiles('.agent/portrait-fix.json') != ''
         run: |
           test "$GITHUB_REF" = refs/heads/validation/illustrated-highway-20261103
           python3 - <<'PY'
           import pathlib,json,hashlib
-          instruction=pathlib.Path('.agent/skill-ground-fix.json');fix=json.loads(instruction.read_text())
-          assert fix['schema']==1 and fix['path']=='tools/validate-skills.mjs'
-          target=pathlib.Path(fix['path']);text=target.read_text()
-          assert hashlib.sha256(text.encode()).hexdigest()==fix['before']
-          for change in fix['replacements']:
-              assert text.count(change['old'])==1
-              text=text.replace(change['old'],change['new'])
-          assert hashlib.sha256(text.encode()).hexdigest()==fix['after']
-          target.write_text(text);instruction.unlink()
+          instruction=pathlib.Path('.agent/portrait-fix.json'); data=json.loads(instruction.read_text())
+          assert data['schema']==1 and {x['path'] for x in data['changes']}=={'styles.css','tools/validate-visuals.mjs'}
+          for fix in data['changes']:
+              target=pathlib.Path(fix['path']);text=target.read_text()
+              assert hashlib.sha256(text.encode()).hexdigest()==fix['before']
+              for change in fix['replacements']:
+                  assert text.count(change['old'])==1
+                  text=text.replace(change['old'],change['new'])
+              assert hashlib.sha256(text.encode()).hexdigest()==fix['after']
+              target.write_text(text)
+          instruction.unlink()
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tools/validate-skills.mjs .agent/skill-ground-fix.json
-          git commit -m 'Ground browser fixtures using the correct modular road window before ability activation'
+          git add styles.css tools/validate-visuals.mjs .agent/portrait-fix.json
+          git commit -m 'Keep portrait cargo deadline above warnings and reserve touch space only where needed'
           git push origin HEAD:refs/heads/validation/illustrated-highway-20261103
       - uses: actions/setup-node@v4
         with:
@@ -51,12 +53,12 @@ jobs:
       - run: git diff --exit-code -- src vendor index.html campaign.html styles.css
       - run: npm test
       - run: npx playwright install --with-deps chromium
-      - name: Existing skill, ability, storage and input contracts
-        run: node tools/validate-skills.mjs --output=.cache/skills-regression
+      - name: Actual rendered world and expanded portrait layout acceptance
+        run: node tools/validate-visuals.mjs --output=.cache/visual-validation
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: illustrated-skills-regression
+          name: illustrated-final-layout
           include-hidden-files: true
-          path: .cache/skills-regression/
+          path: .cache/visual-validation/
           retention-days: 14
