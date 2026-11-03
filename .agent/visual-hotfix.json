@@ -1,0 +1,1 @@
+{"path":"src/app/visual-presentation.js","before":"dd007f1bc365af936ea2d6718e53a04585fb3aedcb1ffa192df4435d345a071a","after":"de125fdcc5647c792a6d92029ddedba4054e7d0e6220349d4655463f88056b07","old":"vertexColors: old.vertexColors, side: old.side, flatShading: true, fog: true, ...options","new":"vertexColors: old.vertexColors, side: old.side, fog: true, ...options"}

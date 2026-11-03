@@ -23,39 +23,26 @@ jobs:
       candidate: ${{ steps.candidate.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-      - name: Materialize exact inspected source repairs on validation branch
-        if: hashFiles('.agent/visual-repair/0.part') != ''
+      - name: Apply exact reviewed material compatibility repair
+        if: hashFiles('.agent/visual-hotfix.json') != ''
         run: |
           test "${GITHUB_REF}" = refs/heads/validation/illustrated-highway-20261103
           python3 - <<'PY'
-          import hashlib,json,pathlib,shutil,zlib
-          root=pathlib.Path.cwd().resolve(); stage=root/'.agent/visual-repair'
-          raw=b''.join((stage/f'{i}.part').read_bytes() for i in range(4))
-          assert hashlib.sha256(raw).hexdigest()=='b14460cf9e0dd8ea7b712277c15c2f796b8ec27b038baa41097dd8ea86df2fc0'
-          data=json.loads(zlib.decompress(raw)); assert data['schema']==1
-          assert data['base']=='09f0ffb06cdc73571aaeb3626870ed3bc98962dd'
-          seen=set()
-          for item in data['changes']:
-              rel=pathlib.PurePosixPath(item['path'])
-              assert not rel.is_absolute() and '..' not in rel.parts and '.git' not in rel.parts
-              assert rel.parts[0] in ('src','tools','tests','styles.css','package.json') and str(rel) not in seen
-              seen.add(str(rel)); target=(root/rel).resolve(); assert target.is_relative_to(root)
-              old=target.read_text() if target.exists() else ''
-              if item['before'] is None: assert not target.exists()
-              else: assert hashlib.sha256(old.encode()).hexdigest()==item['before'],str(rel)
-              result=old
-              for start,end,text in reversed(item['edits']):
-                  assert 0<=start<=end<=len(old)
-                  result=result[:start]+text+result[end:]
-              assert hashlib.sha256(result.encode()).hexdigest()==item['after'],str(rel)
-              target.parent.mkdir(parents=True,exist_ok=True);target.write_text(result)
-          shutil.rmtree(stage)
-          print('Exact verified source repairs:',len(seen))
+          import hashlib,json,pathlib
+          instruction=pathlib.Path('.agent/visual-hotfix.json')
+          fix=json.loads(instruction.read_text())
+          assert fix['path']=='src/app/visual-presentation.js'
+          target=pathlib.Path(fix['path']);old=target.read_text()
+          assert hashlib.sha256(old.encode()).hexdigest()==fix['before']
+          assert old.count(fix['old'])==1
+          new=old.replace(fix['old'],fix['new'])
+          assert hashlib.sha256(new.encode()).hexdigest()==fix['after']
+          target.write_text(new);instruction.unlink()
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src tools tests styles.css package.json .agent/visual-repair
-          git commit -m 'Repair rendered road subgrade, portrait HUD, cloud silhouettes and test fixtures'
+          git add src/app/visual-presentation.js .agent/visual-hotfix.json
+          git commit -m 'Use supported toon material properties without renderer warnings'
           git push origin HEAD:refs/heads/validation/illustrated-highway-20261103
       - uses: actions/setup-node@v4
         with:
