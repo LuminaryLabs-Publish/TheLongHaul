@@ -51,7 +51,7 @@ try{
     if(done.has(info.kind))continue;done.add(info.kind);
     await page.evaluate(({progress})=>{const p=roadChunkSample(course.seed,progress);engine.n.longHaulTruck.teleport({x:p.x,y:p.y+.92,z:p.z,heading:p.heading,speed:0,groundHeight:p.y,groundNormal:{x:0,y:1,z:0},surface:'road',surfaceGrip:1});engine.tick(0);updateWorldStreaming();},info);
     fixtures.push({...info,setup:'explicit distant geometry-inspection teleport, not continuous driving'});
-    await step(150);check(`Road family ${info.kind} has real rendered pixels`,(await webglEvidence(page)).pixels.distinctColors>100);await screenshot('road-'+info.kind);
+    await step(150);check(`Road family ${info.kind} has real rendered pixels`,(await webglEvidence(page)).pixels.distinctColors>100);check(info.kind+' horizon boundaries close below the landscape',await page.evaluate(()=>[...horizonHosts.values()].every(host=>{const n=host.patch.segments,position=host.geometry.getAttribute('position');for(let i=(n+1)*(n+1);i<position.count;i++)if(position.getY(i)>-255.99)return false;return position.count>(n+1)*(n+1);})));await screenshot('road-'+info.kind);
   }
   // Explicit weather fixture; the continuous movie proves the normal transition.
   await page.evaluate(()=>{arcadeWeatherAmount=1;updateCloudLayers(readTruck(),skillVisualTime*1000);});
