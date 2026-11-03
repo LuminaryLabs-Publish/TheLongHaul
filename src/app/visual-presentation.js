@@ -93,7 +93,7 @@
   const replacements = new Map();
   function toon(old, color, options = {}) {
     const mat = new THREE.MeshToonMaterial({ color: color ?? old.color, gradientMap: gradient,
-      vertexColors: old.vertexColors, side: old.side, flatShading: true, fog: true, ...options });
+      vertexColors: old.vertexColors, side: old.side, fog: true, ...options });
     replacements.set(old, mat); return mat;
   }
   for (const [key, color] of Object.entries({ terrain: 0xffffff, tree: 0xffffff, trunk: 0x72523b,
