@@ -151,6 +151,23 @@ for (let index = 0; index < 24; index++) {
     assert.equal(vehicleColliderOverlapsCircle(createVehicleCollider(position, heading, LONG_HAUL_TRUCK_COLLIDER), roundabout.center.x, roundabout.center.z, radius), false, 'full truck footprint clears the ring island');
     assert.ok(nearestRoad(finite, position).distance < 0.001, 'ring road sampling follows the rendered chord');
   }
+  // The finite-mode roundabout remains genuinely signed and physically
+  // marked, not merely represented by an abstract optional-road node.
+  const choiceSign = finite.signs.find(sign => sign.id === 'bypass-exit-sign');
+  assert.ok(choiceSign && ['↗', '↖'].includes(choiceSign.arrow), 'finite bypass sign points toward the actual branch');
+  assert.ok(finite.signs.some(sign => sign.id === 'bypass-return-sign'), 'return ramp remains signed');
+  for (const approach of roundabout.approaches) {
+    assert.equal(approach.yield, true);
+    const offset = Math.max(5, (roundabout.roadWidth ?? 10) * .85);
+    const x = approach.node.x - Math.sin(approach.heading) * offset;
+    const z = approach.node.z - Math.cos(approach.heading) * offset;
+    const cx = Math.floor(x / 160), cz = Math.floor(z / 160);
+    const patch = createCourseCellDescriptor(finite, { id: `${cx}:${cz}`, coordinates: [cx, cz],
+      bounds: { minX: cx*160, maxX: (cx+1)*160, minZ: cz*160, maxZ: (cz+1)*160 } }, { terrainSegments: 8 });
+    const paint = patch.roundabouts.flatMap(r => r.yields).find(y => y.id === `${roundabout.id}:${approach.id}:yield`);
+    assert.ok(paint && Number.isFinite(paint.y), 'roundabout yield marking belongs to a real streamed cell');
+    assert.ok(nearestRoad(finite, { x, z }).distance < 0.05, 'yield marking sits on drivable ramp');
+  }
   const bypassEdges = finite.edges.filter(edge => edge.branchId === bypass.id);
   for (const edge of bypassEdges) for (const other of finite.edges) {
     if (other.branchId === bypass.id || [edge.from, edge.to].some(id => id === other.from || id === other.to)) continue;

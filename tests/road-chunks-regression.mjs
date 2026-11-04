@@ -35,6 +35,52 @@ for(let seedIndex=0;seedIndex<30;seedIndex++) {
     near(station.safe.point.width,28); assert.ok(station.safe.routeLength>station.risky.routeLength+8);
     assert.ok(Math.abs(station.safe.point.x-station.risky.point.x)>40);
   }
+  // Real world-space signs and metadata must agree with the two physical
+  // freight routes; a generic straight arrow is not valid wayfinding.
+  const first = createEndlessHighway(seed);
+  const station = first.loadingStations.find(station => station.index === 0);
+  assert.ok(station,'initial freight station is in the streaming window');
+  const freightChoice = first.routeChoices.find(choice => choice.stationId === station.id);
+  assert.equal(freightChoice.safeSide,'left'); assert.equal(freightChoice.riskySide,'right');
+  assert.deepEqual(freightChoice.signIds,[`${station.id}:approach`,`${station.id}:approach:express`]);
+  for(const [side,id,arrow,expectedSide] of [
+    ['safe',freightChoice.signIds[0],'↖',1],['risky',freightChoice.signIds[1],'↗',-1]
+  ]) {
+    const sign=first.signs.find(sign=>sign.id===id);
+    assert.ok(sign && sign.arrow===arrow && sign.stationId===station.id);
+    near(sign.progress,station.warningProgress);
+    const center=endlessHighwayPoint(first,sign.progress);
+    const signedDistance=(sign.x-center.x)*center.nx+(sign.z-center.z)*center.nz;
+    assert.ok(expectedSide*signedDistance>20,'freight sign stays on the correct roadside');
+    assert.ok(station.entryProgress-sign.progress>=200,'driver gets a long advance warning');
+  }
+  // Each generated optional bypass must physically rejoin the main road,
+  // retain a usable highway fallback, and display its ACTUAL branching side.
+  for(let i=0;i<24;i++) {
+    const chunk=roadChunkAt(seed,960+i*960);
+    if(!chunk.branch)continue;
+    const section=createEndlessHighway(seed,{progress:chunk.start+80});
+    const id=`${chunk.id}:bypass`,branch=section.edges.find(e=>e.id===id);
+    const choice=section.routeChoices.find(x=>x.entryEdgeId===id),sign=section.signs.find(x=>x.id===`${chunk.id}:sign`);
+    assert.ok(branch && choice && sign,`${seed} ${chunk.id}: route, choice and sign are present`);
+    assert.ok(section.nodes.some(n=>n.id===branch.from)&&section.nodes.some(n=>n.id===branch.to));
+    assert.equal(choice.side,chunk.branchSide<0?'left':'right');
+    assert.equal(sign.side,choice.side); assert.equal(sign.arrow,choice.side==='left'?'↖':'↗');
+    assert.ok(choice.fallbackEdgeIds.length>=2 && choice.fallbackEdgeIds.every(id=>section.edges.some(e=>e.id===id&&!e.optional)));
+    assert.deepEqual(choice.signIds,[sign.id]);near(sign.progress,choice.warningProgress);
+    assert.ok(sign.subtitle.includes(choice.side.toUpperCase()) && !sign.subtitle.includes('OPTIONAL ROUTE'));
+    const center=endlessHighwayPoint(section,sign.progress),lateral=(sign.x-center.x)*center.nx+(sign.z-center.z)*center.nz;
+    assert.ok((choice.side==='left'?1:-1)*lateral>21,'bypass warning is placed outside the correct shoulder');
+    const gate=endlessHighwayPoint(section,chunk.start+chunk.length*.2,'branch');
+    const detour=endlessHighwayPoint(section,chunk.start+chunk.length*.2,0,'branch');
+    const highway=endlessHighwayPoint(section,chunk.start+chunk.length*.2);
+    assert.ok(sign.progress<chunk.start+chunk.length*.2,'sign appears before useful route divergence');
+    assert.ok(Math.hypot(detour.x-highway.x,detour.z-highway.z)>12,'the optional branch is real');
+    for(const [progress,idx] of [[chunk.start,0],[chunk.end,branch.samples.length-1]]) {
+      const p=endlessHighwayPoint(section,progress),q=branch.samples[idx];near(p.x,q.x,.001);near(p.z,q.z,.001);
+    }
+    assert.ok(gate && Number.isFinite(gate.x));
+  }
 }
 for (const progress of [0,319.999,320,640,960,1280,3840,99123,-800,1000000]) {
   const a=createEndlessHighway('rebuild',{progress});
@@ -64,6 +110,9 @@ for(let i=0;i<12;i++) {
 }
 const legacy=createEndlessHighway('legacy',{generatorVersion:LEGACY_ROAD_VERSION});
 assert.equal(legacy.generatorVersion,LEGACY_ROAD_VERSION);assert.equal(legacy.roadChunks.length,0);
+assert.equal(legacy.signs.filter(s=>s.stationId===legacy.loadingStations[0].id).length,1,'legacy save keeps its original single freight approach sign');
+assert.equal(legacy.signs.find(s=>s.id===`${legacy.loadingStations[0].id}:approach`)?.title,'Freight ahead');
+assert.equal(legacy.routeChoices.find(choice=>choice.stationId===legacy.loadingStations[0].id)?.safeSide,undefined,'legacy route metadata unchanged');
 const v1=createFreightJourney({seed:'legacy',sessionId:'legacy-haul',generatorVersion:LEGACY_ROAD_VERSION});
 const old=v1.snapshot();delete old.generatorVersion;
 const restored=createFreightJourney({seed:'legacy',sessionId:'legacy-haul',snapshot:old});

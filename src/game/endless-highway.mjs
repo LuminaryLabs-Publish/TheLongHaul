@@ -174,13 +174,31 @@ function rebuildWindow(course, centerSection) {
   for (const station of stations) {
     edges.push(station.riskyEdge);
     delete station.riskyEdge;
+    // Both routes are physically drivable. Their signs must communicate the
+    // actual left/right geometry rather than show the default straight arrow.
+    const safeSignId = `${station.id}:approach`, expressSignId = `${station.id}:approach:express`;
     routeChoices.push({ id: `${station.id}:choice`, kind: 'loading-route', label: station.name,
       stationId: station.id, entryEdgeId: station.risky.edgeIds[0], exitEdgeId: station.risky.edgeIds[0],
       fallbackEdgeIds: station.safe.edgeIds, safeEdgeIds: station.safe.edgeIds, riskyEdgeIds: station.risky.edgeIds,
-      entryProgress: station.entryProgress, exitProgress: station.exitProgress });
-    const point = endlessHighwayPoint(course, station.warningProgress, -20);
-    signs.push({ id: `${station.id}:approach`, x: point.x, z: point.z, heading: point.heading + Math.PI,
-      title: 'Freight ahead', subtitle: 'WIDE LEFT / EXPRESS RIGHT', color: '#67d9c0', stationId: station.id });
+      entryProgress: station.entryProgress, exitProgress: station.exitProgress,
+      ...(modular(course) ? { safeSide: 'left', riskySide: 'right', warningProgress: station.warningProgress,
+        signIds: [safeSignId, expressSignId] } : {}) });
+    if (modular(course)) {
+      for (const sign of [
+        { id: safeSignId, lateral: 22, title: 'WIDE LEFT', subtitle: 'SAFE FREIGHT', arrow: '↖', color: '#67d9c0', side: 'left' },
+        { id: expressSignId, lateral: -22, title: 'EXPRESS RIGHT', subtitle: 'NARROW BONUS', arrow: '↗', color: '#e6b747', side: 'right' }
+      ]) {
+        const point = endlessHighwayPoint(course, station.warningProgress, sign.lateral);
+        signs.push({ id: sign.id, x: point.x, z: point.z, heading: point.heading + Math.PI,
+          title: sign.title, subtitle: sign.subtitle, arrow: sign.arrow, color: sign.color,
+          kind: 'freight-route', side: sign.side, progress: station.warningProgress, stationId: station.id });
+      }
+    } else {
+      // Existing unversioned checkpoints keep their original roadside sign.
+      const point = endlessHighwayPoint(course, station.warningProgress, -20);
+      signs.push({ id: safeSignId, x: point.x, z: point.z, heading: point.heading + Math.PI,
+        title: 'Freight ahead', subtitle: 'WIDE LEFT / EXPRESS RIGHT', color: '#67d9c0', stationId: station.id });
+    }
   }
   const chunks = [];
   if (modular(course)) {
@@ -202,14 +220,29 @@ function rebuildWindow(course, centerSection) {
           roughness: chunk.kind === 'gravel-detour' ? .18 : .04, optional: true, endless: true, modular: true,
           generatorVersion: ROAD_GENERATOR_VERSION, chunk, samples, startProgress: chunk.start, endProgress: chunk.end };
         branch.length = edgeLength(branch); edges.push(branch);
+        const side = chunk.branchSide < 0 ? 'left' : 'right';
         routeChoices.push({ id: `${id}:choice`, kind: 'scenic-bypass', label: chunk.name,
           entryEdgeId: id, exitEdgeId: id, fallbackEdgeIds: edges.filter(e => !e.optional && e.startProgress >= chunk.start && e.endProgress <= chunk.end).map(e => e.id),
+          side, warningProgress: chunk.start + 35, signIds: [`${chunk.id}:sign`],
           entryProgress: chunk.start, exitProgress: chunk.end });
       }
       if (chunk.index >= 0 && chunk.kind !== 'freight') {
-        const p = endlessHighwayPoint(course, chunk.start + 35, -21);
+        // At the feature start the two roads still share a centreline. Keep
+        // signs at +35m, before the ramps separate, and outside the shoulders.
+        const side = chunk.branchSide < 0 ? 'left' : 'right';
+        const p = endlessHighwayPoint(course, chunk.start + 35, chunk.branch ? (side === 'left' ? 23 : -23) : -21);
+        const advice = {
+          sweep: 'EASE INTO THE CURVE', hill: 'CHECK SPEED AT CREST',
+          'lane-transition': 'CENTER LANES CONTINUE', construction: 'CENTER LANES OPEN',
+          bridge: 'STAY ON THE BRIDGE', tunnel: 'LOW ROOF / NO JUMPS'
+        };
         signs.push({ id: `${chunk.id}:sign`, x: p.x, z: p.z, heading: p.heading + Math.PI,
-          title: chunk.name, subtitle: chunk.branch ? 'OPTIONAL ROUTE / HIGHWAY OPEN' : chunk.kind === 'lane-transition' || chunk.kind === 'construction' ? 'LANES MERGE / KEEP CLEAR' : 'DRIVE THE NEXT HORIZON', color: '#e6b747' });
+          title: chunk.branch ? (chunk.kind === 'gravel-detour' ? 'GRAVEL DETOUR' : 'SCENIC BYPASS') : chunk.name,
+          subtitle: chunk.branch ? `${side.toUpperCase()} EXIT / HIGHWAY OPEN` : advice[chunk.kind] ?? 'OPEN HIGHWAY',
+          arrow: chunk.branch ? (side === 'left' ? '↖' : '↗') : '↑',
+          color: chunk.branch ? '#e6b747' : '#67d9c0',
+          kind: chunk.branch ? 'scenic-bypass' : 'road-feature', side: chunk.branch ? side : null,
+          progress: chunk.start + 35, chunkId: chunk.id });
       }
     }
   }
