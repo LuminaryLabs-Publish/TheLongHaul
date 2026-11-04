@@ -37,3 +37,9 @@
 ## Limitations
 
 Arcade stability is an intentionally tuned model, not validated multibody suspension dynamics. Per-side wheel-lift values are telemetry and visible wheel/chassis pose, while the existing collision support stays a bounded ground sphere. Full per-wheel suspension forces and terrain contacts require a separate physics feature.
+
+## Mechanical settling refinement (2026-11-04)
+
+The roll state is a damped rotational body, not a target interpolation. Restoring torque is proportional to vehicle mass, gravity, track half-width and suspension roll stiffness; opposing moments arise from actual cornering acceleration, drift-slip velocity and moving cargo. Rotational inertia incorporates the effective mass and cargo center-of-mass height. The physical shock uses a damping ratio near critical to avoid ringing. An explicit, measurable regression requires returning from a 0.48 radian recoverable lean in 0.4–0.75 seconds, with no overshoot or false rollover. The renderer consumes the same roll angle without a second low-pass filter.
+
+**Authoring goal-map contract:** bind source revision and scenario facts to the acceptance evidence; inspect actual browser frames for wheel contact, drift and F recovery; reject stale video evidence after subsequent code changes. The pinned game bundle does not export the optional NexusEngine Goal Map or Craft harness, so those engine APIs are not represented as installed or exercised.

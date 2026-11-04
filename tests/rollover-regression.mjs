@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { advanceTruckRollover } from "../src/game/truck-rollover.mjs";
+import { DEFAULT_TRUCK_DYNAMICS_PROFILE } from "../src/game/truck-dynamics-profile-kit.mjs";
 
 const load = { rollScale: 1, springScale: 1, payloadFraction: 0.3 };
 const profile = { roll: { spring: 19, damping: 8.8, lateralScale: 0.034, maximumAngle: 0.95, settledAngle: 1.48, tipExposure: 0.36 } };
@@ -47,4 +48,35 @@ assert.ok(Number.isFinite(corrected.rollAngle) && Number.isFinite(corrected.roll
 
 const paused = step({ ...baseline, rolloverExposure: 0.19 }, { grounded: false });
 assert.ok(paused.rolloverExposure <= 0.19, "airborne contact cannot accumulate grounded rollover exposure");
+// Rebound is a damped physical angular-momentum response, not an extra
+// animation lerp. Measured from a deliberately displaced, still-moving rig.
+const settledLoad = { ...load, effectiveMass: 9400, centerOfMassHeight: 1.42, payloadFraction: 0.17 };
+const releaseMotion = {
+  grounded: true, longitudinal: 17, lateral: 0, yawRate: 0,
+  drift: { active: false, direction: 0, phase: "idle" },
+  loadShift: { x: 0 }, load: settledLoad
+};
+function settleAtRate(delta) {
+  let state = { ...baseline, rollAngle: 0.48 };
+  let time = null, crossing = 0, wheelClear = null;
+  let lastSign = 1;
+  for (let index = 0; index < Math.round(1.5 / delta); index += 1) {
+    state = advanceTruckRollover(state, releaseMotion, delta, DEFAULT_TRUCK_DYNAMICS_PROFILE);
+    const sign = Math.sign(state.rollAngle || lastSign);
+    if (sign !== lastSign) crossing++;
+    lastSign = sign;
+    if (wheelClear === null && state.wheelLiftLeft + state.wheelLiftRight === 0) wheelClear = (index + 1) * delta;
+    if (time === null && Math.abs(state.rollAngle) <= 0.02 && Math.abs(state.rollVelocity) <= 0.06) time = (index + 1) * delta;
+    assert.ok(Number.isFinite(state.rollAngle) && Number.isFinite(state.rollVelocity) && Number.isFinite(state.rolloverRisk));
+    assert.equal(state.tipped, false, "release from a recoverable lean must not tip at constant, straight speed");
+  }
+  return { time, crossing, wheelClear, state };
+}
+const fineSettle = settleAtRate(1 / 120), coarseSettle = settleAtRate(1 / 30);
+assert.ok(fineSettle.time >= 0.4 && fineSettle.time <= 0.75, "shocks flatten the rig within the intended 0.4–0.75 second window");
+assert.equal(fineSettle.crossing, 0, "the loaded truck never overshoots level during rebound");
+assert.ok(fineSettle.wheelClear < fineSettle.time, "ground contact returns before the body finishes settling");
+assert.ok(Math.abs(fineSettle.time - coarseSettle.time) <= 0.1, "settling is stable across display frame rates");
+assert.ok(Math.abs(fineSettle.state.rollAngle) < 0.0001, "rebound cannot leave a permanent tilt");
+
 console.log("Rollover regressions passed: outward cornering, inward drift, heavy high-speed tip, wrong countersteer, recovery and bounded telemetry.");

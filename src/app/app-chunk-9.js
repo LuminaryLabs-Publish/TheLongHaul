@@ -68,7 +68,7 @@
       const normal=state.groundNormal??{x:0,y:1,z:0},s=Math.sin(state.heading),c=Math.cos(state.heading),forwardSlope=normal.x*s+normal.z*c,rightSlope=normal.x*c-normal.z*s;
       const pitch=state.grounded?Math.atan2(forwardSlope,Math.max(.25,normal.y)):0,slopeRoll=state.grounded?-Math.atan2(rightSlope,Math.max(.25,normal.y)):0;
       const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-1.12,1.12);
-      rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lerp(rig.leanPivot.rotation.z,lean+slopeRoll,1-Math.exp(-8*dt)));
+      rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lean+slopeRoll);
       rig.leanPivot.position.y=1.5-clamp(state.suspensionCompression??0,-1,1)*.12;
       truckSurfaceEntries.length=0;const cx=Math.floor(state.position.x/CELL_SIZE),cz=Math.floor(state.position.z/CELL_SIZE);for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){const entry=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${x}:${z}`);if(entry)truckSurfaceEntries.push(entry)}
       rig.grounding.resolve(rig.root,rig.leanPivot,truckRenderedGroundHeight);
