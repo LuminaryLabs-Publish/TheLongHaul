@@ -189,16 +189,28 @@
   const clouds = new THREE.Group(); clouds.name='shaped-cloud-banks'; atmosphere.add(clouds);
   const cloudGeometry=new THREE.SphereGeometry(1,12,7);
   const cloudMaterial=new THREE.MeshToonMaterial({color:0xffe5c5,gradientMap:gradient,fog:true});
-  const descriptors=cloudBankDescriptors(), count=descriptors.reduce((n,b)=>n+b.lobes.length,0);
+  // Keep one GPU mesh, but vary its deterministic layout with the actual course.
+  // New journeys must not reuse the same sky, nor allocate more GPU resources.
+  const count=profile.cloudBanks*profile.lobesPerBank;
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count); cloudMesh.name='cloud-lobes';
-  const dummy=new THREE.Object3D();let instance=0;
-  for(const bank of descriptors) for(const lobe of bank.lobes) {
-    const c=Math.cos(bank.yaw),s=Math.sin(bank.yaw);
-    dummy.position.set(bank.x+c*lobe.x+s*lobe.z,bank.y+lobe.y,bank.z-s*lobe.x+c*lobe.z);
-    dummy.scale.set(lobe.sx,lobe.sy,lobe.sz);dummy.rotation.set(0,bank.yaw,0);dummy.updateMatrix();
-    cloudMesh.setMatrixAt(instance++,dummy.matrix);
+  const dummy=new THREE.Object3D();let cloudSeed=null,cloudLayoutUpdates=0;
+  function ensureCloudLayout(seed) {
+    const nextSeed=typeof seed==='string'&&seed.length?seed:'long-haul-sky';
+    if(nextSeed===cloudSeed)return;
+    const descriptors=cloudBankDescriptors(nextSeed);
+    if(descriptors.reduce((n,b)=>n+b.lobes.length,0)!==count)throw Error('Cloud layout no longer matches the bounded mesh');
+    let instance=0;
+    for(const bank of descriptors) for(const lobe of bank.lobes) {
+      const c=Math.cos(bank.yaw),s=Math.sin(bank.yaw);
+      dummy.position.set(bank.x+c*lobe.x+s*lobe.z,bank.y+lobe.y,bank.z-s*lobe.x+c*lobe.z);
+      dummy.scale.set(lobe.sx,lobe.sy,lobe.sz);dummy.rotation.set(0,bank.yaw,0);dummy.updateMatrix();
+      cloudMesh.setMatrixAt(instance++,dummy.matrix);
+    }
+    cloudMesh.instanceMatrix.needsUpdate=true;cloudMesh.computeBoundingSphere();
+    cloudSeed=nextSeed;cloudLayoutUpdates++;
   }
-  cloudMesh.instanceMatrix.needsUpdate=true;cloudMesh.computeBoundingSphere();clouds.add(cloudMesh);
+  clouds.add(cloudMesh);
+  ensureCloudLayout(course?.seed);
   scene.fog=new THREE.Fog(0xf1cca4,profile.clearNear,profile.clearFar);
   const fill=new THREE.DirectionalLight(0xb6d9ff,.65);worldRoot.add(fill,fill.target);
   const colors={clearTop:new THREE.Color(0x697fae),rainTop:new THREE.Color(0x586d89),
@@ -209,6 +221,7 @@
   hemi.color.set(0xd7e5ff);hemi.groundColor.copy(groundColor);sun.color.copy(sunColor);
   function atmosphereFrame(state, milliseconds) {
     const weather=clamp(arcadeWeatherAmount,0,1),seconds=milliseconds/1000;
+    ensureCloudLayout(course?.seed);
     atmosphere.position.set(state.position.x,0,state.position.z);dome.position.y=state.position.y;
     clouds.rotation.y=settings.motion?Math.sin(seconds*.0015)*.035:0;
     skyUniforms.topColor.value.copy(colors.clearTop).lerp(colors.rainTop,weather);
@@ -245,7 +258,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:descriptors.length,cloudLobes:count,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:count,cloudSeed,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;

@@ -38,5 +38,9 @@ hud=freightHudModel({...freight,status:'in-transit',onboard:true,contract:{...fr
 hud=freightHudModel({...freight,status:'awaiting-pickup'},{z:-300},100,50);assert.equal(hud.urgent,false);assert.match(hud.mass,/awaiting pickup/);
 const host=await readFile(new URL('../src/app/visual-presentation.js',import.meta.url),'utf8');
 assert.match(host,/cloudRoot\.removeFromParent/);assert.match(host,/new THREE\.Fog/);assert.doesNotMatch(host,/teleport|setCargo|meters\.set\(/);
+assert.match(host,/ensureCloudLayout\(course\?\.seed\)/,'Clouds follow the active course, not a fixed default sky');
+assert.match(host,/if\(nextSeed===cloudSeed\)return/,'Unchanged worlds reuse the same GPU instance layout');
+assert.match(host,/cloudMesh\.computeBoundingSphere\(\)/,'Changing a layout refreshes culling bounds');
+assert.match(host,/cloudLayoutUpdates/,'Runtime exposes cloud update evidence');
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');assert.match(html,/id="campaign-coming-soon"[^>]*disabled/);assert.match(html,/campaign.html#garage/);
 console.log('PASS presentation: seeded clouds, 240 relief samples, legacy terrain, worker seams, broad canopy geometry, HUD transition/urgency, preserved Campaign boundary.');
