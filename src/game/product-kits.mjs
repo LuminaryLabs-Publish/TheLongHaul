@@ -7,6 +7,7 @@ import { createLongHaulTerrainPolicyKit } from "./terrain-policy-kit.mjs";
 import { createLongHaulTruckDynamicsProfileKit } from "./truck-dynamics-profile-kit.mjs";
 import { createLongHaulDeliveryContractCatalogKit } from "./delivery-contract-catalog-kit.mjs";
 import { createLongHaulTruckKit } from "./truck-kit.mjs";
+import { createLongHaulMovementV2Kit } from "./truck-movement-v2-kit.mjs";
 import { createLongHaulCourseKit } from "./course-kit.mjs";
 import { createLongHaulRunKit } from "./run-kit.mjs";
 import { createLongHaulDeliveryKit } from "./delivery-kit.mjs";
@@ -28,7 +29,12 @@ export function createLongHaulProductKits(N, options = {}) {
   const truckDynamicsProfile = createLongHaulTruckDynamicsProfileKit(N, options.truck ?? {});
   const deliveryContracts = createLongHaulDeliveryContractCatalogKit(N, options.delivery ?? {});
 
-  const truck = createLongHaulTruckKit(N, {
+  // V2 is the sole truck system by default. V1 remains unchanged for rollback;
+  // never register both physics systems on the same ECS world.
+  const movementVersion = options.movementVersion ?? "v2";
+  if (movementVersion !== "v1" && movementVersion !== "v2") throw new TypeError("Unknown movement kit version");
+  const factory = movementVersion === "v2" ? createLongHaulMovementV2Kit : createLongHaulTruckKit;
+  const truck = factory(N, {
     dynamicsProfileResource: truckDynamicsProfile.resources.TruckDynamicsProfileState
   });
   const course = createLongHaulCourseKit(N);
