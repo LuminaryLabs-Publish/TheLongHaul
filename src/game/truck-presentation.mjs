@@ -1,9 +1,9 @@
 // Keep steering/contact coordinates independent from the articulated render mesh.
-export function createTruckGrounding(THREE,body) {
+export function createTruckGrounding(THREE,body,{heroSupportOnly=false}={}) {
   body.updateWorldMatrix(true,true);
   const inverse=new THREE.Matrix4().copy(body.matrixWorld).invert(),matrix=new THREE.Matrix4(),v=new THREE.Vector3(),vertices=[];
   body.traverseVisible(node=>{
-    if(!node.isMesh)return;
+    if(!node.isMesh || (heroSupportOnly && !node.userData?.heroGroundingSupport))return;
     node.geometry.computeBoundingBox();const b=node.geometry.boundingBox;
     matrix.multiplyMatrices(inverse,node.matrixWorld);
     for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z]){v.set(x,y,z).applyMatrix4(matrix);vertices.push([v.x,v.y,v.z])}
