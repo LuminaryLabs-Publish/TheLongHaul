@@ -14,6 +14,7 @@ class Obj {
   constructor(){this.name='';this.position=new V3();this.rotation=new V3();this.scale=new V3(1,1,1);this.children=[];this.userData={};this.parent=null;this.matrix={mock:true};}
   add(...items){for(const it of items){if(it.parent){it.parent.remove(it)}this.children.push(it);it.parent=this}return this;}
   remove(o){this.children=this.children.filter(x=>x!==o);o.parent=null;}
+  clear(){for(const x of this.children)x.parent=null;this.children=[];}
   removeFromParent(){this.parent?.remove(this)}
   updateMatrix(){}
   traverseVisible(cb){cb(this);for(const x of this.children)x.traverseVisible(cb)}
@@ -82,4 +83,11 @@ assert.equal(dynamicRoot.children.length,1);
 const next=sandbox.buildTruck();
 assert.equal(dynamicRoot.children.length,1,'rebuild removes stale assembled rig');
 assert.equal(next.heroAuthored,true);
+// clearWorld removes the mesh and sets truckRig=null; our host must still
+// remember and release the last GPU authoring resources on the next run.
+dynamicRoot.clear();sandbox.truckRig=null;
+const third=sandbox.buildTruck();
+assert.equal(third.heroAuthored,true);
+assert.equal(dynamicRoot.children.length,1);
+assert.ok(next.root.children.length>0);
 console.log(`PASS authored hero truck source/host: ${meshCount} meshes, ${rig.heroStats.geometryCount} shared geometries, six wheels, two steering slots, six cargo placeholders, twelve GPU instanced detail meshes.`);

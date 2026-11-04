@@ -4,13 +4,15 @@
 (() => {
   const originalBuildTruck = buildTruck;
   let latest = { source: HERO_TRUCK_SOURCE.id, status: 'not-built', meshCount: 0 };
+  let lastAuthoredRig = null; // clearWorld() can null truckRig before the next run.
   buildTruck = function buildAuthoredHeroTruck() {
-    const previous = truckRig;
+    const previous = lastAuthoredRig || truckRig;
     if (previous?.root?.parent) previous.root.parent.remove(previous.root);
     if (previous?.heroRelease) previous.heroRelease();
+    lastAuthoredRig = null;
     try {
       const rig = createHeroTruckMesh({ THREE, materials, createTruckGrounding });
-      dynamicRoot.add(rig.root); truckRig = rig;
+      dynamicRoot.add(rig.root); truckRig = rig; lastAuthoredRig = rig;
       latest = { source: rig.heroSourceId, status: 'authored', ...rig.heroStats };
       return rig;
     } catch (error) {
