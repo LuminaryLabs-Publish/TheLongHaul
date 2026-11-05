@@ -16,6 +16,7 @@ import { buildArcadeRoutes, arcadePathPoint, arcadeRoadProgress, planArcadeEncou
 import { createForwardBoost } from "../game/forward-boost.mjs";
 import { createTruckGrounding, indexDriveSurface, sampleDriveSurface } from "../game/truck-presentation.mjs";
 import { createHeroTruckMesh, HERO_TRUCK_SOURCE } from "../game/hero-truck-authoring.mjs";
+import { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass } from "../game/traffic-vehicle-authoring.mjs";
 import * as THREE from "three";
 import * as N from "nexusengine";
 import { createLongHaulCoreKits, createLongHaulCourseEnvelope, verifyLongHaulCourseEnvelope, createLongHaulPatchPreparation, applyLongHaulOperationOnce } from "../long-haul-core.mjs";
@@ -32,6 +33,7 @@ Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TO
 
 Object.assign(globalThis, { LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact });
 Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
+Object.assign(globalThis, { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass });
 // Guard dynamically-created Resume as well as Start until both host layers
 // are ready. This never changes disabled states owned by an existing control.
 const blockEarlyEntry = event => {
@@ -68,6 +70,14 @@ await new Promise((resolve, reject) => {
   script.src = new URL("./hero-truck-host.js", import.meta.url).href;
   script.async = false; script.onload = resolve;
   script.onerror = () => reject(new Error("The authored hero truck host could not load."));
+  document.head.append(script);
+});
+await new Promise((resolve, reject) => {
+  const script = document.createElement("script");
+  script.src = new URL("./traffic-vehicles-host.js", import.meta.url).href;
+  script.async = false;
+  script.onload = resolve;
+  script.onerror = () => reject(new Error("The authored traffic fleet host could not load."));
   document.head.append(script);
 });
 entryButtons.forEach(button => button.disabled = false);
