@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import * as N from '../vendor/nexusengine.mjs';
 import { createLongHaulProductKits } from '../src/game/product-kits.mjs';
+import { resolveTruckTireForces } from '../src/game/truck-tire-forces.mjs';
 import { createTruckSpringMassState, advanceTruckSpringMass } from '../src/game/truck-spring-mass.mjs';
 import { DEFAULT_TRUCK_DYNAMICS_PROFILE } from '../src/game/truck-dynamics-profile-kit.mjs';
 import { createReactiveBodyState, advanceReactiveBody } from '../src/game/truck-reactive-body.mjs';
@@ -106,3 +107,50 @@ const migrated=rig(1);const old=rig(12,'v1');old.drive(60,{throttle:1,steer:.3})
 const beforePause=drift.api.snapshot();drift.engine.world.__longHaulScene='pause';drift.frame({steer:1});assert.deepEqual(drift.api.getState().springMass,beforePause.springMass,'pause freezes spring');assert.deepEqual(drift.api.getState().reactiveBody,beforePause.reactiveBody,'pause freezes box orientation');
 drift.engine.world.__longHaulScene='driving';drift.api.teleport({x:0,y:.92,z:0,heading:0,speed:0,...ground});drift.engine.tick(0);assert.deepEqual(drift.api.getState().springMass,createTruckSpringMassState(),'roadside recovery resets spring');assert.equal(drift.api.getState().reactiveBody.quaternion.w,1,'roadside recovery restores orientation');
 console.log('Movement V2 regression passed: box contacts, angular continuity, spring passivity, tire grip, braking, drift, cargo, V1 rollback, migration, pause and recovery.');
+
+// The commanded wheel angle is a contact orientation, not a yaw target.
+// Forces at the front/rear axles determine both translation and yaw.
+const tireLoad = { effectiveMass: 7800, gripScale: 1 };
+const flatContact = { grounded: true, traction: 1, surfaceGrip: 1, springDisplacementZ: 0 };
+const initialRight = resolveTruckTireForces({ longitudinal: 30, lateral: 0, yawRate: 0, steeringAngle: 0.15 }, tireLoad, DEFAULT_TRUCK_DYNAMICS_PROFILE, flatContact);
+const initialLeft = resolveTruckTireForces({ longitudinal: 30, lateral: 0, yawRate: 0, steeringAngle: -0.15 }, tireLoad, DEFAULT_TRUCK_DYNAMICS_PROFILE, flatContact);
+assert.ok(initialRight.frontForce > 0 && initialRight.yawAcceleration > 0, 'right front tire generates a rightward force and yaw torque');
+assert.ok(initialLeft.frontForce < 0 && initialLeft.yawAcceleration < 0, 'left front tire generates the opposite force and yaw torque');
+assert.ok(Math.abs(initialLeft.yawAcceleration + initialRight.yawAcceleration) < 1e-9, 'tire impulses are left/right symmetric');
+const noContact = resolveTruckTireForces({ longitudinal: 30, lateral: 0, yawRate: 0, steeringAngle: 0.4 }, tireLoad, DEFAULT_TRUCK_DYNAMICS_PROFILE, { ...flatContact, grounded: false });
+assert.equal(noContact.yawAcceleration, 0, 'airborne steering cannot generate tire-induced yaw');
+assert.equal(noContact.lateralAcceleration, 0, 'airborne steering cannot generate lateral tire thrust');
+const rearNormal = resolveTruckTireForces({ longitudinal: 22, lateral: 4, yawRate: 0, steeringAngle: 0 }, tireLoad, DEFAULT_TRUCK_DYNAMICS_PROFILE, flatContact);
+const rearDrifting = resolveTruckTireForces({ longitudinal: 22, lateral: 4, yawRate: 0, steeringAngle: 0 }, tireLoad, DEFAULT_TRUCK_DYNAMICS_PROFILE, { ...flatContact, driftActive: true });
+assert.ok(Math.abs(rearDrifting.rearForce) < Math.abs(rearNormal.rearForce), 'intentional drift reduces rear, not all, tire grip');
+assert.equal(rearDrifting.frontForce, rearNormal.frontForce, 'front steering authority stays available during a drift');
+const betterTires = resolveTruckTireForces({ longitudinal: 30, lateral: 0, yawRate: 0, steeringAngle: 0.15 }, tireLoad,
+  { ...DEFAULT_TRUCK_DYNAMICS_PROFILE, grip: { ...DEFAULT_TRUCK_DYNAMICS_PROFILE.grip, road: 8 } }, flatContact);
+assert.ok(betterTires.frontForce > initialRight.frontForce, 'garage tire upgrade changes real tire force rather than cosmetic steering');
+const poorRoad = resolveTruckTireForces({ longitudinal: 30, lateral: 0, yawRate: 0, steeringAngle: 0.15 }, tireLoad, DEFAULT_TRUCK_DYNAMICS_PROFILE, { ...flatContact, surfaceGrip: 0.38 });
+assert.ok(Math.abs(poorRoad.frontForce) < Math.abs(initialRight.frontForce) * .5, 'low-traction terrain cannot match paved-road cornering force');
+function turnAtSpeed(speed, steer) {
+  const vehicle = rig(speed);
+  return vehicle.drive(60, { steer, throttle: 0 });
+}
+const partialTurn = turnAtSpeed(30, .6), fullTurn = turnAtSpeed(30, 1), reverseTurn = turnAtSpeed(30, -.6);
+assert.ok(fullTurn.steeringAngle > partialTurn.steeringAngle * 1.5, 'higher steering input visibly turns front wheels farther');
+assert.ok(fullTurn.yawRate > partialTurn.yawRate + .01, 'more steering makes greater physically generated yaw, not identical cap');
+assert.ok(fullTurn.heading > partialTurn.heading + .02, 'greater steering affects actual chassis direction');
+assert.ok(Math.abs(fullTurn.lateralSpeed) > Math.abs(partialTurn.lateralSpeed) * 1.1, 'excess high-speed steering yields more slip');
+assert.ok(partialTurn.heading > .1 && reverseTurn.heading < -.1, 'opposite tire forces turn in opposite directions');
+assert.ok(!partialTurn.tipped && !fullTurn.tipped, 'ordinary paved high-speed turns remain recoverable');
+const cautiousTurn = turnAtSpeed(12, .6);
+assert.ok(Math.abs(cautiousTurn.lateralSpeed) < Math.abs(partialTurn.lateralSpeed) * .5, 'moderate-speed turning sticks to the road instead of skating');
+const airborneSteering = rig(10);
+airborneSteering.api.teleport({ x: 0, y: 8, z: 0, speed: 10, heading: 0, grounded: false, verticalSpeed: 0, ...ground });
+airborneSteering.engine.tick(0);
+const airborneSteered = airborneSteering.drive(12, { steer: 1 });
+assert.ok(Math.abs(airborneSteered.steeringAngle) > .05 && !airborneSteered.grounded, 'driver can turn visible wheels even without traction');
+// The same substep-based tire force integration must not change with render FPS.
+const lowFrame = rig(30), highFrame = rig(30);
+const thirtyHz = lowFrame.drive(30, { steer: 0.6 }, 1 / 30);
+const oneTwentyHz = highFrame.drive(120, { steer: 0.6 }, 1 / 120);
+assert.ok(Math.abs(thirtyHz.heading - oneTwentyHz.heading) < 1e-8, 'steering uses fixed simulation substeps across 30/120 FPS');
+assert.ok(Math.abs(thirtyHz.lateralSpeed - oneTwentyHz.lateralSpeed) < 1e-8, 'side slip remains stable across frame rates');
+console.log('Movement V2 two-axle tire regression passed: wheel direction, force/moment, friction limits, slip, drift, independent airborne wheel steering.');

@@ -5,6 +5,7 @@ import { createDriftState, prepareDrift, resolveDrift } from "./drift-behavior.m
 import { createTruckSpringMassState, advanceTruckSpringMass } from "./truck-spring-mass.mjs";
 import { cargoDynamics, normalizeCargoLoad } from "./cargo-profiles.mjs";
 import { createReactiveBodyState, advanceReactiveBody } from "./truck-reactive-body.mjs";
+import { resolveTruckTireForces } from "./truck-tire-forces.mjs";
 
 function cargoState(profile, value, previous = null) {
   const cargo = normalizeCargoLoad(value);
@@ -316,14 +317,11 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             grounded: state.grounded, tipped: state.driveTraction < 0.15
           }, dt);
           const surfaceKey = state.surface === "road" ? "road" : state.surface === "shoulder" ? "shoulder" : "offRoad";
-          const gripCatalog = profile.grip ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.grip;
-          const gripKey = surfaceKey !== "road" ? surfaceKey : state.roadClass === "paved-highway" ? "highway" : state.roadMaterial !== "paved" ? "rough" : "road";
-          const driftGrip = drift.active ? clamp(finite(driftProfile.gripMultiplier, 0.16), 0.06, 0.5) : 1;
-          const lateralGrip = (input.handbrake ? gripCatalog.handbrake : gripCatalog[gripKey] ?? gripCatalog.road) * state.surfaceGrip * load.gripScale * (1 - Math.abs(loadShift.x) * 0.12) * driftGrip * (1 - damageMagnitude * 0.2);
-          // Tire impulse is bounded by available friction, including during a
-          // fast turn. Heading alone cannot create impossible lateral g.
-          const maximumSideAcceleration = 9.81 * clamp(finite(profile.springMass?.tireGripG, 1.13), 0.4, 1.3)
-            * state.surfaceGrip * load.gripScale * (input.handbrake ? 0.55 : drift.active ? 0.75 : 1);
+          // Surface and grip limits are consumed by the two tire axles below;
+          // no independent lateral damping or yaw-angle command is applied.
+          const gripKey = surfaceKey !== 'road' ? surfaceKey
+            : state.roadClass === 'paved-highway' ? 'highway'
+            : state.roadMaterial !== 'paved' ? 'rough' : 'road';
           const boostForce = input.rush
             ? clamp(finite(profile.boost?.rushForceMultiplier, 3.8) + Math.max(0, finite(profile.boost?.forceMultiplier, 1.65) - 1.65), 1, 6)
             : input.boost ? clamp(finite(profile.boost?.forceMultiplier, 1.65), 1, 4) : 1;
@@ -361,28 +359,33 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             // Sliding dissipates motion before the bounded reserve recovers any.
             if (drift.active) longitudinal *= Math.exp(-0.3 * dt);
           }
-          // Side contacts dissipate momentum continuously through available road traction.
           // Ease down after a burst instead of snapping instantly to the normal cap.
           if (state.grounded) longitudinal = clamp(longitudinal, -maximumReverse, Math.max(maximumForward, state.speed - 12 * dt));
-          if (state.grounded) {
-            const desiredSideImpulse = lateral * (1 - Math.exp(-Math.max(0.01, lateralGrip) * dt));
-            lateral -= Math.sign(desiredSideImpulse) * Math.min(Math.abs(desiredSideImpulse), maximumSideAcceleration * dt);
-          }
 
           const speedRatio = clamp(Math.abs(longitudinal) / Math.max(1, finite(profile.maximumForwardSpeed, 38)), 0, 1);
           const steering = profile.steering ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.steering;
           // Damage produces a stable, bounded pull and weaker steering. A full
           // opposing input always retains enough authority to correct it.
           const steerIntent = clamp(input.steer * (1 - damageMagnitude * 0.26) + steeringDamage * 0.16 * clamp(previousPlanarSpeed / 5, 0, 1), -1, 1);
-          const driftTurn = drift.active ? clamp(finite(driftProfile.turnMultiplier, 1.55), 1, 2.1) * (drift.phase === "countersteer" ? 1.22 : 1) : 1;
-          const targetSteer = (steerIntent * traction) * (finite(steering.lowSpeedAngle, 0.6) + (finite(steering.highSpeedAngle, 0.155) - finite(steering.lowSpeedAngle, 0.6)) * speedRatio) * driftTurn;
-          const steeringAngle = state.steeringAngle + (targetSteer - state.steeringAngle) * (1 - Math.exp(-finite(steering.response, 11) * (drift.phase === "countersteer" ? 1.7 : 1) * dt));
-          const lateralLimit = maximumSideAcceleration;
-          const maximumYaw = Math.min(finite(steering.maximumYawRate, 1.1) * load.yawScale * (drift.active ? 1.4 : 1), lateralLimit / Math.max(1, Math.abs(longitudinal)));
-          const targetYawRate = state.grounded
-            ? Math.abs(longitudinal) > 0.08 ? clamp((longitudinal / finite(steering.wheelbase, 6.1)) * Math.tan(steeringAngle) * finite(steering.yawResponse, 0.84) * state.surfaceGrip * load.yawScale * (input.handbrake ? 1.12 : 1), -maximumYaw, maximumYaw) : 0
-            : input.steer * finite(profile.air?.steering, 0.72) * load.airControlScale;
-          const yawRate = state.yawRate + (targetYawRate - state.yawRate) * (1 - Math.exp(-(state.grounded ? drift.phase === "countersteer" ? 17 : 10 : 4.5) * load.yawScale * dt));
+          // Steering turns the visible front wheels irrespective of grip. Tire
+          // contact forces, not steering or a target yaw rate, turn the truck.
+          const targetSteer = steerIntent * (finite(steering.lowSpeedAngle, 0.6)
+            + (finite(steering.highSpeedAngle, 0.155) - finite(steering.lowSpeedAngle, 0.6)) * speedRatio);
+          const steeringAngle = state.steeringAngle + (targetSteer - state.steeringAngle)
+            * (1 - Math.exp(-finite(steering.response, 11) * dt));
+          const tire = resolveTruckTireForces({
+            longitudinal, lateral, yawRate: state.yawRate, steeringAngle
+          }, load, profile, {
+            grounded: state.grounded, traction: state.driveTraction,
+            surfaceGrip: state.surfaceGrip, gripKey,
+            springDisplacementZ: state.springMass?.displacement?.z,
+            driftActive: drift.active, handbrake: input.handbrake
+          });
+          longitudinal += tire.forwardAcceleration * dt;
+          lateral += tire.lateralAcceleration * dt;
+          // Angular velocity is integrated from axle torque. The safety bound
+          // is for numerical robustness, not a steering-derived yaw target.
+          const yawRate = clamp(state.yawRate + tire.yawAcceleration * dt, -3, 3);
           const heading = normalizeAngle(state.heading + yawRate * dt);
           const nextForward = { x: Math.sin(heading), z: Math.cos(heading) };
           const nextRight = { x: nextForward.z, z: -nextForward.x };
