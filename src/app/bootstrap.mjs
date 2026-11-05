@@ -19,6 +19,10 @@ import { createTruckGrounding, indexDriveSurface, sampleDriveSurface } from "../
 import { createHeroTruckMesh, HERO_TRUCK_SOURCE } from "../game/hero-truck-authoring.mjs";
 import { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass } from "../game/traffic-vehicle-authoring.mjs";
 import { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary } from "../game/lighting-shadow-policy.mjs";
+import { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG } from "../game/environment-tile-catalog.mjs";
+import { environmentCellPlanSteps } from "../game/environment-tile-planner.mjs";
+import { ENVIRONMENT_AUTHORING_SOURCE } from "../game/environment-tile-authoring.mjs";
+import { createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS } from "../game/environment-tile-renderer.mjs";
 import * as THREE from "three";
 import * as N from "nexusengine";
 import { createLongHaulCoreKits, createLongHaulCourseEnvelope, verifyLongHaulCourseEnvelope, createLongHaulPatchPreparation, applyLongHaulOperationOnce } from "../long-haul-core.mjs";
@@ -37,6 +41,7 @@ Object.assign(globalThis, { LongHaulGuidance, LongHaulArt, ROAD_GENERATOR_VERSIO
 Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
 Object.assign(globalThis, { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass });
 Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary });
+Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
 // Guard dynamically-created Resume as well as Start until both host layers
 // are ready. This never changes disabled states owned by an existing control.
 const blockEarlyEntry = event => {
@@ -88,6 +93,14 @@ await new Promise((resolve, reject) => {
   script.src = new URL("./lighting-shadow-host.js", import.meta.url).href;
   script.async = false; script.onload = resolve;
   script.onerror = () => reject(new Error("The illustrated lighting host could not load."));
+  document.head.append(script);
+});
+await new Promise((resolve, reject) => {
+  const script = document.createElement("script");
+  script.src = new URL("./environment-tiles-host.js", import.meta.url).href;
+  script.async = false;
+  script.onload = resolve;
+  script.onerror = () => reject(new Error("The 200m environment tile host could not load."));
   document.head.append(script);
 });
 // V2 remains opt-in until its browser/video acceptance is complete.
