@@ -306,3 +306,49 @@ body.cinematic #freight-hud{display:none!important}
  .visual-refresh #risk-hud #arcade-flash.active{animation:none;opacity:1}
  .visual-refresh #timer-box,.visual-refresh #journey-receipt{animation:none;transition:none}
 }
+
+/* TLH-003 — Alternative B. Level typography only; the road stays the focus. */
+body.guidance-v2 #journey-objective,body.guidance-v2 #drive-box,body.guidance-v2 #risk-hud,
+body.guidance-v2 #skill-hud,body.guidance-v2 #encounter-hud,body.guidance-v2 #interact,
+body.guidance-v2 #driving-onboarding,body.guidance-v2.driving #toast{display:none!important}
+#guidance-v2{position:absolute;inset:0;z-index:9;pointer-events:none;font:500 12px/1.25 system-ui,sans-serif;color:#f8f5e7;text-shadow:0 1px 3px #091a1c,0 2px 7px #091a1c;letter-spacing:.01em}
+#guidance-v2[hidden],#guidance-v2 [hidden]{display:none!important}
+#guidance-v2 .guide-goal{position:absolute;left:24px;top:23px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:min(320px,42vw)}
+#guidance-v2 .guide-goal b{font-size:17px;font-weight:680;line-height:1.2}
+#guidance-v2 #guide-route{font-size:11px;color:#e6f5e5}
+#guidance-v2 #guide-deadline{color:#ffdf95;font-size:11px;font-weight:700}
+#guidance-v2 #guide-alert{position:absolute;top:18px;left:50%;transform:translateX(-50%);text-align:center;max-width:45vw;color:#f9ebc6;font-size:13px;font-weight:750;letter-spacing:.055em}
+#guidance-v2 #guide-alert.danger{color:#ffbbb0}
+#guidance-v2 #guide-reward{position:absolute;top:52px;right:24px;text-align:right;color:#f7e5a3;font-size:13px;font-weight:650}
+#guidance-v2 #guide-combo{position:absolute;top:19px;right:24px;font-size:14px;font-weight:700;color:#ffefb0}
+#guidance-v2 .guide-drive{position:absolute;left:24px;bottom:24px;display:grid;grid-template-columns:68px 124px;column-gap:14px;align-items:end}
+#guidance-v2 .guide-speed{grid-row:1 / 3;display:flex;align-items:baseline;gap:3px}
+#guidance-v2 .guide-speed strong{font-size:38px;letter-spacing:-.05em;font-weight:730;font-variant-numeric:tabular-nums}
+#guidance-v2 .guide-speed span{font-size:9px;letter-spacing:.07em}
+#guidance-v2 .guide-bar{display:flex;align-items:center;gap:7px;margin:4px 0}
+#guidance-v2 .guide-bar span{font-size:9px;letter-spacing:.055em;width:36px}
+#guidance-v2 .guide-bar i{height:3px;flex:1;background:#e9e9e966;overflow:hidden;border-radius:2px}
+#guidance-v2 .guide-bar em{display:block;height:100%;width:100%;background:#e4efdf;transition:width .15s linear}
+#guidance-v2 .guide-bar em.urgent{background:#f49c7e}
+#guidance-v2 .guide-abilities{position:absolute;right:24px;bottom:24px;display:flex;align-items:flex-end;gap:8px;pointer-events:auto}
+#guidance-v2 .guide-abilities button{border:0;border-bottom:2px solid #a7cfc5;background:rgba(9,25,29,.22);color:inherit;text-shadow:inherit;padding:5px 8px;min-width:68px;min-height:36px;display:grid;grid-template-columns:18px 1fr;gap:5px;align-items:center;font:600 10px system-ui,sans-serif;border-radius:3px}
+#guidance-v2 .guide-abilities button:disabled{border-color:#b1b3a9;opacity:.7}
+#guidance-v2 .guide-abilities kbd{font-size:13px;font-weight:700}
+#guidance-v2 #guide-upgrade{grid-template-columns:1fr;white-space:nowrap;border-color:#f7df83}
+@media(max-width:660px){
+ #guidance-v2 .guide-goal{left:12px;top:44px;max-width:calc(100vw - 24px)}
+ #guidance-v2 .guide-goal b{font-size:14px}
+ #guidance-v2 #guide-route{font-size:10px}
+ #guidance-v2 #guide-alert{top:10px;left:12px;right:12px;transform:none;max-width:none;font-size:11px}
+ #guidance-v2 #guide-combo{right:12px;top:12px;font-size:11px}
+ #guidance-v2 .guide-drive{left:12px;bottom:118px;grid-template-columns:52px 92px;gap:9px}
+ #guidance-v2 .guide-speed strong{font-size:29px}
+ #guidance-v2 .guide-abilities{right:12px;bottom:118px;gap:4px}
+ #guidance-v2 .guide-abilities button{min-width:48px;min-height:44px;padding:5px;grid-template-columns:1fr;gap:1px;font-size:9px}
+ #guidance-v2 #guide-upgrade{position:absolute;bottom:54px;right:0}
+ #guidance-v2 #guide-reward{top:91px;right:12px;font-size:11px}
+}
+@media(max-width:660px) and (pointer:fine){#guidance-v2 .guide-drive,#guidance-v2 .guide-abilities{bottom:14px}}
+@media(prefers-reduced-motion:reduce){#guidance-v2 *{transition:none!important;animation:none!important}}
+
+body.guidance-v2 .guide-map-choice{display:block;margin-top:3px;font:600 11px system-ui,sans-serif;color:#93d4c5}body.guidance-v2 .guide-map-choice[hidden]{display:none!important}

@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import { createEndlessHighway } from '../src/game/endless-highway.mjs';
+import { deriveGuidance, relevantRouteChoice, createGuidanceNotifications, GUIDANCE_PRIORITY } from '../src/game/navigation-guidance.mjs';
+const course=createEndlessHighway('road-matrix-1');
+const station=course.loadingStations[0];
+const progress=station.warningProgress-80;
+const truck={position:{x:0,z:-progress},speed:15,rollMode:'planted',tipped:false};
+const run={rawTime:125};
+const freight={status:'awaiting-pickup',onboard:false,contract:{pickupProgress:station.entryProgress,deliveryProgress:station.deliveryProgress,remaining:85}};
+const choice=relevantRouteChoice(course,progress); // legacy local pages snapshot has v2 road signs; the GitHub candidate is checked separately
+assert.equal(deriveGuidance({scene:'paused',truck,run,freight,course}).active,false);
+const baseline=deriveGuidance({truck,run,freight,course,skillPoints:1});
+assert.equal(baseline.active,true);assert.match(baseline.destination,/Pick up freight/);
+assert.equal(baseline.distanceMeters,station.entryProgress-progress);assert.equal(baseline.speedMph,34);
+assert.equal(baseline.alert?.id,choice?.consistent?'route:'+choice.id:'upgrade');
+const loaded=deriveGuidance({truck,run,course,freight:{...freight,status:'in-transit',onboard:true,contract:{...freight.contract,remaining:18}},fuel:6});
+assert.match(loaded.destination,/Deliver cargo/);assert.ok(loaded.alert.priority===GUIDANCE_PRIORITY.danger);
+const overturned=deriveGuidance({truck:{...truck,tipped:true,rollMode:'tipped'},run,course,freight,interaction:'F · Garage'});
+assert.equal(overturned.alert.id,'rollover');assert.doesNotMatch(overturned.alert.label,/garage/i);
+const lifted=deriveGuidance({truck:{...truck,rollMode:'wheel-lift'},run,course,freight});assert.equal(lifted.alert.id,'wheel-lift');
+const transition=deriveGuidance({truck,run,course,freight:{...freight,status:'delivered',lastOutcome:{cash:120}}});assert.equal(transition.distanceMeters,null);assert.equal(transition.goal,'Next pickup ahead');
+const notice=createGuidanceNotifications();notice.offer({id:'paid:1',label:'Delivered +$120',priority:GUIDANCE_PRIORITY.reward},12);
+assert.equal(notice.visible(12)?.id,'paid:1');notice.offer({id:'paid:1',label:'Duplicate',priority:GUIDANCE_PRIORITY.reward},12.1);assert.equal(notice.snapshot(12.1).seen,1);
+assert.equal(notice.visible(12.1,{id:'critical',label:'Tip',priority:GUIDANCE_PRIORITY.danger}).id,'critical');
+assert.equal(notice.visible(19),null);
+for(let i=0;i<100;i++)notice.offer({id:'evt-'+i,label:'note'},20+i);assert.equal(notice.snapshot(100).seen,64);
+// Three targeted contract probes support later filmed reviews, not replace them.
+const sampleCourse={signs:[{id:'wide',side:'left'},{id:'express',side:'right'}],routeChoices:[{id:'r1',kind:'loading-route',warningProgress:600,safeSide:'left',riskySide:'right',signIds:['wide','express']}]};
+assert.equal(relevantRouteChoice(sampleCourse,400).consistent,true);
+assert.match(relevantRouteChoice(sampleCourse,400).text,/Wide left safe/);
+assert.equal(relevantRouteChoice(sampleCourse,0),null,'Outside warning range do not show stale route');
+assert.equal(relevantRouteChoice({...sampleCourse,signs:[{id:'wide',side:'right'},{id:'express',side:'right'}]},400).consistent,false,'Disagreement must never be presented as a confirmed direction');
+assert.equal(deriveGuidance({truck,run,freight:{...freight,contract:{...freight.contract,pickupProgress:NaN}},course}).distanceMeters,null,'Unknown distance is not silently zero');
+const hostSource=await (await import('node:fs/promises')).readFile(new URL('../src/app/guidance-v2.js',import.meta.url),'utf8');
+assert.match(hostSource,/presentation.*v2/);assert.match(hostSource,/rollover-risk|guide-alert/);assert.doesNotMatch(hostSource,/meters\.set\(|engine\.n\.longHaulTruck\.loadSnapshot\(/);
+console.log('PASS TLH-003 read-only guidance, signed route consistency, transitions, warning priorities, once-only notifications, bounded state and V1 fallback');

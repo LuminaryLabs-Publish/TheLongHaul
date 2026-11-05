@@ -1,4 +1,5 @@
 import * as LongHaulArt from '../game/landscape-style.mjs';
+import * as LongHaulGuidance from '../game/navigation-guidance.mjs';
 import { resolveRoadStructureContact } from "../game/road-structure-contact.mjs";
 import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample } from "../game/road-chunks.mjs";
 import { roadRibbonData } from "../game/road-surface.mjs";
@@ -32,7 +33,7 @@ Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TO
 Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction, createSkillProgression, SKILL_UPGRADES, createActiveAbilities, ABILITY_DEFINITIONS, createDrivingPickups, PICKUP_DEFINITIONS, createEndlessHighway, advanceEndlessHighway, endlessHighwayPoint, endlessHighwayProgress, endlessHighwayStation, nextEndlessLoadingStation, endlessHorizonBounds, isEndlessLoadingZone, createFreightJourney, freightDifficulty, prepareFreightSave, CARGO_PROFILES, getCargoProfile, cargoDamageMultiplier, pruneLongHaulContactLedger });
 Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction, createSkillProgression, SKILL_UPGRADES, createActiveAbilities, ABILITY_DEFINITIONS, createDrivingPickups, PICKUP_DEFINITIONS, freshCampaignSave, readCampaignSave });
 
-Object.assign(globalThis, { LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact });
+Object.assign(globalThis, { LongHaulGuidance, LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact });
 Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
 Object.assign(globalThis, { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass });
 Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary });
@@ -87,6 +88,14 @@ await new Promise((resolve, reject) => {
   script.src = new URL("./lighting-shadow-host.js", import.meta.url).href;
   script.async = false; script.onload = resolve;
   script.onerror = () => reject(new Error("The illustrated lighting host could not load."));
+  document.head.append(script);
+});
+// V2 remains opt-in until its browser/video acceptance is complete.
+await new Promise((resolve, reject) => {
+  const script = document.createElement('script');
+  script.src = new URL('./guidance-v2.js', import.meta.url).href;
+  script.async = false; script.onload = resolve;
+  script.onerror = () => reject(new Error('TLH-003 guidance host could not load.'));
   document.head.append(script);
 });
 entryButtons.forEach(button => button.disabled = false);
