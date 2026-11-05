@@ -517,7 +517,7 @@ function renderSkillEffects(dt=0) {
   updateSkillVehicleAppearance();
   if(truckRig){
     for(const crate of truckRig.crates){const base=crate.userData.skillBasePosition;if(!base)continue;crate.position.x=base.x+(settings.motion?clamp(truck.cargoShift||0,-.35,.35):0);crate.rotation.z=settings.motion?clamp((truck.cargoShift||0)*.18,-.12,.12):0}
-    if(!settings.motion){truckRig.leanPivot.rotation.set(0,0,truck.tipped?truck.rollAngle:0)}
+    if(!settings.motion&&truck.movementVersion!=="v2"){truckRig.leanPivot.rotation.set(0,0,truck.tipped?truck.rollAngle:0)}
   }
 }
 function updateSkillGameplay(dt) {

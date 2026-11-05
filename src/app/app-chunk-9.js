@@ -67,11 +67,26 @@
       rig.root.rotation.set(0,state.heading,0);
       const normal=state.groundNormal??{x:0,y:1,z:0},s=Math.sin(state.heading),c=Math.cos(state.heading),forwardSlope=normal.x*s+normal.z*c,rightSlope=normal.x*c-normal.z*s;
       const pitch=state.grounded?Math.atan2(forwardSlope,Math.max(.25,normal.y)):0,slopeRoll=state.grounded?-Math.atan2(rightSlope,Math.max(.25,normal.y)):0;
-      const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-1.12,1.12);
-      rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lean+slopeRoll);
-      rig.leanPivot.position.y=1.5-clamp(state.suspensionCompression??0,-1,1)*.12;
-      truckSurfaceEntries.length=0;const cx=Math.floor(state.position.x/CELL_SIZE),cz=Math.floor(state.position.z/CELL_SIZE);for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){const entry=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${x}:${z}`);if(entry)truckSurfaceEntries.push(entry)}
-      rig.grounding.resolve(rig.root,rig.leanPivot,truckRenderedGroundHeight);
+      // The active V2 body's quaternion/ground contacts are the truck pose.
+      // V1 retains its original visual grounding path for rollback.
+      if(state.movementVersion==="v2"&&state.reactiveBody){
+        const q=state.reactiveBody.quaternion;
+        const tilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch,0,slopeRoll,"XYZ"));
+        rig.leanPivot.quaternion.set(q.x,q.y,q.z,q.w).premultiply(tilt);
+        const comHeight=state.loadFactors?.centerOfMassHeight??1.35;
+        // Contact penalty springs have a small stationary sag. Compensate only
+        // that fixed rest compression because the visual wheels do not deform.
+        const contactHz=readDynamics().springMass?.contactFrequencyHz??1.6;
+        const restSag=9.81/Math.pow(2*Math.PI*contactHz,2);
+        const uprightFraction=Math.max(0,1-2*(q.x*q.x+q.z*q.z));
+        rig.leanPivot.position.y=state.reactiveBody.centerY+(1.5-comHeight)+restSag*uprightFraction;
+      }else{
+        const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-1.12,1.12);
+        rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lean+slopeRoll);
+        rig.leanPivot.position.y=1.5-clamp(state.suspensionCompression??0,-1,1)*.12;
+        truckSurfaceEntries.length=0;const cx=Math.floor(state.position.x/CELL_SIZE),cz=Math.floor(state.position.z/CELL_SIZE);for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){const entry=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${x}:${z}`);if(entry)truckSurfaceEntries.push(entry)}
+        rig.grounding.resolve(rig.root,rig.leanPivot,truckRenderedGroundHeight);
+      }
       for(const wheel of rig.wheels)wheel.rotation.x=state.wheelTravel/.82;
       for(const pivot of rig.steering)pivot.rotation.y=state.steeringAngle;
       const cargo=meters.get("cargo-condition")?.value??100;for(let i=0;i<rig.crates.length;i++)rig.crates[i].rotation.z=Math.sin(skillVisualTime*2+i)*(100-cargo)*.00035;

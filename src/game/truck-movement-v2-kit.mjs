@@ -2,8 +2,9 @@ import { clone, clamp, finite, normalizeAngle } from "./shared.mjs";
 import { DEFAULT_TRUCK_DYNAMICS_PROFILE } from "./truck-dynamics-profile-kit.mjs";
 import { LONG_HAUL_TRUCK_COLLIDER } from "./vehicle-collider.mjs";
 import { createDriftState, prepareDrift, resolveDrift } from "./drift-behavior.mjs";
-import { createTruckSpringMassState, advanceTruckSpringMass, springBodyState } from "./truck-spring-mass.mjs";
+import { createTruckSpringMassState, advanceTruckSpringMass } from "./truck-spring-mass.mjs";
 import { cargoDynamics, normalizeCargoLoad } from "./cargo-profiles.mjs";
+import { createReactiveBodyState, advanceReactiveBody } from "./truck-reactive-body.mjs";
 
 function cargoState(profile, value, previous = null) {
   const cargo = normalizeCargoLoad(value);
@@ -101,6 +102,9 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
     drift: createDriftState(),
     movementVersion: "v2",
     springMass: createTruckSpringMassState(),
+    reactiveBody: createReactiveBodyState(),
+    driveTraction: 1,
+    contactLoads: {left: 0, right: 0, body: 0},
     weightTransfer: 0,
     cargoShift: 0,
     steeringDamage: 0,
@@ -178,6 +182,9 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             driftAngle: 0,
             drift: createDriftState(state.drift, true),
             springMass: createTruckSpringMassState(),
+            reactiveBody: createReactiveBodyState(),
+            driveTraction: 1,
+            contactLoads: {left: 0, right: 0, body: 0},
             weightTransfer: 0,
             cargoShift: 0,
             steeringAngle: 0,
@@ -264,9 +271,7 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             },
             heading: normalizeAngle(state.heading + finite(request.headingDelta) * load.yawScale),
             yawRate: state.yawRate + finite(request.yawDelta) * load.yawScale,
-            rollVelocity: state.rollVelocity + rollImpulse,
-            rollAngle: state.rollAngle + Math.sign(rollImpulse) * Math.min(0.18, Math.abs(rollImpulse) * 0.06),
-            tipped: state.tipped || (request.allowTip !== false && Math.abs(rollImpulse) >= 1.45 / Math.sqrt(load.rollScale) && Math.abs(state.speed) >= 6),
+            reactiveBody: { ...state.reactiveBody, angularVelocity: { ...state.reactiveBody.angularVelocity, z: clamp(state.reactiveBody.angularVelocity.z + (request.allowTip === false ? 0 : rollImpulse), -5, 5) } },
             grounded: launch ? false : state.grounded,
             flightOrigin: launch && state.grounded ? { ...state.position } : state.flightOrigin,
             flightPeakHeight: launch && state.grounded ? 0 : state.flightPeakHeight,
@@ -308,13 +313,17 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           const driftProfile = profile.drift ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.drift;
           let drift = prepareDrift(state.drift, input, {
             speed: previousPlanarSpeed, longitudinal, slipAngle: Math.atan2(lateral, Math.max(0.01, Math.abs(longitudinal))),
-            grounded: state.grounded, tipped: state.tipped
+            grounded: state.grounded, tipped: state.driveTraction < 0.15
           }, dt);
           const surfaceKey = state.surface === "road" ? "road" : state.surface === "shoulder" ? "shoulder" : "offRoad";
           const gripCatalog = profile.grip ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.grip;
           const gripKey = surfaceKey !== "road" ? surfaceKey : state.roadClass === "paved-highway" ? "highway" : state.roadMaterial !== "paved" ? "rough" : "road";
           const driftGrip = drift.active ? clamp(finite(driftProfile.gripMultiplier, 0.16), 0.06, 0.5) : 1;
           const lateralGrip = (input.handbrake ? gripCatalog.handbrake : gripCatalog[gripKey] ?? gripCatalog.road) * state.surfaceGrip * load.gripScale * (1 - Math.abs(loadShift.x) * 0.12) * driftGrip * (1 - damageMagnitude * 0.2);
+          // Tire impulse is bounded by available friction, including during a
+          // fast turn. Heading alone cannot create impossible lateral g.
+          const maximumSideAcceleration = 9.81 * clamp(finite(profile.springMass?.tireGripG, 1.13), 0.4, 1.3)
+            * state.surfaceGrip * load.gripScale * (input.handbrake ? 0.55 : drift.active ? 0.75 : 1);
           const boostForce = input.rush
             ? clamp(finite(profile.boost?.rushForceMultiplier, 3.8) + Math.max(0, finite(profile.boost?.forceMultiplier, 1.65) - 1.65), 1, 6)
             : input.boost ? clamp(finite(profile.boost?.forceMultiplier, 1.65), 1, 4) : 1;
@@ -324,8 +333,9 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           const maximumForward = finite(profile.maximumForwardSpeed, 34) * speedMultiplier * (state.surface === "road" ? 1 : state.surface === "shoulder" ? 0.86 : 0.66);
           const maximumReverse = finite(profile.maximumReverseSpeed, 10);
 
-          const effectiveThrottle = state.tipped || !state.grounded ? 0 : input.throttle;
-          const effectiveBrake = state.tipped || !state.grounded ? 0 : Math.max(input.brake, drift.active && input.drift ? 0.24 : 0);
+          const traction = state.grounded ? clamp(finite(state.driveTraction, 1), 0, 1) : 0;
+          const effectiveThrottle = input.throttle * traction;
+          const effectiveBrake = Math.max(input.brake, drift.active && input.drift ? 0.24 : 0) * traction;
           const normalizedSpeed = clamp(Math.abs(longitudinal) / Math.max(1, maximumForward), 0, 1);
           const torqueCurve = 1 - normalizedSpeed * 0.5;
           if (effectiveThrottle > 0) {
@@ -351,10 +361,13 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             // Sliding dissipates motion before the bounded reserve recovers any.
             if (drift.active) longitudinal *= Math.exp(-0.3 * dt);
           }
-          if (state.tipped) longitudinal *= Math.exp(-5.5 * dt);
+          // Side contacts dissipate momentum continuously through available road traction.
           // Ease down after a burst instead of snapping instantly to the normal cap.
           if (state.grounded) longitudinal = clamp(longitudinal, -maximumReverse, Math.max(maximumForward, state.speed - 12 * dt));
-          if (state.grounded) lateral *= Math.exp(-Math.max(0.01, lateralGrip) * dt);
+          if (state.grounded) {
+            const desiredSideImpulse = lateral * (1 - Math.exp(-Math.max(0.01, lateralGrip) * dt));
+            lateral -= Math.sign(desiredSideImpulse) * Math.min(Math.abs(desiredSideImpulse), maximumSideAcceleration * dt);
+          }
 
           const speedRatio = clamp(Math.abs(longitudinal) / Math.max(1, finite(profile.maximumForwardSpeed, 38)), 0, 1);
           const steering = profile.steering ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.steering;
@@ -362,10 +375,11 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           // opposing input always retains enough authority to correct it.
           const steerIntent = clamp(input.steer * (1 - damageMagnitude * 0.26) + steeringDamage * 0.16 * clamp(previousPlanarSpeed / 5, 0, 1), -1, 1);
           const driftTurn = drift.active ? clamp(finite(driftProfile.turnMultiplier, 1.55), 1, 2.1) * (drift.phase === "countersteer" ? 1.22 : 1) : 1;
-          const targetSteer = (state.tipped ? 0 : steerIntent) * (finite(steering.lowSpeedAngle, 0.6) + (finite(steering.highSpeedAngle, 0.155) - finite(steering.lowSpeedAngle, 0.6)) * speedRatio) * driftTurn;
+          const targetSteer = (steerIntent * traction) * (finite(steering.lowSpeedAngle, 0.6) + (finite(steering.highSpeedAngle, 0.155) - finite(steering.lowSpeedAngle, 0.6)) * speedRatio) * driftTurn;
           const steeringAngle = state.steeringAngle + (targetSteer - state.steeringAngle) * (1 - Math.exp(-finite(steering.response, 11) * (drift.phase === "countersteer" ? 1.7 : 1) * dt));
-          const maximumYaw = finite(steering.maximumYawRate, 1.1) * load.yawScale * (drift.active ? 1.4 : 1);
-          const targetYawRate = state.tipped ? 0 : state.grounded
+          const lateralLimit = maximumSideAcceleration;
+          const maximumYaw = Math.min(finite(steering.maximumYawRate, 1.1) * load.yawScale * (drift.active ? 1.4 : 1), lateralLimit / Math.max(1, Math.abs(longitudinal)));
+          const targetYawRate = state.grounded
             ? Math.abs(longitudinal) > 0.08 ? clamp((longitudinal / finite(steering.wheelbase, 6.1)) * Math.tan(steeringAngle) * finite(steering.yawResponse, 0.84) * state.surfaceGrip * load.yawScale * (input.handbrake ? 1.12 : 1), -maximumYaw, maximumYaw) : 0
             : input.steer * finite(profile.air?.steering, 0.72) * load.airControlScale;
           const yawRate = state.yawRate + (targetYawRate - state.yawRate) * (1 - Math.exp(-(state.grounded ? drift.phase === "countersteer" ? 17 : 10 : 4.5) * load.yawScale * dt));
@@ -386,8 +400,12 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             }, dt, driftProfile);
             drift = release.drift;
             if (release.released) {
-              velocity.x = nextForward.x * release.speed;
-              velocity.z = nextForward.z * release.speed;
+              // Preserve momentum direction. Tire friction, not a drift event,
+              // must gradually realign velocity with the chassis heading.
+              const currentSpeed = Math.hypot(velocity.x, velocity.z);
+              const scale = release.speed / Math.max(0.001, currentSpeed);
+              velocity.x *= scale;
+              velocity.z *= scale;
             }
           } else {
             // Air control bends the flight slightly, without road traction,
@@ -471,10 +489,10 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             z: clamp(((velocity.x - state.velocity.x) * nextForward.x + (velocity.z - state.velocity.z) * nextForward.z) / dt, -35, 35)
           };
           const spring = advanceTruckSpringMass(state.springMass, grounded ? localAcceleration : { x: 0, y: localAcceleration.y, z: 0 }, load, dt, profile.springMass);
-          const sprungBalance = springBodyState(state, spring, localAcceleration, load, profile, grounded,
-            Math.hypot(longitudinal, lateral), dt);
-          const { tipped, rollAngle, rollVelocity } = sprungBalance;
-          if (tipped && !state.tipped) drift = createDriftState(drift, true);
+          const sprungBalance = advanceReactiveBody(state.reactiveBody, spring, localAcceleration, load, profile, dt, grounded);
+          const { body: nextBody, ...bodyTelemetry } = sprungBalance;
+          const { tipped, rollAngle, rollVelocity } = bodyTelemetry;
+          if (sprungBalance.driveTraction < 0.15) drift = createDriftState(drift, true);
           const acceleration = clamp((longitudinal - state.longitudinalSpeed) / dt, -40, 40);
           // Preserve the existing cargo telemetry contract without inventing a
           // second moving-mass spring for unsecured freight.
@@ -491,8 +509,9 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
 
           state = {
             ...state,
-            ...sprungBalance,
+            ...bodyTelemetry,
             springMass: { displacement: spring.displacement, velocity: spring.velocity },
+            reactiveBody: nextBody,
             movementVersion: "v2",
             position,
             velocity,
@@ -511,7 +530,7 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             steeringAngle,
             wheelTravel: state.wheelTravel + longitudinal * dt,
             bodyRoll: rollAngle,
-            bodyPitch: grounded ? sprungBalance.bodyPitch + load.rearPitch : state.bodyPitch + (clamp(-velocity.y * 0.025 - input.pitchControl * finite(profile.air?.pitchControl, 0.24) * load.airControlScale, -0.5, 0.5) - state.bodyPitch) * (1 - Math.exp(-6 * load.dampingScale * dt)),
+            bodyPitch: sprungBalance.bodyPitch,
             rollAngle,
             rollVelocity,
             tipped,
@@ -561,7 +580,8 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             input: { ...initial.input, ...saved.input }, groundNormal: { ...initial.groundNormal, ...saved.groundNormal },
             lastSafe: { ...initial.lastSafe, ...saved.lastSafe },
             ...cargoState(getProfile(), saved.cargo, saved),
-            springMass: createTruckSpringMassState(saved.springMass)
+            springMass: createTruckSpringMassState(saved.springMass),
+            reactiveBody: createReactiveBodyState(saved.reactiveBody, cargoDynamics(getProfile(), saved.cargo).centerOfMassHeight)
           });
           return get();
         }

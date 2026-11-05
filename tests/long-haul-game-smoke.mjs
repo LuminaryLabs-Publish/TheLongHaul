@@ -96,22 +96,25 @@ assert.ok(truck.speed > 0, "truck accelerates forward");
 assert.ok(Number.isFinite(truck.position.y), "truck vertical state remains finite");
 assert.ok(Number.isFinite(truck.suspensionCompression), "suspension state remains finite");
 assert.ok(Math.abs(truck.steeringAngle) < 0.2, "high-speed steering remains progressive");
-// Steering alone must never enter the impact-only rollover state.
+// No steering or impact may teleport the physical box orientation.
 for(const steer of [-1,1]){
   engine.n.longHaulTruck.teleport({x:0,y:.92,z:0,heading:0,speed:30});tick();let peak=0;
   for(let frame=0;frame<600;frame++){
     engine.n.longHaulTruck.input({throttle:1,steer,boost:true,rush:true,surface:"road",surfaceGrip:1,groundHeight:0,groundNormal:{x:.12,y:.98,z:.08}});tick();
     const state=engine.n.longHaulTruck.getState();peak=Math.max(peak,Math.abs(state.bodyRoll));
     assert.ok(Number.isFinite(state.rolloverRisk),"tipping danger is deterministic and finite");
-    assert.ok(Math.abs(state.rollAngle)<=1.56,"steering lean remains bounded even when tipped");
+    assert.ok(Number.isFinite(state.rollAngle) && Math.abs(state.rollAngle)<=Math.PI,"reactive body rotation remains finite");
   }
-  assert.ok(peak>.46,"hard steering still reaches the scrape lean threshold");
+  assert.ok(peak>.015,"steering still transfers load through the physical contacts");
   if(engine.n.longHaulTruck.getState().tipped){engine.n.longHaulTruck.teleport({x:0,y:.92,z:0,heading:0,speed:8});tick(0)}
   for(let frame=0;frame<240;frame++){engine.n.longHaulTruck.input({throttle:1,steer:0,surface:"road",surfaceGrip:1,groundHeight:0,groundNormal:{x:0,y:1,z:0}});tick()}
   assert.ok(Math.abs(engine.n.longHaulTruck.getState().bodyRoll)<.01,"releasing steering returns the truck upright");
 }
+const beforeImpact = engine.n.longHaulTruck.getState();
 engine.n.longHaulTruck.impulse({ rollDelta: 2, speedDelta: 0 }); tick();
-assert.equal(engine.n.longHaulTruck.getState().tipped, true, "a severe moving impact can tip the truck");
+const afterImpact = engine.n.longHaulTruck.getState();
+assert.ok(Math.abs(afterImpact.rollAngle-beforeImpact.rollAngle)<.15,"an impact cannot snap the truck onto its side");
+assert.ok(Math.abs(afterImpact.reactiveBody.angularVelocity.z)>.1,"an impact adds real angular velocity");
 engine.n.longHaulTruck.teleport({ x: 0, y: 0.85, z: 0, heading: 0, speed: 0 }); tick();
 assert.equal(engine.n.longHaulTruck.getState().tipped, false, "roadside recovery returns the truck upright");
 engine.n.longHaulDelivery.load(["a", "b", "c", "d", "e"], "c"); tick(); engine.n.longHaulDelivery.check("a"); tick(); assert.equal(engine.n.longHaulDelivery.getState().lastCheck.rejected, true); engine.n.longHaulDelivery.check("c"); tick(); assert.equal(engine.n.longHaulDelivery.getState().lastCheck.accepted, true);
