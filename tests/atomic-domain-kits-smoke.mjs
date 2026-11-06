@@ -25,10 +25,10 @@ const N = {
   createSemanticWorldFeatureKit: semanticStub
 };
 const product = createLongHaulProductKits(N);
-assert.equal(product.domains.world.length, 7);
+assert.equal(product.domains.world.length, 8);
 assert.equal(product.domains.truck.length, 2);
 assert.equal(product.domains.delivery.length, 2);
-assert.equal(product.kits.length, 13);
+assert.equal(product.kits.length, 14);
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.extent, "infinite");
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.playableRadius, null);
 assert.equal(DEFAULT_LONG_HAUL_WORLD_PROFILE.gameplayActiveRadius, 1);
@@ -61,6 +61,7 @@ assert.ok(engine.n.longHaulTerrainPolicy.getJumpProfile("softCrest"));
 assert.equal(engine.n.longHaulDeliveryContracts.get("lost-manifest").candidateDepots, 5);
 assert.equal(engine.n.longHaulHorizonLodPolicy.describeLevel(3).collision, false);
 assert.ok(engine.n.longHaulWorldFeatures, "World Feature adapter is composed");
+assert.equal(engine.n.longHaulRoadV3.getState().revision,0,"V3 candidate remains inactive until explicitly requested");
 engine.n.longHaulWorldAtlas.ensureSector(0, 0);
 tick();
 const sector = engine.n.longHaulWorldAtlas.getSector(0, 0);

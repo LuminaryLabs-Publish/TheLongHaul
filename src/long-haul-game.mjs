@@ -12,3 +12,6 @@ export * from "./game/world-base.mjs";
 export * from "./game/cell-descriptor.mjs";
 export * from "./game/product-kits.mjs";
 export * from "./game/score.mjs";
+
+export * from "./game/road-v3-geometry.mjs";
+export * from "./game/road-v3-kit.mjs";
