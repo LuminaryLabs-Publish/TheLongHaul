@@ -15,3 +15,4 @@ export * from "./game/score.mjs";
 
 export * from "./game/road-v3-geometry.mjs";
 export * from "./game/road-v3-kit.mjs";
+export * from "./game/road-v3-journey.mjs";

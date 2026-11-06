@@ -3,7 +3,7 @@ import { hashText } from './shared.mjs';
 
 export const ROAD_V3_VERSION = 'long-haul-endless-v3';
 export const ROAD_V3_LIMITS = Object.freeze({
-  width: 12, sampleCount: 320, maxGrade: 0.12, maxCurvature: 0.05,
+  width: 16, sampleCount: 320, maxGrade: 0.12, maxCurvature: 0.05,
   crossingClearance: 9, bridgeApproach: 35, terrainShoulder: 14
 });
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));

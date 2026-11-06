@@ -1,26 +1,28 @@
-# The Long Haul — Road V3 candidate boundary (November 2026)
+# The Long Haul — Road V3 candidate integration
 
-Status: **implemented candidate geometry and Domain Service Kit; not yet a playable road cutover**.
+**State:** Candidate only; V2 remains the default driving and freight generator.
 
-## Ownership
-- NexusEngine existing World/Simulation/Graphics Kits retain streaming, simulation and rendering.
-- `src/game/road-v3-geometry.mjs` owns deterministic candidate 3D samples, self-crossing analysis, bridge designation, 3D surface lookups and road-aware terrain sampling.
-- `src/game/road-v3-kit.mjs` is the experimental Domain Service Kit controlling candidate graph state.
-- The existing world/terrain/road/product Kit ownership is unchanged. V1 and V2 road generation, saves, freight, truck and game host are unmodified.
-- GLBs in Drive remain **candidate content**, not actively streamed by V3. The existing 160m World cells and 200m scenery descriptors remain unchanged.
+## Implemented and tested
+- `road-v3-geometry.mjs`: seeded mountain crossing geometry, bridge clearance, and 3D surface sampling.
+- `road-v3-journey.mjs`: deterministic twelve-mountain, approximately 28 km graph; road-to-world projection, position-based 160 m streaming descriptors, and 200 m GLB catalog selection.
+- `road-v3-kit.mjs`: NexusEngine Domain Service Kit with candidate journey preparation, sampling, 3D location, streaming and scenery-descriptor APIs. Generates no active V2 gameplay changes.
+- Reuses the existing road spatial index. No new streaming runtime, physics engine or renderer introduced.
 
-## What this first cutover slice proves
-1. A seeded figure-eight mountain demonstration can loop back across the same X/Z coordinates.
-2. A later portion can be elevated to clear an earlier road and labeled as a bridge.
-3. Both levels remain individually addressable in 3D queries.
-4. Bridge decks do not flatten terrain underneath.
-5. The new service is registered as a candidate-only DSK; generation never mutates the active game course.
+## Validation performed
+- Candidate V3 crossing regression: PASS.
+- Candidate V3 25 s input-driven NexusEngine truck test: PASS.
+- Candidate V3 600 s input-driven NexusEngine truck test: PASS; approximately 6.5 km progress and zero off-road simulation ticks.
+- Atomic Domain Service Kit smoke, V2 endless-highway regression and environment tile contract checks: PASS.
+- Actual browser/WebGL V3 game playback and 600 s video: BLOCKED (`net::ERR_BLOCKED_BY_ADMINISTRATOR` on local browser navigation).
+- Full `npm test` is NOT certified. An unrelated environment-tile renderer suite fails `road paint is separate` on the recovered baseline.
+- No actual V3 gameplay recording or 60 s social edit was produced. The media production guide prohibits substituting simulated footage for authentic gameplay.
 
-## Next gates before enabling V3 for playable journeys
-- Implement general route-growth rather than this deliberately bounded mountain-loop demonstration.
-- Adapt `endlessHighwayProgress`, freight/traffic and camera to 3D graph position; V2 currently assumes progress equals `-z`.
-- Terrain carving and structure meshes must use the existing Road/World authority, with collision surfaces, legal grades, supports, clearance and tunnel portals.
-- Integrate the 100 GLBs through the existing environment host with proper scene selection, road-deck suppression, LOD and disposal.
-- Browser/physics long-drive validation, streaming return visits, save/resume and target GPU profiling are required before changing the default version.
+## Required before a true default V3 cutover
+1. Replace the `-position.z` assumption throughout freight, active gameplay, traffic, camera and other dependent systems with graph progress.
+2. Implement an unbounded, collision-safe road-growth planner; the current candidate is a bounded demonstration.
+3. Integrate terrain-carved drivable road surfaces and bridge/tunnel structures into the authoritative Road and World hosts.
+4. Load the 100 external GLB files in the runtime, suppress their illustrative road decks, and verify placement, LOD and unload. Presently only catalog descriptors are emitted.
+5. Prove saves/reloads, traffic, freight and crossings in actual game playback.
+6. Record a real uninterrupted 600 s WebGL session, inspect the preserved original, select a verified 60 s edit, and obtain publication approval separately.
 
-Check: `node tests/road-v3-regression.mjs` (added to `npm test`).
+**Do not switch the default from V2 or claim a finished V3 social video before these gates pass.**
