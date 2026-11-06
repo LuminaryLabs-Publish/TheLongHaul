@@ -352,3 +352,27 @@ body.guidance-v2 #driving-onboarding,body.guidance-v2.driving #toast{display:non
 @media(prefers-reduced-motion:reduce){#guidance-v2 *{transition:none!important;animation:none!important}}
 
 body.guidance-v2 .guide-map-choice{display:block;margin-top:3px;font:600 11px system-ui,sans-serif;color:#93d4c5}body.guidance-v2 .guide-map-choice[hidden]{display:none!important}
+
+/* TLH-257–259: centered cinematic title over the real read-only road sampler.
+   Art is masked RGBA WebP; no UI image intercepts pointer/keyboard input. */
+.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important;border:0!important}
+body:has(#title-screen.active) #game-canvas{opacity:1}
+#title-screen.menu-screen{background:linear-gradient(180deg,rgba(9,28,46,.07),rgba(7,13,24,.03) 68%,rgba(5,12,24,.45));padding:0;overflow:hidden}
+#title-screen.menu-screen:before{content:none}
+#title-screen .title-card{position:relative;z-index:2;justify-self:center;align-self:center;width:min(100%,1050px);height:auto;max-height:100%;overflow:visible;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;padding:clamp(6px,1cqh,12px) clamp(12px,2cqw,26px);background:none;border:0;backdrop-filter:none;box-shadow:none}
+#title-screen .title-wordmark{display:block;width:min(61cqw,820px);height:auto;max-height:37cqh;object-fit:contain;filter:drop-shadow(0 7px 19px #000a);pointer-events:none;user-select:none}
+#title-screen .menu-actions{display:flex;flex-direction:column;align-items:center;justify-content:center;width:min(42cqw,510px);gap:clamp(0px,.1cqh,4px);margin:clamp(1px,.6cqh,9px) 0 0;flex:none}
+#title-screen .title-art-button,#title-screen .title-art-button.btn.primary{position:relative;display:block;flex:none;width:100%;height:auto;aspect-ratio:3.2/1;min-height:0;padding:0;margin:0;border:0;border-radius:0;background-color:transparent!important;background-position:center;background-repeat:no-repeat;background-size:100% 100%;box-shadow:none;transition:filter .14s ease,transform .14s ease;cursor:pointer;color:transparent;font-size:0;line-height:0;overflow:visible}
+#title-screen .title-endless{background-image:url('./art/menu/endless.webp')}
+#title-screen .title-campaign{background-image:url('./art/menu/campaign.webp')}
+#title-screen .title-settings{background-image:url('./art/menu/settings.webp')}
+#title-screen .title-art-button:hover:not(:disabled),#title-screen .title-art-button:focus-visible{filter:brightness(1.13) drop-shadow(0 0 8px #24f7ef8c);transform:scale(1.035)}
+#title-screen .title-art-button:active:not(:disabled){filter:brightness(1.22);transform:scale(.975)}
+#title-screen .title-art-button:focus-visible{outline:3px solid #d9ffff;outline-offset:-11px}
+#title-screen .title-art-button:disabled{cursor:not-allowed;filter:saturate(.8);opacity:.92}
+#title-screen .title-footer{font:900 clamp(8px,1.3cqh,12px)/1.2 system-ui,sans-serif;letter-spacing:.3em;text-shadow:0 2px 5px #000;color:#f7dca7;margin-top:clamp(1px,.2cqh,4px)}
+#title-screen .title-legacy-controls{display:none!important}
+#title-screen #freight-resume-btn{display:none!important}
+@container (max-width:700px){#title-screen .title-card{width:100%;padding:3px 8px}#title-screen .title-wordmark{width:min(64cqw,620px);max-height:39cqh}#title-screen .menu-actions{width:min(50cqw,400px);gap:0}#title-screen .title-art-button,#title-screen .title-art-button.btn.primary{aspect-ratio:3.1/1}#title-screen .title-footer{letter-spacing:.16em}}
+@container (max-height:410px){#title-screen .title-wordmark{width:min(49cqw,560px);max-height:35cqh}#title-screen .menu-actions{width:min(34cqw,390px)}#title-screen .title-footer{font-size:8px}}
+@media(prefers-reduced-motion:reduce){#title-screen .title-art-button{transition:none!important}}

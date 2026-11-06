@@ -111,5 +111,15 @@ await new Promise((resolve, reject) => {
   script.onerror = () => reject(new Error('TLH-003 guidance host could not load.'));
   document.head.append(script);
 });
+// The title attract-mode renders from the existing deterministic road sampling
+// contract. It never owns gameplay physics, freight, save or input state.
+await new Promise(resolve => {
+  const script = document.createElement('script');
+  script.src = new URL('./menu-attract-host.js', import.meta.url).href;
+  script.async = false;
+  script.onload = resolve;
+  script.onerror = () => { console.warn('Cinematic menu background unavailable; preserving menu controls'); resolve(); };
+  document.head.append(script);
+});
 entryButtons.forEach(button => button.disabled = false);
 document.removeEventListener('click', blockEarlyEntry, true);

@@ -2006,8 +2006,13 @@ window.longHaulSkills={snapshot:skillSnapshot};
 // app-chunk-11.js
 $("#credits-btn").addEventListener("click",()=>transition("credits"));$("#credits-back-btn").addEventListener("click",()=>transition("back"));
 $("#start-btn").addEventListener("click", () => {
+  if (currentScene() !== "title" || pendingSceneTransition) return;
+  const resume = $("#freight-resume-btn");
+  // A validated checkpoint is the only authority for restoring progress.
+  if (resume && !resume.hidden && !resume.disabled) { resume.click(); return; }
   audio.ensure();
-  transition("dispatch");
+  window.longHaulContract = "standard";
+  startGeneration(newSeed(), false, "start");
 });
 $("#how-btn").addEventListener("click", () => transition("how"));
 $("#settings-btn").addEventListener("click", () => {
