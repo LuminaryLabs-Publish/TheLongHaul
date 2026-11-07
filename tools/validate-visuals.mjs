@@ -38,6 +38,19 @@ try{
   const presentation=await page.evaluate(()=>LongHaulPresentation.getState());
   check('Horizontal cloud sheets removed',presentation.oldCloudSheets===false,presentation);
   check('Shaped clouds and readable near fog',presentation.cloudSdfInstances===24&&presentation.cloudLayers.join(',')==='8,8,8'&&presentation.fog.near>=180,presentation);
+  const cloudBefore=await page.evaluate(()=>{
+    const mesh=scene.getObjectByName('cloud-sdf-types');
+    if(!mesh)return null;
+    return [0,8,16].map(i=>{const m=new THREE.Matrix4();mesh.getMatrixAt(i,m);return m.elements.slice(12,15);});
+  });
+  check('Three SDF cloud layers have GPU instance transforms',Boolean(cloudBefore)&&cloudBefore.every(p=>p.every(Number.isFinite)),cloudBefore);
+  await page.keyboard.down('w');await step(180);await page.keyboard.up('w');
+  const cloudAfter=await page.evaluate(()=>{
+    const mesh=scene.getObjectByName('cloud-sdf-types');
+    return [0,8,16].map(i=>{const m=new THREE.Matrix4();mesh.getMatrixAt(i,m);return m.elements.slice(12,15);});
+  });
+  const cloudMovement=cloudAfter.map((p,i)=>Math.hypot(p[0]-cloudBefore[i][0],p[2]-cloudBefore[i][2]));
+  check('Driving produces three independently moving cloud depths',cloudMovement.every(n=>n>0.01)&&new Set(cloudMovement.map(n=>n.toFixed(2))).size===3,cloudMovement);
   check('Truck condition uses remaining integrity',!(/damage/i.test(await page.locator('#truck-num').textContent())));
   check('Idle flavor banner is quiet',await page.locator('#encounter-hud').isHidden());
   const gl=await webglEvidence(page);check('Native 1080p WebGL pixels',gl.width>=1920&&gl.height>=1080&&gl.pixels.distinctColors>100&&!gl.lost,gl);
