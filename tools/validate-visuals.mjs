@@ -56,6 +56,7 @@ try{
   check('Cloud centers populate the visible upper driving view',
     cloudScreen.filter(p=>Math.abs(p.x)<1&&p.y>.25&&p.y<1.05&&p.z>=-1&&p.z<=1).length>=12,cloudScreen);
   check('High-world-sky clouds are active',presentation.cloudPositioning==='world-biased-high-sky',presentation);
+  check('Cloud depth always behind terrain',presentation.cloudDepthPolicy==='background-depth',presentation);
   await page.keyboard.down('w');await step(180);await page.keyboard.up('w');
   const cloudAfter=await page.evaluate(()=>{
     const mesh=scene.getObjectByName('cloud-sdf-types');
