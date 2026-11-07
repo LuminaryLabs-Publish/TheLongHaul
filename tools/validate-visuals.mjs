@@ -54,8 +54,8 @@ try{
     });
   });
   check('Cloud centers populate the visible upper driving view',
-    cloudScreen.filter(p=>Math.abs(p.x)<1&&p.y>.1&&p.y<.95&&p.z>=-1&&p.z<=1).length>=12,cloudScreen);
-  check('Camera-frustum clouds are active',presentation.cloudPositioning==='camera-frustum',presentation);
+    cloudScreen.filter(p=>Math.abs(p.x)<1&&p.y>.25&&p.y<1.05&&p.z>=-1&&p.z<=1).length>=12,cloudScreen);
+  check('High-world-sky clouds are active',presentation.cloudPositioning==='world-biased-high-sky',presentation);
   await page.keyboard.down('w');await step(180);await page.keyboard.up('w');
   const cloudAfter=await page.evaluate(()=>{
     const mesh=scene.getObjectByName('cloud-sdf-types');
