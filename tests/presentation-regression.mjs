@@ -15,6 +15,15 @@ assert.deepEqual([...new Set(clouds.map(c=>c.type))].sort(),['cirrus','cumulonim
 assert.ok(clouds.every(c=>c.width>0&&c.height>0));
 assert.ok(clouds.filter(c=>c.layer===0).every(c=>c.follow<clouds[8].follow));
 assert.ok(clouds.filter(c=>c.layer===2).every(c=>c.follow>clouds[8].follow));
+assert.equal(clouds.every(c=>c.lateral>=-c.span/2&&c.lateral<=c.span/2),true);
+assert.ok(clouds.every(c=>c.depth>0&&c.wind>0));
+for(const sample of [0,12.5,1000,-1000,1000000]){
+  const wrapped=wrapCloudOffset(sample,250);
+  assert.ok(wrapped>=-125&&wrapped<125);
+  assert.ok(Math.abs(wrapCloudOffset(sample+250,250)-wrapped)<1e-7);
+}
+const near=clouds[0],middle=clouds[8],far=clouds[16];
+assert.ok((1-near.follow)>(1-middle.follow)&&(1-middle.follow)>(1-far.follow),'Parallax travel factors diminish by layer');
 assert.equal(wrapCloudOffset(0,100),0);
 assert.ok(Math.abs(wrapCloudOffset(120,100)-20)<1e-9);
 assert.ok(Math.abs(wrapCloudOffset(-120,100)+20)<1e-9);
@@ -50,6 +59,7 @@ assert.match(host,/ensureCloudLayout\(course\?\.seed\)/,'Clouds follow the activ
 assert.match(host,/if\(nextSeed===cloudSeed\)return/,'Unchanged worlds reuse the same GPU instance layout');
 assert.match(host,/cloudMesh\.computeBoundingSphere\(\)/,'Changing a layout refreshes culling bounds');
 assert.match(host,/cloudLayoutUpdates/,'Runtime exposes cloud update evidence');
+assert.match(host,/cloudBankDescriptors, wrapCloudOffset/);
 assert.match(host,/wrapCloudOffset/);assert.match(host,/positionClouds\(state,seconds\)/);
 assert.match(host,/cloudLayers:cloudLayerCounts\.slice\(\)/);
 assert.match(host,/cloud-sdf-types/);assert.match(host,/sunFacing/);assert.match(host,/cloudSdfInstances:count/);
