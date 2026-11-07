@@ -343,16 +343,20 @@
       const lateral=wrapCloudOffset(bank.lateral+seconds*bank.wind+forwardDrift,bank.span);
       const depth=Math.min(camera.far-190,bank.depth);
       const screenX=(lateral/bank.span)*1.55;
-      const screenY=.57+.08*bank.layer+.12*(bank.variation-.5);
+      const screenY=.39+.075*bank.layer+.16*(bank.variation-.5);
       const planeWidth=2*depth*viewHeight*camera.aspect;
       const planeHeight=2*depth*viewHeight;
       cloudPosition.copy(cloudEye).addScaledVector(cloudViewForward,depth)
         .addScaledVector(cloudViewRight,screenX*planeWidth*.5)
         .addScaledVector(cloudViewUp,screenY*planeHeight*.5);
-      cloudPosition.y=Math.max(cloudPosition.y,bank.altitude+state.position.y*.2);
+      // Avoid forcing distant cloud centers beyond the upper camera edge.
+      cloudPosition.y=Math.max(cloudPosition.y,bank.altitude*.65+state.position.y*.2);
       dummy.position.copy(cloudPosition);
       dummy.rotation.set(0,0,0);
-      dummy.scale.set(bank.width,bank.height,1);
+      // Hold a readable angular size at long distances. This changes only
+      // billboard coverage, not cloud depth, drift speed or landscape masking.
+      const sizeBoost=[2.0,2.3,2.65][bank.layer];
+      dummy.scale.set(bank.width*sizeBoost,bank.height*sizeBoost,1);
       dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
     }
     cloudMesh.instanceMatrix.needsUpdate=true;
@@ -430,7 +434,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-biased-high-sky',cloudTurnInfluence,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'background-depth',cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-biased-high-sky',cloudTurnInfluence,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'background-depth',cloudVisibilityScale:[2,2.3,2.65],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
