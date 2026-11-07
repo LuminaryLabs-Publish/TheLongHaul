@@ -321,50 +321,34 @@
     cloudLastUpdate=-Infinity;
     cloudHeading=null;
   }
-  const cloudViewForward=new THREE.Vector3(),cloudViewRight=new THREE.Vector3(),cloudViewUp=new THREE.Vector3();
-  const cloudEye=new THREE.Vector3();
-  let cloudHeading=null;
-  const cloudTurnInfluence=.02; // sky orientation follows only 2% of truck heading
+  // Camera-independent sky. Cloud centers occupy shallow elevation angles
+  // around a distant ring, not a screen-aligned strip above the truck.
+  // Six of each layer's eight banks favor the road ahead; two fill the rear.
+  const cloudSkyRadius=[730,1070,1450];
+  const cloudAngularScale=[1.45,1.75,2.05];
   function positionClouds(state,seconds) {
-    camera.updateMatrixWorld();
-    // Heading determines only a tiny (2%) change in sky orientation. Neither
-    // truck x nor camera lateral position contributes to cloud drift.
-    cloudViewForward.set(0,0,-1).applyQuaternion(camera.quaternion);
-    cloudViewForward.y=0;
-    if(cloudViewForward.lengthSq()<.001)cloudViewForward.set(0,0,-1);
-    cloudViewForward.normalize();
-    const cameraHeading=Math.atan2(cloudViewForward.x,-cloudViewForward.z);
-    if(cloudHeading===null)cloudHeading=cameraHeading;
-    const delta=Math.atan2(Math.sin(cameraHeading-cloudHeading),Math.cos(cameraHeading-cloudHeading));
-    const skyHeading=cloudHeading+delta*cloudTurnInfluence;
-    cloudViewForward.set(Math.sin(skyHeading),0,-Math.cos(skyHeading));
-    cloudViewRight.set(Math.cos(skyHeading),0,Math.sin(skyHeading));
-    cloudViewUp.set(0,1,0);
-    // Endless highway advances along -Z. Sample only forward progress;
-    // steering, sideways slides and reversing do not accelerate the sky.
+    // Truck translation and turning do not rotate the cloud field.
+    // Only forward travel contributes a subtle horizontal drift.
     cloudForwardProgress=Math.max(0,-state.position.z);
-    cloudEye.copy(camera.position).sub(atmosphere.position);
-    const viewHeight=Math.tan(THREE.MathUtils.degToRad(camera.fov)*.5);
     for(const bank of cloudDescriptors){
-      const forwardDrift=[.0025,.001,.00035][bank.layer]*cloudForwardProgress;
-      const lateral=wrapCloudOffset(bank.lateral+seconds*bank.wind+forwardDrift,bank.span);
-      const depth=Math.min(camera.far-190,bank.depth);
-      const screenX=(lateral/bank.span)*1.55;
-      const screenY=.53+.075*bank.layer+.13*(bank.variation-.5);
-      const planeWidth=2*depth*viewHeight*camera.aspect;
-      const planeHeight=2*depth*viewHeight;
-      cloudPosition.copy(cloudEye).addScaledVector(cloudViewForward,depth)
-        .addScaledVector(cloudViewRight,screenX*planeWidth*.5)
-        .addScaledVector(cloudViewUp,screenY*planeHeight*.5);
-      // Avoid forcing distant cloud centers beyond the upper camera edge.
-      cloudPosition.y=Math.max(cloudPosition.y,bank.altitude*.65+state.position.y*.2);
+      const slot=bank.id%profile.cloudBanksPerLayer;
+      const angle=slot<6
+        ? (-1.26+(slot+.5)*2.52/6)
+        : (slot===6?2.35:-2.35);
+      const bearing=angle+(bank.variation-.5)*.15;
+      const radius=cloudSkyRadius[bank.layer]+(bank.variation-.5)*90;
+      const drift=seconds*bank.wind+[.0025,.001,.00035][bank.layer]*cloudForwardProgress;
+      // The local atmosphere root follows truck X/Z. Keep relative bearings
+      // fixed: no camera-space offset, pitch, or sideways steering response.
+      cloudPosition.set(Math.sin(bearing)*radius+drift,
+        bank.altitude*.66,
+        -Math.cos(bearing)*radius);
       dummy.position.copy(cloudPosition);
       dummy.rotation.set(0,0,0);
-      // Hold a readable angular size at long distances. This changes only
-      // billboard coverage, not cloud depth, drift speed or landscape masking.
-      const sizeBoost=[2.8,3.1,3.4][bank.layer];
-      dummy.scale.set(bank.width*sizeBoost,bank.height*sizeBoost,1);
-      dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
+      dummy.scale.set(bank.width*cloudAngularScale[bank.layer],
+        bank.height*cloudAngularScale[bank.layer],1);
+      dummy.updateMatrix();
+      cloudMesh.setMatrixAt(bank.id,dummy.matrix);
     }
     cloudMesh.instanceMatrix.needsUpdate=true;
     cloudMesh.computeBoundingSphere();
@@ -441,7 +425,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-biased-high-sky',cloudTurnInfluence,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudVisibilityScale:[2.8,3.1,3.4],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-bearing-sky',cloudTurnInfluence:0,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudVisibilityScale:[1.45,1.75,2.05],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
