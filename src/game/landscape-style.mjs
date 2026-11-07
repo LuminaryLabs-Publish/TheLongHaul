@@ -59,15 +59,15 @@ export function cloudBankDescriptors(seed = 'long-haul-sky') {
     const slot=id%ATMOSPHERE_PROFILE.cloudBanksPerLayer;
     const type=types[(slot+Math.floor(unit(layer,'type-offset')*4))%4];
     const [width,height]=dimensions[type];
-    const band=[{distance:420,span:1250,follow:.12,wind:9},
-      {distance:820,span:1900,follow:.55,wind:5},
-      {distance:1310,span:2600,follow:.82,wind:2.5}][layer];
+    const band=[{distance:850,span:1650,follow:.95,wind:1.3},
+      {distance:1180,span:2200,follow:.975,wind:.85},
+      {distance:1480,span:2800,follow:.99,wind:.45}][layer];
     // Eight slots across each band, with a slight seeded jitter. Most clouds
     // remain forward-facing, with open gaps that let the sky and sun breathe.
     return {id,type,layer,width:width*(.85+unit(id,'size')*.35),height:height*(.85+unit(id,'height')*.3),
       lateral:((slot+.5)/ATMOSPHERE_PROFILE.cloudBanksPerLayer-.5)*band.span+(unit(id,'jitter')-.5)*band.span*.095,
       depth:band.distance+(unit(id,'depth')-.5)*band.distance*.32,
-      altitude:[215,310,430][layer]+unit(id,'altitude')*[45,100,120][layer],
+      altitude:[560,720,880][layer]+unit(id,'altitude')*[75,90,110][layer],
       span:band.span,follow:band.follow,wind:band.wind*(.65+unit(id,'wind')*.7),
       variation:unit(id,'variation')};
   });
