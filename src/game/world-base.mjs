@@ -1,9 +1,20 @@
+import { ROAD_V3_VERSION, roadV3TerrainHeight } from './road-v3-geometry.mjs';
+import { roadV3Project } from './road-v3-journey.mjs';
 import { landscapeRelief } from './landscape-style.mjs';
 import { roadCrossSection, roadPlaneHeight, roadTerrainHeight } from "./road-surface.mjs";
 import { candidateRoadSegments, terrainRoadSegments } from "./road-spatial-index.mjs";
 import { clamp, hashText, segmentInfo } from "./shared.mjs";
 
 export function nearestRoad(course, point) {
+  if (course?.generatorVersion === ROAD_V3_VERSION) {
+    const hit = roadV3Project(course, point, {hint:point.progressHint??null});
+    if (!hit) return null;
+    const edge = course.edges.find(entry => entry.id === hit.edgeId);
+    if (!edge) return null;
+    const a = edge.samples[hit.segmentIndex], b = edge.samples[hit.segmentIndex+1];
+    const t = Math.max(0, Math.min(1, (hit.progress-a.progress)/(b.progress-a.progress||1)));
+    return {...hit, edge, t, heading:Math.atan2(b.x-a.x,b.z-a.z)};
+  }
   let best = null;
   for (const {a,b,edge,segmentIndex} of candidateRoadSegments(course,point)) {
     const info=segmentInfo(point,a,b);
@@ -67,11 +78,12 @@ export function roadElevation(course, road) {
 
 export function naturalTerrainHeight(course, x, z) {
   const seed = course?.seed ?? "long-haul";
-  return terrainNoise(x, z, seed) + (course?.generatorVersion === 'long-haul-endless-v2' ? landscapeRelief(seed, x, z) : 0);
+  return terrainNoise(x, z, seed) + (['long-haul-endless-v2',ROAD_V3_VERSION].includes(course?.generatorVersion) ? landscapeRelief(seed, x, z) : 0);
 }
 
 export function terrainHeight(course, x, z) {
   const natural = naturalTerrainHeight(course, x, z);
+  if (course?.generatorVersion === ROAD_V3_VERSION) return roadV3TerrainHeight(natural, course, {x,z});
   let road = null;
   for(const {a,b,edge,segmentIndex} of terrainRoadSegments(course,{x,z})) {
     const info=segmentInfo({x,z},a,b);

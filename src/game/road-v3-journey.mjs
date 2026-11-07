@@ -23,6 +23,7 @@ function recalibrate(points, previousProgress = 0) {
     p.nx = dz / len; p.nz = -dx / len;
     p.grade = (next.y - prev.y) / len;
     p.width = ROAD_V3_LIMITS.width;
+    p.laneFactor = 3; // Existing road ribbons and markings expect a finite lane profile.
     p.bank = 0;
   }
   return list;
@@ -226,8 +227,8 @@ export function roadV3Project(graph,position,{hint=null,radius=65}={}) {
   // Do not prefer another deck merely because its X/Z distance is smaller.
   const scored=hits.map(hit=>{
     const vertical=Number.isFinite(position.y)?Math.abs(hit.y-position.y):0;
-    const continuity=Number.isFinite(hint)?Math.min(300,Math.abs(hit.progress-hint))*.10:0;
-    return {...hit,score:hit.distance+vertical*1.8+continuity};
+    const continuity=Number.isFinite(hint)?Math.min(300,Math.abs(hit.progress-hint))*.07:0;
+    return {...hit,score:hit.distance+vertical*2.5+continuity};
   }).sort((a,b)=>a.score-b.score);
   return scored[0];
 }

@@ -3,6 +3,8 @@
 import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION } from './road-chunks.mjs';
 import { getCargoProfile } from './cargo-profiles.mjs';
 import { ENDLESS_HIGHWAY_RULES, endlessHighwayPoint, endlessHighwayStation, nextEndlessLoadingStation } from './endless-highway.mjs';
+import { ROAD_V3_VERSION } from './road-v3-geometry.mjs';
+import { roadV3PointAt, roadV3Project } from './road-v3-journey.mjs';
 
 const TYPES = ['standard', 'fragile', 'heavy', 'hazardous', 'unstable'];
 const REWARD = { standard: 1, fragile: 1.3, heavy: 1.35, hazardous: 1.5, unstable: 1.45 };
@@ -74,7 +76,7 @@ function validTruckSnapshot(truck) {
 
 function validJourney(value) {
   if (!value || value.schema !== 'long-haul.freight/1' || !validId(value.sessionId) || typeof value.seed !== 'string' || !statuses.includes(value.status)) return false;
-  if (value.generatorVersion !== undefined && ![ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION].includes(value.generatorVersion)) return false;
+  if (value.generatorVersion !== undefined && ![ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, ROAD_V3_VERSION].includes(value.generatorVersion)) return false;
   if (!integer(value.ordinal) || value.ordinal < 1 || !integer(value.sequence) || value.sequence < 1) return false;
   if (!['earnedCash', 'completed', 'lost', 'missed'].every(k => integer(value[k]))) return false;
   if (!['highWaterProgress', 'elapsed', 'totalLoadedDistance', 'transitionRemaining'].every(k => nonnegative(value[k])) || !Number.isFinite(value.progress)) return false;
@@ -130,10 +132,45 @@ export function freightGateCrossing(previous, current, gate, { speed = 0, headin
   return Math.abs(side) <= gate.halfWidth;
 }
 
-export function createFreightJourney({ seed = 'long-haul', sessionId, initialType = 'standard', snapshot = null, generatorVersion = snapshot ? snapshot.generatorVersion ?? LEGACY_ROAD_VERSION : ROAD_GENERATOR_VERSION } = {}) {
+export function createFreightJourney({ seed = 'long-haul', sessionId, initialType = 'standard', snapshot = null, generatorVersion = snapshot ? snapshot.generatorVersion ?? LEGACY_ROAD_VERSION : ROAD_GENERATOR_VERSION, roadGraph = null } = {}) {
   if (!validId(sessionId)) throw new Error('A valid freight session identity is required');
-  if (![ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION].includes(generatorVersion)) throw new Error('Unsupported freight road generator');
+  if (![ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, ROAD_V3_VERSION].includes(generatorVersion)) throw new Error('Unsupported freight road generator');
+  const isV3 = generatorVersion === ROAD_V3_VERSION;
+  const graph = () => typeof roadGraph === 'function' ? roadGraph() : roadGraph;
+  if (isV3 && graph()?.generatorVersion !== ROAD_V3_VERSION) throw new Error('V3 freight requires an authoritative road graph');
   const course = { seed: String(seed), endless: true, generatorVersion };
+  const pointAt = (progress, lateral = 0, route = 'safe') => isV3
+    ? roadV3PointAt(graph(), progress, lateral) : endlessHighwayPoint(course, progress, lateral, route);
+  const stationAt = index => {
+    if (!isV3) return endlessHighwayStation(course, index);
+    const i=Math.max(0,Math.floor(index)), r=ENDLESS_HIGHWAY_RULES;
+    const progress=r.firstStationProgress+i*r.stationSpacing,
+      entryProgress=progress-r.stationHalfSpan, exitProgress=progress+r.stationHalfSpan;
+    if (exitProgress > graph().totalProgress) throw new RangeError('V3 freight requires road growth ahead of the next station');
+    const center=pointAt(progress), safePoint=pointAt(progress,-2.8), riskyPoint=pointAt(progress,2.8);
+    if (!center||!safePoint||!riskyPoint) throw new RangeError('V3 freight station requires generated road ahead');
+    const id=`endless:station:${i}`;
+    return {id,index:i,progress,name:`Freight Relay ${i+1}`,entryProgress,exitProgress,
+      warningProgress:entryProgress-220,
+      exclusion:{start:entryProgress-100,end:exitProgress+100},
+      entry:pointAt(entryProgress),exit:pointAt(exitProgress),
+      safe:{point:safePoint,width:10,halfWidth:4.8,length:44,edgeIds:[center.edgeId],clearance:{width:10,height:7}},
+      risky:{point:riskyPoint,width:5.6,halfWidth:2.8,length:32,edgeIds:[center.edgeId],clearance:{width:5.6,height:5.5}},
+      challenge:{minForwardSpeed:9,maxLateralError:3.2,cleanRequired:true},
+      rewardIdentity:`${id}:express-complete`};
+  };
+  const nextStation = (progress, minimumLead = 220) => {
+    if (!isV3) return nextEndlessLoadingStation(course, progress, minimumLead);
+    const r=ENDLESS_HIGHWAY_RULES,
+      target=progress+Math.max(0,minimumLead)+r.stationHalfSpan;
+    return stationAt(Math.max(0,Math.ceil((target-r.firstStationProgress)/r.stationSpacing)));
+  };
+  const projectProgress = (position, fallback) => {
+    if (!isV3) return -position.z || 0;
+    const hit=roadV3Project(graph(),position,{hint:fallback});
+    return hit && hit.distance<=10 && Number.isFinite(position.y) && Math.abs(hit.y-position.y)<=9
+      ? hit.progress : fallback;
+  };
   let state = { schema: 'long-haul.freight/1', sessionId, seed: String(seed), generatorVersion, ordinal: 0,
     status: 'assigned', contract: null, completed: 0, lost: 0, missed: 0,
     earnedCash: 0, highWaterProgress: 0, progress: 0, elapsed: 0, totalLoadedDistance: 0,
@@ -143,7 +180,7 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
   const emit = (type, detail = {}) => { const event = { type, sequence: ++state.sequence, time: state.elapsed, ...detail }; events.push(event); return event; };
 
   function assign(progress, replacement = false) {
-    const station = nextEndlessLoadingStation(course, progress, 90);
+    const station = nextStation(progress, 90);
     const offset = Math.max(0, TYPES.indexOf(initialType === 'express' ? 'hazardous' : initialType));
     const profileId = TYPES[(offset + state.ordinal) % TYPES.length], profile = getCargoProfile(profileId);
     state.ordinal++;
@@ -176,7 +213,7 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
     if (!validPosition(position)) return [];
     // Both highway branches use exactly z = -progress. Derive it from the real
     // position so a mismatched host counter cannot award phantom road metres.
-    const progress = -position.z || 0;
+    const progress = projectProgress(position,state.progress);
     const oldProgress = state.progress, oldHighWater = state.highWaterProgress, advance = progress - oldProgress;
     const physicalStep = dt > 0 && previousPosition && Math.hypot(position.x - previousPosition.x, position.z - previousPosition.z) <= Math.max(8, Math.abs(finite(input.speed)) * dt * 2 + 3);
     const forward = physicalStep && advance > 0 && finite(input.speed) > 0;
@@ -220,11 +257,11 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
       }
     }
 
-    const station = endlessHighwayStation(course, contract.stationIndex);
+    const station = stationAt(contract.stationIndex);
     if (['awaiting-pickup', 'awaiting-replacement'].includes(state.status)) {
       const decision = station.entryProgress + 52;
       if (!state.routeAttempt && forward && newRoad && oldProgress < decision && progress >= decision) {
-        const risky = endlessHighwayPoint(course, progress, 0, 'risky'), safe = endlessHighwayPoint(course, progress);
+        const risky = pointAt(progress, 2.8, 'risky'), safe = pointAt(progress, -2.8);
         const rd = Math.hypot(position.x - risky.x, position.z - risky.z), sd = Math.hypot(position.x - safe.x, position.z - safe.z);
         const route = rd < sd && rd < 5 ? 'risky' : 'safe';
         state.routeAttempt = { stationId: station.id, route, startProgress: progress, collisionCount: finite(input.collisionCount), clean: true, picked: false, maxError: 0, recovery: contract.misses > 0 && contract.recoveryOffered };
@@ -243,7 +280,7 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
         contract.misses++; state.missed++;
         const offerRecovery = !contract.recoveryOffered && contract.misses === 1;
         contract.recoveryOffered = true;
-        const next = nextEndlessLoadingStation(course, progress, 90);
+        const next = nextStation(progress, 90);
         contract.stationIndex = next.index; contract.pickupProgress = next.progress; contract.deliveryProgress = next.progress + 560;
         state.routeAttempt = null; state.status = 'awaiting-replacement';
         emit('pickup-missed', { contractId: contract.id, stationId: next.id, offerRecovery });
@@ -252,7 +289,7 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
 
     const attempt = state.routeAttempt;
     if (attempt && attempt.stationId === station.id) {
-      const point = endlessHighwayPoint(course, progress, 0, attempt.route);
+      const point = pointAt(progress, isV3 ? (attempt.route==='risky'?2.8:-2.8) : 0, attempt.route);
       const error = Math.hypot(position.x - point.x, position.z - point.z);
       attempt.maxError = Math.max(attempt.maxError, error);
       if (!physicalStep || !forward || finite(input.collisionCount) !== attempt.collisionCount || input.grounded === false || finite(input.speed) < station.challenge.minForwardSpeed || (attempt.route === 'risky' && error > station.challenge.maxLateralError)) attempt.clean = false;
@@ -270,13 +307,13 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
 
   function deliveryGate() {
     if (!state.contract) return null;
-    return { id: `${state.contract.id}:receiver`, point: endlessHighwayPoint(course, state.contract.deliveryProgress), halfWidth: 11, length: 40 };
+    return { id: `${state.contract.id}:receiver`, point: pointAt(state.contract.deliveryProgress), halfWidth: 11, length: 40 };
   }
   function getState() {
     const value = clone(state);
     value.onboard = cargoOnboard();
     value.cargo = value.onboard ? { ...getCargoProfile(value.contract.profileId), massKg: value.contract.massKg, condition: value.contract.condition } : null;
-    value.pickupStation = value.contract ? endlessHighwayStation(course, value.contract.stationIndex) : null;
+    value.pickupStation = value.contract ? stationAt(value.contract.stationIndex) : null;
     value.deliveryGate = deliveryGate();
     value.difficulty = freightDifficulty(value.highWaterProgress, value.completed, value.cargo);
     return value;
@@ -291,7 +328,7 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
   function resetPosition(position = null) {
     previousPosition = validPosition(position) ? clone(position) : null;
     state.routeAttempt = null;
-    if (previousPosition) { state.progress = -previousPosition.z || 0; state.highWaterProgress = Math.max(state.highWaterProgress, state.progress); }
+    if (previousPosition) { state.progress = projectProgress(previousPosition,state.progress); state.highWaterProgress = Math.max(state.highWaterProgress, state.progress); }
   }
 
   if (snapshot !== null) { if (!restore(snapshot)) throw new Error('Invalid freight checkpoint'); }

@@ -1,5 +1,6 @@
 // Long Haul V3 road prototype. Pure geometry: no world writes, rendering or legacy overrides.
 import { hashText } from './shared.mjs';
+import { roadSegmentsNear } from './road-spatial-index.mjs';
 
 export const ROAD_V3_VERSION = 'long-haul-endless-v3';
 export const ROAD_V3_LIMITS = Object.freeze({
@@ -102,13 +103,18 @@ export function generateRoadV3(seed,{rise=24,maxRise=56}={}) {
 // Returns *all* overlapping road surfaces, never just the nearest X/Z surface.
 export function roadV3SurfacesAt(graph,point,radius=16) {
   if(!graph?.edges||![point?.x,point?.z].every(Number.isFinite))return [];
+  if(!Number.isFinite(radius)||radius<0)throw new RangeError('Invalid V3 surface radius');
   const hits=[];
-  for(const edge of graph.edges)for(let i=1;i<edge.samples.length;i++){
-    const a=edge.samples[i-1],b=edge.samples[i],dx=b.x-a.x,dz=b.z-a.z;
+  // Shared World spatial index bounds the work to nearby segments and keeps
+  // *all* road elevations at the same X/Z position.
+  for(const {a,b,edge,segmentIndex} of roadSegmentsNear(graph,{
+    minX:point.x-radius,maxX:point.x+radius,minZ:point.z-radius,maxZ:point.z+radius
+  })){
+    const dx=b.x-a.x,dz=b.z-a.z;
     const t=clamp(((point.x-a.x)*dx+(point.z-a.z)*dz)/(dx*dx+dz*dz||1),0,1);
     const x=lerp(a.x,b.x,t),z=lerp(a.z,b.z,t),dist=Math.hypot(point.x-x,point.z-z);
     if(dist>radius)continue;
-    hits.push({edgeId:edge.id,segmentIndex:i-1,x,z,y:lerp(a.y,b.y,t),distance:dist,
+    hits.push({edgeId:edge.id,segmentIndex,x,z,y:lerp(a.y,b.y,t),distance:dist,
       progress:lerp(a.progress,b.progress,t),structure:a.structure==='bridge'||b.structure==='bridge'?'bridge':null});
   }
   hits.sort((a,b)=>(Number.isFinite(point.y)?Math.abs(a.y-point.y)-Math.abs(b.y-point.y):a.y-b.y)||a.distance-b.distance);
@@ -125,6 +131,6 @@ export function roadV3TerrainHeight(naturalHeight,graph,point) {
   if(!candidates.length)return naturalHeight;
   const closest=candidates.reduce((a,b)=>a.distance<b.distance?a:b);
   const t=clamp((closest.distance-width)/ROAD_V3_LIMITS.terrainShoulder,0,1);
-  const blend=1-t*t*(3-2*t);
+  const blend=t*t*(3-2*t);
   return lerp(closest.y-.4,naturalHeight,blend);
 }

@@ -1,3 +1,4 @@
+import {ROAD_V3_VERSION,roadV3TerrainHeight} from './road-v3-geometry.mjs';
 import { landscapeTint } from './landscape-style.mjs';
 import { roadCrossSection, roadTerrainHeight } from "./road-surface.mjs";
 import { roadSegmentsNear } from "./road-spatial-index.mjs";
@@ -31,6 +32,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
 
   const localHeight = suppliedSampleHeight ?? ((x, z) => {
     const natural = naturalTerrainHeight(course, x, z);
+    if (course?.generatorVersion === ROAD_V3_VERSION) return roadV3TerrainHeight(natural, course, {x,z});
     let best = null;
     for (const road of localRoadSamples) {
       const info = segmentInfo({ x, z }, road.a, road.b);
