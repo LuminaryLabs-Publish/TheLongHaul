@@ -187,103 +187,29 @@
     }`});
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1500,32,18),domeMaterial); dome.renderOrder=-100; atmosphere.add(dome);
   const clouds = new THREE.Group(); clouds.name='shaped-cloud-banks'; atmosphere.add(clouds);
-  // Four billboard SDF silhouettes in one instanced draw. No raymarching,
-  // shadow maps, 3D volume textures or per-frame geometry uploads.
-  const cloudGeometry=new THREE.PlaneGeometry(1,1);
+  // Instanced 3D SDF volumes: no camera-facing planes and no dithering.
+  const cloudGeometry=new THREE.SphereGeometry(1,16,12);
   const count=profile.cloudBanks;
   const typeIds={cumulus:0,cumulonimbus:1,cirrus:2,stratus:3};
-  const cloudTypes=new Float32Array(count), cloudVariations=new Float32Array(count);
+  const cloudTypes=new Float32Array(count),cloudVariations=new Float32Array(count);
   cloudGeometry.setAttribute('cloudType',new THREE.InstancedBufferAttribute(cloudTypes,1));
   cloudGeometry.setAttribute('cloudVariation',new THREE.InstancedBufferAttribute(cloudVariations,1));
   const cloudUniforms={
     cloudColor:{value:new THREE.Color(0xfffaf2)},
     cloudShadow:{value:new THREE.Color(0x64758d)},
-    sunView:{value:new THREE.Vector2(.65,.48)},
-    sunFacing:{value:.5},
-    weather:{value:0},
-    time:{value:0}
+    sunDirection:{value:new THREE.Vector3(-.55,.19,-.77).normalize()},
+    weather:{value:0}
   };
   const cloudMaterial=new THREE.ShaderMaterial({
-    uniforms:cloudUniforms, transparent:false,depthWrite:false,depthTest:false,
-    side:THREE.DoubleSide,fog:false,
-    vertexShader:`
-      attribute float cloudType,cloudVariation;
-      varying vec2 vUv;
-      varying float vType,vVariation;
-      void main(){
-        vUv=uv;vType=cloudType;vVariation=cloudVariation;
-        vec4 center=modelViewMatrix*instanceMatrix*vec4(0.,0.,0.,1.);
-        // Camera-facing plane. Use instance scale; do not rotate in world space.
-        vec2 size=vec2(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz));
-        center.xy+=(position.xy*size);
-        gl_Position=projectionMatrix*center;
-        // Background depth at vertex stage: WebGL1-safe and still tested
-        // against the opaque landscape depth buffer.
-        // Clouds render before the landscape, so no background depth hack.
-      }`,
-    fragmentShader:`
-      uniform vec3 cloudColor,cloudShadow;
-      uniform vec2 sunView;
-      uniform float sunFacing,weather,time;
-      varying vec2 vUv;
-      varying float vType,vVariation;
-      float ellipse(vec2 p,vec2 center,vec2 radius){
-        return (length((p-center)/radius)-1.)*min(radius.x,radius.y);
-      }
-      float sdCloud(vec2 p,float kind){
-        float d=10.;
-        if(kind<.5){
-          d=min(ellipse(p,vec2(-.43,-.16),vec2(.48,.32)),ellipse(p,vec2(.1,-.1),vec2(.58,.43)));
-          d=min(d,ellipse(p,vec2(-.15,.18),vec2(.4,.47)));
-          d=min(d,ellipse(p,vec2(.37,.05),vec2(.32,.34)));
-        }else if(kind<1.5){
-          d=ellipse(p,vec2(0.,-.32),vec2(.62,.19));
-          d=min(d,ellipse(p,vec2(-.29,.0),vec2(.38,.35)));
-          d=min(d,ellipse(p,vec2(.06,.24),vec2(.4,.47)));
-          d=min(d,ellipse(p,vec2(.04,.53),vec2(.29,.33)));
-        }else if(kind<2.5){
-          float w=.08+.024*sin(p.x*13.+vVariation*6.);
-          d=min(ellipse(p,vec2(0.,.11),vec2(.85,.08)),abs(p.y-.17-.13*sin(p.x*4.+vVariation))-w);
-          d=max(d,abs(p.x)-.9);
-          d=min(d,ellipse(p,vec2(-.24,-.15),vec2(.68,.045)));
-        }else{
-          d=ellipse(p,vec2(0.,-.06),vec2(.94,.22));
-          d=min(d,ellipse(p,vec2(-.45,.02),vec2(.48,.16)));
-          d=min(d,ellipse(p,vec2(.47,.035),vec2(.46,.14)));
-        }
-        // Fixed low-frequency breakup; bounded arithmetic, no texture lookups.
-        float grain=sin(p.x*23.+vVariation*9.)*sin(p.y*17.-vVariation*4.);
-        return d+grain*(kind>1.5?.012:.023);
-      }
-      void main(){
-        vec2 p=(vUv-.5)*2.;
-        float d=sdCloud(p,vType);
-        float feather=vType>1.5?.045:.025;
-        float coverage=1.-smoothstep(-feather,feather,d);
-        // Opaque pass before terrain: spatial dithering preserves soft SDF
-        // silhouettes without transparent sorting or fragment-depth writes.
-        vec2 cell=mod(floor(gl_FragCoord.xy),4.);
-        float threshold=(mod(cell.x*3.+cell.y*5.,16.)+.5)/16.;
-        if(coverage*(vType>1.5?.94:1.)<threshold)discard;
-        vec2 light=normalize(sunView+vec2(.0001));
-        float direction=max(0.,dot(normalize(p+vec2(.001,.08)),light));
-        float volume=clamp(.40+.37*p.y+.23*direction,0.,1.);
-        float rim=(1.-smoothstep(0.,.12,abs(d)))*pow(direction,.85);
-        // Forward-scattered silver lining intensifies when facing the sun.
-        float scatter=rim*(.24+.76*sunFacing)*(1.-weather*.38);
-        vec3 base=mix(cloudShadow,cloudColor,volume);
-        base+=vec3(1.,.93,.82)*scatter*.85;
-        // Background depth is assigned in the vertex shader. Fragment-depth
-        // writes require WebGL2 or extensions and can prevent compilation.
-        gl_FragColor=vec4(base,1.);
-        #include <tonemapping_fragment>
-        #include <colorspace_fragment>
-      }`
+    uniforms:cloudUniforms,transparent:false,depthWrite:false,depthTest:false,
+    side:THREE.FrontSide,fog:false,
+    vertexShader:"attribute float cloudType,cloudVariation;\nvarying vec3 vLocalPoint,vLocalEye,vAxisX,vAxisY,vAxisZ;\nvarying float vType,vVariation;\nvoid main(){\n  vType=cloudType;vVariation=cloudVariation;\n  vLocalPoint=position;\n  mat4 transform=modelMatrix*instanceMatrix;\n  vec3 x=transform[0].xyz,y=transform[1].xyz,z=transform[2].xyz;\n  float sx=length(x),sy=length(y),sz=length(z);\n  vAxisX=x/max(sx,.001);vAxisY=y/max(sy,.001);vAxisZ=z/max(sz,.001);\n  vec3 offset=cameraPosition-transform[3].xyz;\n  vLocalEye=vec3(dot(offset,vAxisX)/max(sx,.001),dot(offset,vAxisY)/max(sy,.001),dot(offset,vAxisZ)/max(sz,.001));\n  gl_Position=projectionMatrix*viewMatrix*transform*vec4(position,1.);\n}",
+    fragmentShader:"uniform vec3 cloudColor,cloudShadow,sunDirection;\nuniform float weather;\nvarying vec3 vLocalPoint,vLocalEye,vAxisX,vAxisY,vAxisZ;\nvarying float vType,vVariation;\nfloat blob(vec3 p,vec3 center,vec3 radius){\n  return (length((p-center)/radius)-1.)*min(min(radius.x,radius.y),radius.z);\n}\nfloat smoothUnion(float a,float b,float k){\n  float h=max(k-abs(a-b),0.)/k;\n  return min(a,b)-h*h*k*.25;\n}\nfloat cloudSdf(vec3 p){\n  float d=1.;\n  if(vType<.5){\n    d=blob(p,vec3(-.43,-.22,0.),vec3(.43,.34,.38));\n    d=smoothUnion(d,blob(p,vec3(.05,-.14,.04),vec3(.50,.45,.44)),.22);\n    d=smoothUnion(d,blob(p,vec3(-.06,.23,-.1),vec3(.36,.47,.37)),.19);\n    d=smoothUnion(d,blob(p,vec3(.47,.03,-.1),vec3(.34,.34,.37)),.17);\n  }else if(vType<1.5){\n    d=blob(p,vec3(0.,-.45,0.),vec3(.77,.18,.44));\n    d=smoothUnion(d,blob(p,vec3(-.2,-.12,0.),vec3(.37,.36,.38)),.16);\n    d=smoothUnion(d,blob(p,vec3(.08,.23,0.),vec3(.38,.52,.39)),.20);\n    d=smoothUnion(d,blob(p,vec3(.06,.61,0.),vec3(.33,.24,.34)),.14);\n  }else if(vType<2.5){\n    d=blob(p,vec3(0.,.09,0.),vec3(.85,.13,.22));\n    d=smoothUnion(d,blob(p,vec3(-.32,-.05,.06),vec3(.50,.075,.18)),.07);\n    d=smoothUnion(d,blob(p,vec3(.26,.23,-.07),vec3(.58,.08,.17)),.08);\n  }else{\n    d=blob(p,vec3(0.,-.08,0.),vec3(.89,.24,.35));\n    d=smoothUnion(d,blob(p,vec3(-.4,.04,-.04),vec3(.52,.18,.35)),.11);\n    d=smoothUnion(d,blob(p,vec3(.39,.025,.02),vec3(.51,.17,.34)),.12);\n  }\n  float irregular=sin(p.x*12.+vVariation*6.)*sin(p.y*9.-vVariation*4.)*sin(p.z*11.+vVariation*3.);\n  return d+irregular*.015;\n}\nvoid main(){\n  vec3 rd=normalize(vLocalPoint-vLocalEye),p=vLocalPoint;\n  float distanceTraveled=0.;\n  bool hit=false;\n  for(int i=0;i<24;i++){\n    float d=cloudSdf(p);\n    if(d<.012){hit=true;break;}\n    float stepSize=clamp(d*.72,.018,.23);\n    distanceTraveled+=stepSize;\n    if(distanceTraveled>2.1)break;\n    p+=rd*stepSize;\n  }\n  if(!hit)discard;\n  vec2 e=vec2(.025,0.);\n  vec3 n=normalize(vec3(\n    cloudSdf(p+e.xyy)-cloudSdf(p-e.xyy),\n    cloudSdf(p+e.yxy)-cloudSdf(p-e.yxy),\n    cloudSdf(p+e.yyx)-cloudSdf(p-e.yyx)));\n  vec3 worldNormal=normalize(vAxisX*n.x+vAxisY*n.y+vAxisZ*n.z);\n  float sunlight=max(dot(worldNormal,normalize(sunDirection)),0.);\n  float fill=.38+.54*max(worldNormal.y,0.)+.32*sunlight;\n  float rim=pow(1.-abs(dot(n,rd)),3.);\n  vec3 base=mix(cloudShadow,cloudColor,clamp(fill,0.,1.));\n  base+=vec3(1.,.96,.83)*rim*(.15+.45*sunlight)*(1.-weather*.3);\n  gl_FragColor=vec4(base,1.);\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n}"
   });
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
   cloudMesh.name='cloud-sdf-types';
-  cloudMesh.renderOrder=-90; // Sky dome (-100), then clouds, then opaque landscape.
-  cloudMesh.frustumCulled=false; // Camera-relative cloud ring is recentered every frame.
+  cloudMesh.renderOrder=-90; // Sky, then 3D clouds, then opaque terrain.
+  cloudMesh.frustumCulled=false; // Ring follows driving position, not camera aim.
   const dummy=new THREE.Object3D();let cloudSeed=null,cloudLayoutUpdates=0;
   // Presentation-only seed: every generated run gets a new sky, including
   // retries of the exact same course. It never enters gameplay/save state.
@@ -325,6 +251,7 @@
   // Six of each layer's eight banks favor the road ahead; two fill the rear.
   const cloudSkyRadius=[730,1070,1450];
   const cloudAngularScale=[1.45,1.75,2.05];
+  const cloudDepthScale=[.55,.62,.72];
   function positionClouds(state,seconds) {
     // Truck translation and turning do not rotate the cloud field.
     // Only forward travel contributes a subtle horizontal drift.
@@ -345,7 +272,8 @@
       dummy.position.copy(cloudPosition);
       dummy.rotation.set(0,0,0);
       dummy.scale.set(bank.width*cloudAngularScale[bank.layer],
-        bank.height*cloudAngularScale[bank.layer],1);
+        bank.height*cloudAngularScale[bank.layer],
+        bank.width*cloudDepthScale[bank.layer]);
       dummy.updateMatrix();
       cloudMesh.setMatrixAt(bank.id,dummy.matrix);
     }
@@ -382,8 +310,7 @@
     cloudCameraRight.set(1,0,0).applyQuaternion(camera.quaternion);
     cloudCameraUp.set(0,1,0).applyQuaternion(camera.quaternion);
     cloudCameraForward.set(0,0,-1).applyQuaternion(camera.quaternion);
-    cloudUniforms.sunView.value.set(cloudSunDirection.dot(cloudCameraRight),cloudSunDirection.dot(cloudCameraUp));
-    cloudUniforms.sunFacing.value=clamp((cloudSunDirection.dot(cloudCameraForward)+.1)*1.2,0,1);
+    cloudUniforms.sunDirection.value.copy(cloudSunDirection);
     sun.intensity=lerp(1.65,1.03,weather);hemi.intensity=lerp(1.4,1.25,weather);
     fill.position.set(state.position.x+80,state.position.y+75,state.position.z+110);
     fill.target.position.set(state.position.x,state.position.y,state.position.z);fill.target.updateMatrixWorld();
@@ -424,7 +351,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-bearing-sky',cloudTurnInfluence:0,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudVisibilityScale:[1.45,1.75,2.05],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-bearing-sky',cloudTurnInfluence:0,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudGeometry:'instanced-3d-sdf-volumes',cloudVisibilityScale:[1.45,1.75,2.05],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
