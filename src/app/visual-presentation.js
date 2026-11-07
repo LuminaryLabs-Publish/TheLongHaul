@@ -2,7 +2,7 @@
  * No scoring, timing, road coordinates, controls or save authority lives here. */
 (() => {
   'use strict';
-  const { ATMOSPHERE_PROFILE: profile, cloudBankDescriptors, atmosphericRollOff,
+  const { ATMOSPHERE_PROFILE: profile, cloudBankDescriptors, wrapCloudOffset, atmosphericRollOff,
     landscapeTint, freightHudModel } = LongHaulArt;
   const stage = document.querySelector('#game-stage');
   document.body.classList.add('visual-refresh');
@@ -277,7 +277,7 @@
   const dummy=new THREE.Object3D();let cloudSeed=null,cloudLayoutUpdates=0;
   let cloudDescriptors=[],cloudTravelX=0,cloudTravelZ=0,cloudLastUpdate=-Infinity;
   const cloudCameraForwardXZ=new THREE.Vector3(),cloudCameraRightXZ=new THREE.Vector3();
-  const cloudOrigin=new THREE.Vector3(),cloudPosition=new THREE.Vector3();
+  const cloudPosition=new THREE.Vector3();
   const cloudLayerCounts=[0,0,0];
   function ensureCloudLayout(seed) {
     const nextSeed=typeof seed==='string'&&seed.length?seed:'long-haul-sky';
@@ -313,7 +313,7 @@
       // them ahead. Deep clouds advance far more slowly.
       const depthSpan=bank.layer===0?520:bank.layer===1?900:1500;
       const depth=bank.depth+wrapCloudOffset(-cloudTravelZ*(1-bank.follow)+seconds*bank.wind*.16,depthSpan);
-      cloudPosition.copy(cloudOrigin).addScaledVector(cloudCameraRightXZ,lateral).addScaledVector(cloudCameraForwardXZ,depth);
+      cloudPosition.set(0,0,0).addScaledVector(cloudCameraRightXZ,lateral).addScaledVector(cloudCameraForwardXZ,depth);
       dummy.position.set(cloudPosition.x,bank.altitude+(bank.type==='cumulonimbus'?70:0),cloudPosition.z);
       dummy.rotation.set(0,0,0);dummy.scale.set(bank.width,bank.height,1);
       dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
