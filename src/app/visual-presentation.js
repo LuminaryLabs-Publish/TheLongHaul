@@ -255,7 +255,10 @@
         +(bank.variation-.5)*.15;
       const radius=cloudSkyRadius[bank.layer]+(bank.variation-.5)*90;
       const drift=seconds*bank.wind+[.0025,.001,.00035][bank.layer]*cloudForwardProgress;
-      cloudDummy.position.set(Math.sin(bearing)*radius+drift,bank.altitude*.66,-Math.cos(bearing)*radius);
+      // Keep tall cumulonimbus anvils below the camera's upper sky boundary.
+      // Other cloud types retain their approved height and appearance.
+      const cloudHeight=bank.altitude*.66-(bank.type==='cumulonimbus'?bank.height*.30:0);
+      cloudDummy.position.set(Math.sin(bearing)*radius+drift,cloudHeight,-Math.cos(bearing)*radius);
       cloudDummy.rotation.set(0,bank.variation*Math.PI*2,0);
       cloudDummy.scale.set(bank.width*.60,bank.height*.78,bank.width*.34);
       cloudDummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,cloudDummy.matrix);
