@@ -67,8 +67,12 @@ assert.match(host,/wrapCloudOffset/);assert.match(host,/positionClouds\(state,sk
 assert.match(host,/cloudEye\.copy\(camera\.position\)/);
 assert.match(host,/cloudViewUp/);
 assert.match(host,/cloudPositioning:'world-biased-high-sky'/);
-assert.match(host,/const cloudTurnInfluence=\.08/);
+assert.match(host,/const cloudTurnInfluence=\.02/);
 assert.match(host,/cloudPosition\.y=Math\.max/);
+assert.match(host,/gl_FragDepth=0\.999999/);
+assert.match(host,/cloudForwardProgress=Math\.max\(0,-state\.position\.z\)/);
+assert.doesNotMatch(host,/cloudTravelX|cloudTravelZ/);
+assert.match(host,/cloudDepthPolicy:'background-depth'/);
 assert.match(host,/cloudLayers:cloudLayerCounts\.slice\(\)/);
 assert.match(host,/startGeneration=function\(\.\.\.args\)/);
 assert.match(host,/cloudRunSeed=makeCloudRunSeed\(\);cloudRunNumber\+\+/);
