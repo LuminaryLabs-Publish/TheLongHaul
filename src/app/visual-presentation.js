@@ -261,7 +261,7 @@
         vec2 light=normalize(sunView+vec2(.0001));
         float direction=max(0.,dot(normalize(p+vec2(.001,.08)),light));
         float volume=clamp(.58+.29*p.y+.13*direction,0.,1.);
-        float rim=(1.-smoothstep(-.14,.035,abs(d)))*pow(direction,.85);
+        float rim=(1.-smoothstep(0.,.12,abs(d)))*pow(direction,.85);
         // Forward-scattered silver lining intensifies when facing the sun.
         float scatter=rim*(.24+.76*sunFacing)*(1.-weather*.38);
         vec3 base=mix(cloudShadow,cloudColor,volume);
@@ -301,6 +301,8 @@
     clearFog:new THREE.Color(0xebc8a4),rainFog:new THREE.Color(0xafc0c9),
     clearCloud:new THREE.Color(0xffdfb7),rainCloud:new THREE.Color(0xc9d0de)};
   const groundColor=new THREE.Color(0x557568),sunColor=new THREE.Color(0xffd69b);
+  const cloudRainShadow=new THREE.Color(0x697c96),cloudSunDirection=new THREE.Vector3(-.55,.19,-.77).normalize();
+  const cloudCameraRight=new THREE.Vector3(),cloudCameraUp=new THREE.Vector3(),cloudCameraForward=new THREE.Vector3();
   hemi.color.set(0xd7e5ff);hemi.groundColor.copy(groundColor);sun.color.copy(sunColor);
   function atmosphereFrame(state, milliseconds) {
     const weather=clamp(arcadeWeatherAmount,0,1),seconds=milliseconds/1000;
@@ -313,14 +315,13 @@
     scene.fog.color.copy(colors.clearFog).lerp(colors.rainFog,weather);
     scene.fog.near=lerp(profile.clearNear,profile.rainNear,weather);scene.fog.far=lerp(profile.clearFar,profile.rainFar,weather);
     cloudUniforms.cloudColor.value.copy(colors.clearCloud).lerp(colors.rainCloud,weather);
-    cloudUniforms.cloudShadow.value.set(0x8699b4).lerp(new THREE.Color(0x697c96),weather);
+    cloudUniforms.cloudShadow.value.set(0x8699b4).lerp(cloudRainShadow,weather);
     cloudUniforms.weather.value=weather;
-    const sunDirection=new THREE.Vector3(-.55,.19,-.77).normalize();
-    const cameraRight=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-    const cameraUp=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
-    const cameraForward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-    cloudUniforms.sunView.value.set(sunDirection.dot(cameraRight),sunDirection.dot(cameraUp));
-    cloudUniforms.sunFacing.value=clamp((sunDirection.dot(cameraForward)+.1)*1.2,0,1);
+    cloudCameraRight.set(1,0,0).applyQuaternion(camera.quaternion);
+    cloudCameraUp.set(0,1,0).applyQuaternion(camera.quaternion);
+    cloudCameraForward.set(0,0,-1).applyQuaternion(camera.quaternion);
+    cloudUniforms.sunView.value.set(cloudSunDirection.dot(cloudCameraRight),cloudSunDirection.dot(cloudCameraUp));
+    cloudUniforms.sunFacing.value=clamp((cloudSunDirection.dot(cloudCameraForward)+.1)*1.2,0,1);
     sun.intensity=lerp(1.65,1.03,weather);hemi.intensity=lerp(1.4,1.25,weather);
     fill.position.set(state.position.x+80,state.position.y+75,state.position.z+110);
     fill.target.position.set(state.position.x,state.position.y,state.position.z);fill.target.updateMatrixWorld();
