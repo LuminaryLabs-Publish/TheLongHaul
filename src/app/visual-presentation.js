@@ -204,7 +204,7 @@
     time:{value:0}
   };
   const cloudMaterial=new THREE.ShaderMaterial({
-    uniforms:cloudUniforms, transparent:true,depthWrite:false,depthTest:true,
+    uniforms:cloudUniforms, transparent:false,depthWrite:false,depthTest:false,
     side:THREE.DoubleSide,fog:false,
     vertexShader:`
       attribute float cloudType,cloudVariation;
@@ -219,7 +219,7 @@
         gl_Position=projectionMatrix*center;
         // Background depth at vertex stage: WebGL1-safe and still tested
         // against the opaque landscape depth buffer.
-        gl_Position.z=gl_Position.w*0.999998;
+        // Clouds render before the landscape, so no background depth hack.
       }`,
     fragmentShader:`
       uniform vec3 cloudColor,cloudShadow;
@@ -260,7 +260,11 @@
         float d=sdCloud(p,vType);
         float feather=vType>1.5?.045:.025;
         float coverage=1.-smoothstep(-feather,feather,d);
-        if(coverage<.01)discard;
+        // Opaque pass before terrain: spatial dithering preserves soft SDF
+        // silhouettes without transparent sorting or fragment-depth writes.
+        vec2 cell=mod(floor(gl_FragCoord.xy),4.);
+        float threshold=(mod(cell.x*3.+cell.y*5.,16.)+.5)/16.;
+        if(coverage*(vType>1.5?.94:1.)<threshold)discard;
         vec2 light=normalize(sunView+vec2(.0001));
         float direction=max(0.,dot(normalize(p+vec2(.001,.08)),light));
         float volume=clamp(.40+.37*p.y+.23*direction,0.,1.);
@@ -271,14 +275,14 @@
         base+=vec3(1.,.93,.82)*scatter*.85;
         // Background depth is assigned in the vertex shader. Fragment-depth
         // writes require WebGL2 or extensions and can prevent compilation.
-        gl_FragColor=vec4(base,coverage*(vType>1.5?.94:1.));
+        gl_FragColor=vec4(base,1.);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`
   });
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
   cloudMesh.name='cloud-sdf-types';
-  cloudMesh.renderOrder=10; // Draw after opaque landscape; depth test masks it.
+  cloudMesh.renderOrder=-90; // Sky dome (-100), then clouds, then opaque landscape.
   cloudMesh.frustumCulled=false; // Camera-relative cloud ring is recentered every frame.
   const dummy=new THREE.Object3D();let cloudSeed=null,cloudLayoutUpdates=0;
   // Presentation-only seed: every generated run gets a new sky, including
@@ -437,7 +441,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-biased-high-sky',cloudTurnInfluence,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'background-depth',cloudVisibilityScale:[2.8,3.1,3.4],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-biased-high-sky',cloudTurnInfluence,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudVisibilityScale:[2.8,3.1,3.4],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
