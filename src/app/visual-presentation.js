@@ -205,7 +205,7 @@
   const cloudMaterial=new THREE.ShaderMaterial({
     uniforms:cloudUniforms,transparent:true,depthTest:true,depthWrite:false,
     side:THREE.FrontSide,fog:false,blending:THREE.NormalBlending,
-    vertexShader:"\nattribute float cloudType,cloudVariation;\nuniform vec3 sunDirection;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nvoid main(){\n  mat4 world=modelMatrix*instanceMatrix;\n  vec3 x=world[0].xyz,y=world[1].xyz,z=world[2].xyz;\n  float sx=max(length(x),.001),sy=max(length(y),.001),sz=max(length(z),.001);\n  x/=sx;y/=sy;z/=sz;\n  vec3 eye=cameraPosition-world[3].xyz;\n  vEye=vec3(dot(eye,x)/sx,dot(eye,y)/sy,dot(eye,z)/sz);\n  vSun=normalize(vec3(dot(sunDirection,x)/sx,dot(sunDirection,y)/sy,dot(sunDirection,z)/sz));\n  vBacklit=max(dot(normalize(world[3].xyz-cameraPosition),sunDirection),0.);\n  vFace=position;vType=cloudType;vSeed=cloudVariation;\n  gl_Position=projectionMatrix*viewMatrix*world*vec4(position,1.);\n  gl_Position.z=gl_Position.w*.99998;\n}",fragmentShader:"\nuniform vec3 cloudColor,cloudShadow,sunColor;\nuniform float extinction,weather;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nfloat blob(vec3 p,vec3 c,vec3 r){\n  return 1.-smoothstep(.61,1.14,length((p-c)/r));\n}\nfloat densityAt(vec3 p){\n  if(any(greaterThan(abs(p),vec3(1.))))return 0.;\n  float shape=0.;\n  if(vType<.5){\n    shape=max(blob(p,vec3(-.38,-.22,0.),vec3(.57,.46,.62)),\n              blob(p,vec3(.27,-.14,.06),vec3(.60,.50,.61)));\n    shape=max(shape,blob(p,vec3(-.08,.29,-.09),vec3(.47,.51,.48)));\n    shape=max(shape,blob(p,vec3(.44,.14,-.05),vec3(.39,.42,.47)));\n  }else if(vType<1.5){\n    shape=max(blob(p,vec3(0.,-.52,0.),vec3(.81,.31,.66)),\n              blob(p,vec3(-.14,-.12,0.),vec3(.53,.52,.54)));\n    shape=max(shape,blob(p,vec3(.05,.39,0.),vec3(.43,.55,.45)));\n    shape=max(shape,blob(p,vec3(.18,.78,0.),vec3(.78,.16,.56)));\n  }else if(vType<2.5){\n    shape=max(blob(p,vec3(-.36,.11,0.),vec3(.70,.13,.31)),\n              blob(p,vec3(.35,.20,.03),vec3(.71,.11,.31)));\n    shape=max(shape,blob(p,vec3(.03,-.10,-.1),vec3(.80,.09,.25)));\n  }else{\n    shape=max(blob(p,vec3(-.41,-.09,0.),vec3(.67,.27,.69)),\n              blob(p,vec3(.39,-.09,0.),vec3(.67,.25,.68)));\n    shape=max(shape,blob(p,vec3(0.,.11,.09),vec3(.74,.18,.53)));\n  }\n  vec3 q=p*vec3(8.3,7.1,9.2)+vSeed*7.;\n  float large=sin(q.x*.57)*cos(q.y*.71)*sin(q.z*.63);\n  float small=sin(q.x*1.27+q.z*.68)*sin(q.y*1.21-q.z*.59);\n  float variability=clamp(.69+.23*large+.14*small,.22,1.);\n  float kind=vType<.5?1.0:(vType<1.5?1.22:(vType<2.5?.45:.75));\n  float boundary=1.-max(max(abs(p.x),abs(p.y)),abs(p.z));\n  float fade=smoothstep(0.,.14,boundary);\n  return shape*variability*kind*fade;\n}\nfloat lightThrough(vec3 p){\n  // Three density probes towards the actual directional light.\n  float tau=0.;\n  for(int j=0;j<3;j++){\n    p+=vSun*.26;\n    tau+=densityAt(p)*.26;\n  }\n  return exp(-extinction*1.7*tau);\n}\nvoid main(){\n  vec3 rd=normalize(vFace-vEye);\n  vec3 target=vec3(rd.x<0.?-1.:1.,rd.y<0.?-1.:1.,rd.z<0.?-1.:1.);\n  vec3 tfar=abs(target-vFace)/max(abs(rd),vec3(.00001));\n  float extent=max(0.,min(min(tfar.x,tfar.y),tfar.z));\n  if(extent<.0001)discard;\n  float stepLength=extent/12.;\n  float transmittance=1.,sunAtEdge=0.,edgeFound=0.;\n  vec3 lightAccum=vec3(0.),edgePoint=vFace;\n  for(int i=0;i<12;i++){\n    vec3 p=vFace+rd*(float(i)+.5)*stepLength;\n    float density=densityAt(p);\n    if(density>.015){\n      float lightT=lightThrough(p);\n      float absorption=1.-exp(-extinction*density*stepLength);\n      vec3 localColor=mix(cloudShadow,cloudColor,\n        clamp(.20+.68*lightT+.12*p.y,0.,1.));\n      localColor+=sunColor*(.08+.22*vBacklit)*lightT;\n      lightAccum+=transmittance*absorption*localColor;\n      transmittance*=1.-absorption;\n      if(edgeFound<.5){edgePoint=p;edgeFound=1.;}\n      sunAtEdge=max(sunAtEdge,lightT);\n      if(transmittance<.025)break;\n    }\n  }\n  float opacity=1.-transmittance;\n  if(opacity<.012)discard;\n  // Density-gradient rim: strongest at the translucent, sun-facing contour.\n  float e=.045;\n  vec3 grad=vec3(\n    densityAt(edgePoint+vec3(e,0.,0.))-densityAt(edgePoint-vec3(e,0.,0.)),\n    densityAt(edgePoint+vec3(0.,e,0.))-densityAt(edgePoint-vec3(0.,e,0.)),\n    densityAt(edgePoint+vec3(0.,0.,e))-densityAt(edgePoint-vec3(0.,0.,e)));\n  float rimNormal=pow(1.-abs(dot(normalize(grad+vec3(.00001)),rd)),3.);\n  float thinEdge=1.-smoothstep(.38,.97,opacity);\n  float silverRim=rimNormal*thinEdge*sunAtEdge*(.18+1.3*vBacklit);\n  vec3 shaded=lightAccum/max(opacity,.001)+sunColor*silverRim*.85;\n  gl_FragColor=vec4(shaded,opacity);\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n}"
+    vertexShader:"\nattribute float cloudType,cloudVariation;\nuniform vec3 sunDirection;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nvoid main(){\n  mat4 world=modelMatrix*instanceMatrix;\n  vec3 x=world[0].xyz,y=world[1].xyz,z=world[2].xyz;\n  float sx=max(length(x),.001),sy=max(length(y),.001),sz=max(length(z),.001);\n  x/=sx;y/=sy;z/=sz;\n  vec3 eye=cameraPosition-world[3].xyz;\n  vEye=vec3(dot(eye,x)/sx,dot(eye,y)/sy,dot(eye,z)/sz);\n  vSun=normalize(vec3(dot(sunDirection,x)/sx,dot(sunDirection,y)/sy,dot(sunDirection,z)/sz));\n  vBacklit=max(dot(normalize(world[3].xyz-cameraPosition),sunDirection),0.);\n  vFace=position;vType=cloudType;vSeed=cloudVariation;\n  gl_Position=projectionMatrix*viewMatrix*world*vec4(position,1.);\n  gl_Position.z=gl_Position.w*.99998;\n}",fragmentShader:"\nuniform vec3 cloudColor,cloudShadow,sunColor;\nuniform float extinction,weather;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nfloat blob(vec3 p,vec3 c,vec3 r){\n  return 1.-smoothstep(.61,1.14,length((p-c)/r));\n}\nfloat densityAt(vec3 p){\n  if(any(greaterThan(abs(p),vec3(1.))))return 0.;\n  // Low-frequency deformation produces different, nonuniform silhouettes\n  // per bank while keeping the smooth density fade at proxy boundaries.\n  float curl=sin(p.x*4.7+p.z*3.9+vSeed*11.2);\n  vec3 sculpt=p+vec3(.11*curl,\n    .085*sin(p.y*5.1-p.z*3.6+vSeed*8.7),\n    .09*curl);\n  float shape=0.;\n  if(vType<.5){\n    shape=max(blob(sculpt,vec3(-.38,-.22,0.),vec3(.57,.46,.62)),\n              blob(sculpt,vec3(.27,-.14,.06),vec3(.60,.50,.61)));\n    shape=max(shape,blob(sculpt,vec3(-.08,.29,-.09),vec3(.47,.51,.48)));\n    shape=max(shape,blob(sculpt,vec3(.44,.14,-.05),vec3(.39,.42,.47)));\n  }else if(vType<1.5){\n    shape=max(blob(sculpt,vec3(0.,-.52,0.),vec3(.81,.31,.66)),\n              blob(sculpt,vec3(-.14,-.12,0.),vec3(.53,.52,.54)));\n    shape=max(shape,blob(sculpt,vec3(.05,.39,0.),vec3(.43,.55,.45)));\n    shape=max(shape,blob(sculpt,vec3(.18,.78,0.),vec3(.78,.16,.56)));\n  }else if(vType<2.5){\n    shape=max(blob(sculpt,vec3(-.36,.11,0.),vec3(.70,.13,.31)),\n              blob(sculpt,vec3(.35,.20,.03),vec3(.71,.11,.31)));\n    shape=max(shape,blob(sculpt,vec3(.03,-.10,-.1),vec3(.80,.09,.25)));\n  }else{\n    shape=max(blob(sculpt,vec3(-.41,-.09,0.),vec3(.67,.27,.69)),\n              blob(sculpt,vec3(.39,-.09,0.),vec3(.67,.25,.68)));\n    shape=max(shape,blob(sculpt,vec3(0.,.11,.09),vec3(.74,.18,.53)));\n  }\n  vec3 q=p*vec3(8.3,7.1,9.2)+vSeed*7.;\n  float large=sin(q.x*.57)*cos(q.y*.71)*sin(q.z*.63);\n  float small=sin(q.x*1.27+q.z*.68)*sin(q.y*1.21-q.z*.59);\n  float variability=clamp(.64+.31*large+.19*small,.14,1.);\n  float kind=vType<.5?1.0:(vType<1.5?1.22:(vType<2.5?.45:.75));\n  float boundary=1.-max(max(abs(p.x),abs(p.y)),abs(p.z));\n  float fade=smoothstep(0.,.14,boundary);\n  return shape*variability*kind*fade;\n}\nfloat lightThrough(vec3 p){\n  // Three density probes towards the actual directional light.\n  float tau=0.;\n  for(int j=0;j<3;j++){\n    p+=vSun*.26;\n    tau+=densityAt(p)*.26;\n  }\n  return exp(-extinction*1.7*tau);\n}\nvoid main(){\n  vec3 rd=normalize(vFace-vEye);\n  vec3 target=vec3(rd.x<0.?-1.:1.,rd.y<0.?-1.:1.,rd.z<0.?-1.:1.);\n  vec3 tfar=abs(target-vFace)/max(abs(rd),vec3(.00001));\n  float extent=max(0.,min(min(tfar.x,tfar.y),tfar.z));\n  if(extent<.0001)discard;\n  float stepLength=extent/12.;\n  float transmittance=1.,sunAtEdge=0.,edgeFound=0.;\n  vec3 lightAccum=vec3(0.),edgePoint=vFace;\n  for(int i=0;i<12;i++){\n    vec3 p=vFace+rd*(float(i)+.5)*stepLength;\n    float density=densityAt(p);\n    if(density>.015){\n      float lightT=lightThrough(p);\n      float absorption=1.-exp(-extinction*density*stepLength);\n      vec3 localColor=mix(cloudShadow,cloudColor,\n        clamp(.20+.68*lightT+.12*p.y,0.,1.));\n      localColor+=sunColor*(.08+.22*vBacklit)*lightT;\n      lightAccum+=transmittance*absorption*localColor;\n      transmittance*=1.-absorption;\n      if(edgeFound<.5){edgePoint=p;edgeFound=1.;}\n      sunAtEdge=max(sunAtEdge,lightT);\n      if(transmittance<.025)break;\n    }\n  }\n  float opacity=1.-transmittance;\n  if(opacity<.012)discard;\n  // Density-gradient rim: strongest at the translucent, sun-facing contour.\n  float e=.045;\n  vec3 grad=vec3(\n    densityAt(edgePoint+vec3(e,0.,0.))-densityAt(edgePoint-vec3(e,0.,0.)),\n    densityAt(edgePoint+vec3(0.,e,0.))-densityAt(edgePoint-vec3(0.,e,0.)),\n    densityAt(edgePoint+vec3(0.,0.,e))-densityAt(edgePoint-vec3(0.,0.,e)));\n  float rimNormal=pow(1.-abs(dot(normalize(grad+vec3(.00001)),rd)),3.);\n  float thinEdge=1.-smoothstep(.38,.97,opacity);\n  float silverRim=rimNormal*thinEdge*sunAtEdge*(.18+1.3*vBacklit);\n  vec3 shaded=lightAccum/max(opacity,.001)+sunColor*silverRim*.85;\n  gl_FragColor=vec4(shaded,opacity);\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n}"
   });
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
   cloudMesh.name='cloud-volumes';
@@ -229,7 +229,18 @@
   };
   const activeCloudSeed=()=>`${course?.seed||'long-haul-sky'}:sky-run:${cloudRunSeed}`;
   let cloudDescriptors=[],cloudForwardProgress=0,cloudLastUpdate=-Infinity;
-  const cloudLayerCounts=[0,0,0],cloudSkyRadius=[730,1070,1450];
+  const cloudLayerCounts=[0,0,0];
+  // Three ranges: sky alongside the road, overhead approaches, distant backdrop.
+  // Slots are in truck-relative world coordinates; heading never rotates them.
+  const cloudBankSlots=[
+    [[-500,-430],[-290,-180],[-60,-370],[290,-310],
+     [500,-570],[-550,-780],[120,210],[390,270]],
+    [[-800,-780],[-480,-1040],[-150,-1110],[200,-1010],
+     [580,-870],[820,-620],[-330,490],[380,620]],
+    [[-1130,-1280],[-810,-1480],[-420,-1530],[0,-1460],
+     [460,-1500],[840,-1410],[1120,-1230],[60,1110]]
+  ];
+  const cloudDriftDepth=[.12,.045,.012],cloudLoopDepth=[1800,2600,3400];
   const cloudTypeNames=['cumulus','cumulonimbus','cirrus','stratus'];
   function ensureCloudLayout(seed){
     const nextSeed=typeof seed==='string'&&seed.length?seed:'long-haul-sky';
@@ -247,21 +258,35 @@
     cloudSeed=nextSeed;cloudLayoutUpdates++;cloudLastUpdate=-Infinity;
   }
   function positionClouds(state,seconds){
-    // Camera heading and truck X never rotate or slide cloud banks sideways.
+    // A slow, repeating approach lets the truck drive beneath nearby banks.
+    // Drift stays independent of camera or steering; the sky never billboards.
     cloudForwardProgress=Math.max(0,-state.position.z);
     for(const bank of cloudDescriptors){
       const slot=bank.id%profile.cloudBanksPerLayer;
-      const bearing=(slot<6?(-1.26+(slot+.5)*2.52/6):(slot===6?2.35:-2.35))
-        +(bank.variation-.5)*.15;
-      const radius=cloudSkyRadius[bank.layer]+(bank.variation-.5)*90;
-      const drift=seconds*bank.wind+[.0025,.001,.00035][bank.layer]*cloudForwardProgress;
-      // Keep tall cumulonimbus anvils below the camera's upper sky boundary.
-      // Other cloud types retain their approved height and appearance.
-      const cloudHeight=bank.altitude*.66-(bank.type==='cumulonimbus'?bank.height*.30:0);
-      cloudDummy.position.set(Math.sin(bearing)*radius+drift,cloudHeight,-Math.cos(bearing)*radius);
+      const layer=bank.layer;
+      const base=cloudBankSlots[layer][slot];
+      const jitterX=(bank.variation-.5)*155;
+      const jitterZ=(bank.variation-.5)*175;
+      const wind=seconds*bank.wind+[.0025,.001,.00035][layer]*cloudForwardProgress;
+      const span=cloudLoopDepth[layer];
+      const advance=cloudForwardProgress*cloudDriftDepth[layer];
+      // Recycle banks behind the truck into the distant forward sky.
+      const z=((base[1]+jitterZ+advance+span*.5)%span+span)%span-span*.5;
+      const x=base[0]+jitterX+wind;
+      const nearBank=layer===0;
+      const cloudHeight=bank.altitude*.66
+        +(nearBank?60:0)
+        -(bank.type==='cumulonimbus'?bank.height*.22:0);
+      cloudDummy.position.set(x,cloudHeight,z);
       cloudDummy.rotation.set(0,bank.variation*Math.PI*2,0);
-      cloudDummy.scale.set(bank.width*.60,bank.height*.78,bank.width*.34);
-      cloudDummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,cloudDummy.matrix);
+      // Broad banks at varied depths, without raising their existing crowns.
+      const widthScale=[.91,1.13,1.32][layer];
+      const depthScale=[.61,.48,.42][layer];
+      const heightScale=bank.type==='cumulonimbus'?.67:.74;
+      cloudDummy.scale.set(bank.width*widthScale,bank.height*heightScale,
+        bank.width*depthScale);
+      cloudDummy.updateMatrix();
+      cloudMesh.setMatrixAt(bank.id,cloudDummy.matrix);
     }
     cloudMesh.instanceMatrix.needsUpdate=true;
   }
