@@ -57,7 +57,7 @@ export function cloudBankDescriptors(seed = 'long-haul-sky') {
   return Array.from({length:ATMOSPHERE_PROFILE.cloudBanks},(_,id)=>{
     const layer=Math.floor(id/ATMOSPHERE_PROFILE.cloudBanksPerLayer);
     const slot=id%ATMOSPHERE_PROFILE.cloudBanksPerLayer;
-    const type=types[(id+Math.floor(unit(id,'type')*3))%4];
+    const type=types[(slot+Math.floor(unit(layer,'type-offset')*4))%4];
     const [width,height]=dimensions[type];
     const band=[{distance:420,span:1250,follow:.12,wind:9},
       {distance:820,span:1900,follow:.55,wind:5},
