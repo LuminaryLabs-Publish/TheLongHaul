@@ -60,7 +60,10 @@ assert.match(host,/if\(nextSeed===cloudSeed\)return/,'Unchanged worlds reuse the
 assert.match(host,/cloudMesh\.computeBoundingSphere\(\)/,'Changing a layout refreshes culling bounds');
 assert.match(host,/cloudLayoutUpdates/,'Runtime exposes cloud update evidence');
 assert.match(host,/cloudBankDescriptors, wrapCloudOffset/);
-assert.match(host,/wrapCloudOffset/);assert.match(host,/positionClouds\(state,seconds\)/);
+assert.match(host,/wrapCloudOffset/);assert.match(host,/positionClouds\(state,skillVisualTime\)/);
+assert.match(host,/cloudEye\.copy\(camera\.position\)/);
+assert.match(host,/cloudViewUp/);
+assert.match(host,/cloudPositioning:'camera-frustum'/);
 assert.match(host,/cloudLayers:cloudLayerCounts\.slice\(\)/);
 assert.match(host,/startGeneration=function\(\.\.\.args\)/);
 assert.match(host,/cloudRunSeed=makeCloudRunSeed\(\);cloudRunNumber\+\+/);
