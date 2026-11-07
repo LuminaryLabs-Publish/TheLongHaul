@@ -310,42 +310,53 @@
     cloudGeometry.attributes.cloudVariation.needsUpdate=true;
     cloudSeed=nextSeed;cloudLayoutUpdates++;
     cloudLastUpdate=-Infinity;
+    cloudHeading=null;
   }
   const cloudViewForward=new THREE.Vector3(),cloudViewRight=new THREE.Vector3(),cloudViewUp=new THREE.Vector3();
   const cloudEye=new THREE.Vector3();
+  let cloudHeading=null;
+  const cloudTurnInfluence=.08; // clouds retain 92% of their original heading
   function positionClouds(state,seconds) {
-    // Arrange clouds in camera frustum rather than on the flat ground
-    // heading. The driving camera looks down, so horizontal-only placement
-    // left most previous clouds above/outside the visible sky.
     camera.updateMatrixWorld();
-    cloudViewForward.set(0,0,-1).applyQuaternion(camera.quaternion);
-    cloudViewRight.set(1,0,0).applyQuaternion(camera.quaternion);
-    cloudViewUp.set(0,1,0).applyQuaternion(camera.quaternion);
-    cloudCameraForwardXZ.copy(cloudViewForward);cloudCameraForwardXZ.y=0;
+    // Lock cloud bank orientation to the world's initial view. Steering only
+    // changes that orientation by 8%, rather than dragging clouds with truck.
+    cloudCameraForwardXZ.set(0,0,-1).applyQuaternion(camera.quaternion);
+    cloudCameraForwardXZ.y=0;
     if(cloudCameraForwardXZ.lengthSq()<.001)cloudCameraForwardXZ.set(0,0,-1);
     cloudCameraForwardXZ.normalize();
-    cloudCameraRightXZ.set(-cloudCameraForwardXZ.z,0,cloudCameraForwardXZ.x);
+    const cameraHeading=Math.atan2(cloudCameraForwardXZ.x,-cloudCameraForwardXZ.z);
+    if(cloudHeading===null)cloudHeading=cameraHeading;
+    const delta=Math.atan2(Math.sin(cameraHeading-cloudHeading),Math.cos(cameraHeading-cloudHeading));
+    const skyHeading=cloudHeading+delta*cloudTurnInfluence;
+    cloudViewForward.set(Math.sin(skyHeading),0,-Math.cos(skyHeading));
+    cloudViewRight.set(Math.cos(skyHeading),0,Math.sin(skyHeading));
+    // World-up positioning preserves cloud altitude while the camera pitches.
+    cloudViewUp.set(0,1,0);
     const x=state.position.x,z=state.position.z;
-    cloudTravelX=x*cloudCameraRightXZ.x+z*cloudCameraRightXZ.z;
-    cloudTravelZ=x*cloudCameraForwardXZ.x+z*cloudCameraForwardXZ.z;
+    cloudTravelX=x*cloudViewRight.x+z*cloudViewRight.z;
+    cloudTravelZ=x*cloudViewForward.x+z*cloudViewForward.z;
     cloudEye.copy(camera.position).sub(atmosphere.position);
     const viewHeight=Math.tan(THREE.MathUtils.degToRad(camera.fov)*.5);
     for(const bank of cloudDescriptors){
       const lateral=wrapCloudOffset(bank.lateral-cloudTravelX*(1-bank.follow)+seconds*bank.wind,bank.span);
-      const depthSpan=bank.layer===0?320:bank.layer===1?500:350;
-      const depth=Math.min(camera.far-160,bank.depth+wrapCloudOffset(-cloudTravelZ*(1-bank.follow)+seconds*bank.wind*.16,depthSpan));
-      const screenX=(lateral/bank.span)*1.65;
-      // NDC Y .26-.78: in the upper half without covering the horizon.
-      const screenY=.28+.12*bank.layer+.35*bank.variation;
+      // Reduced parallax: forward movement shifts the near band gently,
+      // middle more slowly and distant high clouds barely at all.
+      const depthSpan=bank.layer===0?150:bank.layer===1?170:120;
+      const depth=Math.min(camera.far-190,bank.depth+
+        wrapCloudOffset(-cloudTravelZ*(1-bank.follow)+seconds*bank.wind*.08,depthSpan));
+      const screenX=(lateral/bank.span)*1.55;
+      // Raise silhouettes above the horizon, retaining vertical variety.
+      const screenY=.67+.09*bank.layer+.15*(bank.variation-.5);
       const planeWidth=2*depth*viewHeight*camera.aspect;
       const planeHeight=2*depth*viewHeight;
       cloudPosition.copy(cloudEye).addScaledVector(cloudViewForward,depth)
         .addScaledVector(cloudViewRight,screenX*planeWidth*.5)
         .addScaledVector(cloudViewUp,screenY*planeHeight*.5);
+      // Preserve height above the truck when pitch changes.
+      cloudPosition.y=Math.max(cloudPosition.y,bank.altitude+state.position.y*.2);
       dummy.position.copy(cloudPosition);
       dummy.rotation.set(0,0,0);
-      // Retain size variation but keep cloud groups visible at all three depths.
-      dummy.scale.set(bank.width*(depth/bank.depth),bank.height*(depth/bank.depth),1);
+      dummy.scale.set(bank.width,bank.height,1);
       dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
     }
     cloudMesh.instanceMatrix.needsUpdate=true;
@@ -423,7 +434,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'camera-frustum',cloudLayers:cloudLayerCounts.slice(),cloudTravel:{x:cloudTravelX,z:cloudTravelZ},cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-biased-high-sky',cloudTurnInfluence,cloudLayers:cloudLayerCounts.slice(),cloudTravel:{x:cloudTravelX,z:cloudTravelZ},cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
