@@ -404,7 +404,15 @@
     oldVisualFrame(now);
     const playing=currentScene()==='driving' && Boolean(course); shadow.visible=playing;
     objective.hidden=!playing||launchIntro.active;
-    if(!playing){help.hidden=true;receipt.hidden=true;return;}
+    if(!playing){
+      help.hidden=true;receipt.hidden=true;
+      // Keep the title's cinematic sky populated too, before a run starts.
+      if(currentScene()==='title'&&(now<cloudLastUpdate||now-cloudLastUpdate>=33)){
+        positionClouds({position:camera.position},now/1000);
+        cloudLastUpdate=now;
+      }
+      return;
+    }
     const state=readTruck(),ground=groundSample(state.position),altitude=Math.max(0,state.position.y-ground.height-1);
     if(now<cloudLastUpdate||now-cloudLastUpdate>=33){
       positionClouds(state,skillVisualTime);
