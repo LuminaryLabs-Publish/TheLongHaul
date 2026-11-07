@@ -37,7 +37,7 @@ try{
   check('Ordinary keyboard driving remains responsive',await page.evaluate(p=>Math.hypot(readTruck().position.x-p.x,readTruck().position.z-p.z)>5,start));
   const presentation=await page.evaluate(()=>LongHaulPresentation.getState());
   check('Horizontal cloud sheets removed',presentation.oldCloudSheets===false,presentation);
-  check('Shaped clouds and readable near fog',presentation.cloudLobes===70&&presentation.fog.near>=180,presentation);
+  check('Shaped clouds and readable near fog',presentation.cloudSdfInstances===24&&presentation.cloudLayers.join(',')==='8,8,8'&&presentation.fog.near>=180,presentation);
   check('Truck condition uses remaining integrity',!(/damage/i.test(await page.locator('#truck-num').textContent())));
   check('Idle flavor banner is quiet',await page.locator('#encounter-hud').isHidden());
   const gl=await webglEvidence(page);check('Native 1080p WebGL pixels',gl.width>=1920&&gl.height>=1080&&gl.pixels.distinctColors>100&&!gl.lost,gl);
