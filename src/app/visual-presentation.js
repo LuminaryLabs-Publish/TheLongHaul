@@ -275,6 +275,22 @@
   cloudMesh.name='cloud-sdf-types';
   cloudMesh.frustumCulled=false; // Camera-relative cloud ring is recentered every frame.
   const dummy=new THREE.Object3D();let cloudSeed=null,cloudLayoutUpdates=0;
+  // Presentation-only seed: every generated run gets a new sky, including
+  // retries of the exact same course. It never enters gameplay/save state.
+  const makeCloudRunSeed=()=>{
+    if(globalThis.crypto?.getRandomValues){
+      const bits=new Uint32Array(2);globalThis.crypto.getRandomValues(bits);
+      return bits[0].toString(36)+'-'+bits[1].toString(36);
+    }
+    return Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
+  };
+  let cloudRunSeed=makeCloudRunSeed(),cloudRunNumber=0;
+  const originalCloudStartGeneration=startGeneration;
+  startGeneration=function(...args){
+    cloudRunSeed=makeCloudRunSeed();cloudRunNumber++;
+    return originalCloudStartGeneration.apply(this,args);
+  };
+  const activeCloudSeed=()=>`${course?.seed||'long-haul-sky'}:sky-run:${cloudRunSeed}`;
   let cloudDescriptors=[],cloudTravelX=0,cloudTravelZ=0,cloudLastUpdate=-Infinity;
   const cloudCameraForwardXZ=new THREE.Vector3(),cloudCameraRightXZ=new THREE.Vector3();
   const cloudPosition=new THREE.Vector3();
@@ -322,7 +338,7 @@
     cloudMesh.computeBoundingSphere();
   }
   clouds.add(cloudMesh);
-  ensureCloudLayout(course?.seed);
+  ensureCloudLayout(activeCloudSeed());
   scene.fog=new THREE.Fog(0xf1cca4,profile.clearNear,profile.clearFar);
   const fill=new THREE.DirectionalLight(0xb6d9ff,.65);worldRoot.add(fill,fill.target);
   const colors={clearTop:new THREE.Color(0x697fae),rainTop:new THREE.Color(0x586d89),
@@ -335,7 +351,7 @@
   hemi.color.set(0xd7e5ff);hemi.groundColor.copy(groundColor);sun.color.copy(sunColor);
   function atmosphereFrame(state, milliseconds) {
     const weather=clamp(arcadeWeatherAmount,0,1),seconds=milliseconds/1000;
-    ensureCloudLayout(course?.seed);
+    ensureCloudLayout(activeCloudSeed());
     atmosphere.position.set(state.position.x,0,state.position.z);dome.position.y=state.position.y;
     clouds.rotation.y=0;
     // Camera is refreshed by applyCamera() later in the driving frame.
@@ -384,7 +400,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudLayers:cloudLayerCounts.slice(),cloudTravel:{x:cloudTravelX,z:cloudTravelZ},cloudSeed,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudLayers:cloudLayerCounts.slice(),cloudTravel:{x:cloudTravelX,z:cloudTravelZ},cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
