@@ -187,25 +187,108 @@
     }`});
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1500,32,18),domeMaterial); dome.renderOrder=-100; atmosphere.add(dome);
   const clouds = new THREE.Group(); clouds.name='shaped-cloud-banks'; atmosphere.add(clouds);
-  const cloudGeometry=new THREE.SphereGeometry(1,12,7);
-  const cloudMaterial=new THREE.MeshToonMaterial({color:0xffe5c5,gradientMap:gradient,fog:true});
-  // Keep one GPU mesh, but vary its deterministic layout with the actual course.
-  // New journeys must not reuse the same sky, nor allocate more GPU resources.
-  const count=profile.cloudBanks*profile.lobesPerBank;
-  const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count); cloudMesh.name='cloud-lobes';
+  // Four billboard SDF silhouettes in one instanced draw. No raymarching,
+  // shadow maps, 3D volume textures or per-frame geometry uploads.
+  const cloudGeometry=new THREE.PlaneGeometry(1,1);
+  const count=profile.cloudBanks;
+  const typeIds={cumulus:0,cumulonimbus:1,cirrus:2,stratus:3};
+  const cloudTypes=new Float32Array(count), cloudVariations=new Float32Array(count);
+  cloudGeometry.setAttribute('cloudType',new THREE.InstancedBufferAttribute(cloudTypes,1));
+  cloudGeometry.setAttribute('cloudVariation',new THREE.InstancedBufferAttribute(cloudVariations,1));
+  const cloudUniforms={
+    cloudColor:{value:new THREE.Color(0xffdfb7)},
+    cloudShadow:{value:new THREE.Color(0x8d9bb5)},
+    sunView:{value:new THREE.Vector2(.65,.48)},
+    sunFacing:{value:.5},
+    weather:{value:0},
+    time:{value:0}
+  };
+  const cloudMaterial=new THREE.ShaderMaterial({
+    uniforms:cloudUniforms, transparent:true,depthWrite:false,depthTest:true,
+    side:THREE.DoubleSide,fog:false,
+    vertexShader:`
+      attribute float cloudType,cloudVariation;
+      varying vec2 vUv;
+      varying float vType,vVariation;
+      void main(){
+        vUv=uv;vType=cloudType;vVariation=cloudVariation;
+        vec4 center=modelViewMatrix*instanceMatrix*vec4(0.,0.,0.,1.);
+        // Camera-facing plane. Use instance scale; do not rotate in world space.
+        vec2 size=vec2(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz));
+        center.xy+=(position.xy*size);
+        gl_Position=projectionMatrix*center;
+      }`,
+    fragmentShader:`
+      uniform vec3 cloudColor,cloudShadow;
+      uniform vec2 sunView;
+      uniform float sunFacing,weather,time;
+      varying vec2 vUv;
+      varying float vType,vVariation;
+      float ellipse(vec2 p,vec2 center,vec2 radius){
+        return (length((p-center)/radius)-1.)*min(radius.x,radius.y);
+      }
+      float sdCloud(vec2 p,float kind){
+        float d=10.;
+        if(kind<.5){
+          d=min(ellipse(p,vec2(-.43,-.16),vec2(.48,.32)),ellipse(p,vec2(.1,-.1),vec2(.58,.43)));
+          d=min(d,ellipse(p,vec2(-.15,.18),vec2(.4,.47)));
+          d=min(d,ellipse(p,vec2(.37,.05),vec2(.32,.34)));
+        }else if(kind<1.5){
+          d=ellipse(p,vec2(0.,-.32),vec2(.62,.19));
+          d=min(d,ellipse(p,vec2(-.29,.0),vec2(.38,.35)));
+          d=min(d,ellipse(p,vec2(.06,.24),vec2(.4,.47)));
+          d=min(d,ellipse(p,vec2(.04,.53),vec2(.29,.33)));
+        }else if(kind<2.5){
+          float w=.08+.024*sin(p.x*13.+vVariation*6.);
+          d=min(ellipse(p,vec2(0.,.11),vec2(.85,.08)),abs(p.y-.17-.13*sin(p.x*4.+vVariation))-w);
+          d=max(d,abs(p.x)-.9);
+          d=min(d,ellipse(p,vec2(-.24,-.15),vec2(.68,.045)));
+        }else{
+          d=ellipse(p,vec2(0.,-.06),vec2(.94,.22));
+          d=min(d,ellipse(p,vec2(-.45,.02),vec2(.48,.16)));
+          d=min(d,ellipse(p,vec2(.47,.035),vec2(.46,.14)));
+        }
+        // Fixed low-frequency breakup; bounded arithmetic, no texture lookups.
+        float grain=sin(p.x*23.+vVariation*9.)*sin(p.y*17.-vVariation*4.);
+        return d+grain*(kind>1.5?.012:.023);
+      }
+      void main(){
+        vec2 p=(vUv-.5)*2.;
+        float d=sdCloud(p,vType);
+        float feather=vType>1.5?.045:.025;
+        float coverage=1.-smoothstep(-feather,feather,d);
+        if(coverage<.01)discard;
+        vec2 light=normalize(sunView+vec2(.0001));
+        float direction=max(0.,dot(normalize(p+vec2(.001,.08)),light));
+        float volume=clamp(.58+.29*p.y+.13*direction,0.,1.);
+        float rim=(1.-smoothstep(-.14,.035,abs(d)))*pow(direction,.85);
+        // Forward-scattered silver lining intensifies when facing the sun.
+        float scatter=rim*(.24+.76*sunFacing)*(1.-weather*.38);
+        vec3 base=mix(cloudShadow,cloudColor,volume);
+        base+=vec3(1.,.85,.64)*scatter*.66;
+        gl_FragColor=vec4(base,coverage*(vType>1.5?.78:.94));
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`
+  });
+  const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
+  cloudMesh.name='cloud-sdf-types';
+  cloudMesh.frustumCulled=false; // Camera-relative cloud ring is recentered every frame.
   const dummy=new THREE.Object3D();let cloudSeed=null,cloudLayoutUpdates=0;
   function ensureCloudLayout(seed) {
     const nextSeed=typeof seed==='string'&&seed.length?seed:'long-haul-sky';
     if(nextSeed===cloudSeed)return;
     const descriptors=cloudBankDescriptors(nextSeed);
-    if(descriptors.reduce((n,b)=>n+b.lobes.length,0)!==count)throw Error('Cloud layout no longer matches the bounded mesh');
-    let instance=0;
-    for(const bank of descriptors) for(const lobe of bank.lobes) {
-      const c=Math.cos(bank.yaw),s=Math.sin(bank.yaw);
-      dummy.position.set(bank.x+c*lobe.x+s*lobe.z,bank.y+lobe.y,bank.z-s*lobe.x+c*lobe.z);
-      dummy.scale.set(lobe.sx,lobe.sy,lobe.sz);dummy.rotation.set(0,bank.yaw,0);dummy.updateMatrix();
-      cloudMesh.setMatrixAt(instance++,dummy.matrix);
+    if(descriptors.length!==count)throw Error('SDF cloud budget mismatch');
+    for(const bank of descriptors){
+      dummy.position.set(bank.x,bank.y+(bank.type==='cumulonimbus'?85:0),bank.z);
+      dummy.rotation.set(0,0,0); dummy.scale.set(bank.width,bank.height,1);
+      dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
+      cloudTypes[bank.id]=typeIds[bank.type];
+      cloudVariations[bank.id]=(bank.yaw/Math.PI);
     }
+    cloudGeometry.attributes.cloudType.needsUpdate=true;
+    cloudGeometry.attributes.cloudVariation.needsUpdate=true;
     cloudMesh.instanceMatrix.needsUpdate=true;cloudMesh.computeBoundingSphere();
     cloudSeed=nextSeed;cloudLayoutUpdates++;
   }
@@ -229,7 +312,15 @@
     skyUniforms.groundColor.value.copy(colors.clearFog).lerp(colors.rainFog,weather);
     scene.fog.color.copy(colors.clearFog).lerp(colors.rainFog,weather);
     scene.fog.near=lerp(profile.clearNear,profile.rainNear,weather);scene.fog.far=lerp(profile.clearFar,profile.rainFar,weather);
-    cloudMaterial.color.copy(colors.clearCloud).lerp(colors.rainCloud,weather);
+    cloudUniforms.cloudColor.value.copy(colors.clearCloud).lerp(colors.rainCloud,weather);
+    cloudUniforms.cloudShadow.value.set(0x8699b4).lerp(new THREE.Color(0x697c96),weather);
+    cloudUniforms.weather.value=weather;
+    const sunDirection=new THREE.Vector3(-.55,.19,-.77).normalize();
+    const cameraRight=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+    const cameraUp=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
+    const cameraForward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+    cloudUniforms.sunView.value.set(sunDirection.dot(cameraRight),sunDirection.dot(cameraUp));
+    cloudUniforms.sunFacing.value=clamp((sunDirection.dot(cameraForward)+.1)*1.2,0,1);
     sun.intensity=lerp(1.65,1.03,weather);hemi.intensity=lerp(1.4,1.25,weather);
     fill.position.set(state.position.x+80,state.position.y+75,state.position.z+110);
     fill.target.position.set(state.position.x,state.position.y,state.position.z);fill.target.updateMatrixWorld();
@@ -258,7 +349,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:count,cloudSeed,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudSeed,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
