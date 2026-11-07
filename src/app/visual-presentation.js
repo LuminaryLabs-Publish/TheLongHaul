@@ -196,8 +196,8 @@
   cloudGeometry.setAttribute('cloudType',new THREE.InstancedBufferAttribute(cloudTypes,1));
   cloudGeometry.setAttribute('cloudVariation',new THREE.InstancedBufferAttribute(cloudVariations,1));
   const cloudUniforms={
-    cloudColor:{value:new THREE.Color(0xffdfb7)},
-    cloudShadow:{value:new THREE.Color(0x8d9bb5)},
+    cloudColor:{value:new THREE.Color(0xfffaf2)},
+    cloudShadow:{value:new THREE.Color(0x64758d)},
     sunView:{value:new THREE.Vector2(.65,.48)},
     sunFacing:{value:.5},
     weather:{value:0},
@@ -260,16 +260,16 @@
         if(coverage<.01)discard;
         vec2 light=normalize(sunView+vec2(.0001));
         float direction=max(0.,dot(normalize(p+vec2(.001,.08)),light));
-        float volume=clamp(.58+.29*p.y+.13*direction,0.,1.);
+        float volume=clamp(.40+.37*p.y+.23*direction,0.,1.);
         float rim=(1.-smoothstep(0.,.12,abs(d)))*pow(direction,.85);
         // Forward-scattered silver lining intensifies when facing the sun.
         float scatter=rim*(.24+.76*sunFacing)*(1.-weather*.38);
         vec3 base=mix(cloudShadow,cloudColor,volume);
-        base+=vec3(1.,.85,.64)*scatter*.66;
+        base+=vec3(1.,.93,.82)*scatter*.85;
         // All opaque terrain and world geometry owns the depth buffer.
         // Clouds shade only empty sky pixels regardless of their mesh depth.
         gl_FragDepth=0.999999;
-        gl_FragColor=vec4(base,coverage*(vType>1.5?.78:.94));
+        gl_FragColor=vec4(base,coverage*(vType>1.5?.94:1.));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`
@@ -343,7 +343,7 @@
       const lateral=wrapCloudOffset(bank.lateral+seconds*bank.wind+forwardDrift,bank.span);
       const depth=Math.min(camera.far-190,bank.depth);
       const screenX=(lateral/bank.span)*1.55;
-      const screenY=.39+.075*bank.layer+.16*(bank.variation-.5);
+      const screenY=.53+.075*bank.layer+.13*(bank.variation-.5);
       const planeWidth=2*depth*viewHeight*camera.aspect;
       const planeHeight=2*depth*viewHeight;
       cloudPosition.copy(cloudEye).addScaledVector(cloudViewForward,depth)
@@ -355,7 +355,7 @@
       dummy.rotation.set(0,0,0);
       // Hold a readable angular size at long distances. This changes only
       // billboard coverage, not cloud depth, drift speed or landscape masking.
-      const sizeBoost=[2.0,2.3,2.65][bank.layer];
+      const sizeBoost=[2.8,3.1,3.4][bank.layer];
       dummy.scale.set(bank.width*sizeBoost,bank.height*sizeBoost,1);
       dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
     }
@@ -369,9 +369,9 @@
   const colors={clearTop:new THREE.Color(0x697fae),rainTop:new THREE.Color(0x586d89),
     clearHorizon:new THREE.Color(0xffd29b),rainHorizon:new THREE.Color(0xb9c7cf),
     clearFog:new THREE.Color(0xebc8a4),rainFog:new THREE.Color(0xafc0c9),
-    clearCloud:new THREE.Color(0xffdfb7),rainCloud:new THREE.Color(0xc9d0de)};
+    clearCloud:new THREE.Color(0xfffaf2),rainCloud:new THREE.Color(0xe5ebf5)};
   const groundColor=new THREE.Color(0x557568),sunColor=new THREE.Color(0xffd69b);
-  const cloudRainShadow=new THREE.Color(0x697c96),cloudSunDirection=new THREE.Vector3(-.55,.19,-.77).normalize();
+  const cloudRainShadow=new THREE.Color(0x63738a),cloudSunDirection=new THREE.Vector3(-.55,.19,-.77).normalize();
   const cloudCameraRight=new THREE.Vector3(),cloudCameraUp=new THREE.Vector3(),cloudCameraForward=new THREE.Vector3();
   hemi.color.set(0xd7e5ff);hemi.groundColor.copy(groundColor);sun.color.copy(sunColor);
   function atmosphereFrame(state, milliseconds) {
@@ -387,7 +387,7 @@
     scene.fog.color.copy(colors.clearFog).lerp(colors.rainFog,weather);
     scene.fog.near=lerp(profile.clearNear,profile.rainNear,weather);scene.fog.far=lerp(profile.clearFar,profile.rainFar,weather);
     cloudUniforms.cloudColor.value.copy(colors.clearCloud).lerp(colors.rainCloud,weather);
-    cloudUniforms.cloudShadow.value.set(0x8699b4).lerp(cloudRainShadow,weather);
+    cloudUniforms.cloudShadow.value.set(0x64758d).lerp(cloudRainShadow,weather);
     cloudUniforms.weather.value=weather;
     cloudCameraRight.set(1,0,0).applyQuaternion(camera.quaternion);
     cloudCameraUp.set(0,1,0).applyQuaternion(camera.quaternion);
@@ -434,7 +434,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-biased-high-sky',cloudTurnInfluence,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'background-depth',cloudVisibilityScale:[2,2.3,2.65],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-biased-high-sky',cloudTurnInfluence,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'background-depth',cloudVisibilityScale:[2.8,3.1,3.4],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
