@@ -187,19 +187,25 @@
     }`});
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1500,32,18),domeMaterial); dome.renderOrder=-100; atmosphere.add(dome);
   const clouds = new THREE.Group(); clouds.name='shaped-cloud-banks'; atmosphere.add(clouds);
-  // One batch of 3D cloud point clusters; soft continuous alpha, no dithering.
-  const count=profile.cloudBanks,pointsPerBank=112;
-  const typeIds={cumulus:0,cumulonimbus:1,cirrus:2,stratus:3};
-  const cloudUniforms={cloudColor:{value:new THREE.Color(0xfffaf2)},
-    cloudShadow:{value:new THREE.Color(0x64758d)},weather:{value:0},
-    viewportHeight:{value:renderer.domElement.height||720},
-    driveProgress:{value:0},cloudSeconds:{value:0}};
-  const cloudMaterial=new THREE.ShaderMaterial({uniforms:cloudUniforms,
-    transparent:true,depthWrite:false,depthTest:true,blending:THREE.NormalBlending,fog:false,
-    vertexShader:"attribute float aSize,aAlpha,aShade,aLayer,aWind,aNoise;\nuniform float viewportHeight,driveProgress,cloudSeconds;\nvarying float vAlpha,vShade,vNoise;\nvoid main(){\n  float travel=aLayer<.5?.0025:(aLayer<1.5?.001:.00035);\n  vec3 p=position;p.x+=cloudSeconds*aWind+driveProgress*travel;\n  vec4 view=modelViewMatrix*vec4(p,1.);\n  gl_Position=projectionMatrix*view;\n  gl_PointSize=clamp(aSize*viewportHeight*projectionMatrix[1][1]*.5/max(-view.z,1.),2.,48.);\n  gl_Position.z=gl_Position.w*.99998;\n  vAlpha=aAlpha;vShade=aShade;vNoise=aNoise;\n}",fragmentShader:"uniform vec3 cloudColor,cloudShadow;\nuniform float weather;\nvarying float vAlpha,vShade,vNoise;\nvoid main(){\n  vec2 uv=gl_PointCoord*2.-1.;\n  float angle=atan(uv.y,uv.x);\n  float edge=length(uv)+.07*sin(angle*7.+vNoise*6.)+.04*sin(angle*13.-vNoise*9.);\n  float alpha=(1.-smoothstep(.36,1.,edge))*vAlpha;\n  if(alpha<.006)discard;\n  float shade=clamp(vShade+.12*(1.-edge),0.,1.);\n  vec3 base=mix(cloudShadow,cloudColor,shade);\n  base+=vec3(1.,.93,.79)*pow(max(0.,edge-.5),2.)*.09*(1.-weather*.4);\n  gl_FragColor=vec4(base,alpha);\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n}"});
-  const cloudMesh=new THREE.Points(new THREE.BufferGeometry(),cloudMaterial);
-  cloudMesh.name='cloud-sdf-types'; // Keep existing host object lookup.
-  cloudMesh.renderOrder=10;cloudMesh.frustumCulled=false;
+  // Restore the original illustrated low-poly cloud lobes (7338f2c).
+  // One solid, faceted instanced mesh; no points, alpha blending or SDF shader.
+  const cloudGeometry=new THREE.SphereGeometry(1,12,7);
+  const cloudMaterial=new THREE.MeshToonMaterial({
+    color:0xffe5c5,gradientMap:gradient,fog:false,
+    depthTest:false,depthWrite:false
+  });
+  const lobes=[
+    [-70,0,0,43,20,29],[-25,2,0,52,24,33],[25,0,0,50,22,32],
+    [67,0,0,39,19,27],[-35,22,3,38,31,29],[8,34,0,41,39,33],
+    [46,23,2,34,29,27]
+  ];
+  const lobesPerBank=lobes.length,count=profile.cloudBanks*lobesPerBank;
+  const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
+  cloudMesh.name='cloud-lobes';
+  // Opaque terrain is drawn afterwards and covers any clouds below the horizon.
+  cloudMesh.renderOrder=-90;
+  cloudMesh.frustumCulled=false;
+  const cloudDummy=new THREE.Object3D();
   let cloudSeed=null,cloudLayoutUpdates=0;
   // Presentation-only seed: every generated run gets a new sky, including
   // retries of the exact same course. It never enters gameplay/save state.
@@ -219,64 +225,41 @@
   const activeCloudSeed=()=>`${course?.seed||'long-haul-sky'}:sky-run:${cloudRunSeed}`;
   let cloudDescriptors=[],cloudForwardProgress=0,cloudLastUpdate=-Infinity;
   const cloudLayerCounts=[0,0,0],cloudSkyRadius=[730,1070,1450];
-  const cloudAngularScale=[.95,1.12,1.28];
+  const cloudAngularScale=[1,1,1],cloudTypeNames=['cumulus','cumulonimbus','cirrus','stratus'];
   function ensureCloudLayout(seed){
     const nextSeed=typeof seed==='string'&&seed.length?seed:'long-haul-sky';
     if(nextSeed===cloudSeed)return;
     cloudDescriptors=cloudBankDescriptors(nextSeed);
-    if(cloudDescriptors.length!==count)throw Error('Cloud bank count mismatch');
+    if(cloudDescriptors.length*lobesPerBank!==count)throw Error('Cloud lobe count mismatch');
     cloudLayerCounts.fill(0);
-    const pos=[],size=[],alpha=[],shade=[],layer=[],wind=[],grain=[];
-    let entropy=2166136261;
-    for(let i=0;i<nextSeed.length;i++)entropy=Math.imul(entropy^nextSeed.charCodeAt(i),16777619)>>>0;
-    const rnd=()=>{entropy=(Math.imul(entropy,1664525)+1013904223)>>>0;return entropy/4294967296;};
-    const bell=()=>rnd()+rnd()+rnd()-1.5;
-    for(const bank of cloudDescriptors){
-      cloudLayerCounts[bank.layer]++;
-      const slot=bank.id%profile.cloudBanksPerLayer;
-      const bearing=(slot<6?(-1.26+(slot+.5)*2.52/6):(slot===6?2.35:-2.35))+(bank.variation-.5)*.15;
-      const radius=cloudSkyRadius[bank.layer]+(bank.variation-.5)*90;
-      const cx=Math.sin(bearing)*radius,cy=bank.altitude*.66,cz=-Math.cos(bearing)*radius;
-      const width=bank.width*cloudAngularScale[bank.layer]*.5;
-      const height=bank.height*cloudAngularScale[bank.layer]*.5;
-      const depth=bank.width*[.28,.33,.39][bank.layer];
-      const kind=typeIds[bank.type];
-      for(let i=0;i<pointsPerBank;i++){
-        let x=0,y=0,z=0;
-        if(kind===0){
-          const lobes=[[-.48,-.23,.04,.34,.26,.27],[-.12,.04,-.1,.36,.39,.29],[.31,-.14,.05,.42,.30,.28],[.12,.34,.09,.25,.26,.22]];
-          const l=lobes[Math.floor(rnd()*4)];
-          x=l[0]+bell()*l[3]*1.7;y=l[1]+bell()*l[4]*1.8;z=l[2]+bell()*l[5]*1.7;
-        }else if(kind===1){
-          const t=rnd();
-          if(t<.37){x=bell()*.7;y=-.4+bell()*.22;z=bell()*.48;}
-          else if(t<.83){x=bell()*.32;y=-.25+rnd()*.98;z=bell()*.34;}
-          else{x=bell()*.76;y=.62+bell()*.14;z=bell()*.42;}
-        }else if(kind===2){
-          const t=rnd()*2.-1.;
-          x=t*.9+bell()*.1;y=.17*Math.sin(t*4.+bank.variation*6.)+bell()*.085;
-          z=.1*Math.sin(t*6.+bank.variation*4.)+bell()*.16;
-        }else{
-          x=(rnd()*2.-1.)*.9;y=bell()*.16+.075*Math.sin(x*9.+bank.variation*5.);z=bell()*.46;
-        }
-        pos.push(cx+x*width,cy+y*height,cz+z*depth);
-        size.push(bank.width*(kind===2?.085:.105)*(.66+rnd()*.65));
-        alpha.push((kind===2?.12:kind===3?.16:.21)*(.62+rnd()*.8));
-        shade.push(Math.max(.18,Math.min(.98,.56+y*.35+(rnd()-.5)*.22)));
-        layer.push(bank.layer);wind.push(bank.wind);grain.push(rnd());
-      }
-    }
-    const geo=new THREE.BufferGeometry();
-    for(const [key,data] of [['position',pos],['aSize',size],['aAlpha',alpha],['aShade',shade],['aLayer',layer],['aWind',wind],['aNoise',grain]])
-      geo.setAttribute(key,new THREE.Float32BufferAttribute(data,key==='position'?3:1));
-    cloudMesh.geometry.dispose();cloudMesh.geometry=geo;
-    cloudSeed=nextSeed;cloudLayoutUpdates++;cloudLastUpdate=-Infinity;
+    for(const bank of cloudDescriptors)cloudLayerCounts[bank.layer]++;
+    cloudSeed=nextSeed;
+    cloudLayoutUpdates++;
+    cloudLastUpdate=-Infinity;
   }
   function positionClouds(state,seconds){
+    // Fixed world bearings; neither camera nor truck heading rotates clouds.
+    // Follow the truck as a distant sky ring; no lateral driving parallax.
     cloudForwardProgress=Math.max(0,-state.position.z);
-    cloudUniforms.driveProgress.value=cloudForwardProgress;
-    cloudUniforms.cloudSeconds.value=seconds;
-    cloudUniforms.viewportHeight.value=renderer.domElement.height||720;
+    let instance=0;
+    for(const bank of cloudDescriptors){
+      const slot=bank.id%profile.cloudBanksPerLayer;
+      const angle=(slot<6?(-1.26+(slot+.5)*2.52/6):(slot===6?2.35:-2.35))
+        +(bank.variation-.5)*.15;
+      const radius=cloudSkyRadius[bank.layer]+(bank.variation-.5)*90;
+      const drift=seconds*bank.wind+[.0025,.001,.00035][bank.layer]*cloudForwardProgress;
+      const x=Math.sin(angle)*radius+drift,y=bank.altitude*.66,z=-Math.cos(angle)*radius;
+      const yaw=bank.variation*Math.PI*2,c=Math.cos(yaw),sn=Math.sin(yaw);
+      const sx=bank.width/260,sy=bank.height/155,sz=bank.width/260;
+      for(const [lx,ly,lz,rx,ry,rz] of lobes){
+        cloudDummy.position.set(x+(c*lx+sn*lz)*sx,y+ly*sy,z+(-sn*lx+c*lz)*sz);
+        cloudDummy.scale.set(rx*sx,ry*sy,rz*sz);
+        cloudDummy.rotation.set(0,yaw,0);
+        cloudDummy.updateMatrix();
+        cloudMesh.setMatrixAt(instance++,cloudDummy.matrix);
+      }
+    }
+    cloudMesh.instanceMatrix.needsUpdate=true;
   }
   clouds.add(cloudMesh);
   ensureCloudLayout(activeCloudSeed());
@@ -287,8 +270,6 @@
     clearFog:new THREE.Color(0xebc8a4),rainFog:new THREE.Color(0xafc0c9),
     clearCloud:new THREE.Color(0xfffaf2),rainCloud:new THREE.Color(0xe5ebf5)};
   const groundColor=new THREE.Color(0x557568),sunColor=new THREE.Color(0xffd69b);
-  const cloudRainShadow=new THREE.Color(0x63738a),cloudSunDirection=new THREE.Vector3(-.55,.19,-.77).normalize();
-  const cloudCameraRight=new THREE.Vector3(),cloudCameraUp=new THREE.Vector3(),cloudCameraForward=new THREE.Vector3();
   hemi.color.set(0xd7e5ff);hemi.groundColor.copy(groundColor);sun.color.copy(sunColor);
   function atmosphereFrame(state, milliseconds) {
     const weather=clamp(arcadeWeatherAmount,0,1),seconds=milliseconds/1000;
@@ -302,13 +283,7 @@
     skyUniforms.groundColor.value.copy(colors.clearFog).lerp(colors.rainFog,weather);
     scene.fog.color.copy(colors.clearFog).lerp(colors.rainFog,weather);
     scene.fog.near=lerp(profile.clearNear,profile.rainNear,weather);scene.fog.far=lerp(profile.clearFar,profile.rainFar,weather);
-    cloudUniforms.cloudColor.value.copy(colors.clearCloud).lerp(colors.rainCloud,weather);
-    cloudUniforms.cloudShadow.value.set(0x64758d).lerp(cloudRainShadow,weather);
-    cloudUniforms.weather.value=weather;
-    cloudCameraRight.set(1,0,0).applyQuaternion(camera.quaternion);
-    cloudCameraUp.set(0,1,0).applyQuaternion(camera.quaternion);
-    cloudCameraForward.set(0,0,-1).applyQuaternion(camera.quaternion);
-    cloudUniforms.viewportHeight.value=renderer.domElement.height||720;
+    cloudMaterial.color.copy(colors.clearCloud).lerp(colors.rainCloud,weather);
     sun.intensity=lerp(1.65,1.03,weather);hemi.intensity=lerp(1.4,1.25,weather);
     fill.position.set(state.position.x+80,state.position.y+75,state.position.z+110);
     fill.target.position.set(state.position.x,state.position.y,state.position.z);fill.target.updateMatrixWorld();
@@ -349,7 +324,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-bearing-sky',cloudTurnInfluence:0,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudGeometry:'shader-3d-point-clouds',cloudPointCount:cloudMesh.geometry.getAttribute('position')?.count||0,cloudVisibilityScale:[.95,1.12,1.28],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:0,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'world-bearing-sky',cloudTurnInfluence:0,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudGeometry:'original-toon-lobes',cloudLobeInstances:count,cloudVisibilityScale:[1,1,1],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
