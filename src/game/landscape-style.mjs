@@ -11,7 +11,7 @@ function noise(seed, x, z, salt) {
 }
 export const ATMOSPHERE_PROFILE = Object.freeze({ clearNear: 240, clearFar: 1600,
   rainNear: 200, rainFar: 1280, rollStart: 1000, rollEnd: 2800, visualRadius: 68000,
-  cloudBanks: 10, lobesPerBank: 7, shadowLift: .07 });
+  cloudBanks: 24, cloudLayers: 3, cloudBanksPerLayer: 8, shadowLift: .07 });
 
 export function landscapeRelief(seed, x, z) {
   // The v2 mainline and bypass envelope stays within 180 m of the axis.
@@ -45,26 +45,31 @@ export function atmosphericRollOff(distance) {
   return distance * distance / (2 * visualRadius) * smoothRange(rollStart, rollEnd, distance);
 }
 
+// Stable per-seed slots. Runtime offsets are derived from world travel,
+// rather than accumulating frame deltas, so pauses and replay are deterministic.
+export function wrapCloudOffset(value, period) {
+  return ((value + period / 2) % period + period) % period - period / 2;
+}
 export function cloudBankDescriptors(seed = 'long-haul-sky') {
   const unit = (id, salt) => (hashText(`${seed}:cloud:${id}:${salt}`) >>> 0) / 4294967295;
-  return Array.from({ length: ATMOSPHERE_PROFILE.cloudBanks }, (_, id) => {
-    const angle = id / ATMOSPHERE_PROFILE.cloudBanks * Math.PI * 2 + .16 * unit(id, 'angle');
-    const radius = 610 + unit(id, 'distance') * 290;
-    const type = ['cumulus','cirrus','stratus','cumulonimbus','cumulus','cirrus','stratus','cumulus','cumulonimbus','cirrus'][id % 10];
-    const dimensions = { cumulus:[270,155], cumulonimbus:[255,310], cirrus:[350,75], stratus:[420,95] }[type];
-    return { id, type, width:dimensions[0], height:dimensions[1], x: Math.sin(angle) * radius, z: Math.cos(angle) * radius,
-      y: 210 + unit(id, 'height') * 155, yaw: unit(id, 'yaw') * Math.PI,
-      // One connected bank: four broad base lobes and three taller billows.
-      // Overlap is intentional; a straight row of flattened ellipsoids reads
-      // as separate flying disks instead of an illustrated cloud silhouette.
-      lobes: [[-70,0,0,43,20,29],[-25,2,0,52,24,33],[25,0,0,50,22,32],[67,0,0,39,19,27],
-        [-35,22,3,38,31,29],[8,34,0,41,39,33],[46,23,2,34,29,27]].map(([x,y,z,sx,sy,sz],j) => ({
-          x, y: y + (unit(id * 9 + j,'rise') - .5) * 5,
-          z: z + (unit(id * 9 + j,'z') - .5) * 8,
-          sx: sx * (.95 + unit(id * 9 + j,'sx') * .1),
-          sy: sy * (.95 + unit(id * 9 + j,'sy') * .1),
-          sz: sz * (.95 + unit(id * 9 + j,'sz') * .1),
-        })) };
+  const types = ['cumulus','cumulonimbus','cirrus','stratus'];
+  const dimensions = {cumulus:[260,140],cumulonimbus:[260,270],cirrus:[350,75],stratus:[390,88]};
+  return Array.from({length:ATMOSPHERE_PROFILE.cloudBanks},(_,id)=>{
+    const layer=Math.floor(id/ATMOSPHERE_PROFILE.cloudBanksPerLayer);
+    const slot=id%ATMOSPHERE_PROFILE.cloudBanksPerLayer;
+    const type=types[(id+Math.floor(unit(id,'type')*3))%4];
+    const [width,height]=dimensions[type];
+    const band=[{distance:420,span:1250,follow:.12,wind:9},
+      {distance:820,span:1900,follow:.55,wind:5},
+      {distance:1310,span:2600,follow:.82,wind:2.5}][layer];
+    // Eight slots across each band, with a slight seeded jitter. Most clouds
+    // remain forward-facing, with open gaps that let the sky and sun breathe.
+    return {id,type,layer,width:width*(.85+unit(id,'size')*.35),height:height*(.85+unit(id,'height')*.3),
+      lateral:((slot+.5)/ATMOSPHERE_PROFILE.cloudBanksPerLayer-.5)*band.span+(unit(id,'jitter')-.5)*band.span*.095,
+      depth:band.distance+(unit(id,'depth')-.5)*band.distance*.32,
+      altitude:[215,310,430][layer]+unit(id,'altitude')*[45,100,120][layer],
+      span:band.span,follow:band.follow,wind:band.wind*(.65+unit(id,'wind')*.7),
+      variation:unit(id,'variation')};
   });
 }
 
