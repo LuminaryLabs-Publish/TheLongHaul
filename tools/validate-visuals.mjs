@@ -44,6 +44,18 @@ try{
     return [0,8,16].map(i=>{const m=new THREE.Matrix4();mesh.getMatrixAt(i,m);return m.elements.slice(12,15);});
   });
   check('Three SDF cloud layers have GPU instance transforms',Boolean(cloudBefore)&&cloudBefore.every(p=>p.every(Number.isFinite)),cloudBefore);
+  const cloudScreen=await page.evaluate(()=>{
+    const mesh=scene.getObjectByName('cloud-sdf-types'),p=new THREE.Vector3(),m=new THREE.Matrix4();
+    mesh.updateWorldMatrix(true,false);camera.updateMatrixWorld();
+    return Array.from({length:mesh.count},(_,i)=>{
+      mesh.getMatrixAt(i,m);
+      p.setFromMatrixPosition(m).applyMatrix4(mesh.matrixWorld).project(camera);
+      return {x:p.x,y:p.y,z:p.z};
+    });
+  });
+  check('Cloud centers populate the visible upper driving view',
+    cloudScreen.filter(p=>Math.abs(p.x)<1&&p.y>.1&&p.y<.95&&p.z>=-1&&p.z<=1).length>=12,cloudScreen);
+  check('Camera-frustum clouds are active',presentation.cloudPositioning==='camera-frustum',presentation);
   await page.keyboard.down('w');await step(180);await page.keyboard.up('w');
   const cloudAfter=await page.evaluate(()=>{
     const mesh=scene.getObjectByName('cloud-sdf-types');
