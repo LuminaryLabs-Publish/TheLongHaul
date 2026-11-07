@@ -67,7 +67,7 @@ export function cloudBankDescriptors(seed = 'long-haul-sky') {
     return {id,type,layer,width:width*(.85+unit(id,'size')*.35),height:height*(.85+unit(id,'height')*.3),
       lateral:((slot+.5)/ATMOSPHERE_PROFILE.cloudBanksPerLayer-.5)*band.span+(unit(id,'jitter')-.5)*band.span*.095,
       depth:band.distance+(unit(id,'depth')-.5)*band.distance*.32,
-      altitude:[560,720,880][layer]+unit(id,'altitude')*[75,90,110][layer],
+      altitude:[350,470,600][layer]+unit(id,'altitude')*[55,70,85][layer],
       span:band.span,follow:band.follow,wind:band.wind*(.65+unit(id,'wind')*.7),
       variation:unit(id,'variation')};
   });
