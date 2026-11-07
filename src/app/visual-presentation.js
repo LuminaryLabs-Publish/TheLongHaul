@@ -346,7 +346,7 @@
         wrapCloudOffset(-cloudTravelZ*(1-bank.follow)+seconds*bank.wind*.08,depthSpan));
       const screenX=(lateral/bank.span)*1.55;
       // Raise silhouettes above the horizon, retaining vertical variety.
-      const screenY=.67+.09*bank.layer+.15*(bank.variation-.5);
+      const screenY=.57+.08*bank.layer+.12*(bank.variation-.5);
       const planeWidth=2*depth*viewHeight*camera.aspect;
       const planeHeight=2*depth*viewHeight;
       cloudPosition.copy(cloudEye).addScaledVector(cloudViewForward,depth)
