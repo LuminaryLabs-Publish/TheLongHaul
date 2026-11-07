@@ -319,7 +319,6 @@
     cloudGeometry.attributes.cloudVariation.needsUpdate=true;
     cloudSeed=nextSeed;cloudLayoutUpdates++;
     cloudLastUpdate=-Infinity;
-    cloudHeading=null;
   }
   // Camera-independent sky. Cloud centers occupy shallow elevation angles
   // around a distant ring, not a screen-aligned strip above the truck.
