@@ -190,16 +190,46 @@
   // Restore the original illustrated low-poly cloud lobes (7338f2c).
   // One solid, faceted instanced mesh; no points, alpha blending or SDF shader.
   const cloudGeometry=new THREE.SphereGeometry(1,12,7);
+  // A cloud-specific toon ramp makes direct sunlight and shaded undersides
+  // easier to distinguish without changing the original faceted style.
+  const cloudGradient=new THREE.DataTexture(new Uint8Array([54,115,195,255]),4,1,THREE.RedFormat);
+  cloudGradient.minFilter=cloudGradient.magFilter=THREE.NearestFilter;
+  cloudGradient.generateMipmaps=false;cloudGradient.needsUpdate=true;
   const cloudMaterial=new THREE.MeshToonMaterial({
-    color:0xffe5c5,gradientMap:gradient,fog:false,
+    color:0xffe5c5,gradientMap:cloudGradient,fog:false,
     depthTest:false,depthWrite:false
   });
-  const lobes=[
-    [-70,0,0,43,20,29],[-25,2,0,52,24,33],[25,0,0,50,22,32],
-    [67,0,0,39,19,27],[-35,22,3,38,31,29],[8,34,0,41,39,33],
-    [46,23,2,34,29,27]
-  ];
-  const lobesPerBank=lobes.length,count=profile.cloudBanks*lobesPerBank;
+  // Each type has seven actual 3D billows, retaining one instanced draw call.
+  // Cumulus: large, rounded and stacked; cumulonimbus: tall with an anvil;
+  // cirrus: broken feather filaments; stratus: low, broad and layered.
+  const cloudShapes={
+    cumulus:[
+      [-72,-11,5,49,31,36],[-40,0,-8,54,37,39],[2,-6,10,57,39,42],
+      [52,-11,-1,49,30,36],[-28,31,1,45,43,37],[20,38,-8,47,44,35],
+      [6,-25,18,51,26,41]
+    ],
+    cumulonimbus:[
+      [-65,-28,0,60,26,43],[-12,-23,0,65,26,48],[52,-27,-2,59,27,42],
+      [-5,18,0,43,47,40],[5,57,1,38,49,35],[7,99,0,42,40,36],
+      [34,113,-2,78,23,44]
+    ],
+    cirrus:[
+      [-91,0,0,53,11,21],[-66,5,8,50,13,21],[-36,13,-6,54,11,20],
+      [-5,18,3,57,12,21],[33,23,-4,61,10,19],[68,25,7,55,10,20],
+      [-3,4,-25,63,9,18]
+    ],
+    stratus:[
+      [-90,-13,3,60,20,41],[-58,-9,-6,64,22,43],[-20,-10,5,62,19,43],
+      [23,-8,0,62,19,43],[67,-9,-3,60,20,42],[-47,-24,15,58,15,35],
+      [46,-22,11,60,15,38]
+    ]
+  };
+  const lobesPerBank=7,count=profile.cloudBanks*lobesPerBank;
+  const cloudLobeTint=new THREE.Color();
+  const cloudTypeTints={
+    cumulus:[1,1,1],cumulonimbus:[.83,.87,.93],
+    cirrus:[1,1,1],stratus:[.90,.92,.96]
+  };
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
   cloudMesh.name='cloud-lobes';
   // Opaque terrain is drawn afterwards and covers any clouds below the horizon.
@@ -232,7 +262,21 @@
     cloudDescriptors=cloudBankDescriptors(nextSeed);
     if(cloudDescriptors.length*lobesPerBank!==count)throw Error('Cloud lobe count mismatch');
     cloudLayerCounts.fill(0);
-    for(const bank of cloudDescriptors)cloudLayerCounts[bank.layer]++;
+    let coloredInstance=0;
+    for(const bank of cloudDescriptors){
+      cloudLayerCounts[bank.layer]++;
+      const yaw=bank.variation*Math.PI*2,c=Math.cos(yaw),sn=Math.sin(yaw);
+      const tint=cloudTypeTints[bank.type]||cloudTypeTints.cumulus;
+      for(const [lx,ly,lz] of (cloudShapes[bank.type]||cloudShapes.cumulus)){
+        // Per-billow sunlight exposure supplements Three.js directional toon
+        // lighting, so the tops and sunward billows read separately.
+        const sunward=((c*lx+sn*lz)*-.55+ly*.19+(-sn*lx+c*lz)*-.77)/110;
+        const exposure=clamp(.82+.19*sunward+.14*ly/100,.55,1);
+        cloudMesh.setColorAt(coloredInstance++,
+          cloudLobeTint.setRGB(tint[0]*exposure,tint[1]*exposure,tint[2]*exposure));
+      }
+    }
+    if(cloudMesh.instanceColor)cloudMesh.instanceColor.needsUpdate=true;
     cloudSeed=nextSeed;
     cloudLayoutUpdates++;
     cloudLastUpdate=-Infinity;
@@ -251,7 +295,7 @@
       const x=Math.sin(angle)*radius+drift,y=bank.altitude*.66,z=-Math.cos(angle)*radius;
       const yaw=bank.variation*Math.PI*2,c=Math.cos(yaw),sn=Math.sin(yaw);
       const sx=bank.width/260,sy=bank.height/155,sz=bank.width/260;
-      for(const [lx,ly,lz,rx,ry,rz] of lobes){
+      for(const [lx,ly,lz,rx,ry,rz] of (cloudShapes[bank.type]||cloudShapes.cumulus)){
         cloudDummy.position.set(x+(c*lx+sn*lz)*sx,y+ly*sy,z+(-sn*lx+c*lz)*sz);
         cloudDummy.scale.set(rx*sx,ry*sy,rz*sz);
         cloudDummy.rotation.set(0,yaw,0);
