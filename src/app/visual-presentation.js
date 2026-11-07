@@ -332,8 +332,8 @@
     const viewHeight=Math.tan(THREE.MathUtils.degToRad(camera.fov)*.5);
     for(const bank of cloudDescriptors){
       const lateral=wrapCloudOffset(bank.lateral-cloudTravelX*(1-bank.follow)+seconds*bank.wind,bank.span);
-      const depthSpan=bank.layer===0?520:bank.layer===1?900:1500;
-      const depth=bank.depth+wrapCloudOffset(-cloudTravelZ*(1-bank.follow)+seconds*bank.wind*.16,depthSpan);
+      const depthSpan=bank.layer===0?320:bank.layer===1?500:350;
+      const depth=Math.min(camera.far-160,bank.depth+wrapCloudOffset(-cloudTravelZ*(1-bank.follow)+seconds*bank.wind*.16,depthSpan));
       const screenX=(lateral/bank.span)*1.65;
       // NDC Y .26-.78: in the upper half without covering the horizon.
       const screenY=.28+.12*bank.layer+.35*bank.variation;
