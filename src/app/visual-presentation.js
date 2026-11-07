@@ -202,7 +202,7 @@
   // Each type has seven actual 3D billows, retaining one instanced draw call.
   // Cumulus: large, rounded and stacked; cumulonimbus: tall with an anvil;
   // cirrus: broken feather filaments; stratus: low, broad and layered.
-  const cloudShapes={
+  const baseCloudShapes={
     cumulus:[
       [-72,-11,5,49,31,36],[-40,0,-8,54,37,39],[2,-6,10,57,39,42],
       [52,-11,-1,49,30,36],[-28,31,1,45,43,37],[20,38,-8,47,44,35],
@@ -224,7 +224,32 @@
       [46,-22,11,60,15,38]
     ]
   };
-  const lobesPerBank=7,count=profile.cloudBanks*lobesPerBank;
+  function densifyCloudShape(lobes){
+    // Larger, overlapping billows read as a connected cloud mass.
+    const compact=lobes.map(([x,y,z,rx,ry,rz])=>[
+      x*.82,y*.88,z*.82,
+      rx*1.28,ry*1.30,rz*1.26
+    ]);
+    // Fill the gaps between the larger lobes without changing silhouettes.
+    const links=[[0,1],[1,2],[2,3],[0,4],[2,5]];
+    const filler=links.map(([a,b],i)=>{
+      const A=compact[a],B=compact[b];
+      const t=i===4?.58:.5;
+      return [
+        A[0]*(1-t)+B[0]*t,
+        A[1]*(1-t)+B[1]*t,
+        A[2]*(1-t)+B[2]*t,
+        (A[3]+B[3])*.56,
+        (A[4]+B[4])*.58,
+        (A[5]+B[5])*.56
+      ];
+    });
+    return compact.concat(filler);
+  }
+  const cloudShapes=Object.fromEntries(
+    Object.entries(baseCloudShapes).map(([key,lobes])=>[key,densifyCloudShape(lobes)])
+  );
+  const lobesPerBank=cloudShapes.cumulus.length,count=profile.cloudBanks*lobesPerBank;
   const cloudLobeTint=new THREE.Color();
   const cloudTypeTints={
     cumulus:[1,1,1],cumulonimbus:[.83,.87,.93],
@@ -271,7 +296,7 @@
         // Per-billow sunlight exposure supplements Three.js directional toon
         // lighting, so the tops and sunward billows read separately.
         const sunward=((c*lx+sn*lz)*-.55+ly*.19+(-sn*lx+c*lz)*-.77)/110;
-        const exposure=clamp(.82+.19*sunward+.14*ly/100,.55,1);
+        const exposure=clamp(.88+.08*sunward+.06*ly/100,.78,.96);
         cloudMesh.setColorAt(coloredInstance++,
           cloudLobeTint.setRGB(tint[0]*exposure,tint[1]*exposure,tint[2]*exposure));
       }
