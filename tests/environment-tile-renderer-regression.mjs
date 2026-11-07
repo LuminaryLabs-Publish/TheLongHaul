@@ -33,7 +33,7 @@ export const MOCK_THREE={InstancedMesh:MockInstanced,MeshToonMaterial:MockMateri
  Shape:MockShape,ExtrudeGeometry:MockGeometry,Object3D:MockObj,Color:MockColor,DoubleSide:2,StaticDrawUsage:35044};
 const renderer=createEnvironmentTileRenderer({THREE:MOCK_THREE,materials:{truckRed:{gradientMap:{id:'toon-4-band'}}}});
 const batch=renderer.startCell({quality:true});
-const tile=planEnvironmentTile('tile-high-fidelity',2,{terrainHeight:()=>0});
+const tile=planEnvironmentTile('tile-high-fidelity',0,{terrainHeight:()=>0});
 const assemblyParts=[];
 for(const object of [...tile.props,...tile.onRoad]){
  renderer.queueObject(batch,object);
