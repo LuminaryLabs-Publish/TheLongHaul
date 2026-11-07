@@ -77,6 +77,7 @@ try{
   check('Clouds visibly change actual upper-sky pixels',
     cloudPixelEvidence.changed>60&&cloudPixelEvidence.fraction>.015&&cloudPixelEvidence.peak>40,cloudPixelEvidence);
   check('Cloud depth always behind terrain',presentation.cloudDepthPolicy==='background-depth',presentation);
+  check('Cloud uses background vertex depth',await page.evaluate(()=>scene.getObjectByName('cloud-sdf-types')?.renderOrder===10));
   await page.keyboard.down('w');await step(180);await page.keyboard.up('w');
   const cloudAfter=await page.evaluate(()=>{
     const mesh=scene.getObjectByName('cloud-sdf-types');
