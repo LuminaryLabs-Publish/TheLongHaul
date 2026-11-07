@@ -275,22 +275,51 @@
   cloudMesh.name='cloud-sdf-types';
   cloudMesh.frustumCulled=false; // Camera-relative cloud ring is recentered every frame.
   const dummy=new THREE.Object3D();let cloudSeed=null,cloudLayoutUpdates=0;
+  let cloudDescriptors=[],cloudTravelX=0,cloudTravelZ=0,cloudLastUpdate=-Infinity;
+  const cloudCameraForwardXZ=new THREE.Vector3(),cloudCameraRightXZ=new THREE.Vector3();
+  const cloudOrigin=new THREE.Vector3(),cloudPosition=new THREE.Vector3();
+  const cloudLayerCounts=[0,0,0];
   function ensureCloudLayout(seed) {
     const nextSeed=typeof seed==='string'&&seed.length?seed:'long-haul-sky';
     if(nextSeed===cloudSeed)return;
-    const descriptors=cloudBankDescriptors(nextSeed);
-    if(descriptors.length!==count)throw Error('SDF cloud budget mismatch');
-    for(const bank of descriptors){
-      dummy.position.set(bank.x,bank.y+(bank.type==='cumulonimbus'?85:0),bank.z);
-      dummy.rotation.set(0,0,0); dummy.scale.set(bank.width,bank.height,1);
-      dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
+    cloudDescriptors=cloudBankDescriptors(nextSeed);
+    if(cloudDescriptors.length!==count)throw Error('SDF cloud budget mismatch');
+    cloudLayerCounts.fill(0);
+    for(const bank of cloudDescriptors){
+      cloudLayerCounts[bank.layer]++;
       cloudTypes[bank.id]=typeIds[bank.type];
-      cloudVariations[bank.id]=(bank.yaw/Math.PI);
+      cloudVariations[bank.id]=bank.variation;
     }
     cloudGeometry.attributes.cloudType.needsUpdate=true;
     cloudGeometry.attributes.cloudVariation.needsUpdate=true;
-    cloudMesh.instanceMatrix.needsUpdate=true;cloudMesh.computeBoundingSphere();
     cloudSeed=nextSeed;cloudLayoutUpdates++;
+    cloudLastUpdate=-Infinity;
+  }
+  function positionClouds(state,seconds) {
+    // Camera direction controls the distribution, but camera translation is
+    // only partially inherited by each layer. This creates genuine depth-
+    // dependent screen motion while keeping the sky filled indefinitely.
+    cloudCameraForwardXZ.set(0,0,-1).applyQuaternion(camera.quaternion);
+    cloudCameraForwardXZ.y=0;
+    if(cloudCameraForwardXZ.lengthSq()<.001)cloudCameraForwardXZ.set(0,0,-1);
+    cloudCameraForwardXZ.normalize();
+    cloudCameraRightXZ.set(-cloudCameraForwardXZ.z,0,cloudCameraForwardXZ.x);
+    const x=state.position.x,z=state.position.z;
+    cloudTravelX=x*cloudCameraRightXZ.x+z*cloudCameraRightXZ.z;
+    cloudTravelZ=x*cloudCameraForwardXZ.x+z*cloudCameraForwardXZ.z;
+    for(const bank of cloudDescriptors){
+      const lateral=wrapCloudOffset(bank.lateral-cloudTravelX*(1-bank.follow)+seconds*bank.wind,bank.span);
+      // Forward motion carries nearby clouds past the driver and recycles
+      // them ahead. Deep clouds advance far more slowly.
+      const depthSpan=bank.layer===0?520:bank.layer===1?900:1500;
+      const depth=bank.depth+wrapCloudOffset(-cloudTravelZ*(1-bank.follow)+seconds*bank.wind*.16,depthSpan);
+      cloudPosition.copy(cloudOrigin).addScaledVector(cloudCameraRightXZ,lateral).addScaledVector(cloudCameraForwardXZ,depth);
+      dummy.position.set(cloudPosition.x,bank.altitude+(bank.type==='cumulonimbus'?70:0),cloudPosition.z);
+      dummy.rotation.set(0,0,0);dummy.scale.set(bank.width,bank.height,1);
+      dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
+    }
+    cloudMesh.instanceMatrix.needsUpdate=true;
+    cloudMesh.computeBoundingSphere();
   }
   clouds.add(cloudMesh);
   ensureCloudLayout(course?.seed);
@@ -308,7 +337,12 @@
     const weather=clamp(arcadeWeatherAmount,0,1),seconds=milliseconds/1000;
     ensureCloudLayout(course?.seed);
     atmosphere.position.set(state.position.x,0,state.position.z);dome.position.y=state.position.y;
-    clouds.rotation.y=settings.motion?Math.sin(seconds*.0015)*.035:0;
+    clouds.rotation.y=0;
+    // Camera is refreshed by applyCamera() later in the driving frame.
+    // The scene uses a bounded 24-instance update, throttled to 30 Hz.
+    if(milliseconds<cloudLastUpdate||milliseconds-cloudLastUpdate>=33){
+      positionClouds(state,seconds);cloudLastUpdate=milliseconds;
+    }
     skyUniforms.topColor.value.copy(colors.clearTop).lerp(colors.rainTop,weather);
     skyUniforms.horizonColor.value.copy(colors.clearHorizon).lerp(colors.rainHorizon,weather);
     skyUniforms.groundColor.value.copy(colors.clearFog).lerp(colors.rainFog,weather);
@@ -350,7 +384,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudSeed,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudLayers:cloudLayerCounts.slice(),cloudTravel:{x:cloudTravelX,z:cloudTravelZ},cloudSeed,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
