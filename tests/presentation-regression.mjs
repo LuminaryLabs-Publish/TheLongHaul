@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { cloudBankDescriptors, ATMOSPHERE_PROFILE, atmosphericRollOff, landscapeRelief, landscapeTint, freightHudModel } from '../src/game/landscape-style.mjs';
+import { cloudBankDescriptors, wrapCloudOffset, ATMOSPHERE_PROFILE, atmosphericRollOff, landscapeRelief, landscapeTint, freightHudModel } from '../src/game/landscape-style.mjs';
 import { createEndlessHighway, endlessHighwayPoint } from '../src/game/endless-highway.mjs';
 import { terrainHeight, naturalTerrainHeight, terrainNoise } from '../src/game/world-base.mjs';
 import { buildTreeMeshData } from '../src/game/tree-mesh-builder.mjs';
@@ -9,9 +9,15 @@ import { CELL_SIZE } from '../src/game/shared.mjs';
 const seed='presentation-acceptance-2026', course=createEndlessHighway(seed);
 const clouds=cloudBankDescriptors(seed);
 assert.deepEqual(clouds,cloudBankDescriptors(seed));assert.notDeepEqual(clouds,cloudBankDescriptors('other'));
-assert.equal(clouds.length,10);assert.ok(clouds.every(c=>c.y>=210&&c.lobes.length===7));
+assert.equal(clouds.length,24);assert.deepEqual([0,1,2].map(layer=>clouds.filter(c=>c.layer===layer).length),[8,8,8]);
+assert.ok(clouds.every(c=>c.altitude>200&&c.follow>=0&&c.follow<1));
 assert.deepEqual([...new Set(clouds.map(c=>c.type))].sort(),['cirrus','cumulonimbus','cumulus','stratus']);
 assert.ok(clouds.every(c=>c.width>0&&c.height>0));
+assert.ok(clouds.filter(c=>c.layer===0).every(c=>c.follow<clouds[8].follow));
+assert.ok(clouds.filter(c=>c.layer===2).every(c=>c.follow>clouds[8].follow));
+assert.equal(wrapCloudOffset(0,100),0);
+assert.ok(Math.abs(wrapCloudOffset(120,100)-20)<1e-9);
+assert.ok(Math.abs(wrapCloudOffset(-120,100)+20)<1e-9);
 assert.equal(atmosphericRollOff(0),0);assert.equal(atmosphericRollOff(999),0);
 let last=0;for(let d=1000;d<3000;d+=10){const drop=atmosphericRollOff(d);assert.ok(drop>=last&&Number.isFinite(drop));last=drop;}
 assert.ok(ATMOSPHERE_PROFILE.rainNear>=180&&ATMOSPHERE_PROFILE.rainFar>1000);
@@ -44,6 +50,8 @@ assert.match(host,/ensureCloudLayout\(course\?\.seed\)/,'Clouds follow the activ
 assert.match(host,/if\(nextSeed===cloudSeed\)return/,'Unchanged worlds reuse the same GPU instance layout');
 assert.match(host,/cloudMesh\.computeBoundingSphere\(\)/,'Changing a layout refreshes culling bounds');
 assert.match(host,/cloudLayoutUpdates/,'Runtime exposes cloud update evidence');
+assert.match(host,/wrapCloudOffset/);assert.match(host,/positionClouds\(state,seconds\)/);
+assert.match(host,/cloudLayers:cloudLayerCounts\.slice\(\)/);
 assert.match(host,/cloud-sdf-types/);assert.match(host,/sunFacing/);assert.match(host,/cloudSdfInstances:count/);
 assert.match(host,/new THREE\.PlaneGeometry\(1,1\)/);assert.doesNotMatch(host,/new THREE\.SphereGeometry\(1,12,7\)/);
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');assert.match(html,/id="campaign-coming-soon"[^>]*disabled/);assert.match(html,/campaign.html#garage/);
