@@ -57,27 +57,21 @@ try{
     cloudScreen.filter(p=>Math.abs(p.x)<1&&p.y>.25&&p.y<1.05&&p.z>=-1&&p.z<=1).length>=12,cloudScreen);
   check('High-world-sky clouds are active',presentation.cloudPositioning==='world-biased-high-sky',presentation);
   const cloudPixelEvidence=await page.evaluate(()=>{
-    const mesh=scene.getObjectByName('cloud-sdf-types');
-    const gl=renderer.getContext();
+    const mesh=scene.getObjectByName('cloud-sdf-types'),gl=renderer.getContext();
     const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;
-    const stride=12,base=new Uint8Array(4),cloud=new Uint8Array(4);
-    let changed=0,samples=0,peak=0;
-    // A/B comparison of actual frame pixels at the same camera pose.
-    // Read back only a sparse upper-screen grid; no gameplay modifications.
+    const before=new Uint8Array(width*height*4),after=new Uint8Array(width*height*4);
     mesh.visible=false;renderer.render(scene,camera);
-    const before=[];
-    for(let y=Math.floor(height*.46);y<height;y+=stride)
-      for(let x=0;x<width;x+=stride){
-        gl.readPixels(x,y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,base);
-        before.push([x,y,base[0],base[1],base[2]]);
-      }
+    gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,before);
     mesh.visible=true;renderer.render(scene,camera);
-    for(const [x,y,r,g,b] of before){
-      gl.readPixels(x,y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,cloud);
-      const diff=Math.abs(cloud[0]-r)+Math.abs(cloud[1]-g)+Math.abs(cloud[2]-b);
-      if(diff>=24)changed++;
-      peak=Math.max(peak,diff);samples++;
-    }
+    gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,after);
+    let changed=0,samples=0,peak=0;
+    for(let y=Math.floor(height*.46);y<height;y+=12)
+      for(let x=0;x<width;x+=12){
+        const i=(y*width+x)*4;
+        const diff=Math.abs(after[i]-before[i])+Math.abs(after[i+1]-before[i+1])+Math.abs(after[i+2]-before[i+2]);
+        if(diff>=24)changed++;
+        peak=Math.max(peak,diff);samples++;
+      }
     return {changed,samples,peak,fraction:changed/Math.max(1,samples),glError:gl.getError()};
   });
   check('Clouds visibly change actual upper-sky pixels',
