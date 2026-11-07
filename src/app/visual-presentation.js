@@ -187,80 +187,29 @@
     }`});
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1500,32,18),domeMaterial); dome.renderOrder=-100; atmosphere.add(dome);
   const clouds = new THREE.Group(); clouds.name='shaped-cloud-banks'; atmosphere.add(clouds);
-  // Restore the original illustrated low-poly cloud lobes (7338f2c).
-  // One solid, faceted instanced mesh; no points, alpha blending or SDF shader.
-  const cloudGeometry=new THREE.SphereGeometry(1,12,7);
-  // A cloud-specific toon ramp makes direct sunlight and shaded undersides
-  // easier to distinguish without changing the original faceted style.
-  const cloudGradient=new THREE.DataTexture(new Uint8Array([54,115,195,255]),4,1,THREE.RedFormat);
-  cloudGradient.minFilter=cloudGradient.magFilter=THREE.NearestFilter;
-  cloudGradient.generateMipmaps=false;cloudGradient.needsUpdate=true;
-  const cloudMaterial=new THREE.MeshToonMaterial({
-    color:0xffe5c5,gradientMap:cloudGradient,fog:false,
-    // Twelve overlapping lobes compound opacity: keep each billow translucent.
-    transparent:true,opacity:.28,depthTest:true,depthWrite:false
+  // Procedural density volumes with Beer-Lambert extinction and sun-ray sampling.
+  // Only 24 instanced box proxies; no toon material, billboards or dithering.
+  const cloudGeometry=new THREE.BoxGeometry(2,2,2),count=profile.cloudBanks;
+  const typeIds={cumulus:0,cumulonimbus:1,cirrus:2,stratus:3};
+  const cloudTypes=new Float32Array(count),cloudVariations=new Float32Array(count);
+  cloudGeometry.setAttribute('cloudType',new THREE.InstancedBufferAttribute(cloudTypes,1));
+  cloudGeometry.setAttribute('cloudVariation',new THREE.InstancedBufferAttribute(cloudVariations,1));
+  const cloudUniforms={
+    cloudColor:{value:new THREE.Color(0xfff8ee)},
+    cloudShadow:{value:new THREE.Color(0x8799ae)},
+    sunColor:{value:new THREE.Color(0xffebcd)},
+    sunDirection:{value:new THREE.Vector3(-.45,.82,-.34).normalize()},
+    weather:{value:0},extinction:{value:2.2}
+  };
+  const cloudRainShadow=new THREE.Color(0x5e6c83);
+  const cloudMaterial=new THREE.ShaderMaterial({
+    uniforms:cloudUniforms,transparent:true,depthTest:true,depthWrite:false,
+    side:THREE.FrontSide,fog:false,blending:THREE.NormalBlending,
+    vertexShader:"\nattribute float cloudType,cloudVariation;\nuniform vec3 sunDirection;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nvoid main(){\n  mat4 world=modelMatrix*instanceMatrix;\n  vec3 x=world[0].xyz,y=world[1].xyz,z=world[2].xyz;\n  float sx=max(length(x),.001),sy=max(length(y),.001),sz=max(length(z),.001);\n  x/=sx;y/=sy;z/=sz;\n  vec3 eye=cameraPosition-world[3].xyz;\n  vEye=vec3(dot(eye,x)/sx,dot(eye,y)/sy,dot(eye,z)/sz);\n  vSun=normalize(vec3(dot(sunDirection,x)/sx,dot(sunDirection,y)/sy,dot(sunDirection,z)/sz));\n  vBacklit=max(dot(normalize(world[3].xyz-cameraPosition),sunDirection),0.);\n  vFace=position;vType=cloudType;vSeed=cloudVariation;\n  gl_Position=projectionMatrix*viewMatrix*world*vec4(position,1.);\n  gl_Position.z=gl_Position.w*.99998;\n}",fragmentShader:"\nuniform vec3 cloudColor,cloudShadow,sunColor;\nuniform float extinction,weather;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nfloat blob(vec3 p,vec3 c,vec3 r){\n  return 1.-smoothstep(.61,1.14,length((p-c)/r));\n}\nfloat densityAt(vec3 p){\n  if(any(greaterThan(abs(p),vec3(1.))))return 0.;\n  float shape=0.;\n  if(vType<.5){\n    shape=max(blob(p,vec3(-.38,-.22,0.),vec3(.57,.46,.62)),\n              blob(p,vec3(.27,-.14,.06),vec3(.60,.50,.61)));\n    shape=max(shape,blob(p,vec3(-.08,.29,-.09),vec3(.47,.51,.48)));\n    shape=max(shape,blob(p,vec3(.44,.14,-.05),vec3(.39,.42,.47)));\n  }else if(vType<1.5){\n    shape=max(blob(p,vec3(0.,-.52,0.),vec3(.81,.31,.66)),\n              blob(p,vec3(-.14,-.12,0.),vec3(.53,.52,.54)));\n    shape=max(shape,blob(p,vec3(.05,.39,0.),vec3(.43,.55,.45)));\n    shape=max(shape,blob(p,vec3(.18,.78,0.),vec3(.78,.16,.56)));\n  }else if(vType<2.5){\n    shape=max(blob(p,vec3(-.36,.11,0.),vec3(.70,.13,.31)),\n              blob(p,vec3(.35,.20,.03),vec3(.71,.11,.31)));\n    shape=max(shape,blob(p,vec3(.03,-.10,-.1),vec3(.80,.09,.25)));\n  }else{\n    shape=max(blob(p,vec3(-.41,-.09,0.),vec3(.67,.27,.69)),\n              blob(p,vec3(.39,-.09,0.),vec3(.67,.25,.68)));\n    shape=max(shape,blob(p,vec3(0.,.11,.09),vec3(.74,.18,.53)));\n  }\n  vec3 q=p*vec3(8.3,7.1,9.2)+vSeed*7.;\n  float large=sin(q.x*.57)*cos(q.y*.71)*sin(q.z*.63);\n  float small=sin(q.x*1.27+q.z*.68)*sin(q.y*1.21-q.z*.59);\n  float variability=clamp(.69+.23*large+.14*small,.22,1.);\n  float kind=vType<.5?1.0:(vType<1.5?1.22:(vType<2.5?.45:.75));\n  return shape*variability*kind;\n}\nfloat lightThrough(vec3 p){\n  // Three density probes towards the actual directional light.\n  float tau=0.;\n  for(int j=0;j<3;j++){\n    p+=vSun*.26;\n    tau+=densityAt(p)*.26;\n  }\n  return exp(-extinction*1.7*tau);\n}\nvoid main(){\n  vec3 rd=normalize(vFace-vEye);\n  vec3 t0=(-vec3(1.)-vFace)/rd,t1=(vec3(1.)-vFace)/rd;\n  vec3 tfar=max(t0,t1);\n  float extent=max(0.,min(min(tfar.x,tfar.y),tfar.z));\n  if(extent<.0001)discard;\n  float stepLength=extent/12.;\n  float transmittance=1.,sunAtEdge=0.,maxDensity=0.;\n  vec3 lightAccum=vec3(0.),peakPoint=vFace;\n  for(int i=0;i<12;i++){\n    vec3 p=vFace+rd*(float(i)+.5)*stepLength;\n    float density=densityAt(p);\n    if(density>.015){\n      float lightT=lightThrough(p);\n      float absorption=1.-exp(-extinction*density*stepLength);\n      vec3 localColor=mix(cloudShadow,cloudColor,\n        clamp(.20+.68*lightT+.12*p.y,0.,1.));\n      localColor+=sunColor*(.08+.22*vBacklit)*lightT;\n      lightAccum+=transmittance*absorption*localColor;\n      transmittance*=1.-absorption;\n      if(density>maxDensity){maxDensity=density;peakPoint=p;}\n      sunAtEdge=max(sunAtEdge,lightT);\n      if(transmittance<.025)break;\n    }\n  }\n  float opacity=1.-transmittance;\n  if(opacity<.012)discard;\n  // Density-gradient rim: strongest at the translucent, sun-facing contour.\n  float e=.045;\n  vec3 grad=vec3(\n    densityAt(peakPoint+vec3(e,0.,0.))-densityAt(peakPoint-vec3(e,0.,0.)),\n    densityAt(peakPoint+vec3(0.,e,0.))-densityAt(peakPoint-vec3(0.,e,0.)),\n    densityAt(peakPoint+vec3(0.,0.,e))-densityAt(peakPoint-vec3(0.,0.,e)));\n  float rimNormal=pow(1.-abs(dot(normalize(grad+vec3(.00001)),rd)),3.);\n  float thinEdge=1.-smoothstep(.38,.97,opacity);\n  float silverRim=rimNormal*thinEdge*sunAtEdge*(.18+1.3*vBacklit);\n  vec3 shaded=lightAccum/max(opacity,.001)+sunColor*silverRim*.85;\n  gl_FragColor=vec4(shaded,opacity);\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n}"
   });
-  // Each type has seven actual 3D billows, retaining one instanced draw call.
-  // Cumulus: large, rounded and stacked; cumulonimbus: tall with an anvil;
-  // cirrus: broken feather filaments; stratus: low, broad and layered.
-  const baseCloudShapes={
-    cumulus:[
-      [-72,-11,5,49,31,36],[-40,0,-8,54,37,39],[2,-6,10,57,39,42],
-      [52,-11,-1,49,30,36],[-28,31,1,45,43,37],[20,38,-8,47,44,35],
-      [6,-25,18,51,26,41]
-    ],
-    cumulonimbus:[
-      [-65,-28,0,60,26,43],[-12,-23,0,65,26,48],[52,-27,-2,59,27,42],
-      [-5,18,0,43,47,40],[5,57,1,38,49,35],[7,99,0,42,40,36],
-      [34,113,-2,78,23,44]
-    ],
-    cirrus:[
-      [-91,0,0,53,11,21],[-66,5,8,50,13,21],[-36,13,-6,54,11,20],
-      [-5,18,3,57,12,21],[33,23,-4,61,10,19],[68,25,7,55,10,20],
-      [-3,4,-25,63,9,18]
-    ],
-    stratus:[
-      [-90,-13,3,60,20,41],[-58,-9,-6,64,22,43],[-20,-10,5,62,19,43],
-      [23,-8,0,62,19,43],[67,-9,-3,60,20,42],[-47,-24,15,58,15,35],
-      [46,-22,11,60,15,38]
-    ]
-  };
-  function densifyCloudShape(lobes){
-    // Larger, overlapping billows read as a connected cloud mass.
-    const compact=lobes.map(([x,y,z,rx,ry,rz])=>[
-      x*.82,y*.88,z*.82,
-      rx*1.28,ry*1.30,rz*1.26
-    ]);
-    // Fill the gaps between the larger lobes without changing silhouettes.
-    const links=[[0,1],[1,2],[2,3],[0,4],[2,5]];
-    const filler=links.map(([a,b],i)=>{
-      const A=compact[a],B=compact[b];
-      const t=i===4?.58:.5;
-      return [
-        A[0]*(1-t)+B[0]*t,
-        A[1]*(1-t)+B[1]*t,
-        A[2]*(1-t)+B[2]*t,
-        (A[3]+B[3])*.56,
-        (A[4]+B[4])*.58,
-        (A[5]+B[5])*.56
-      ];
-    });
-    return compact.concat(filler);
-  }
-  const cloudShapes=Object.fromEntries(
-    Object.entries(baseCloudShapes).map(([key,lobes])=>[key,densifyCloudShape(lobes)])
-  );
-  const lobesPerBank=cloudShapes.cumulus.length,count=profile.cloudBanks*lobesPerBank;
-  const cloudLobeTint=new THREE.Color();
-  const cloudTypeTints={
-    cumulus:[1,1,1],cumulonimbus:[.83,.87,.93],
-    cirrus:[1,1,1],stratus:[.90,.92,.96]
-  };
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
-  cloudMesh.name='cloud-lobes';
-  // Opaque terrain is drawn afterwards and covers any clouds below the horizon.
-  cloudMesh.renderOrder=-90;
-  cloudMesh.frustumCulled=false;
+  cloudMesh.name='cloud-volumes';
+  cloudMesh.renderOrder=10;cloudMesh.frustumCulled=false;
   const cloudDummy=new THREE.Object3D();
   let cloudSeed=null,cloudLayoutUpdates=0;
   // Presentation-only seed: every generated run gets a new sky, including
@@ -281,53 +230,35 @@
   const activeCloudSeed=()=>`${course?.seed||'long-haul-sky'}:sky-run:${cloudRunSeed}`;
   let cloudDescriptors=[],cloudForwardProgress=0,cloudLastUpdate=-Infinity;
   const cloudLayerCounts=[0,0,0],cloudSkyRadius=[730,1070,1450];
-  const cloudAngularScale=[1,1,1],cloudTypeNames=['cumulus','cumulonimbus','cirrus','stratus'];
+  const cloudTypeNames=['cumulus','cumulonimbus','cirrus','stratus'];
   function ensureCloudLayout(seed){
     const nextSeed=typeof seed==='string'&&seed.length?seed:'long-haul-sky';
     if(nextSeed===cloudSeed)return;
     cloudDescriptors=cloudBankDescriptors(nextSeed);
-    if(cloudDescriptors.length*lobesPerBank!==count)throw Error('Cloud lobe count mismatch');
+    if(cloudDescriptors.length!==count)throw Error('Cloud bank count mismatch');
     cloudLayerCounts.fill(0);
-    let coloredInstance=0;
     for(const bank of cloudDescriptors){
       cloudLayerCounts[bank.layer]++;
-      const yaw=bank.variation*Math.PI*2,c=Math.cos(yaw),sn=Math.sin(yaw);
-      const tint=cloudTypeTints[bank.type]||cloudTypeTints.cumulus;
-      for(const [lx,ly,lz] of (cloudShapes[bank.type]||cloudShapes.cumulus)){
-        // Per-billow sunlight exposure supplements Three.js directional toon
-        // lighting, so the tops and sunward billows read separately.
-        const sunward=((c*lx+sn*lz)*-.55+ly*.19+(-sn*lx+c*lz)*-.77)/110;
-        const exposure=clamp(.88+.08*sunward+.06*ly/100,.78,.96);
-        cloudMesh.setColorAt(coloredInstance++,
-          cloudLobeTint.setRGB(tint[0]*exposure,tint[1]*exposure,tint[2]*exposure));
-      }
+      cloudTypes[bank.id]=typeIds[bank.type];
+      cloudVariations[bank.id]=bank.variation;
     }
-    if(cloudMesh.instanceColor)cloudMesh.instanceColor.needsUpdate=true;
-    cloudSeed=nextSeed;
-    cloudLayoutUpdates++;
-    cloudLastUpdate=-Infinity;
+    cloudGeometry.attributes.cloudType.needsUpdate=true;
+    cloudGeometry.attributes.cloudVariation.needsUpdate=true;
+    cloudSeed=nextSeed;cloudLayoutUpdates++;cloudLastUpdate=-Infinity;
   }
   function positionClouds(state,seconds){
-    // Fixed world bearings; neither camera nor truck heading rotates clouds.
-    // Follow the truck as a distant sky ring; no lateral driving parallax.
+    // Camera heading and truck X never rotate or slide cloud banks sideways.
     cloudForwardProgress=Math.max(0,-state.position.z);
-    let instance=0;
     for(const bank of cloudDescriptors){
       const slot=bank.id%profile.cloudBanksPerLayer;
-      const angle=(slot<6?(-1.26+(slot+.5)*2.52/6):(slot===6?2.35:-2.35))
+      const bearing=(slot<6?(-1.26+(slot+.5)*2.52/6):(slot===6?2.35:-2.35))
         +(bank.variation-.5)*.15;
       const radius=cloudSkyRadius[bank.layer]+(bank.variation-.5)*90;
       const drift=seconds*bank.wind+[.0025,.001,.00035][bank.layer]*cloudForwardProgress;
-      const x=Math.sin(angle)*radius+drift,y=bank.altitude*.66,z=-Math.cos(angle)*radius;
-      const yaw=bank.variation*Math.PI*2,c=Math.cos(yaw),sn=Math.sin(yaw);
-      const sx=bank.width/260,sy=bank.height/155,sz=bank.width/260;
-      for(const [lx,ly,lz,rx,ry,rz] of (cloudShapes[bank.type]||cloudShapes.cumulus)){
-        cloudDummy.position.set(x+(c*lx+sn*lz)*sx,y+ly*sy,z+(-sn*lx+c*lz)*sz);
-        cloudDummy.scale.set(rx*sx,ry*sy,rz*sz);
-        cloudDummy.rotation.set(0,yaw,0);
-        cloudDummy.updateMatrix();
-        cloudMesh.setMatrixAt(instance++,cloudDummy.matrix);
-      }
+      cloudDummy.position.set(Math.sin(bearing)*radius+drift,bank.altitude*.66,-Math.cos(bearing)*radius);
+      cloudDummy.rotation.set(0,bank.variation*Math.PI*2,0);
+      cloudDummy.scale.set(bank.width*.60,bank.height*.78,bank.width*.34);
+      cloudDummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,cloudDummy.matrix);
     }
     cloudMesh.instanceMatrix.needsUpdate=true;
   }
@@ -353,7 +284,11 @@
     skyUniforms.groundColor.value.copy(colors.clearFog).lerp(colors.rainFog,weather);
     scene.fog.color.copy(colors.clearFog).lerp(colors.rainFog,weather);
     scene.fog.near=lerp(profile.clearNear,profile.rainNear,weather);scene.fog.far=lerp(profile.clearFar,profile.rainFar,weather);
-    cloudMaterial.color.copy(colors.clearCloud).lerp(colors.rainCloud,weather);
+    cloudUniforms.cloudColor.value.copy(colors.clearCloud).lerp(colors.rainCloud,weather);
+    cloudUniforms.cloudShadow.value.set(0x8799ae).lerp(cloudRainShadow,weather);
+    cloudUniforms.sunDirection.value.copy(sun.position).sub(sun.target.position).normalize();
+    cloudUniforms.sunColor.value.copy(sun.color);
+    cloudUniforms.weather.value=weather;
     sun.intensity=lerp(1.65,1.03,weather);hemi.intensity=lerp(1.4,1.25,weather);
     fill.position.set(state.position.x+80,state.position.y+75,state.position.z+110);
     fill.target.position.set(state.position.x,state.position.y,state.position.z);fill.target.updateMatrixWorld();
@@ -394,7 +329,7 @@
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:count,cloudSdfInstances:0,cloudTypes:cloudTypeNames,cloudDrawCalls:1,cloudPositioning:'world-bearing-sky',cloudTurnInfluence:0,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudGeometry:'original-toon-lobes',cloudLobeInstances:count,cloudVisibilityScale:[1,1,1],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:cloudTypeNames,cloudDrawCalls:1,cloudPositioning:'world-bearing-sky',cloudTurnInfluence:0,cloudLayers:cloudLayerCounts.slice(),cloudForwardProgress,cloudDepthPolicy:'sky-first-landscape-overdraw',cloudGeometry:'beer-lambert-variable-density',cloudLobeInstances:0,cloudVisibilityScale:[1,1,1],cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
