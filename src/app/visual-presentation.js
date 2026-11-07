@@ -311,27 +311,41 @@
     cloudSeed=nextSeed;cloudLayoutUpdates++;
     cloudLastUpdate=-Infinity;
   }
+  const cloudViewForward=new THREE.Vector3(),cloudViewRight=new THREE.Vector3(),cloudViewUp=new THREE.Vector3();
+  const cloudEye=new THREE.Vector3();
   function positionClouds(state,seconds) {
-    // Camera direction controls the distribution, but camera translation is
-    // only partially inherited by each layer. This creates genuine depth-
-    // dependent screen motion while keeping the sky filled indefinitely.
-    cloudCameraForwardXZ.set(0,0,-1).applyQuaternion(camera.quaternion);
-    cloudCameraForwardXZ.y=0;
+    // Arrange clouds in camera frustum rather than on the flat ground
+    // heading. The driving camera looks down, so horizontal-only placement
+    // left most previous clouds above/outside the visible sky.
+    camera.updateMatrixWorld();
+    cloudViewForward.set(0,0,-1).applyQuaternion(camera.quaternion);
+    cloudViewRight.set(1,0,0).applyQuaternion(camera.quaternion);
+    cloudViewUp.set(0,1,0).applyQuaternion(camera.quaternion);
+    cloudCameraForwardXZ.copy(cloudViewForward);cloudCameraForwardXZ.y=0;
     if(cloudCameraForwardXZ.lengthSq()<.001)cloudCameraForwardXZ.set(0,0,-1);
     cloudCameraForwardXZ.normalize();
     cloudCameraRightXZ.set(-cloudCameraForwardXZ.z,0,cloudCameraForwardXZ.x);
     const x=state.position.x,z=state.position.z;
     cloudTravelX=x*cloudCameraRightXZ.x+z*cloudCameraRightXZ.z;
     cloudTravelZ=x*cloudCameraForwardXZ.x+z*cloudCameraForwardXZ.z;
+    cloudEye.copy(camera.position).sub(atmosphere.position);
+    const viewHeight=Math.tan(THREE.MathUtils.degToRad(camera.fov)*.5);
     for(const bank of cloudDescriptors){
       const lateral=wrapCloudOffset(bank.lateral-cloudTravelX*(1-bank.follow)+seconds*bank.wind,bank.span);
-      // Forward motion carries nearby clouds past the driver and recycles
-      // them ahead. Deep clouds advance far more slowly.
       const depthSpan=bank.layer===0?520:bank.layer===1?900:1500;
       const depth=bank.depth+wrapCloudOffset(-cloudTravelZ*(1-bank.follow)+seconds*bank.wind*.16,depthSpan);
-      cloudPosition.set(0,0,0).addScaledVector(cloudCameraRightXZ,lateral).addScaledVector(cloudCameraForwardXZ,depth);
-      dummy.position.set(cloudPosition.x,bank.altitude+(bank.type==='cumulonimbus'?70:0),cloudPosition.z);
-      dummy.rotation.set(0,0,0);dummy.scale.set(bank.width,bank.height,1);
+      const screenX=(lateral/bank.span)*1.65;
+      // NDC Y .26-.78: in the upper half without covering the horizon.
+      const screenY=.28+.12*bank.layer+.35*bank.variation;
+      const planeWidth=2*depth*viewHeight*camera.aspect;
+      const planeHeight=2*depth*viewHeight;
+      cloudPosition.copy(cloudEye).addScaledVector(cloudViewForward,depth)
+        .addScaledVector(cloudViewRight,screenX*planeWidth*.5)
+        .addScaledVector(cloudViewUp,screenY*planeHeight*.5);
+      dummy.position.copy(cloudPosition);
+      dummy.rotation.set(0,0,0);
+      // Retain size variation but keep cloud groups visible at all three depths.
+      dummy.scale.set(bank.width*(depth/bank.depth),bank.height*(depth/bank.depth),1);
       dummy.updateMatrix();cloudMesh.setMatrixAt(bank.id,dummy.matrix);
     }
     cloudMesh.instanceMatrix.needsUpdate=true;
@@ -354,11 +368,8 @@
     ensureCloudLayout(activeCloudSeed());
     atmosphere.position.set(state.position.x,0,state.position.z);dome.position.y=state.position.y;
     clouds.rotation.y=0;
-    // Camera is refreshed by applyCamera() later in the driving frame.
-    // The scene uses a bounded 24-instance update, throttled to 30 Hz.
-    if(milliseconds<cloudLastUpdate||milliseconds-cloudLastUpdate>=33){
-      positionClouds(state,seconds);cloudLastUpdate=milliseconds;
-    }
+    // Cloud placement runs after applyCamera(), in arcadeVisualFrame.
+    // Updating sky colors here remains independent of camera position.
     skyUniforms.topColor.value.copy(colors.clearTop).lerp(colors.rainTop,weather);
     skyUniforms.horizonColor.value.copy(colors.clearHorizon).lerp(colors.rainHorizon,weather);
     skyUniforms.groundColor.value.copy(colors.clearFog).lerp(colors.rainFog,weather);
@@ -395,12 +406,16 @@
     objective.hidden=!playing||launchIntro.active;
     if(!playing){help.hidden=true;receipt.hidden=true;return;}
     const state=readTruck(),ground=groundSample(state.position),altitude=Math.max(0,state.position.y-ground.height-1);
+    if(now<cloudLastUpdate||now-cloudLastUpdate>=33){
+      positionClouds(state,skillVisualTime);
+      cloudLastUpdate=now;
+    }
     groundNormal.set(ground.normal.x,ground.normal.y,ground.normal.z).normalize();
     shadow.position.set(state.position.x,ground.height+profile.shadowLift,state.position.z);
     shadow.quaternion.setFromUnitVectors(planeNormal,groundNormal);shadow.rotateZ(-state.heading);
     shadow.scale.set(5.8+altitude*.18,10.5+altitude*.22,1);shadowMaterial.opacity=clamp(1-altitude/30,.18,1);
   };
-  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudLayers:cloudLayerCounts.slice(),cloudTravel:{x:cloudTravelX,z:cloudTravelZ},cloudSeed,cloudRunNumber,cloudLayoutUpdates,
+  window.LongHaulPresentation={getState:()=>({version:1,cloudBanks:profile.cloudBanks,cloudLobes:0,cloudSdfInstances:count,cloudTypes:Object.keys(typeIds),cloudDrawCalls:1,cloudPositioning:'camera-frustum',cloudLayers:cloudLayerCounts.slice(),cloudTravel:{x:cloudTravelX,z:cloudTravelZ},cloudSeed,cloudRunNumber,cloudLayoutUpdates,
     oldCloudSheets:cloudRoot.parent!==null,fog:{near:scene.fog.near,far:scene.fog.far,color:scene.fog.color.getHexString()},
     hud:'four-corner-contextual',terrain:'shared-worker-and-horizon',contactShadow:shadow.visible})};
   window.__longHaulVisualsReady=true;
