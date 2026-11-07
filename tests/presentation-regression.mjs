@@ -73,6 +73,8 @@ assert.match(host,/gl_FragDepth=0\.999999/);
 assert.match(host,/cloudForwardProgress=Math\.max\(0,-state\.position\.z\)/);
 assert.doesNotMatch(host,/cloudTravelX|cloudTravelZ/);
 assert.match(host,/cloudDepthPolicy:'background-depth'/);
+assert.match(host,/cloudVisibilityScale:\[2,2\.3,2\.65\]/);
+assert.match(host,/const screenY=\.39/);
 assert.match(host,/cloudLayers:cloudLayerCounts\.slice\(\)/);
 assert.match(host,/startGeneration=function\(\.\.\.args\)/);
 assert.match(host,/cloudRunSeed=makeCloudRunSeed\(\);cloudRunNumber\+\+/);
