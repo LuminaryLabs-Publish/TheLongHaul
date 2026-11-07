@@ -217,6 +217,9 @@
         vec2 size=vec2(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz));
         center.xy+=(position.xy*size);
         gl_Position=projectionMatrix*center;
+        // Background depth at vertex stage: WebGL1-safe and still tested
+        // against the opaque landscape depth buffer.
+        gl_Position.z=gl_Position.w*0.999998;
       }`,
     fragmentShader:`
       uniform vec3 cloudColor,cloudShadow;
@@ -266,9 +269,8 @@
         float scatter=rim*(.24+.76*sunFacing)*(1.-weather*.38);
         vec3 base=mix(cloudShadow,cloudColor,volume);
         base+=vec3(1.,.93,.82)*scatter*.85;
-        // All opaque terrain and world geometry owns the depth buffer.
-        // Clouds shade only empty sky pixels regardless of their mesh depth.
-        gl_FragDepth=0.999999;
+        // Background depth is assigned in the vertex shader. Fragment-depth
+        // writes require WebGL2 or extensions and can prevent compilation.
         gl_FragColor=vec4(base,coverage*(vType>1.5?.94:1.));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -276,6 +278,7 @@
   });
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
   cloudMesh.name='cloud-sdf-types';
+  cloudMesh.renderOrder=10; // Draw after opaque landscape; depth test masks it.
   cloudMesh.frustumCulled=false; // Camera-relative cloud ring is recentered every frame.
   const dummy=new THREE.Object3D();let cloudSeed=null,cloudLayoutUpdates=0;
   // Presentation-only seed: every generated run gets a new sky, including
