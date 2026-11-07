@@ -197,7 +197,8 @@
   cloudGradient.generateMipmaps=false;cloudGradient.needsUpdate=true;
   const cloudMaterial=new THREE.MeshToonMaterial({
     color:0xffe5c5,gradientMap:cloudGradient,fog:false,
-    depthTest:false,depthWrite:false
+    // Twelve overlapping lobes compound opacity: keep each billow translucent.
+    transparent:true,opacity:.28,depthTest:true,depthWrite:false
   });
   // Each type has seven actual 3D billows, retaining one instanced draw call.
   // Cumulus: large, rounded and stacked; cumulonimbus: tall with an anvil;
