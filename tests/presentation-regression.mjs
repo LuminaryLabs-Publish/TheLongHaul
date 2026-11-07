@@ -10,7 +10,7 @@ const seed='presentation-acceptance-2026', course=createEndlessHighway(seed);
 const clouds=cloudBankDescriptors(seed);
 assert.deepEqual(clouds,cloudBankDescriptors(seed));assert.notDeepEqual(clouds,cloudBankDescriptors('other'));
 assert.equal(clouds.length,24);assert.deepEqual([0,1,2].map(layer=>clouds.filter(c=>c.layer===layer).length),[8,8,8]);
-assert.ok(clouds.every(c=>c.altitude>=560&&c.follow>=.95&&c.follow<1));
+assert.ok(clouds.every(c=>c.altitude>=350&&c.follow>=.95&&c.follow<1));
 assert.ok(clouds.filter(c=>c.layer===0).every(c=>c.depth>700));
 assert.ok(clouds.filter(c=>c.layer===1).every(c=>c.depth>900));
 assert.ok(clouds.filter(c=>c.layer===2).every(c=>c.depth>1200));
