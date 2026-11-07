@@ -50,7 +50,9 @@ export function cloudBankDescriptors(seed = 'long-haul-sky') {
   return Array.from({ length: ATMOSPHERE_PROFILE.cloudBanks }, (_, id) => {
     const angle = id / ATMOSPHERE_PROFILE.cloudBanks * Math.PI * 2 + .16 * unit(id, 'angle');
     const radius = 610 + unit(id, 'distance') * 290;
-    return { id, x: Math.sin(angle) * radius, z: Math.cos(angle) * radius,
+    const type = ['cumulus','cirrus','stratus','cumulonimbus','cumulus','cirrus','stratus','cumulus','cumulonimbus','cirrus'][id % 10];
+    const dimensions = { cumulus:[270,155], cumulonimbus:[255,310], cirrus:[350,75], stratus:[420,95] }[type];
+    return { id, type, width:dimensions[0], height:dimensions[1], x: Math.sin(angle) * radius, z: Math.cos(angle) * radius,
       y: 210 + unit(id, 'height') * 155, yaw: unit(id, 'yaw') * Math.PI,
       // One connected bank: four broad base lobes and three taller billows.
       // Overlap is intentional; a straight row of flattened ellipsoids reads
