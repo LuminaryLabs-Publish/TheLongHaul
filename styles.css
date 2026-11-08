@@ -574,6 +574,65 @@ body.alternative-b-hud.skill-menu-open #alternative-b-route {display:none!import
  body.alternative-b-hud.driving #skill-hud * {transition:none!important;animation:none!important;}
 }
 
+/* TLH-023 ability countdown stability: fixed tile metrics prevent reflow
+   across 10.0s / 9.9s / READY and longer ability names. */
+body.alternative-b-hud.driving #skill-ability-slots {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability {
+  box-sizing:border-box;
+  min-width:0;
+  height:94px;
+  min-height:0;
+  max-height:94px;
+  overflow:hidden;
+  gap:0;
+  font-variant-numeric:tabular-nums;
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability span {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  height:25px;
+  line-height:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  overflow-wrap:normal;
+  font-size:10px;
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability small {
+  display:block;
+  box-sizing:border-box;
+  width:7ch;
+  min-width:7ch;
+  height:14px;
+  line-height:14px;
+  margin:0 auto;
+  text-align:center;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+}
+body.alternative-b-hud.driving #skill-open {
+  font-variant-numeric:tabular-nums;
+}
+@container(max-width:850px) {
+  body.alternative-b-hud.driving #skill-hud .skill-ability {
+    height:76px;max-height:76px;
+  }
+}
+@media(max-width:600px) and (orientation:portrait) {
+  body.alternative-b-hud.driving #skill-hud .skill-ability {
+    height:65px;max-height:65px;
+  }
+  body.alternative-b-hud.driving #skill-hud .skill-ability span {
+    height:21px;line-height:10px;font-size:9px;
+  }
+}
+
 /* TLH-023: contextual HUD visibility and keyboard accessibility. */
 body.alternative-b-hud.driving #alternative-b-route[hidden],
 body.alternative-b-hud.driving #journey-receipt[hidden],
