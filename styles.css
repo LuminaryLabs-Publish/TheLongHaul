@@ -491,12 +491,12 @@ body.alternative-b-hud.driving #skill-hud .skill-ability kbd {
 body.alternative-b-hud.driving #skill-hud .skill-ability span {font-size:10px;max-width:100%;text-align:center;}
 body.alternative-b-hud.driving #skill-hud .skill-ability small {font-size:10px;}
 body.alternative-b-hud.driving #skill-hud #skill-open {
-  position:absolute;right:calc(50cqw + 20px);bottom:0;width:min(385px,32cqw);
+  position:fixed;left:50%;right:auto;bottom:clamp(12px,6.2cqh,58px);width:min(385px,32cqw);z-index:12;
   min-height:45px;display:flex;align-items:center;gap:9px;
   margin:0;padding:8px 17px;border:0;border-left:3px solid #50eced;
   border-bottom:2px solid #50eced;border-radius:0;
   background:#0b1d30e8;clip-path:polygon(4% 0,100% 0,96% 100%,0 100%);
-  transform:translateX(50%);font-size:13px;
+  transform:translateX(-50%);font-size:13px;
 }
 body.alternative-b-hud.driving #skill-open b {font-size:17px;color:#59f3f4;white-space:nowrap;}
 body.alternative-b-hud.driving #skill-open span,
@@ -548,7 +548,7 @@ body.alternative-b-hud.skill-menu-open #alternative-b-route {display:none!import
  body.alternative-b-hud.driving #speed {font-size:42px;}
  body.alternative-b-hud.driving #skill-hud {width:32cqw;}
  body.alternative-b-hud.driving #skill-hud .skill-ability {min-height:76px;padding:27px 3px 6px;}
- body.alternative-b-hud.driving #skill-hud #skill-open {width:26cqw;right:calc(50cqw + 10px);}
+ body.alternative-b-hud.driving #skill-hud #skill-open {width:26cqw;left:50%;right:auto;}
 }
 @media(max-width:600px) and (orientation:portrait){
  body.alternative-b-hud.driving #journey-objective {width:calc(100% - 24px);left:12px;top:58px;}
@@ -565,11 +565,34 @@ body.alternative-b-hud.skill-menu-open #alternative-b-route {display:none!import
  body.alternative-b-hud.driving #skill-hud {right:10px;bottom:160px;width:45%;}
  body.alternative-b-hud.driving #skill-hud .skill-ability {min-height:65px;padding:22px 2px 3px;}
  body.alternative-b-hud.driving #skill-hud .skill-ability::before {width:34px;height:30px;background-size:100px auto;left:36%;}
- body.alternative-b-hud.driving #skill-hud #skill-open {right:0;bottom:-45px;width:100%;min-height:40px;transform:none;padding:5px;}
+ body.alternative-b-hud.driving #skill-hud #skill-open {left:auto;right:10px;bottom:calc(105px + env(safe-area-inset-bottom));width:45%;min-height:40px;transform:none;padding:5px;}
  body.alternative-b-hud.driving #skill-open b {font-size:12px;}
  body.alternative-b-hud.driving #skill-open span,body.alternative-b-hud.driving #skill-open strong {display:none;}
 }
 @media(prefers-reduced-motion:reduce){
  body.alternative-b-hud.driving #alternative-b-route *,
  body.alternative-b-hud.driving #skill-hud * {transition:none!important;animation:none!important;}
+}
+
+/* TLH-023: contextual HUD visibility and keyboard accessibility. */
+body.alternative-b-hud.driving #alternative-b-route[hidden],
+body.alternative-b-hud.driving #journey-receipt[hidden],
+body.alternative-b-hud.driving #timer-box[hidden],
+body.alternative-b-hud.driving #objective-cargo-meter[hidden],
+body.alternative-b-hud.driving #skill-effects[hidden],
+body.alternative-b-hud.driving #skill-drift[hidden] {display:none!important;}
+body.alternative-b-hud.driving #skill-open:focus-visible,
+body.alternative-b-hud.driving #skill-hud .skill-ability:focus-visible {
+  outline:3px solid #fff4a8;outline-offset:3px;
+}
+@media(max-width:600px) and (orientation:portrait){
+  body.alternative-b-hud.driving #drive-box,
+  body.alternative-b-hud.driving #skill-hud {bottom:calc(160px + env(safe-area-inset-bottom));}
+  body.alternative-b-hud.driving #alternative-b-route {top:34%;width:calc(100% - 24px);}
+  body.alternative-b-hud.driving #skill-hud #skill-open {bottom:calc(105px + env(safe-area-inset-bottom));}
+}
+@media(max-width:600px) and (orientation:portrait) and (pointer:fine){
+  body.alternative-b-hud.driving #drive-box,
+  body.alternative-b-hud.driving #skill-hud {bottom:calc(90px + env(safe-area-inset-bottom));}
+  body.alternative-b-hud.driving #skill-hud #skill-open {bottom:calc(40px + env(safe-area-inset-bottom));}
 }
