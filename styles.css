@@ -376,3 +376,200 @@ body:has(#title-screen.active) #game-canvas{opacity:1}
 @container (max-width:700px){#title-screen .title-card{width:100%;padding:3px 8px}#title-screen .title-wordmark{width:min(64cqw,620px);max-height:39cqh}#title-screen .menu-actions{width:min(50cqw,400px);gap:0}#title-screen .title-art-button,#title-screen .title-art-button.btn.primary{aspect-ratio:3.1/1}#title-screen .title-footer{letter-spacing:.16em}}
 @container (max-height:410px){#title-screen .title-wordmark{width:min(49cqw,560px);max-height:35cqh}#title-screen .menu-actions{width:min(34cqw,390px)}#title-screen .title-footer{font-size:8px}}
 @media(prefers-reduced-motion:reduce){#title-screen .title-art-button{transition:none!important}}
+
+
+/* TLH-023 Alternative B integration (iterable): existing Presentation DOM, no new game authority.
+   Original Drive TLH-016 art: TLH-215/219/225/227/229/235. */
+/* Constrain every override to active driving. Title, startup and menus are unchanged. */
+body.alternative-b-hud.driving #journey-objective,
+body.alternative-b-hud.driving #risk-hud,
+body.alternative-b-hud.driving #drive-box,
+body.alternative-b-hud.driving #skill-hud {
+  color:#fff8ef; font-family:Impact,Haettenschweiler,"Arial Narrow Bold",system-ui,sans-serif;
+  filter:drop-shadow(0 6px 12px rgba(0,0,0,.34));
+}
+body.alternative-b-hud.driving #journey-objective {
+  top:clamp(12px,4.5cqh,43px);left:18px;width:min(466px,43cqw);
+}
+body.alternative-b-hud.driving #freight-hud {
+  position:relative; min-height:126px; padding:12px 32px 14px 105px;
+  border:0;border-left:5px solid #50edf0;border-radius:0;
+  background:linear-gradient(105deg,rgba(8,21,38,.95),rgba(13,25,43,.94));
+  clip-path:polygon(7% 0,100% 0,92% 83%,84% 100%,0 100%);
+  overflow:hidden;
+}
+body.alternative-b-hud.driving #freight-hud::before {
+  content:"";position:absolute;top:12px;left:15px;width:78px;height:74px;
+  background:url('./art/ui/TLH-215.png') 3% 49% / 230px auto no-repeat;
+}
+body.alternative-b-hud.driving #freight-cargo {
+  color:white;font-size:clamp(17px,2.3cqw,30px);font-style:italic;
+  line-height:1.04;margin:1px 0 6px;text-shadow:0 2px 4px #0009;
+}
+body.alternative-b-hud.driving #freight-state {color:#63f3ff;font-size:17px;line-height:1.15;}
+body.alternative-b-hud.driving #freight-next {color:#f5f7fb;font-size:15px;max-width:96%;line-height:1.2;}
+body.alternative-b-hud.driving #freight-hud .freight-meta {margin-top:5px;padding-top:5px;}
+body.alternative-b-hud.driving #freight-advice {display:none!important;}
+body.alternative-b-hud.driving #freight-leg,
+body.alternative-b-hud.driving #freight-pay,
+body.alternative-b-hud.driving #freight-save {font-size:10px;}
+body.alternative-b-hud.driving #risk-hud,
+body.alternative-b-hud.driving #risk-hud.idle {
+  width:290px;top:clamp(12px,5.5cqh,52px);right:20px;
+  padding:10px 19px;min-width:0;max-width:34cqw;min-height:67px;
+  border:0;border-bottom:3px solid #51ebee;border-right:2px solid #55e9f1;
+  border-radius:0;clip-path:polygon(9% 0,94% 0,100% 24%,94% 100%,0 100%,5% 26%);
+  background:linear-gradient(120deg,#071d30f2,#12253af0);
+}
+body.alternative-b-hud.driving #risk-hud.idle .risk-heading {
+  display:flex!important;
+}
+body.alternative-b-hud.driving #risk-hud #risk-multiplier {color:#6af1f3;font-size:clamp(29px,3.5cqw,51px);font-style:italic;}
+body.alternative-b-hud.driving #risk-hud #risk-pending {
+  color:#ffc346;font-size:clamp(18px,2.1cqw,30px);margin:0;
+}
+body.alternative-b-hud.driving #risk-hud.idle #risk-pending {display:block!important;}
+body.alternative-b-hud.driving #risk-hud #risk-bank {font-size:10px;color:#f6ce72;}
+body.alternative-b-hud.driving #risk-hud .risk-meter,
+body.alternative-b-hud.driving #risk-hud #risk-hint,
+body.alternative-b-hud.driving #risk-hud #risk-label {display:none!important;}
+body.alternative-b-hud.driving #risk-hud::after {
+  content:"";position:absolute;top:15px;right:12px;width:30px;height:30px;
+  background:url('./art/ui/TLH-229.png') center / contain no-repeat;
+}
+body.alternative-b-hud.driving #drive-box {
+  left:clamp(10px,2.4cqw,40px);bottom:clamp(12px,6.1cqh,57px);
+  width:min(416px,40cqw);min-height:90px;padding:9px 18px 9px 20px;
+  border:0;border-left:4px solid #38e9ec;border-bottom:2px solid #38e9ec;
+  border-radius:0;clip-path:polygon(7% 0,100% 0,92% 100%,0 100%);
+  background:linear-gradient(115deg,rgba(8,18,32,.95),rgba(18,30,44,.92));
+  display:flex;align-items:center;gap:16px;flex-wrap:nowrap;
+}
+body.alternative-b-hud.driving #drive-box .speed-readout {flex:0 0 48%;gap:5px;}
+body.alternative-b-hud.driving #speed {font-size:clamp(44px,5cqw,78px);color:white;font-style:italic;}
+body.alternative-b-hud.driving #drive-box .unit {font-size:16px;color:#f1f2f8;}
+body.alternative-b-hud.driving #condition-box {flex:1;min-width:0;}
+body.alternative-b-hud.driving #condition-box .meter-row {margin:4px 0;}
+body.alternative-b-hud.driving #condition-box .meter-label {font-size:9px;}
+body.alternative-b-hud.driving #condition-box .meter {height:10px;background:#253645;transform:skew(-13deg);}
+body.alternative-b-hud.driving #condition-box .meter i {background:#4aff86;}
+body.alternative-b-hud.driving #road-name,
+body.alternative-b-hud.driving #drive-meta,
+body.alternative-b-hud.driving #journey-session,
+body.alternative-b-hud.driving #driving-onboarding {display:none!important;}
+body.alternative-b-hud.driving #skill-hud {
+  right:clamp(10px,1.2cqw,20px);bottom:clamp(12px,6.2cqh,58px);
+  left:auto;transform:none;width:min(280px,30cqw);
+}
+body.alternative-b-hud.driving #skill-ability-slots {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability {
+  position:relative;min-height:94px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding:32px 7px 9px;border:0;border-left:3px solid #42eef3;
+  border-bottom:3px solid #4de9f2;clip-path:polygon(17% 0,100% 0,85% 100%,0 100%);
+  border-radius:0;background:linear-gradient(150deg,#082132f5,#111827ed);
+  color:#fff;pointer-events:auto;
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability:nth-child(2) {
+  border-color:#f3ad28;
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability::before {
+  content:"";position:absolute;left:37%;top:2px;width:48px;height:46px;
+  background:url('./art/ui/TLH-219.png') 5% center / 144px auto no-repeat;
+  pointer-events:none;
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability:nth-child(2)::before {
+  background-image:url('./art/ui/TLH-227.png');background-position:center;background-size:contain;
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability kbd {
+  position:absolute;left:9px;top:0px;z-index:1;width:27px;height:23px;
+  font-size:14px;font-weight:900;border:1px solid #ebf8ff;
+  background:#122532;color:#f6fcff;transform:skew(-10deg);
+}
+body.alternative-b-hud.driving #skill-hud .skill-ability span {font-size:10px;max-width:100%;text-align:center;}
+body.alternative-b-hud.driving #skill-hud .skill-ability small {font-size:10px;}
+body.alternative-b-hud.driving #skill-hud #skill-open {
+  position:absolute;right:calc(50cqw + 20px);bottom:0;width:min(385px,32cqw);
+  min-height:45px;display:flex;align-items:center;gap:9px;
+  margin:0;padding:8px 17px;border:0;border-left:3px solid #50eced;
+  border-bottom:2px solid #50eced;border-radius:0;
+  background:#0b1d30e8;clip-path:polygon(4% 0,100% 0,96% 100%,0 100%);
+  transform:translateX(50%);font-size:13px;
+}
+body.alternative-b-hud.driving #skill-open b {font-size:17px;color:#59f3f4;white-space:nowrap;}
+body.alternative-b-hud.driving #skill-open span,
+body.alternative-b-hud.driving #skill-open strong {font-size:10px;white-space:nowrap;}
+body.alternative-b-hud.driving #skill-open i {height:6px;left:80px;bottom:3px;}
+body.alternative-b-hud.driving #skill-hud #skill-drift,
+body.alternative-b-hud.driving #skill-hud #skill-effects {position:absolute;bottom:100%;right:0;}
+body.alternative-b-hud.driving #alternative-b-route {
+  position:absolute;z-index:8;top:31.5%;left:50%;transform:translateX(-50%);
+  display:flex;width:min(425px,49cqw);height:64px;pointer-events:none;
+  color:white;font-family:Impact,Haettenschweiler,"Arial Narrow Bold",system-ui,sans-serif;
+  filter:drop-shadow(0 5px 10px #081828aa);
+}
+body.alternative-b-hud #alternative-b-route[hidden] {display:none!important;}
+body.alternative-b-hud.driving .alternative-b-choice {
+  position:relative;flex:1;display:flex;align-items:center;justify-content:center;
+  gap:6px;padding:9px 13px;min-width:0;
+  border-bottom:3px solid #42f3f7;background:#092639ee;
+  clip-path:polygon(9% 0,100% 0,91% 100%,0 100%);
+}
+body.alternative-b-hud.driving .alternative-b-choice.express {
+  border-bottom-color:#ffb62b;background:#2a2430f1;
+}
+body.alternative-b-hud.driving .alternative-b-choice strong {font-size:16px;white-space:nowrap;font-style:italic;}
+body.alternative-b-hud.driving .alternative-b-choice small {display:block;color:#5be4ed;font-size:11px;text-align:center;}
+body.alternative-b-hud.driving .alternative-b-choice.express strong,
+body.alternative-b-hud.driving .alternative-b-choice.express small {color:#ffbe36;}
+body.alternative-b-hud.driving .alternative-b-arrow {
+  flex:0 0 41px;height:41px;
+  background:url('./art/ui/TLH-225.png') center / cover no-repeat;
+}
+body.alternative-b-hud.driving .alternative-b-choice.safe .alternative-b-arrow {transform:scaleX(-1);}
+body.alternative-b-hud.driving #encounter-hud {top:calc(31.5% + 74px);left:50%;transform:translateX(-50%);max-width:360px;}
+body.alternative-b-hud.driving #skill-hud[hidden],
+body.alternative-b-hud.driving #risk-hud[hidden],
+body.alternative-b-hud.driving #freight-hud[hidden],
+body.alternative-b-hud.driving #journey-objective[hidden] {display:none!important;}
+body.alternative-b-hud.skill-menu-open #alternative-b-route {display:none!important;}
+@container(max-width:850px) {
+ body.alternative-b-hud.driving #journey-objective {width:min(350px,50cqw);top:12px;left:11px;}
+ body.alternative-b-hud.driving #freight-hud {min-height:100px;padding:9px 20px 10px 74px;}
+ body.alternative-b-hud.driving #freight-hud::before {width:60px;height:54px;background-size:180px auto;left:9px;top:9px;}
+ body.alternative-b-hud.driving #risk-hud {right:10px;top:12px;max-width:36cqw;width:215px;}
+ body.alternative-b-hud.driving #alternative-b-route {width:50cqw;top:28%;height:47px;}
+ body.alternative-b-hud.driving .alternative-b-choice strong {font-size:11px;}
+ body.alternative-b-hud.driving .alternative-b-arrow {flex-basis:25px;height:28px;}
+ body.alternative-b-hud.driving #drive-box {width:35cqw;padding:8px;gap:5px;}
+ body.alternative-b-hud.driving #drive-box .speed-readout {flex-basis:48%;}
+ body.alternative-b-hud.driving #speed {font-size:42px;}
+ body.alternative-b-hud.driving #skill-hud {width:32cqw;}
+ body.alternative-b-hud.driving #skill-hud .skill-ability {min-height:76px;padding:27px 3px 6px;}
+ body.alternative-b-hud.driving #skill-hud #skill-open {width:26cqw;right:calc(50cqw + 10px);}
+}
+@media(max-width:600px) and (orientation:portrait){
+ body.alternative-b-hud.driving #journey-objective {width:calc(100% - 24px);left:12px;top:58px;}
+ body.alternative-b-hud.driving #freight-hud {min-height:95px;padding-left:78px;}
+ body.alternative-b-hud.driving #risk-hud,body.alternative-b-hud.driving #risk-hud.idle {top:9px;right:10px;width:180px;max-width:50%;min-height:40px;padding:5px 10px;}
+ body.alternative-b-hud.driving #risk-hud #risk-multiplier {font-size:24px;}
+ body.alternative-b-hud.driving #risk-hud #risk-pending {font-size:16px;}
+ body.alternative-b-hud.driving #alternative-b-route {width:calc(100% - 24px);top:31%;height:50px;}
+ body.alternative-b-hud.driving .alternative-b-choice strong {font-size:12px;}
+ body.alternative-b-hud.driving #drive-box {left:10px;bottom:160px;width:46%;min-height:70px;padding:7px;gap:4px;}
+ body.alternative-b-hud.driving #speed {font-size:35px;}
+ body.alternative-b-hud.driving #drive-box .unit {font-size:10px;}
+ body.alternative-b-hud.driving #condition-box .meter {height:6px;}
+ body.alternative-b-hud.driving #skill-hud {right:10px;bottom:160px;width:45%;}
+ body.alternative-b-hud.driving #skill-hud .skill-ability {min-height:65px;padding:22px 2px 3px;}
+ body.alternative-b-hud.driving #skill-hud .skill-ability::before {width:34px;height:30px;background-size:100px auto;left:36%;}
+ body.alternative-b-hud.driving #skill-hud #skill-open {right:0;bottom:-45px;width:100%;min-height:40px;transform:none;padding:5px;}
+ body.alternative-b-hud.driving #skill-open b {font-size:12px;}
+ body.alternative-b-hud.driving #skill-open span,body.alternative-b-hud.driving #skill-open strong {display:none;}
+}
+@media(prefers-reduced-motion:reduce){
+ body.alternative-b-hud.driving #alternative-b-route *,
+ body.alternative-b-hud.driving #skill-hud * {transition:none!important;animation:none!important;}
+}

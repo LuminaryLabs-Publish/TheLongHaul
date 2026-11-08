@@ -29,6 +29,14 @@
   $('#skill-hud').setAttribute('aria-label', 'Abilities and progression');
   const help = make('div', 'driving-onboarding');
   help.textContent = 'WASD drive  ·  SPACE boost  ·  S + turn drift  ·  M map'; stage.append(help);
+  // TLH-023: The alternative layout reuses the existing DOM/live HUD owners.
+  // Only the freight-specific choice hint is new; no gameplay logic is duplicated.
+  document.body.classList.add('alternative-b-hud');
+  const routeChoice = make('div', 'alternative-b-route', 'Freight route choice');
+  routeChoice.hidden = true;
+  routeChoice.setAttribute('role', 'group');
+  routeChoice.innerHTML = '<div class="alternative-b-choice safe"><span class="alternative-b-arrow" aria-hidden="true"></span><strong>WIDE LEFT<small>SAFER</small></strong></div><div class="alternative-b-choice express"><strong>EXPRESS RIGHT<small>BONUS</small></strong><span class="alternative-b-arrow" aria-hidden="true"></span></div>';
+  stage.append(routeChoice);
   let receiptKey = '', receiptUntil = 0;
 
   const baseHud = updateHud;
@@ -36,6 +44,7 @@
     baseHud(surface);
     const playing = currentScene() === 'driving' && !launchIntro.active;
     objective.hidden = !playing; help.hidden = !playing || readRun().rawTime > 12;
+    routeChoice.hidden = true;
     if (!playing || !course) return;
     const truckCondition = meters.get('truck-condition')?.value ?? 0;
     $('#truck-num').textContent = `${Math.round(truckCondition)}%`;
@@ -48,6 +57,9 @@
     $('#freight-next').textContent = model.next;
     $('#freight-mass').textContent = model.mass;
     $('#freight-advice').textContent = model.transition ? '' : f.onboard ? getCargoProfile(f.contract.profileId).handlingHint : 'Wide left: safe  /  Express right: bonus';
+    // Present route choice only while the existing freight HUD offers both choices.
+    routeChoice.hidden = !playing || !!model.transition || !!f.onboard ||
+      !$('#freight-advice').textContent.includes('Wide left');
     $('#freight-pay').textContent = `${f.completed} DELIVERED`;
     cargoRow.hidden = !f.onboard;
     $('#timer-box').hidden = !f.onboard; // elapsed time belongs to the driving cluster
