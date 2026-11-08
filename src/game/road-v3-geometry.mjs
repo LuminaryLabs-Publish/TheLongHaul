@@ -119,22 +119,49 @@ export function roadV3SurfacesAt(graph,point,radius=16) {
       width:lerp(a.width??edge.width,b.width??edge.width,t),
       progress:lerp(a.progress,b.progress,t),structure:a.structure==='bridge'||b.structure==='bridge'?'bridge':null});
   }
-  hits.sort((a,b)=>(Number.isFinite(point.y)?Math.abs(a.y-point.y)-Math.abs(b.y-point.y):a.y-b.y)||a.distance-b.distance);
+  // Ground deformation has X/Z but no known height: choose the nearest
+  // horizontal road, not the lowest elevation in the search radius. A truck
+  // query with Y still prefers its physical road deck at multilevel crossings.
+  hits.sort((a,b)=>Number.isFinite(point.y)
+    ? (Math.abs(a.y-point.y)-Math.abs(b.y-point.y)||a.distance-b.distance)
+    : (a.distance-b.distance||a.y-b.y));
   const distinct=[];
-  for(const hit of hits)if(!distinct.some(s=>Math.abs(s.progress-hit.progress)<12))distinct.push(hit);
+  for(const hit of hits)if(!distinct.some(s=>s.edgeId===hit.edgeId&&Math.abs(s.progress-hit.progress)<12))distinct.push(hit);
   return distinct;
 }
 
 // Only a ground-level road modifies terrain. Bridge deck geometry remains independent.
 export function roadV3TerrainHeight(naturalHeight,graph,point) {
   if(!Number.isFinite(naturalHeight))throw new TypeError('Invalid natural terrain height');
-  const influence=(graph?.maxRoadWidth??ROAD_V3_LIMITS.width)/2+ROAD_V3_LIMITS.terrainShoulder;
-  const candidates=roadV3SurfacesAt(graph,point,influence).filter(s=>
-    s.structure!=='bridge'&&s.distance<=s.width/2+ROAD_V3_LIMITS.terrainShoulder);
-  if(!candidates.length)return naturalHeight;
-  const closest=candidates.reduce((a,b)=>a.distance<b.distance?a:b);
-  const t=clamp((closest.distance-closest.width/2)/ROAD_V3_LIMITS.terrainShoulder,0,1);
-  const blend=t*t*(3-2*t);
-  const side=(point.x-closest.x)*closest.nx+(point.z-closest.z)*closest.nz;
-  return lerp(closest.y+closest.bank*side-.4,naturalHeight,blend);
+  // Terrain modification follows construction geometry: deep cut/fill needs
+  // a broader side slope, not a 40m vertical wall squeezed into a 14m verge.
+  // The cap keeps the World cell lookups spatially bounded and deterministic.
+  const maxShoulder=110;
+  const influence=(graph?.maxRoadWidth??ROAD_V3_LIMITS.width)/2+maxShoulder;
+  const surfaces=roadV3SurfacesAt(graph,point,influence);
+  const candidates=surfaces.filter(s=>s.structure!=='bridge');
+  let finalHeight=naturalHeight;
+  if(candidates.length){
+    const closest=candidates.reduce((a,b)=>a.distance<b.distance?a:b);
+    const side=(point.x-closest.x)*closest.nx+(point.z-closest.z)*closest.nz;
+    const roadY=closest.y+closest.bank*side;
+    const gradeDifference=Math.abs(roadY-naturalHeight);
+    const shoulder=clamp(ROAD_V3_LIMITS.terrainShoulder+gradeDifference*1.8,
+      ROAD_V3_LIMITS.terrainShoulder,maxShoulder);
+    const t=clamp((closest.distance-closest.width/2)/shoulder,0,1);
+    const blend=t*t*(3-2*t);
+    finalHeight=lerp(roadY-.4,naturalHeight,blend);
+  }
+  // Intersecting local roadbeds can leave centimetres of terrain penetrating
+  // a bridge deck. Excavate only that small interference; bridges otherwise
+  // preserve the natural ground and underpass clearance beneath them.
+  const decks=surfaces.filter(s=>
+    s.structure==='bridge'&&s.distance<=s.width/2);
+  for(const deck of decks){
+    const side=(point.x-deck.x)*deck.nx+(point.z-deck.z)*deck.nz;
+    const deckY=deck.y+deck.bank*side;
+    if(finalHeight>deckY-.4&&finalHeight<deckY+2)
+      finalHeight=Math.min(finalHeight,deckY-.4);
+  }
+  return finalHeight;
 }

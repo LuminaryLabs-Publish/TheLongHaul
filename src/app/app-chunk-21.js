@@ -468,6 +468,11 @@ const skillHud = skillNode("div", "", ""); skillHud.id="skill-hud";
 skillHud.innerHTML='<button id="skill-open" aria-label="Open skills and abilities"><b id="skill-level">LV 1</b><span id="skill-xp">0 XP</span><strong id="skill-points">U · SKILLS</strong><i><em id="skill-xp-fill"></em></i></button><div id="skill-ability-slots"></div><div id="skill-drift" role="status"></div><div id="skill-effects"></div>';
 $("#game-stage").append(skillHud);$("#skill-open").addEventListener("click",openSkillMenu);
 for(const slot of ["q","e"]){const button=skillNode("button","skill-ability");button.dataset.abilitySlot=slot;button.innerHTML=`<kbd>${slot.toUpperCase()}</kbd><span></span><small></small>`;button.addEventListener("click",()=>activateSkillAbility(slot));$("#skill-ability-slots").append(button)}
+// Cache the two fixed HUD tiles once; never re-query or rebuild them per tick.
+const skillAbilityNodes=Object.fromEntries(["q","e"].map(slot=>{
+  const button=skillHud.querySelector(`[data-ability-slot="${slot}"]`);
+  return [slot,{button,name:button.querySelector("span"),cooldown:button.querySelector("small")}];
+}));
 let skillLastHud=0;
 function updateSkillHud(now) {
   skillHud.hidden=currentScene()!=="driving"||launchIntro.active;
@@ -477,7 +482,22 @@ function updateSkillHud(now) {
   $("#skill-points").textContent=state.points?`U · ${state.points} POINT${state.points===1?"":"S"}`:"U · SKILLS";
   $("#skill-xp-fill").style.transform=`scaleX(${state.levelSpan?clamp(state.xpIntoLevel/state.levelSpan,0,1):1})`;
   $("#skill-open").classList.toggle("ready",state.points>0);
-  for(const slot of ["q","e"]){const node=skillHud.querySelector(`[data-ability-slot="${slot}"]`),id=state.slots[slot],remaining=abilities.cooldowns[id];node.querySelector("span").textContent=ABILITY_DEFINITIONS[id].shortName;node.querySelector("small").textContent=remaining>0?`${remaining.toFixed(1)}s`:"READY";node.classList.toggle("ready",remaining<=0);node.disabled=simulationFrozen()||remaining>0}
+  // Keep ability tiles stable: cache nodes and write only when their visible
+  // value or actionable state changes. Cooldown rendering stays decoupled from
+  // the faster gameplay simulation and does not recreate the tile contents.
+  const frozen=simulationFrozen();
+  for(const slot of ["q","e"]){
+    const node=skillAbilityNodes[slot],id=state.slots[slot],remaining=Math.max(0,abilities.cooldowns[id]||0);
+    const label=ABILITY_DEFINITIONS[id].shortName;
+    // Ceiling avoids displaying 0.0s while the ability is still cooling down.
+    const cooldown=remaining>0?`${(Math.ceil(remaining*10)/10).toFixed(1)}s`:"READY";
+    if(node.name.textContent!==label)node.name.textContent=label;
+    if(node.cooldown.textContent!==cooldown)node.cooldown.textContent=cooldown;
+    const ready=remaining<=0;
+    if(node.button.classList.contains("ready")!==ready)node.button.classList.toggle("ready",ready);
+    const disabled=frozen||!ready;
+    if(node.button.disabled!==disabled)node.button.disabled=disabled;
+  }
   const drift=truck.drift||{};
   $("#skill-drift").textContent=truck.tipped?"ROLLOVER · F TO RECOVER":truck.rollMode==="critical"?"TIP RISK · COUNTERSTEER":truck.rollMode==="wheel-lift"?`WHEELS LIFTING · ${Math.round(Math.max(truck.wheelLiftLeft||0,truck.wheelLiftRight||0)*100)} CM`:drift.active?`DRIFT ${Math.round((drift.charge||0)*100)}% · COUNTERSTEER`:(drift.phase==="release"||drift.phase==="released")?"MOMENTUM RELEASED":Math.abs(skillSteeringDamage)>.12?`STEERING PULL ${skillSteeringDamage>0?"LEFT":"RIGHT"} · F TO REPAIR`:"S + TURN · SHIFT TO SLIDE";
   $("#skill-drift").classList.toggle("charged",drift.active&&drift.charge>.25);

@@ -17,6 +17,22 @@ const wrap = a => Math.atan2(Math.sin(a),Math.cos(a));
 const hashUnit = (seed,tag) => (hashText(`${seed}:terrain-route:${tag}`)>>>0)/4294967295;
 const H = (seed,x,z)=>roadV3NaturalHeight(seed,x,z);
 
+// Construction belongs to the actual projected surface, not to the earlier
+// straight-road template. Bridges keep the valley terrain below intact;
+// cut/fill roadbeds deform only their local terrain-influence region.
+export function classifyTerrainRoadV3Structure(seed, point, authored = null) {
+  const difference = point.y - H(seed, point.x, point.z);
+  // The V2 road template is only a topology recipe. An old bridge tag may
+  // land *inside a mountain* after V3 alignment and must not disable carving.
+  // Likewise, retain a gallery only where the new terrain actually covers it.
+  if (authored === 'bridge' && difference > TERRAIN_ROAD_V3.maxFillHeight) return 'bridge';
+  if (difference > TERRAIN_ROAD_V3.maxBridgeRise) return 'bridge';
+  if (difference > TERRAIN_ROAD_V3.maxFillHeight) return 'fill';
+  if (difference < -TERRAIN_ROAD_V3.maxCutDepth)
+    return authored === 'tunnel' ? 'tunnel' : 'cut';
+  return null;
+}
+
 // A fixed-index candidate selection, not a global optimization or a load-order
 // dependent random walk. Terrain and construction cost select the corridor;
 // low-pass anchors smooth it into a legible freeway instead of a zigzag.
@@ -70,11 +86,9 @@ function sampleAt(seed,section,i,cache){
   const bank=clamp(curvature*TERRAIN_ROAD_V3.bankDesignSpeed**2/9.81*.62,
     -TERRAIN_ROAD_V3.maxBank,TERRAIN_ROAD_V3.maxBank);
   const grade=(hi.y-lo.y)/length;
-  const diff=p.y-H(seed,p.x,p.z);
   return {...p,heading,nx,nz,grade,bank,curvature,
     width:TERRAIN_ROAD_V3.roadWidth,laneFactor:3,
-    structure:diff>TERRAIN_ROAD_V3.maxBridgeRise?'bridge':diff>TERRAIN_ROAD_V3.maxFillHeight?'fill':
-      diff<-TERRAIN_ROAD_V3.maxCutDepth?'cut':null};
+    structure:classifyTerrainRoadV3Structure(seed,p)};
 }
 // Sample the same terrain-first alignment by absolute distance without
 // materializing or retaining any region. The playable V2-compatible topology

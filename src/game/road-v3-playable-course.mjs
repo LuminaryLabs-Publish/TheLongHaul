@@ -5,7 +5,7 @@
 import { createEndlessHighway, endlessHighwayPoint } from './endless-highway.mjs';
 import { ROAD_GENERATOR_VERSION } from './road-chunks.mjs';
 import { ROAD_V3_VERSION } from './road-v3-geometry.mjs';
-import { createTerrainRoadV3Sampler } from './road-v3-terrain-route.mjs';
+import { createTerrainRoadV3Sampler, classifyTerrainRoadV3Structure } from './road-v3-terrain-route.mjs';
 import { roadV3Project, roadV3PointAt } from './road-v3-journey.mjs';
 import { edgeLength, hashText } from './shared.mjs';
 
@@ -24,18 +24,19 @@ function translate(context,source,progress) {
   const tx=Math.sin(original.heading),tz=Math.cos(original.heading);
   const lateral=dx*nx+dz*nz,forward=dx*tx+dz*tz;
   const extraY=Number.isFinite(source.y)&&Number.isFinite(original.y)?clamp(source.y-original.y,-4,4):0;
-  return {x:frame.x+frame.nx*lateral+Math.sin(frame.heading)*forward,
+  const point={x:frame.x+frame.nx*lateral+Math.sin(frame.heading)*forward,
     y:frame.y+frame.bank*lateral+extraY,
     z:frame.z+frame.nz*lateral+Math.cos(frame.heading)*forward,
     heading:frame.heading,nx:frame.nx,nz:frame.nz,
     width:source.width??frame.width,bank:frame.bank,grade:frame.grade,progress};
+  return {...point,structure:classifyTerrainRoadV3Structure(seed,point,source.structure)};
 }
 function translateEdge(context,edge) {
   const samples=edge.samples.map((p,i)=>{
     const progress=Number.isFinite(p.progress)?p.progress:(edge.startProgress+
       (edge.endProgress-edge.startProgress)*i/(edge.samples.length-1));
     return {...p,...translate(context,p,progress),width:p.width??edge.width,
-      laneFactor:p.laneFactor??3,structure:p.structure??null};
+      laneFactor:p.laneFactor??3};
   });
   // Recalculate tangent and signed bank on the transformed visible geometry.
   for(let i=0;i<samples.length;i++){
@@ -101,7 +102,7 @@ function roundaboutAt(seed,index,context) {
   const prefix=`v3:roundabout:${index}`,ringEntryId=`${prefix}:entry`,ringExitId=`${prefix}:exit`,
     startNode=`endless:node:${index}`,endNode=`endless:node:${index+1}`;
   const edge=(name,from,to,points,type,progress)=>{
-    const samples=points.map((p,i)=>({...p,progress:progress+i/(points.length-1)*60}));
+    const samples=points.map((p,i)=>({...p,structure:classifyTerrainRoadV3Structure(seed,p,p.structure),progress:progress+i/(points.length-1)*60}));
     for(let i=0;i<samples.length;i++){
       const a=samples[Math.max(0,i-1)],b=samples[Math.min(i+1,samples.length-1)];
       const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1;

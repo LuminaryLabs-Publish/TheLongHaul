@@ -32,6 +32,10 @@ export function roadV3GroundContact(course, position) {
   if (course?.generatorVersion !== ROAD_V3_VERSION) return null;
   const road=nearestRoad(course,position);
   if(!road || !Number.isFinite(road.y) || road.distance > road.edge.width*.55+1.4) return null;
+  // A road deck is not drivable ground for a truck underneath an overpass.
+  // Keep a small below-deck tolerance for wheel travel and short airborne arcs;
+  // the terrain query owns ground contact when the deck is farther overhead.
+  if(Number.isFinite(position.y) && road.y - position.y > 4.7) return null;
   const a=road.edge.samples[road.segmentIndex],b=road.edge.samples[road.segmentIndex+1];
   if(!a||!b)return null;
   const t=road.t, grade=a.grade+(b.grade-a.grade)*t,

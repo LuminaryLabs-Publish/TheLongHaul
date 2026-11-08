@@ -1,0 +1,19 @@
+{
+  "schema": "luminary.final-world.goal-map/1",
+  "status": "source-authored-goal-map; optional NexusEngine n:agent:goal and n:authoring:craft runtimes not installed",
+  "project": "The Long Haul",
+  "repo": "LuminaryLabs-Publish/TheLongHaul",
+  "baseline_sha": "4bd1a15be8cf2b11cbc51aae36c52ec7744053c5",
+  "primary_tasks": ["TLH-001", "TLH-002", "TLH-004", "TLH-020"],
+  "outcome": "Deterministic world, constructed drivable roads, aligned collisions, natural driving, authentic gameplay evidence",
+  "goals": [
+    {"id":"FW-00","description":"Pin current source and DSK responsibilities","dependencies":[],"accept":"GitHub SHA and current tests recorded","state":"verified"},
+    {"id":"FW-01","description":"Road-alignment and surface contact agree","dependencies":["FW-00"],"accept":"All sampled roads have nonburied drivable decks; bridge contact rejects truck below overpass","state":"implemented; targeted tests pass"},
+    {"id":"FW-02","description":"Construction cuts and fills grade natural landforms","dependencies":["FW-01"],"accept":"Multi-seed terrain seam checks and source-derived comparative renders","state":"implemented; targeted tests pass; visual acceptance pending"},
+    {"id":"FW-03","description":"Native Blender 3D infra assets","dependencies":["FW-00"],"accept":"Blender 5.3 verified, editable .blend, native render, GLB clean reimport","state":"blocked: 400938576-byte Drive installer above 268435456-byte connector limit; no local Blender"},
+    {"id":"FW-04","description":"NexusEngine runtime renders approved asset GLBs","dependencies":["FW-03"],"accept":"Real WebGL scene includes assets with correct LOD/collision and stream cleanup","state":"not tested; provisional fallback GLBs kept out of production"},
+    {"id":"FW-05","description":"Actual complete driving experience","dependencies":["FW-01","FW-02","FW-04"],"accept":"600s authentic truck/traffic/freight run, save/reload, camera/HUD, device profile","state":"not verified: browser navigation restricted"},
+    {"id":"FW-06","description":"Promote accepted full-world release","dependencies":["FW-05"],"accept":"Complete suite, reviewed video, authorized fast-forward main and Pages verification","state":"blocked: full acceptance pending"}
+  ],
+  "safety": {"github_actions_modifications": false,"rollback": "V2 remains available; preserve generator-versioned checkpoints"}
+}

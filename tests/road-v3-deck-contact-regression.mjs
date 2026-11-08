@@ -12,6 +12,13 @@ for(const c of course.crossings){
  const a=roadV3GroundContact(course,{...lower,y:lower.y+.92}),b=roadV3GroundContact(course,{...upper,y:upper.y+.92});
  assert.ok(a&&b,'both bridge levels have a road collision contact');
  near(a.height,lower.y);near(b.height,upper.y);
+ // A truck driving on the natural ground beneath an elevated bridge must
+ // never snap to the upper road just because its X/Z footprint overlaps.
+ const beneath=roadV3GroundContact(course,{...upper,y:upper.y-12});
+ assert.ok(!beneath||beneath.height<upper.y-4,
+   'a truck beneath a bridge must not be snapped to the upper road');
+ assert.ok(roadV3GroundContact(course,{...upper,y:upper.y+2}),
+   'truck above the deck still gets road contact');
  assert.ok(b.height-a.height>=9,'vertical clearance survives contact sampling');
  assert.ok(a.normal.y>.85&&b.normal.y>.85,'normalized road-deck normals');
 }

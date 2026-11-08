@@ -80,7 +80,7 @@
         if (!visualOnly) entry.obstacles.push({ id: `${segment.id}:cone:${side}`, x, z, y: a.y, height: 1.3, radius: .4, kind: 'lane-hazard' });
       }
     }
-    if (!['bridge','tunnel'].includes(feature) || b.structure !== feature || segment.type !== 'endless-highway') return;
+    if (!['bridge','tunnel'].includes(feature) || b.structure !== feature) return;
     const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz), heading = Math.atan2(dx, dz);
     const x = (a.x + b.x) / 2, z = (a.z + b.z) / 2, y = (a.y + b.y) / 2 + .12;
     const nx = (a.nx + b.nx) / 2, nz = (a.nz + b.nz) / 2, width = (a.width + b.width) / 2;
