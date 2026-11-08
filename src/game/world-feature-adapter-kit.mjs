@@ -1,6 +1,8 @@
 import { CELL_SIZE, clone, clamp, hashText } from "./shared.mjs";
 import { generateMacroSector } from "./world-atlas-kit.mjs";
 import { nearestRoad, terrainNoise } from "./world-base.mjs";
+import { roadV3NaturalHeight } from "./landscape-style.mjs";
+import { ROAD_V3_VERSION } from "./road-v3-geometry.mjs";
 
 function smooth01(value) {
   const t = clamp(Number(value) || 0, 0, 1);
@@ -67,11 +69,15 @@ function createBaseTerrainFeatureKit(N) {
       return {
         ...source,
         bounds: clone(source.bounds ?? { minX: -1000000, minZ: -1000000, maxX: 1000000, maxZ: 1000000 }),
-        worldSeed: String(source.worldSeed ?? source.seed ?? "long-haul")
+        worldSeed: String(source.worldSeed ?? source.seed ?? "long-haul"),
+        generatorVersion: String(source.generatorVersion ?? "")
       };
     },
     sample(feature, point) {
-      return terrainNoise(Number(point.x ?? 0), Number(point.z ?? 0), feature.definition.worldSeed);
+      const x=Number(point.x ?? 0),z=Number(point.z ?? 0),definition=feature.definition;
+      return definition.generatorVersion === ROAD_V3_VERSION
+        ? roadV3NaturalHeight(definition.worldSeed,x,z)
+        : terrainNoise(x,z,definition.worldSeed);
     },
     channels(feature) {
       return {
@@ -102,7 +108,8 @@ function createRoadGradeFeatureKit(N) {
         influenceRadius: Math.max(width * 0.5 + 1, Number(source.influenceRadius ?? width * 0.5 + width * 0.28 + width * 0.9)),
         worldSeed: String(source.worldSeed ?? "long-haul"),
         edgeId: String(source.edgeId ?? source.id ?? "road"),
-        roadType: String(source.roadType ?? source.roadClass ?? "country-road")
+        roadType: String(source.roadType ?? source.roadClass ?? "country-road"),
+        generatorVersion: String(source.generatorVersion ?? "")
       };
     },
     sample(feature, point) {
@@ -114,6 +121,18 @@ function createRoadGradeFeatureKit(N) {
       const influence = nearest.distance <= roadHalfWidth
         ? 1
         : 1 - smooth01((nearest.distance - roadHalfWidth) / transition);
+      if(definition.generatorVersion === ROAD_V3_VERSION){
+        const a=definition.path[nearest.segmentIndex],b=definition.path[nearest.segmentIndex+1];
+        // Bridge decks never fill the terrain underneath their opening.
+        if(a?.structure==='bridge'&&b?.structure==='bridge')return 0;
+        const y=Number(a?.y)+(Number(b?.y)-Number(a?.y))*nearest.t;
+        const nx=Number(a?.nx??0)+(Number(b?.nx??0)-Number(a?.nx??0))*nearest.t;
+        const nz=Number(a?.nz??0)+(Number(b?.nz??0)-Number(a?.nz??0))*nearest.t;
+        const bank=Number(a?.bank??0)+(Number(b?.bank??0)-Number(a?.bank??0))*nearest.t;
+        const lateral=(Number(point.x)-nearest.x)*nx+(Number(point.z)-nearest.z)*nz;
+        if(!Number.isFinite(y+bank+lateral))return 0;
+        return (y+bank*lateral-.4-roadV3NaturalHeight(definition.worldSeed,Number(point.x),Number(point.z)))*influence;
+      }
       const natural = terrainNoise(Number(point.x ?? 0), Number(point.z ?? 0), definition.worldSeed);
       const roadHeight = roadCenterElevation(definition, nearest);
       return (roadHeight - natural) * influence;
@@ -200,7 +219,9 @@ export function createLongHaulWorldFeatureAdapterKit(N, options = {}) {
       }
 
       function registerRoad(edge, seed, prefix = "course") {
-        const path = (edge.samples ?? []).map((point) => ({ x: Number(point.x), z: Number(point.z) }));
+        const path = (edge.samples ?? []).map((point) => ({ x: Number(point.x), z: Number(point.z),
+          y: Number(point.y),nx: Number(point.nx),nz: Number(point.nz),bank: Number(point.bank),
+          structure: point.structure??null }));
         if (path.length < 2) return;
         registerFeature({
           id: `${prefix}:road:${edge.id}`,
@@ -235,7 +256,8 @@ export function createLongHaulWorldFeatureAdapterKit(N, options = {}) {
             blendWidth: Number(edge.width ?? 14) * 0.95,
             worldSeed: seed,
             edgeId: edge.id,
-            roadType: edge.type ?? edge.branchId ?? "country-road"
+            roadType: edge.type ?? edge.branchId ?? "country-road",
+            generatorVersion:edge.generatorVersion??""
           },
           metadata: {
             edgeId: edge.id,
@@ -263,7 +285,7 @@ export function createLongHaulWorldFeatureAdapterKit(N, options = {}) {
           seed: `${seed}:base-terrain`,
           priority: -1000,
           bounds: clone(root),
-          definition: { bounds: clone(root), worldSeed: seed }
+          definition: { bounds: clone(root), worldSeed: seed, generatorVersion:course.generatorVersion??"" }
         });
         for (const edge of course.edges ?? []) registerRoad(edge, seed);
         for (const depot of course.depots ?? []) {

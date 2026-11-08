@@ -28,6 +28,25 @@ export function landscapeRelief(seed, x, z) {
   return corridor * (hills + rolling);
 }
 
+// Natural terrain authority for the opt-in V3 world. Unlike the V2 illustrated
+// relief, it never clears an artificial straight corridor at x=0: the highway
+// must choose a route through the pre-existing landscape. Pure world-coordinate
+// sampling allows chunk-independent reconstruction with no mutable RNG.
+export function roadV3NaturalHeight(seed, x, z) {
+  if (!Number.isFinite(x) || !Number.isFinite(z)) throw new TypeError('V3 terrain requires finite world coordinates');
+  const province = noise(seed, x / 5200, z / 5600, 'v3-province');
+  const shoulder = noise(seed, x / 2600, z / 2900, 'v3-shoulder');
+  const ridgeBasis = noise(seed, x / 1450, z / 1700, 'v3-ridges');
+  const ridge = Math.pow(1 - Math.abs(ridgeBasis * 2 - 1), 2.7);
+  const valley = noise(seed, x / 2800, z / 3100, 'v3-valleys');
+  const foothills = noise(seed, x / 760, z / 900, 'v3-foothills');
+  const detail = noise(seed, x / 195, z / 230, 'v3-detail');
+  const warped = (noise(seed, x / 2300, z / 2600, 'v3-warp') - .5) * 950;
+  const mountainBelt = Math.pow(Math.max(0, Math.sin((x * .62 + z * .78 + warped) / 900)), 3);
+  return -24 + mountainBelt * (45 + 105 * province) + (35 + 145 * province) * ridge + (shoulder - .5) * 55
+    - 32 * Math.pow(valley, 2) + (foothills - .5) * 17 + (detail - .5) * 3.5;
+}
+
 export function landscapeTint(seed, x, z, height = 0) {
   const region = noise(seed, x / 2800, z / 3100, 'palette');
   const field = noise(seed, x / 230, z / 230, 'field');
@@ -76,7 +95,8 @@ export function cloudBankDescriptors(seed = 'long-haul-sky') {
 export function freightHudModel(freight, position, cargoCondition, elapsed) {
   if (!freight) return null;
   const c = freight.contract, transition = ['delivered', 'cargo-lost'].includes(freight.status);
-  const distance = Math.max(0, (freight.onboard ? c.deliveryProgress : c.pickupProgress) + position.z);
+  const roadProgress=Number.isFinite(position?.progress)?position.progress:-(position?.z??0);
+  const distance = Math.max(0, (freight.onboard ? c.deliveryProgress : c.pickupProgress) - roadProgress);
   return { transition, onboard: freight.onboard, urgent: Boolean(freight.onboard && c.remaining < 20),
     status: transition ? (freight.status === 'delivered' ? 'DELIVERY COMPLETE' : 'REPLACEMENT INCOMING') : freight.onboard ? 'DELIVER TO THE BLUE GATE' : 'PICK UP YOUR NEXT LOAD',
     next: transition ? 'Keep driving · next contract incoming' : `${freight.onboard ? 'Receiver' : 'Loading fork'} · ${Math.round(distance)} m`,

@@ -23,7 +23,10 @@
         if(!checkpoint||checkpoint.schema!=="long-haul.freight-checkpoint/1"||checkpoint.terminal)return null;
         if(!checkpoint.truck?.position||![checkpoint.truck.position.x,checkpoint.truck.position.y,checkpoint.truck.position.z,checkpoint.truck.heading].every(Number.isFinite))return null;
         if(!checkpoint.meters||![checkpoint.meters.fuel,checkpoint.meters.truck,checkpoint.meters.cargo].every(v=>Number.isFinite(v)&&v>=0&&v<=100)||checkpoint.meters.truck<=0)return null;
-        createFreightJourney({seed:checkpoint.journey.seed,sessionId:checkpoint.journey.sessionId,initialType:checkpoint.initialType,snapshot:checkpoint.journey});
+        const v3=checkpoint.journey.generatorVersion===ROAD_V3_VERSION;
+        const graph=v3?engine.n.longHaulRoadV3.buildPlayable(checkpoint.journey.seed,{progress:checkpoint.journey.progress}):null;
+        createFreightJourney({seed:checkpoint.journey.seed,sessionId:checkpoint.journey.sessionId,initialType:checkpoint.initialType,snapshot:checkpoint.journey,
+          generatorVersion:checkpoint.journey.generatorVersion,roadGraph:graph});
         if(!prepareFreightSave(saved,checkpoint,{expectedRevision:checkpoint.revision}).ok)return null;
         return checkpoint;
       }catch{return null}
@@ -51,7 +54,7 @@
       if(course?.endless){
         const saved=freightResumeCheckpoint;
         freightInitialType=saved?.initialType??selectedContract;
-        freightJourney=createFreightJourney({seed:course.seed,sessionId:saved?.journey.sessionId??(globalThis.crypto?.randomUUID?.()??`haul-${Date.now()}-${runSerial}`),initialType:freightInitialType,snapshot:saved?.journey??null});
+        freightJourney=createFreightJourney({seed:course.seed,sessionId:saved?.journey.sessionId??(globalThis.crypto?.randomUUID?.()??`haul-${Date.now()}-${runSerial}`),initialType:freightInitialType,snapshot:saved?.journey??null,generatorVersion:course.generatorVersion,roadGraph:course.generatorVersion===ROAD_V3_VERSION?()=>course:null});
         freightState=freightJourney.getState();freightStorageStatus="";freightStorageConflict=false;freightDamageRevision=0;
         try{freightRevision=JSON.parse(localStorage.getItem("longhaul-campaign-v1")||"null")?.freightJourney?.revision??0}catch{freightRevision=0}
         if(saved){engine.n.longHaulTruck.loadSnapshot(saved.truck);arcadeScore.restoreBanked(saved.bankedPoints??0,saved.bestMultiplier??1)}
@@ -128,7 +131,7 @@
         if(landed){const impact=truck.lastLanding?.impactSpeed??0;if(impact>8)spendCargoDamage(Math.min(18,(impact-8)*.7),"bad-landing")}
         if(truck.loadStress>.55)spendCargoDamage((truck.loadStress-.55)*dt*3.5,"cargo-shift");
       }
-      const events=freightJourney.tick({dt,progress:-truck.position.z,position:truck.position,speed:truck.speed,heading:truck.heading,grounded:truck.grounded,
+      const events=freightJourney.tick({dt,progress:endlessHighwayProgress(course,truck.position),position:truck.position,speed:truck.speed,heading:truck.heading,grounded:truck.grounded,
         cargoCondition:meters.get("cargo-condition").value,truckCondition:meters.get("truck-condition").value,collisionCount:run.collisions+freightDamageRevision,
         penaltySeconds:Math.max(0,run.penaltyTotal-freightLastPenalty),active:true});
       freightLastPenalty=run.penaltyTotal;freightState=freightJourney.getState();
@@ -222,9 +225,11 @@
       ctx.fillStyle="#102d35";ctx.fillRect(0,0,512,128);ctx.strokeStyle=color;ctx.lineWidth=7;ctx.strokeRect(6,6,500,116);ctx.fillStyle="#f4fbf4";ctx.font="900 43px system-ui";ctx.textAlign="center";ctx.fillText(text,256,79);
       const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});freightLabelAssets.set(key,material);return material;
     }
+    const freightGateHeight=point=>course?.generatorVersion===ROAD_V3_VERSION&&Number.isFinite(point.y)
+      ?point.y:terrainHeight(course,point.x,point.z);
     function makeFreightGate(gate,kind){
       const group=new THREE.Group(),point=gate.point,width=kind==="risky"?6.4:24,color=freightColors[kind],title=kind==="delivery"?"DELIVER → KEEP GOING":kind==="risky"?"EXPRESS · +COMBO":"WIDE · PICK UP";
-      group.position.set(point.x,terrainHeight(course,point.x,point.z)+.15,point.z);group.rotation.y=point.heading;
+      group.position.set(point.x,freightGateHeight(point)+.15,point.z);group.rotation.y=point.heading;
       for(const side of [-1,1]){addEncounterBox(group,color,side*(width/2+1),3.3,0,.45,6.6,.45);for(let z=-24;z<=12;z+=6)addEncounterBox(group,color,side*(width/2+.4),.16,z,.2,.22,3.5)}
       addEncounterBox(group,color,0,6.6,0,width+2.5,.35,.45);
       const label=new THREE.Mesh(geometries.plane,freightLabel(title,kind==="risky"?"#ffc273":kind==="delivery"?"#81cfff":"#6ee4c2"));label.position.set(0,7.8,0);label.rotation.y=Math.PI;label.scale.set(kind==="risky"?10:16,3.2,1);group.add(label);
@@ -233,17 +238,17 @@
     }
     function updateFreightStations(){
       if(freightStationRoot.parent!==dynamicRoot)dynamicRoot.add(freightStationRoot);
-      const state=freightState,truck=readTruck(),wanted=new Map();
+      const state=freightState,truck=readTruck(),wanted=new Map(),roadProgress=endlessHighwayProgress(course,truck.position);
       for(const station of course.loadingStations??[]){
-        if(Math.abs(station.progress+truck.position.z)>750)continue;
-        for(const route of ["safe","risky"]){const id=`${station.id}:${route}`;wanted.set(id,{gate:station[route],kind:route,active:state.contract?.stationIndex===station.index&&-truck.position.z<station.progress+60,station})}
+        if(Math.abs(station.progress-roadProgress)>750)continue;
+        for(const route of ["safe","risky"]){const id=`${station.id}:${route}`;wanted.set(id,{gate:station[route],kind:route,active:state.contract?.stationIndex===station.index&&endlessHighwayProgress(course,truck.position)<station.progress+60,station})}
       }
-      if(state.onboard&&Math.abs(state.contract.deliveryProgress+truck.position.z)<850)wanted.set(state.deliveryGate.id,{gate:state.deliveryGate,kind:"delivery",active:true});
+      if(state.onboard&&Math.abs(state.contract.deliveryProgress-roadProgress)<850)wanted.set(state.deliveryGate.id,{gate:state.deliveryGate,kind:"delivery",active:true});
       for(const [id,group] of freightStationHosts)if(!wanted.has(id)){group.removeFromParent();freightStationHosts.delete(id)}
-      for(const [id,entry] of wanted){let group=freightStationHosts.get(id);if(!group){group=makeFreightGate(entry.gate,entry.kind);freightStationHosts.set(id,group);freightStationRoot.add(group)}const point=entry.gate.point;group.position.set(point.x,terrainHeight(course,point.x,point.z)+.15,point.z);group.rotation.y=point.heading;group.visible=entry.active;}
+      for(const [id,entry] of wanted){let group=freightStationHosts.get(id);if(!group){group=makeFreightGate(entry.gate,entry.kind);freightStationHosts.set(id,group);freightStationRoot.add(group)}const point=entry.gate.point;group.position.set(point.x,freightGateHeight(point)+.15,point.z);group.rotation.y=point.heading;group.visible=entry.active;}
       // Only the active express route has solid side barriers. The centre opening
       // is wider than the truck, while the wide route never has these obstacles.
-      {const station=state.pickupStation;if(station&&Math.abs(station.progress+truck.position.z)<48){const p=station.risky.point,dx=truck.position.x-p.x,dz=truck.position.z-p.z,along=dx*Math.sin(p.heading)+dz*Math.cos(p.heading),side=dx*Math.cos(p.heading)-dz*Math.sin(p.heading);
+      {const station=state.pickupStation;if(station&&Math.abs(station.progress-endlessHighwayProgress(course,truck.position))<48){const p=station.risky.point,dx=truck.position.x-p.x,dz=truck.position.z-p.z,along=dx*Math.sin(p.heading)+dz*Math.cos(p.heading),side=dx*Math.cos(p.heading)-dz*Math.sin(p.heading);
         const contact=truck.grounded&&Math.abs(along)<4.4&&Math.abs(side)>2.4&&Math.abs(side)<6.1;
         if(!simulationFrozen()&&contact&&truck.speed>3&&freightGateContact!==station.id){freightGateContact=station.id;spendTruckDamage(5,"loading-gate");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.16,kind:"prop",allowTip:false});audio.hit()}
         if(!simulationFrozen()&&!contact&&freightGateContact===station.id)freightGateContact=null;
@@ -292,7 +297,7 @@
     drawMap=function(){
       if(!isContinuousFreight())return freightMapBase();if(!mapOpen)return;
       const canvas=$("#map-canvas"),rect=canvas.getBoundingClientRect();if(rect.width<2||rect.height<2)return;const ratio=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
-      const ctx=canvas.getContext("2d");ctx.setTransform(ratio,0,0,ratio,0,0);const w=rect.width,h=rect.height,p=-readTruck().position.z,start=Math.max(-160,p-250),end=p+1350,center=endlessHighwayPoint(course,p).x,scale=Math.min((w-40)/210,(h-40)/(end-start)),project=(x,z)=>({x:w/2+(x-center)*scale,y:h-20-(-z-start)*scale});
+      const ctx=canvas.getContext("2d");ctx.setTransform(ratio,0,0,ratio,0,0);const w=rect.width,h=rect.height,p=endlessHighwayProgress(course,readTruck().position),start=Math.max(-160,p-250),end=p+1350,center=endlessHighwayPoint(course,p).x,scale=Math.min((w-40)/210,(h-40)/(end-start)),project=(x,z)=>({x:w/2+(x-center)*scale,y:h-20-(-z-start)*scale});
       ctx.clearRect(0,0,w,h);for(const route of ["safe","risky"]){ctx.beginPath();for(let q=start;q<=end;q+=8){const v=endlessHighwayPoint(course,q,0,route),s=project(v.x,v.z);q===start?ctx.moveTo(s.x,s.y):ctx.lineTo(s.x,s.y)}ctx.strokeStyle=route==="safe"?"#287d72":"#cb822e";ctx.lineWidth=route==="safe"?6:2;ctx.stroke()}
       const target=freightState.onboard?freightState.deliveryGate.point:freightState.pickupStation.safe.point,at=project(target.x,target.z);ctx.fillStyle=freightState.onboard?"#3387ba":"#21866c";ctx.beginPath();ctx.arc(at.x,at.y,7,0,Math.PI*2);ctx.fill();ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillText(freightState.onboard?"DELIVER":"PICK UP",at.x,at.y-12);
       for(const garage of arcadeGarageStops){const pt=project(garage.x,garage.z);ctx.fillStyle="#315d79";ctx.fillRect(pt.x-4,pt.y-4,8,8)}drawMapTruck(ctx,project);

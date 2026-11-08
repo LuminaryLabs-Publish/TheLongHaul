@@ -1,5 +1,6 @@
 import { generateRoadV3, ROAD_V3_VERSION } from './road-v3-geometry.mjs';
 import { createRoadV3Journey, roadV3PointAt, roadV3Project, roadV3WorldStreaming, roadV3SceneryDescriptor, createRoadV3Stream, ensureRoadV3Ahead } from './road-v3-journey.mjs';
+import { createPlayableRoadV3Course, advancePlayableRoadV3Course } from './road-v3-playable-course.mjs';
 
 // Candidate-only service. It never changes the V1/V2 course, truck or streaming host.
 export function createLongHaulRoadV3Kit(N) {
@@ -10,7 +11,7 @@ export function createLongHaulRoadV3Kit(N) {
   const empty=()=>({version:ROAD_V3_VERSION,graph:null,revision:0,error:null});
   const kit=N.defineDomainServiceKit({
     id:'long-haul-road-v3-kit',domain:'long-haul-road',
-    apiName:'longHaulRoadV3',services:['candidate-road-graph','crossing-resolution','deterministic-regeneration','journey-projection','spatial-world-streaming','scenery-descriptor','bounded-road-growth','return-reconstruction'],
+    apiName:'longHaulRoadV3',services:['candidate-road-graph','crossing-resolution','deterministic-regeneration','journey-projection','spatial-world-streaming','scenery-descriptor','bounded-road-growth','return-reconstruction','playable-terrain-road-adapter'],
     stability:'experimental',version:'0.1.0',
     resources:{RoadV3State},events:{Generate,Reset,Ensure},
     systems:[{phase:'resolve',name:'longHaulRoadV3System',system(world){
@@ -43,6 +44,10 @@ export function createLongHaulRoadV3Kit(N) {
         prepareJourney(seed,options={}){world.emit(Generate,{kind:'journey',seed,options:structuredClone(options)});},
         prepareStream(seed,options={}){world.emit(Generate,{kind:'stream',seed,options:structuredClone(options)});},
         ensureAhead(progress,options={}){world.emit(Ensure,{progress,options:structuredClone(options)});},
+        // Pure builders: the existing Course Kit remains the single live
+        // authority. No second road/world state is installed during play.
+        buildPlayable(seed,options={}){return createPlayableRoadV3Course(seed,options);},
+        advancePlayable(course,progress){return advancePlayableRoadV3Course(course,progress);},
         sample(progress,lateral=0){return roadV3PointAt(graph(),progress,lateral);},
         locate(position,options={}){return roadV3Project(graph(),position,options);},
         stream(position,options={}){return roadV3WorldStreaming(graph(),position,options);},

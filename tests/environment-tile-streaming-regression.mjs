@@ -7,6 +7,7 @@ import {planEnvironmentCell,environmentCellPlanSteps} from '../src/game/environm
 import {ENV_TILE_METERS,ENV_CELL_METERS,ENV_TILE_VARIANTS,ENVIRONMENT_TILE_CATALOG} from '../src/game/environment-tile-catalog.mjs';
 import {ENVIRONMENT_AUTHORING_SOURCE} from '../src/game/environment-tile-authoring.mjs';
 import {ROAD_GENERATOR_VERSION} from '../src/game/road-chunks.mjs';
+import {ROAD_V3_VERSION} from '../src/game/road-v3-geometry.mjs';
 class Node {
  constructor(){this.children=[];this.parent=null;}
  add(n){this.children.push(n);n.parent=this;}
@@ -27,7 +28,7 @@ const sandbox={
  window:win,console:output,course,settings,cellHosts,cellDecorationQueue,
  CELL_SIZE:160,
  ENVIRONMENT_AUTHORING_SOURCE,ENVIRONMENT_TILE_CATALOG,ENV_TILE_METERS,ENV_CELL_METERS,ENV_TILE_VARIANTS,ENVIRONMENT_RENDER_LIMITS,
- ROAD_GENERATOR_VERSION,materials:{truckRed:{gradientMap:{id:'toon'}}},THREE:MOCK_THREE,
+ ROAD_GENERATOR_VERSION,ROAD_V3_VERSION,materials:{truckRed:{gradientMap:{id:'toon'}}},THREE:MOCK_THREE,
  planEnvironmentCell,environmentCellPlanSteps,createEnvironmentTileRenderer,terrainHeight:()=>0,
  nearestRoad:()=>({distance:100,edge:{width:28}}),
  readTruck:()=>({position:truckPosition}),updateCloudLayers:()=>{},

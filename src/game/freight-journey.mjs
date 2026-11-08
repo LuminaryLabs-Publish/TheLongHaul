@@ -147,6 +147,17 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
     const progress=r.firstStationProgress+i*r.stationSpacing,
       entryProgress=progress-r.stationHalfSpan, exitProgress=progress+r.stationHalfSpan;
     if (exitProgress > graph().totalProgress) throw new RangeError('V3 freight requires road growth ahead of the next station');
+    // Playable V3 already owns physical safe-wide and express-risky gate geometry.
+    // Reuse it rather than fabricating two nearby lanes on the main highway:
+    // the latter makes the risky pickup invisible on its actual side road.
+    const authored=graph().loadingStations;
+    if (Array.isArray(authored)) {
+      const station=authored.find(value=>value.index===i);
+      if (!station) throw new RangeError('V3 freight requires the station inside the materialized road window');
+      return station;
+    }
+    // Earlier graph-only V3 candidates have no loading-station descriptors;
+    // preserve their independently tested contract until full conversion.
     const center=pointAt(progress), safePoint=pointAt(progress,-2.8), riskyPoint=pointAt(progress,2.8);
     if (!center||!safePoint||!riskyPoint) throw new RangeError('V3 freight station requires generated road ahead');
     const id=`endless:station:${i}`;
@@ -158,6 +169,24 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
       risky:{point:riskyPoint,width:5.6,halfWidth:2.8,length:32,edgeIds:[center.edgeId],clearance:{width:5.6,height:5.5}},
       challenge:{minForwardSpeed:9,maxLateralError:3.2,cleanRequired:true},
       rewardIdentity:`${id}:express-complete`};
+  };
+  // Use the physical V3 route edge for approach selection and clean driving
+  // evidence. Projecting its shortcut against the mainline can falsely turn a
+  // legitimate express run into an ordinary safe-road pickup.
+  const loadingRoutePoint = (station,progress,route) => {
+    if(!isV3 || !Array.isArray(graph().loadingStations))
+      return pointAt(progress,isV3?(route==='risky'?2.8:-2.8):0,route);
+    const ids=station?.[route]?.edgeIds??[];
+    const edge=graph().edges?.find(value=>ids.includes(value.id)
+      && progress>=value.startProgress-1e-6 && progress<=value.endProgress+1e-6);
+    if(!edge?.samples?.length)return null;
+    const samples=edge.samples;
+    let lo=0,hi=samples.length-1;
+    while(lo+1<hi){const mid=(lo+hi)>>1;if(samples[mid].progress<progress)lo=mid;else hi=mid;}
+    const a=samples[lo],b=samples[Math.min(lo+1,samples.length-1)];
+    const t=clamp((progress-a.progress)/(b.progress-a.progress||1),0,1);
+    return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t,
+      heading:Math.atan2(b.x-a.x,b.z-a.z)};
   };
   const nextStation = (progress, minimumLead = 220) => {
     if (!isV3) return nextEndlessLoadingStation(course, progress, minimumLead);
@@ -261,9 +290,10 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
     if (['awaiting-pickup', 'awaiting-replacement'].includes(state.status)) {
       const decision = station.entryProgress + 52;
       if (!state.routeAttempt && forward && newRoad && oldProgress < decision && progress >= decision) {
-        const risky = pointAt(progress, 2.8, 'risky'), safe = pointAt(progress, -2.8);
-        const rd = Math.hypot(position.x - risky.x, position.z - risky.z), sd = Math.hypot(position.x - safe.x, position.z - safe.z);
-        const route = rd < sd && rd < 5 ? 'risky' : 'safe';
+        const risky=loadingRoutePoint(station,progress,'risky'),safe=loadingRoutePoint(station,progress,'safe');
+        const rd=risky?Math.hypot(position.x-risky.x,position.z-risky.z):Infinity;
+        const sd=safe?Math.hypot(position.x-safe.x,position.z-safe.z):Infinity;
+        const route=rd<sd&&rd<5?'risky':'safe';
         state.routeAttempt = { stationId: station.id, route, startProgress: progress, collisionCount: finite(input.collisionCount), clean: true, picked: false, maxError: 0, recovery: contract.misses > 0 && contract.recoveryOffered };
         emit('loading-route-entered', { stationId: station.id, route });
       }
@@ -289,8 +319,8 @@ export function createFreightJourney({ seed = 'long-haul', sessionId, initialTyp
 
     const attempt = state.routeAttempt;
     if (attempt && attempt.stationId === station.id) {
-      const point = pointAt(progress, isV3 ? (attempt.route==='risky'?2.8:-2.8) : 0, attempt.route);
-      const error = Math.hypot(position.x - point.x, position.z - point.z);
+      const point=loadingRoutePoint(station,progress,attempt.route);
+      const error=point?Math.hypot(position.x-point.x,position.z-point.z):Infinity;
       attempt.maxError = Math.max(attempt.maxError, error);
       if (!physicalStep || !forward || finite(input.collisionCount) !== attempt.collisionCount || input.grounded === false || finite(input.speed) < station.challenge.minForwardSpeed || (attempt.route === 'risky' && error > station.challenge.maxLateralError)) attempt.clean = false;
       if (progress >= station.exitProgress - 6) {

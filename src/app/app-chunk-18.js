@@ -84,8 +84,8 @@
       ensureArcadeNetwork();arcadeTrafficRoot.visible=true;if(arcadeTrafficRoot.parent!==dynamicRoot)dynamicRoot.add(arcadeTrafficRoot);
       const truck=readTruck(),road=nearestRoad(course,truck.position),progress=arcadeRoadProgress(road,arcadeNetwork);
       if(!progress){for(const vehicle of arcadeVehicles)vehicle.group.visible=false;return}
-      const direction=arcadeRoadForward(road,truck.heading),freightPacing=course.endless?(freightState?.difficulty??freightDifficulty(-truck.position.z)):null,difficulty=freightPacing?.level??Math.min(3,readRun().rawTime/75),nearEvent=arcadeEncounters.find(event=>event.path===progress.path&&event.distance-progress.distance>-55&&event.distance-progress.distance<200);
-      const count=freightPacing?(Math.floor(Math.max(0,-truck.position.z)/960)%4===3?2:nearEvent&&nearEvent.kind!=="weave"?2:freightPacing.trafficLimit):(nearEvent?.kind==="weave"?6:nearEvent&&nearEvent.kind!=="breakables"?2:4+Math.floor(difficulty/2));
+      const direction=arcadeRoadForward(road,truck.heading),freightPacing=course.endless?(freightState?.difficulty??freightDifficulty(endlessHighwayProgress(course,truck.position))):null,difficulty=freightPacing?.level??Math.min(3,readRun().rawTime/75),nearEvent=arcadeEncounters.find(event=>event.path===progress.path&&event.distance-progress.distance>-55&&event.distance-progress.distance<200);
+      const count=freightPacing?(Math.floor(Math.max(0,endlessHighwayProgress(course,truck.position))/960)%4===3?2:nearEvent&&nearEvent.kind!=="weave"?2:freightPacing.trafficLimit):(nearEvent?.kind==="weave"?6:nearEvent&&nearEvent.kind!=="breakables"?2:4+Math.floor(difficulty/2));
       const truckCollider=createVehicleCollider(truck.position,truck.heading,LONG_HAUL_TRUCK_COLLIDER);
       for(let i=0;i<arcadeVehicles.length;i++){
         const vehicle=arcadeVehicles[i];
@@ -94,7 +94,7 @@
           if(i>=count){vehicle.active=false;vehicle.group.visible=false;continue}
           vehicle.path=progress.path;vehicle.progress=progress.distance+direction*(110+i*(freightPacing?.minimumGap??46));vehicle.direction=direction;
           if(i===5&&progress.distance>800&&(!freightPacing||difficulty>=3))vehicle.direction=-direction;
-          const spawn=arcadePathPoint(vehicle.path,vehicle.progress);if(!spawn||(course.endless&&freightProtectedProgress(-spawn.z))){vehicle.active=false;vehicle.group.visible=false;continue}
+          const spawn=arcadePathPoint(vehicle.path,vehicle.progress);if(!spawn||(course.endless&&freightProtectedProgress(endlessHighwayProgress(course,spawn)))){vehicle.active=false;vehicle.group.visible=false;continue}
           const laneCount=Math.max(2,Math.min(5,Math.floor((spawn.edge.width-5)/3.7))),laneIndex=i%laneCount;
           vehicle.lane=(laneIndex-(laneCount-1)/2)*3.7;
           const overlap=arcadeEncounters.find(event=>event.path===vehicle.path&&Math.abs(event.distance-vehicle.progress)<100);
@@ -105,9 +105,13 @@
         // Traffic advances in road coordinates independently of the player.
         vehicle.skillDisabled=Math.max(0,(vehicle.skillDisabled||0)-dt);vehicle.progress+=vehicle.direction*vehicle.speed*dt*(vehicle.skillDisabled>0?.35:1);
         const pos=arcadePathPoint(vehicle.path,vehicle.progress,vehicle.lane);if(!pos){vehicle.active=false;vehicle.group.visible=false;continue}
-        if(course.endless&&freightProtectedProgress(-pos.z)&&Math.hypot(pos.x-truck.position.x,pos.z-truck.position.z)>60){vehicle.active=false;vehicle.group.visible=false;continue}
-        const relative=(vehicle.progress-progress.distance)*direction,vehicleHeading=pos.heading+(vehicle.direction<0?Math.PI:0),height=terrainHeight(course,pos.x,pos.z)+.05;
+        if(course.endless&&freightProtectedProgress(endlessHighwayProgress(course,pos))&&Math.hypot(pos.x-truck.position.x,pos.z-truck.position.z)>60){vehicle.active=false;vehicle.group.visible=false;continue}
+        const relative=(vehicle.progress-progress.distance)*direction,vehicleHeading=pos.heading+(vehicle.direction<0?Math.PI:0),height=course?.generatorVersion===ROAD_V3_VERSION?pos.y+.05:terrainHeight(course,pos.x,pos.z)+.05;
         vehicle.group.visible=Math.abs(relative)<540;vehicle.group.position.set(pos.x,height,pos.z);vehicle.group.rotation.y=vehicleHeading;
+        if(course?.generatorVersion===ROAD_V3_VERSION){
+          const d=vehicle.direction<0?-1:1;
+          vehicle.group.rotation.x=-Math.atan(pos.grade*d);vehicle.group.rotation.z=Math.atan(pos.bank*d);
+        }else{vehicle.group.rotation.x=0;vehicle.group.rotation.z=0;}
         const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz),truckAbove=truck.position.y-height>4.8;
         const collider=createVehicleCollider(pos,vehicleHeading,vehicle.collider),overlaps=!truckAbove&&separation<=vehicle.collisionReach&&vehicleCollidersOverlap(truckCollider,collider);
         if(!vehicle.hit&&arcadeRecoveryGrace<=0&&overlaps&&Math.max(Math.abs(truck.speed),vehicle.speed)>3){
@@ -225,6 +229,13 @@
       for(const offset of [0,.12,-.12,.24,-.24])for(const side of [preferredSide,-preferredSide]){
         const progress=total*clamp(fraction+offset,.15,.85),lane=side*((Number(edge.width)||17)*.5+9),pos=arcadeGaragePosition(edge,progress,lane);
         if(!pos)continue;
+        // A garage must have an accessible ground-level approach; V3 bridges
+        // and steep cuts cannot host the existing roadside garage prefab.
+        if(course?.generatorVersion===ROAD_V3_VERSION){
+          const deck=arcadeEdgePosition(edge,progress,0);
+          const land=terrainHeight(course,deck.x,deck.z);
+          if(!Number.isFinite(deck?.y)||Math.abs(deck.y-land)>2.5||Math.abs(deck.grade)>.06)continue;
+        }
         const blocked=(course.edges??[]).some(other=>{const nearest=arcadeNearestOnEdge(other,pos);return nearest&&nearest.distance<(Number(other.width)||17)*.5+5.5})||
           (course.depots??[]).some(depot=>Math.hypot(pos.x-depot.x,pos.z-depot.z)<depot.radius+12)||
           (course.roundabouts??[]).some(junction=>junction.center&&Math.hypot(pos.x-junction.center.x,pos.z-junction.center.z)<junction.radius+10);

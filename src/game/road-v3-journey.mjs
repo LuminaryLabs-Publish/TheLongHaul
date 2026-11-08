@@ -5,6 +5,7 @@ import { candidateRoadSegments, roadSegmentsNear } from './road-spatial-index.mj
 import { environmentTileIdentity } from './environment-tile-planner.mjs';
 import { ENV_TILE_VARIANTS } from './environment-tile-catalog.mjs';
 import { CELL_SIZE } from './shared.mjs';
+import { createTerrainRoadV3Stream, extendTerrainRoadV3Stream, ensureTerrainRoadV3Ahead } from './road-v3-terrain-route.mjs';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const mix = (a, b, t) => a + (b - a) * t;
@@ -165,13 +166,15 @@ export function createRoadV3Journey(seed,{mountains=12}={}) {
 
 // Streaming V3 keeps only nearby road geometry in memory. The compact directory
 // of immutable road decisions reconstructs any earlier mountain on return.
-export function createRoadV3Stream(seed,{initialMountains=3,focusProgress=0}={}) {
+export function createRoadV3Stream(seed,{initialMountains=3,focusProgress=0,terrainAware=false}={}) {
+  if(terrainAware) return createTerrainRoadV3Stream(seed,{initialMountains,focusProgress});
   if(typeof seed!=='string'||!seed)throw new TypeError('V3 stream requires a seed');
   if(!Number.isInteger(initialMountains)||initialMountains<1||initialMountains>8)throw new RangeError('Invalid initial road window');
   return extendRoadV3Stream({seed,directory:[],revision:0},
     {addMountains:initialMountains,focusProgress});
 }
 export function extendRoadV3Stream(stream,{addMountains=1,focusProgress=0,behind=2,ahead=3}={}) {
+  if(stream?.terrainAware) return extendTerrainRoadV3Stream(stream,{addMountains,focusProgress,behind,ahead});
   if(!stream||typeof stream.seed!=='string'||!Array.isArray(stream.directory))throw new TypeError('Invalid V3 stream');
   if(!Number.isInteger(addMountains)||addMountains<0||addMountains>8||
     !Number.isInteger(behind)||behind<0||behind>8||!Number.isInteger(ahead)||ahead<0||ahead>8||
@@ -187,6 +190,7 @@ export function extendRoadV3Stream(stream,{addMountains=1,focusProgress=0,behind
     persistence:{seed:stream.seed,version:ROAD_V3_VERSION,layoutRevision:2,mountains:directory.length}};
 }
 export function ensureRoadV3Ahead(stream,progress,{lead=2500}={}) {
+  if(stream?.terrainAware) return ensureTerrainRoadV3Ahead(stream,progress,{lead});
   if(!Number.isFinite(progress)||!Number.isFinite(lead)||lead<0||lead>15000)throw new RangeError('Invalid V3 lookahead');
   const grow=stream.totalProgress-progress<lead?Math.min(3,Math.ceil((lead-(stream.totalProgress-progress))/1800)):0;
   const center=stream.directory.findIndex(entry=>progress<=entry.endProgress);
@@ -206,8 +210,9 @@ export function roadV3PointAt(graph,progress,lateral=0) {
   const a=list[lo],b=list[Math.min(lo+1,list.length-1)],t=clamp((s-a.progress)/(b.progress-a.progress||1),0,1);
   const heading=Math.atan2(Math.sin(a.heading)*(1-t)+Math.sin(b.heading)*t,Math.cos(a.heading)*(1-t)+Math.cos(b.heading)*t);
   const normal={x:Math.cos(heading),z:-Math.sin(heading)};
-  return {x:mix(a.x,b.x,t)+normal.x*lateral,y:mix(a.y,b.y,t),z:mix(a.z,b.z,t)+normal.z*lateral,
-    heading,nx:normal.x,nz:normal.z,progress:s,grade:mix(a.grade,b.grade,t),bank:0,width:edge.width,
+  const bank=mix(a.bank??0,b.bank??0,t);
+  return {x:mix(a.x,b.x,t)+normal.x*lateral,y:mix(a.y,b.y,t)+bank*lateral,z:mix(a.z,b.z,t)+normal.z*lateral,
+    heading,nx:normal.x,nz:normal.z,progress:s,grade:mix(a.grade,b.grade,t),bank,width:edge.width,
     structure:a.structure==='bridge'||b.structure==='bridge'?'bridge':null,edgeId:edge.id};
 }
 
@@ -219,7 +224,14 @@ export function roadV3Project(graph,position,{hint=null,radius=65}={}) {
     const t=clamp(((position.x-a.x)*dx+(position.z-a.z)*dz)/(dx*dx+dz*dz||1),0,1);
     const x=mix(a.x,b.x,t),z=mix(a.z,b.z,t),horizontal=Math.hypot(position.x-x,position.z-z);
     if(horizontal>radius)continue;
-    hits.push({edgeId:edge.id,segmentIndex,x,z,y:mix(a.y,b.y,t),distance:horizontal,
+    // Projection and terrain construction must agree on the banked road
+    // surface. The old centerline-only height caused a lane-offset truck to
+    // appear above/below its reported contact surface on superelevated turns.
+    const nx=mix(a.nx,b.nx,t),nz=mix(a.nz,b.nz,t),normalLength=Math.hypot(nx,nz)||1;
+    const lateral=((position.x-x)*nx+(position.z-z)*nz)/normalLength;
+    const bank=mix(a.bank??0,b.bank??0,t);
+    hits.push({edgeId:edge.id,segmentIndex,x,z,y:mix(a.y,b.y,t)+bank*lateral,
+      distance:horizontal,lateral,bank,
       progress:mix(a.progress,b.progress,t),structure:a.structure==='bridge'||b.structure==='bridge'?'bridge':null});
   }
   if(!hits.length)return null;

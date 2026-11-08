@@ -115,6 +115,8 @@ export function roadV3SurfacesAt(graph,point,radius=16) {
     const x=lerp(a.x,b.x,t),z=lerp(a.z,b.z,t),dist=Math.hypot(point.x-x,point.z-z);
     if(dist>radius)continue;
     hits.push({edgeId:edge.id,segmentIndex,x,z,y:lerp(a.y,b.y,t),distance:dist,
+      nx:lerp(a.nx,b.nx,t),nz:lerp(a.nz,b.nz,t),bank:lerp(a.bank??0,b.bank??0,t),
+      width:lerp(a.width??edge.width,b.width??edge.width,t),
       progress:lerp(a.progress,b.progress,t),structure:a.structure==='bridge'||b.structure==='bridge'?'bridge':null});
   }
   hits.sort((a,b)=>(Number.isFinite(point.y)?Math.abs(a.y-point.y)-Math.abs(b.y-point.y):a.y-b.y)||a.distance-b.distance);
@@ -126,11 +128,13 @@ export function roadV3SurfacesAt(graph,point,radius=16) {
 // Only a ground-level road modifies terrain. Bridge deck geometry remains independent.
 export function roadV3TerrainHeight(naturalHeight,graph,point) {
   if(!Number.isFinite(naturalHeight))throw new TypeError('Invalid natural terrain height');
-  const width=ROAD_V3_LIMITS.width/2, influence=width+ROAD_V3_LIMITS.terrainShoulder;
-  const candidates=roadV3SurfacesAt(graph,point,influence).filter(s=>s.structure!=='bridge');
+  const influence=(graph?.maxRoadWidth??ROAD_V3_LIMITS.width)/2+ROAD_V3_LIMITS.terrainShoulder;
+  const candidates=roadV3SurfacesAt(graph,point,influence).filter(s=>
+    s.structure!=='bridge'&&s.distance<=s.width/2+ROAD_V3_LIMITS.terrainShoulder);
   if(!candidates.length)return naturalHeight;
   const closest=candidates.reduce((a,b)=>a.distance<b.distance?a:b);
-  const t=clamp((closest.distance-width)/ROAD_V3_LIMITS.terrainShoulder,0,1);
+  const t=clamp((closest.distance-closest.width/2)/ROAD_V3_LIMITS.terrainShoulder,0,1);
   const blend=t*t*(3-2*t);
-  return lerp(closest.y-.4,naturalHeight,blend);
+  const side=(point.x-closest.x)*closest.nx+(point.z-closest.z)*closest.nz;
+  return lerp(closest.y+closest.bank*side-.4,naturalHeight,blend);
 }

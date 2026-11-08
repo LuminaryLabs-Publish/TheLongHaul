@@ -5,7 +5,9 @@ import * as THREE from '../vendor/three.module.js';
 import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample } from '../src/game/road-chunks.mjs';
 import { roadRibbonData } from '../src/game/road-surface.mjs';
 import { resolveRoadStructureContact } from '../src/game/road-structure-contact.mjs';
-import { createEndlessHighway } from '../src/game/endless-highway.mjs';
+import {createEndlessHighway, endlessHighwayPoint, endlessHighwayProgress, advanceEndlessHighway} from '../src/game/endless-highway.mjs';
+import {ROAD_V3_VERSION} from '../src/game/road-v3-geometry.mjs';
+import {createPlayableRoadV3Course,advancePlayableRoadV3Course,playableRoadV3Point,playableRoadV3Progress} from '../src/game/road-v3-playable-course.mjs';
 import { createCourseCellDescriptor } from '../src/game/cell-descriptor.mjs';
 // Unit test of the actual host adapter with real Three.js geometry. The base
 // host/service boundaries below are explicit doubles; this is NOT a browser,
@@ -15,6 +17,9 @@ let frozen=false, truck, rawTime=1;
 const c = {
   THREE, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample,
   roadRibbonData, resolveRoadStructureContact, createEndlessHighway,
+  ROAD_V3_VERSION, endlessHighwayPoint, endlessHighwayProgress, advanceEndlessHighway,
+  createPlayableRoadV3Course,advancePlayableRoadV3Course,playableRoadV3Point,playableRoadV3Progress,
+  location:{search:''},
   course: createEndlessHighway('road-matrix-1'), freightResumeCheckpoint: null,
   runKey: 'run-1', cameraMode:0, cameraTarget:null, smoothing:{setTarget:(_id,value)=>c.cameraTarget=value}, updateCameraTarget:()=>{}, clamp: (n,a,b)=>Math.max(a,Math.min(b,n)),
   generateEndlessCourse: () => { throw Error('old generator unexpectedly called'); },
@@ -38,7 +43,7 @@ const c = {
   arcadeTrafficUpdate:()=>counters.traffic++, simulationFrozen:()=>frozen,
   postTickGameplay:()=>counters.post++, currentScene:()=>'driving',
   readTruck:()=>truck,readRun:()=>({rawTime}),
-  engine:{n:{longHaulTruck:{snapshot:()=>truck,loadSnapshot:s=>{truck=s;}}}},
+  engine:{n:{longHaulRoadV3:{buildPlayable:createPlayableRoadV3Course},longHaulTruck:{snapshot:()=>truck,loadSnapshot:s=>{truck=s;}}}},
   spendTruckDamage:()=>counters.damage++,spendCargoDamage:()=>{},resetArcadeCombo:()=>{},audio:{hit:()=>{}},arcadeRecord:()=>{},
   realizeHorizonCell:()=>{},horizonHosts:new Map(), render_game_to_text:()=>JSON.stringify({scene:'driving'})
 };

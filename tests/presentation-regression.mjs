@@ -60,30 +60,35 @@ const host=await readFile(new URL('../src/app/visual-presentation.js',import.met
 assert.match(host,/cloudRoot\.removeFromParent/);assert.match(host,/new THREE\.Fog/);assert.doesNotMatch(host,/teleport|setCargo|meters\.set\(/);
 assert.match(host,/ensureCloudLayout\(activeCloudSeed\(\)\)/,'Clouds combine the course with a run-specific visual seed');
 assert.match(host,/if\(nextSeed===cloudSeed\)return/,'Unchanged worlds reuse the same GPU instance layout');
-assert.match(host,/cloudMesh\.computeBoundingSphere\(\)/,'Changing a layout refreshes culling bounds');
+assert.match(host,/cloudMesh\.frustumCulled=false/,'Sky-projected cloud volumes use intentional frustum-culling policy');
+assert.match(host,/cloudMesh\.instanceMatrix\.needsUpdate=true/,'Changing cloud layout refreshes GPU instance matrices');
 assert.match(host,/cloudLayoutUpdates/,'Runtime exposes cloud update evidence');
 assert.match(host,/cloudBankDescriptors, wrapCloudOffset/);
 assert.match(host,/wrapCloudOffset/);assert.match(host,/positionClouds\(state,skillVisualTime\)/);
-assert.match(host,/cloudEye\.copy\(camera\.position\)/);
-assert.match(host,/cloudViewUp/);
-assert.match(host,/cloudPositioning:'world-biased-high-sky'/);
-assert.match(host,/const cloudTurnInfluence=\.02/);
-assert.match(host,/cloudPosition\.y=Math\.max/);
-assert.match(host,/gl_Position\.z=gl_Position\.w\*0\.999998/);
-assert.doesNotMatch(host,/gl_FragDepth\s*=/);
+// The current volumetric cloud path is a sun-sampled, non-billboarded
+// instanced volume. Validate its actual shader and lifecycle contracts rather
+// than the retired sky billboard/culling implementation.
+assert.match(host,/cameraPosition-world\[3\]\.xyz/,'Shader eye direction follows actual camera');
+assert.match(host,/float densityAt\(vec3 p\)/,'Clouds use volumetric density');
+assert.match(host,/float lightThrough\(vec3 p\)/,'Light probes pass through cloud density');
+assert.match(host,/exp\(-extinction\*1\.7\*tau\)/,'Sunlight attenuation uses Beer-Lambert extinction');
+assert.match(host,/float transmittance=1\./,'Cloud raymarch accumulates transmittance');
+assert.match(host,/float silverRim=/,'Clouds preserve sun-facing density-gradient rim');
 assert.match(host,/cloudMesh\.renderOrder=10/);
-assert.match(host,/cloudForwardProgress=Math\.max\(0,-state\.position\.z\)/);
-assert.doesNotMatch(host,/cloudTravelX|cloudTravelZ/);
-assert.match(host,/cloudDepthPolicy:'background-depth'/);
-assert.match(host,/cloudVisibilityScale:\[2\.8,3\.1,3\.4\]/);
-assert.match(host,/clearCloud:new THREE.Color\(0xfffaf2\)/);
-assert.match(host,/gl_FragColor=vec4\(base,coverage\*\(vType>1\.5\?\.94:1\.\)\)/);
-assert.match(host,/const screenY=\.53/);
-assert.match(host,/cloudLayers:cloudLayerCounts\.slice\(\)/);
-assert.match(host,/startGeneration=function\(\.\.\.args\)/);
+assert.match(host,/gl_Position\.z=gl_Position\.w\*\.99998/);
+assert.doesNotMatch(host,/gl_FragDepth\s*=/);
+assert.match(host,/function positionClouds\(state,seconds\)/);
+assert.match(host,/cloudDummy\.rotation\.set\(0,bank\.variation\*Math\.PI\*2,0\)/,
+  'Cloud orientation is world-bound, not camera-facing');
+assert.match(host,/cloudForwardProgress=course\?\.generatorVersion===ROAD_V3_VERSION/,
+  'V3 visual progression uses road-graph identity');
+assert.match(host,/endlessHighwayProgress\(course,state\.position\)/,
+  'Graph progress drives the cloud sequence on curved highways');
 assert.match(host,/cloudRunSeed=makeCloudRunSeed\(\);cloudRunNumber\+\+/);
-assert.match(host,/sky-run:/);
-assert.match(host,/cloud-sdf-types/);assert.match(host,/sunFacing/);assert.match(host,/cloudSdfInstances:count/);
-assert.match(host,/new THREE\.PlaneGeometry\(1,1\)/);assert.doesNotMatch(host,/new THREE\.SphereGeometry\(1,12,7\)/);
+assert.match(host,/cloudSdfInstances:count/);
+assert.match(host,/cloudPositioning:'world-bearing-sky'/);
+assert.match(host,/cloudDepthPolicy:'sky-first-landscape-overdraw'/);
+assert.match(host,/cloudLayers:cloudLayerCounts\.slice\(\)/);
+assert.match(host,/cloudVisibilityScale:\[1,1,1\]/);
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');assert.match(html,/id="campaign-coming-soon"[^>]*disabled/);assert.match(html,/campaign.html#garage/);
 console.log('PASS presentation: seeded clouds, 240 relief samples, legacy terrain, worker seams, broad canopy geometry, HUD transition/urgency, preserved Campaign boundary.');

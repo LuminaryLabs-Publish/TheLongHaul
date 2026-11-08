@@ -1,10 +1,12 @@
 // Product-owned route geometry and encounter planning. No renderer or engine state.
 import { hashText } from './shared.mjs';
+import {ROAD_V3_VERSION} from './road-v3-geometry.mjs';
 
 export function buildArcadeRoutes(course) {
   const paths=[],byEdge=new Map(),tails=new Map();
   for (const edge of course.edges??[]) {
-    if (!Array.isArray(edge.samples)||edge.samples.length<2||edge.type==='roundabout') continue;
+    if (!Array.isArray(edge.samples)||edge.samples.length<2 ||
+        (edge.type==='roundabout' && (course.generatorVersion!==ROAD_V3_VERSION||edge.id.endsWith(':ring-b')))) continue;
     const key=edge.branchId??edge.id;
     let path=tails.get(key);
     if (!path||path.segments.at(-1)?.edge.to!==edge.from) {
@@ -26,7 +28,11 @@ export function arcadePathPoint(path,distance,lane=0) {
   const {edge,cumulative}=segment,along=distance-segment.start;
   let i=1;while(i<cumulative.length-1&&cumulative[i]<along)i++;
   const a=edge.samples[i-1],b=edge.samples[i],length=cumulative[i]-cumulative[i-1]||1,t=Math.max(0,Math.min(1,(along-cumulative[i-1])/length)),dx=b.x-a.x,dz=b.z-a.z;
-  return {x:a.x+(b.x-a.x)*t-dz/length*lane,z:a.z+(b.z-a.z)*t+dx/length*lane,heading:Math.atan2(dx,dz),edge,lane};
+  const bank=(a.bank??0)+((b.bank??0)-(a.bank??0))*t;
+  const grade=(a.grade??0)+((b.grade??0)-(a.grade??0))*t;
+  return {x:a.x+(b.x-a.x)*t-dz/length*lane,z:a.z+(b.z-a.z)*t+dx/length*lane,
+    y:a.y+(b.y-a.y)*t-bank*lane,bank,grade,
+    heading:Math.atan2(dx,dz),edge,lane};
 }
 
 export function arcadeRoadProgress(road,network) {

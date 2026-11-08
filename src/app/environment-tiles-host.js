@@ -28,7 +28,7 @@
     };
     const distanceToCell=(p,b)=>Math.hypot(Math.max(b.minX-p.x,0,p.x-b.maxX),Math.max(b.minZ-p.z,0,p.z-b.maxZ));
     function startEntry(entry){
-      if(!course||course.generatorVersion!==ROAD_GENERATOR_VERSION||!entry.patch?.bounds)return null;
+      if(!course||!(course.generatorVersion===ROAD_GENERATOR_VERSION||course.generatorVersion===ROAD_V3_VERSION)||!entry.patch?.bounds)return null;
       if(entry.visualOnly){
         const limit=settings.quality?420:300;
         if(distanceToCell(readTruck().position,entry.patch.bounds)>limit){
@@ -37,8 +37,18 @@
       }
       entry.environmentTileDeferred=false;
       const quality=settings.quality&&!entry.visualOnly;
+      // V3 roads bend through X/Z geography; the V2 tile planner's -Z
+      // assumption would put scenery on the wrong highway. Reuse the same
+      // planner with V3's actual road points and cell-local progress bounds.
+      const v3=course.generatorVersion===ROAD_V3_VERSION;
+      const roads=entry.patch.roads??[];
+      if(v3&&!roads.length)return null; // distant natural scenery remains in World
+      const progressValues=v3?roads.flatMap(r=>[r.a.progress,r.b.progress]):[];
+      const roadProgressBounds=v3?{min:Math.min(...progressValues),max:Math.max(...progressValues)}:null;
+      const roadPoint=v3?s=>{const p=playableRoadV3Point(course,s),chunk=roadChunkAt(course.seed,s);
+        return {...p,kind:chunk.kind,chunkId:chunk.id};}:null;
       const iterator=environmentCellPlanSteps(course.seed,entry.patch.bounds,{
-        terrainHeight:(x,z)=>terrainHeight(course,x,z),quality,
+        terrainHeight:(x,z)=>terrainHeight(course,x,z),quality,roadPoint,roadProgressBounds,
         roadSafety:(x,z,margin)=>{const near=nearestRoad(course,{x,z});
           return !near||near.distance>=(Number(near.edge?.width)||28)*.5+margin;} });
       const state={id:entry.patch.cellId,quality,plan:null,iterator,index:0,phase:'planning',
@@ -88,7 +98,7 @@
     updateCloudLayers=function environmentTileNearby(state,milliseconds){
       const result=priorCloud(state,milliseconds);
       if(milliseconds-lastNearbyScan<650)return result;lastNearbyScan=milliseconds;
-      if(!course||course.generatorVersion!==ROAD_GENERATOR_VERSION)return result;
+      if(!course||!(course.generatorVersion===ROAD_GENERATOR_VERSION||course.generatorVersion===ROAD_V3_VERSION))return result;
       for(const entry of cellHosts.values()){
         if(!entry.environmentTileDeferred||entry.environmentTilePending)continue;
         const limit=settings.quality?420:300;

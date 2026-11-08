@@ -51,7 +51,9 @@
     $('#condition-box').classList.toggle('critical', truckCondition < 30 || (meters.get('fuel')?.value ?? 0) < 15);
     const run = readRun(); session.textContent = `${formatTime(run.rawTime)} ON THE ROAD`;
     if (!isContinuousFreight()) { receipt.hidden = true; return; }
-    const f = freightState, model = freightHudModel(f, readTruck().position, meters.get('cargo-condition')?.value ?? 0, run.rawTime);
+    const f = freightState, model = freightHudModel(f, course?.generatorVersion===ROAD_V3_VERSION
+      ?{progress:endlessHighwayProgress(course,readTruck().position)}:readTruck().position,
+      meters.get('cargo-condition')?.value ?? 0, run.rawTime);
     $('#freight-state').textContent = model.status;
     $('#freight-cargo').textContent = model.transition ? (f.status === 'delivered' ? 'Next haul ahead' : 'Keep the journey going') : getCargoProfile(f.contract.profileId).label;
     $('#freight-next').textContent = model.next;
@@ -59,7 +61,8 @@
     $('#freight-advice').textContent = model.transition ? '' : f.onboard ? getCargoProfile(f.contract.profileId).handlingHint : 'Wide left: safe  /  Express right: bonus';
     // Follow the real road/sign contract. Do not display a fork simply because
     // the freight advice mentions the wide/express options.
-    const route = LongHaulGuidance.relevantRouteChoice(course, -readTruck().position.z, 270);
+    const route = LongHaulGuidance.relevantRouteChoice(course, course?.generatorVersion === ROAD_V3_VERSION
+      ? endlessHighwayProgress(course, readTruck().position) : -readTruck().position.z, 270);
     const visibleFork = !model.transition && !f.onboard && route?.kind === 'loading-route' &&
       route.consistent && route.leadMeters < 270 &&
       ['left','right'].includes(route.sides.safe) &&
@@ -149,13 +152,13 @@
   // Match sampled terrain color and geometry on both sides of the near/far seam.
   const oldColorAt = _lhColorAt;
   _lhColorAt = function(x, z, height, seed, forestDensity) {
-    return course?.generatorVersion === ROAD_GENERATOR_VERSION ? landscapeTint(seed, x, z, height) : oldColorAt(x, z, height, seed, forestDensity);
+    return (course?.generatorVersion === ROAD_GENERATOR_VERSION || course?.generatorVersion === ROAD_V3_VERSION) ? landscapeTint(seed, x, z, height) : oldColorAt(x, z, height, seed, forestDensity);
   };
   horizonDrop = atmosphericRollOff;
   const originalPatch = buildHorizonPatch;
   buildHorizonPatch = function(cell, focus) {
     const patch = originalPatch(cell, focus);
-    if (course?.generatorVersion !== ROAD_GENERATOR_VERSION) return patch;
+    if (course?.generatorVersion !== ROAD_GENERATOR_VERSION && course?.generatorVersion !== ROAD_V3_VERSION) return patch;
     const b = patch.bounds, width = b.maxX - b.minX, depth = b.maxZ - b.minZ;
     const nearest = _lhDistanceToBounds(focus, b);
     // Bounded tessellation only where a silhouette can actually be seen.
@@ -287,7 +290,9 @@
   function positionClouds(state,seconds){
     // A slow, repeating approach lets the truck drive beneath nearby banks.
     // Drift stays independent of camera or steering; the sky never billboards.
-    cloudForwardProgress=Math.max(0,-state.position.z);
+    cloudForwardProgress=course?.generatorVersion===ROAD_V3_VERSION
+      ?Math.max(0,endlessHighwayProgress(course,state.position))
+      :Math.max(0,-state.position.z);
     for(const bank of cloudDescriptors){
       const slot=bank.id%profile.cloudBanksPerLayer;
       const layer=bank.layer;

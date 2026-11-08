@@ -129,7 +129,7 @@ const roof=resolveRoadStructureContact({...truck,position:{x:0,y:4,z:0},velocity
 assert.ok(roof?.contacts.includes('roof'));near(roof.position.y,3.5);
 assert.equal(resolveRoadStructureContact({...truck,position:{x:13.5,y:3,z:0}},{x:12,y:3,z:1},{...road,structure:'bridge'}),null);
 const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-assert.match(index, /id="campaign-coming-soon"[^>]*disabled/);assert.match(index, /<s>Campaign<\/s>/);assert.match(index,/Coming Soon/);
+assert.match(index, /id="campaign-coming-soon"[^>]*disabled/);assert.match(index, /aria-label="Campaign \u2014 Coming Soon"/);assert.match(index, /visually-hidden">Campaign \u2014 Coming Soon/);
 assert.ok(readFileSync(new URL('../campaign.html',import.meta.url),'utf8').includes('loadGeographicCourse'));
 new Function(readFileSync(new URL('../src/app/endless-roads.js',import.meta.url),'utf8'));
 console.log(JSON.stringify({status:'PASS',chunks,seams,families:[...families],maxGrade,maxCurve,maxMeshError,cache:roadChunkCacheSize()}));

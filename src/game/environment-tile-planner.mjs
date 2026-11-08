@@ -24,8 +24,8 @@ export function environmentTileIdentity(seed,index){
     catalogId:template.id,template,variant:ENV_TILE_VARIANTS[variantIndex],
     generatorVersion:ENVIRONMENT_TILE_CATALOG_VERSION});
 }
-function worldPose(seed,s,lateral,yProvider,onRoad=false){
-  const p=roadChunkSample(seed,s);
+function worldPose(seed,s,lateral,yProvider,onRoad=false,roadPoint=null){
+  const p=roadPoint?.(s)??roadChunkSample(seed,s);
   const x=p.x+p.nx*lateral,z=p.z+p.nz*lateral;
   const y=onRoad?p.y+p.bank*lateral+.03:(typeof yProvider==='function'?yProvider(x,z):p.y);
   return {x,y,z,heading:p.heading,roadWidth:p.width,roadKind:p.kind,
@@ -39,7 +39,7 @@ const supports=['shrub','grass','tree','rock','fence','pole','shrub','rock','shr
 const roadMarkTypes=['edge-studs','rumble','patch','guide-arrows','seam','road-studs','drain-hatch','patch','guide-arrows','rumble'];
 const footprint={tree:5,shrub:3,grass:2,rock:7,shelter:8,pole:3,fence:3,culvert:8,barrier:3,depot:9,diner:9};
 // Road paint only. No collision authority, road deck, obstacles, or payments.
-export function planEnvironmentTile(seed,index,{terrainHeight:height,quality=true,roadSafety=null}={}){
+export function planEnvironmentTile(seed,index,{terrainHeight:height,quality=true,roadSafety=null,roadPoint=null}={}){
   const identity=environmentTileIdentity(seed,index),t=identity.template,v=identity.variant;
   const objects=[],i0=identity.start,motifIndex=ENVIRONMENT_TILE_CATALOG.indexOf(t)%10;
   const primary=mainTypes[motifIndex],support=supports[motifIndex];
@@ -49,17 +49,17 @@ export function planEnvironmentTile(seed,index,{terrainHeight:height,quality=tru
     const s=i0+13+(j+.5)*(173/limit)+(u(seed,`${index}:distance:${j}`)-.5)*Math.min(4,50/limit);
     const side=u(seed,`${index}:side:${j}`)<.5?-1:1;
     const prop=j%8===0?primary:j%5===0?support:j%3===0?'rock':t.region.primary==='cactus'?'cactus':t.region.primary==='reeds'?'reeds':t.region.primary==='grass'?'grass':t.region.primary==='crop'?'crop':t.region.primary==='willow'?'willow':t.region.primary==='juniper'?'juniper':t.region.primary==='fir'?'fir':t.region.primary==='maple'?'maple':t.region.primary==='oak'?'oak':'pine';
-    const p=roadChunkSample(seed,s);
+    const p=roadPoint?.(s)??roadChunkSample(seed,s);
     // All 3D roadside props stay outside the canonical road envelope and its
     // 8m operational shoulder; footprint is included in the clearance.
     const minLateral=Math.max(24,p.width*.5+8+(footprint[prop]??5));
     const lateral=side*(minLateral+u(seed,`${index}:shoulder:${j}`)*(quality?42:33));
-    let pose=worldPose(seed,s,lateral,height);
+    let pose=worldPose(seed,s,lateral,height,false,roadPoint);
     if(roadSafety){
       let accepted=false;
       for(let attempt=0;attempt<4;attempt++){
         if(roadSafety(pose.x,pose.z,(footprint[prop]??5)+7)){accepted=true;break;}
-        pose=worldPose(seed,s,lateral+side*13*(attempt+1),height);
+        pose=worldPose(seed,s,lateral+side*13*(attempt+1),height,false,roadPoint);
       }
       if(!accepted)continue;
     }
@@ -73,9 +73,9 @@ export function planEnvironmentTile(seed,index,{terrainHeight:height,quality=tru
     for(let n=0;n<amount;n++){
       const s=i0+65+n*69;
       const side=n?1:-1;
-      const p=roadChunkSample(seed,s);
+      const p=roadPoint?.(s)??roadChunkSample(seed,s);
       const lat=side*Math.max(38,p.width*.5+18+(footprint[kind]??8));
-      const pose=worldPose(seed,s,lat,height);
+      const pose=worldPose(seed,s,lat,height,false,roadPoint);
       if(!roadSafety||roadSafety(pose.x,pose.z,(footprint[kind]??8)+7))
         objects.push(decorate(kind,pose,`${identity.key}:landmark:${n}`,t.motif.landmarkScale*v.height*(n?0.84:1.2),'landmark',t.id,v.id));
     }
@@ -88,7 +88,7 @@ export function planEnvironmentTile(seed,index,{terrainHeight:height,quality=tru
     // and lane changes retain their existing authored gameplay/sign systems.
     if(!['straight','sweep','hill'].includes(p.kind))continue;
     const lateral=(j%2?1:-1)*Math.min(11,Math.max(6,p.width*.24));
-    const pose=worldPose(seed,s,lateral,null,true);
+    const pose=worldPose(seed,s,lateral,null,true,roadPoint);
     marks.push(decorate(roadMarkTypes[motifIndex],pose,`${identity.key}:paint:${j}`,
       (.8+u(seed,`${index}:paintScale:${j}`)*.45)*(1-v.wear*.22),'on-road-paint',t.id,v.id));
   }
@@ -99,15 +99,16 @@ export function planEnvironmentTile(seed,index,{terrainHeight:height,quality=tru
 // Each invocation returns at most one 200m tile slice. The product host
 // schedules successive steps through the *existing* budgeted decoration queue.
 // No new World partition or worker is created.
-export function* environmentCellPlanSteps(seed,bounds,{terrainHeight,quality=true,roadSafety=null}={}){
+export function* environmentCellPlanSteps(seed,bounds,{terrainHeight,quality=true,roadSafety=null,roadPoint=null,roadProgressBounds=null}={}){
   const b=bounds;
   if(!b||![b.minX,b.maxX,b.minZ,b.maxZ].every(Number.isFinite)||b.minX>=b.maxX||b.minZ>=b.maxZ)throw TypeError('Invalid existing cell bounds');
-  const minS=-b.maxZ,maxS=-b.minZ;
+  const minS=roadProgressBounds?.min??-b.maxZ,maxS=roadProgressBounds?.max??-b.minZ;
+  if(!Number.isFinite(minS)||!Number.isFinite(maxS)||minS>maxS||maxS-minS>3200)throw RangeError('Invalid bounded road tile progress');
   const a=Math.floor((minS-ENVIRONMENT_TILE_STREAMING.prefetchMargin)/ENV_TILE_METERS);
   const c=Math.floor((maxS+ENVIRONMENT_TILE_STREAMING.prefetchMargin)/ENV_TILE_METERS);
   const objects=[],tiles=[];
   for(let i=a;i<=c;i++){
-    const tile=planEnvironmentTile(seed,i,{terrainHeight,quality,roadSafety});
+    const tile=planEnvironmentTile(seed,i,{terrainHeight,quality,roadSafety,roadPoint});
     let owned=0;
     for(const obj of [...tile.props,...tile.onRoad]){
       if(obj.position.x>=b.minX&&obj.position.x<b.maxX&&obj.position.z>=b.minZ&&obj.position.z<b.maxZ){objects.push(obj);owned++;}

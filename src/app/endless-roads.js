@@ -1,12 +1,36 @@
 // Endless road host adapter. Loaded after the established host, before user
 // entry is enabled. Campaign and the generated base runtime remain untouched.
 (() => {
-  const isModular = () => course?.generatorVersion === ROAD_GENERATOR_VERSION;
+  const isV3 = () => course?.generatorVersion === ROAD_V3_VERSION && course?.terrainAware;
+  const isModular = () => course?.generatorVersion === ROAD_GENERATOR_VERSION || isV3();
+  // Explicit opt-in for *new* sessions. Resume always honors the checkpoint's
+  // actual generator. The legacy format and untouched V2 default remain safe.
+  const roadOptIn = /(?:^|[?&])road=v3(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
+  const previousPoint = endlessHighwayPoint, previousProgress = endlessHighwayProgress;
+  const previousAdvance = advanceEndlessHighway;
+  endlessHighwayPoint = function(source,progress,lateral=0,route='safe') {
+    return source?.generatorVersion === ROAD_V3_VERSION
+      ? playableRoadV3Point(source,progress,lateral,route)
+      : previousPoint(source,progress,lateral,route);
+  };
+  endlessHighwayProgress = function(source,position) {
+    if(source?.generatorVersion !== ROAD_V3_VERSION)return previousProgress(source,position);
+    const hint=Number.isFinite(source?.endless?.furthestProgress)?source.endless.furthestProgress:null;
+    return playableRoadV3Progress(source,position,hint)??0;
+  };
+  advanceEndlessHighway = function(source,positionOrProgress) {
+    return source?.generatorVersion === ROAD_V3_VERSION
+      ? advancePlayableRoadV3Course(source,positionOrProgress)
+      : previousAdvance(source,positionOrProgress);
+  };
   generateEndlessCourse = function(seed) {
-    const saved = freightResumeCheckpoint;
-    const generatorVersion = saved ? saved.journey.generatorVersion ?? LEGACY_ROAD_VERSION : ROAD_GENERATOR_VERSION;
-    const value = createEndlessHighway(seed, { progress: saved?.journey.progress ?? 0, generatorVersion });
-    if (saved) value.origin = { ...value.origin, x: saved.truck.position.x, z: saved.truck.position.z, heading: saved.truck.heading };
+    const saved = freightResumeCheckpoint, progress=saved?.journey.progress ?? 0;
+    const generatorVersion=saved ? saved.journey.generatorVersion ?? LEGACY_ROAD_VERSION
+      : roadOptIn ? ROAD_V3_VERSION : ROAD_GENERATOR_VERSION;
+    const value=generatorVersion===ROAD_V3_VERSION
+      ? engine.n.longHaulRoadV3.buildPlayable(seed,{progress})
+      : createEndlessHighway(seed,{progress,generatorVersion});
+    if(saved)value.origin={...value.origin,...saved.truck.position,heading:saved.truck.heading};
     return value;
   };
 
@@ -56,7 +80,7 @@
         if (!visualOnly) entry.obstacles.push({ id: `${segment.id}:cone:${side}`, x, z, radius: .4, kind: 'lane-hazard' });
       }
     }
-    if (!feature || b.structure !== feature || segment.type !== 'endless-highway') return;
+    if (!['bridge','tunnel'].includes(feature) || b.structure !== feature || segment.type !== 'endless-highway') return;
     const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz), heading = Math.atan2(dx, dz);
     const x = (a.x + b.x) / 2, z = (a.z + b.z) / 2, y = (a.y + b.y) / 2 + .12;
     const nx = (a.nx + b.nx) / 2, nz = (a.nz + b.nz) / 2, width = (a.width + b.width) / 2;
@@ -136,7 +160,7 @@
     }
     priorTraffic(dt);
     if (isModular()) for (const v of arcadeVehicles) if (v.active && v.group.visible) {
-      const p = roadChunkSample(course.seed, -v.group.position.z);
+      const p = isV3() ? endlessHighwayPoint(course, endlessHighwayProgress(course,v.group.position)) : roadChunkSample(course.seed, -v.group.position.z);
       v.group.rotation.order = 'YXZ';
       v.group.rotation.x = -Math.atan(p.grade) * (v.direction < 0 ? -1 : 1);
       v.group.rotation.z = Math.atan(p.bank) * (v.direction < 0 ? -1 : 1);
@@ -147,14 +171,14 @@
   // before the portal rather than changing the player's selected camera mode.
   const priorCameraTarget = updateCameraTarget;
   updateCameraTarget = function(state, surface) {
-    const progress = -state.position.z, chunk = isModular() && roadChunkAt(course.seed, progress);
+    const progress = isV3() ? endlessHighwayProgress(course,state.position) : -state.position.z, chunk = isModular() && roadChunkAt(course.seed, progress);
     const t = chunk ? (progress - chunk.start) / chunk.length : 0;
     if (!chunk || chunk.kind !== 'tunnel' || cameraMode !== 0 || t <= .08 || t >= .94) return priorCameraTarget(state, surface);
     const ease = value => { const x = clamp(value, 0, 1); return x * x * (3 - 2 * x); };
     const blend = ease((t - .08) / .1) * ease((.94 - t) / .1);
     const speed = Math.hypot(state.velocity?.x ?? 0, state.velocity?.z ?? 0);
     const distance = (22 + clamp(speed / 48, 0, 1) * 7) * (1 - blend) + 18 * blend;
-    const eye = roadChunkSample(course.seed, progress - distance), look = roadChunkSample(course.seed, progress + 24);
+    const eye = isV3() ? endlessHighwayPoint(course,progress-distance) : roadChunkSample(course.seed, progress-distance), look = isV3() ? endlessHighwayPoint(course,progress+24) : roadChunkSample(course.seed,progress+24);
     smoothing.setTarget('player-camera', {
       position: [eye.x + eye.nx * 1.2, eye.y + 5.8 + 5.5 * (1 - blend), eye.z + eye.nz * 1.2],
       lookPoint: [look.x, look.y + 2.8, look.z], fov: 60, mode: 'chase'
@@ -166,7 +190,7 @@
   postTickGameplay = function(surface, dt) {
     if (isModular() && !simulationFrozen() && currentScene() === 'driving') {
       if (structureRun !== runKey) { structureRun = runKey; previousRoadPosition = null; lastStructureImpact = -Infinity; }
-      const truck = readTruck(), p = roadChunkSample(course.seed, -truck.position.z);
+      const truck = readTruck(), progress = isV3() ? endlessHighwayProgress(course,truck.position) : -truck.position.z, p = isV3() ? {...endlessHighwayPoint(course,progress),chunkId:roadChunkAt(course.seed,progress).id} : roadChunkSample(course.seed,progress);
       const contact = resolveRoadStructureContact(truck, previousRoadPosition, p);
       if (contact) {
         const { contacts, strength, ...resolved } = contact;
@@ -184,7 +208,7 @@
   };
   const priorHorizon = realizeHorizonCell;
   realizeHorizonCell = function(patch) {
-    priorHorizon(patch); if (!isModular()) return;
+    priorHorizon(patch); if (!isModular() || isV3()) return;
     const geometry = horizonHosts.get(patch.cellId)?.group.userData.roadGeometry;
     if (!geometry) return;
     const positions = geometry.getAttribute('position'), profile = engine.n.longHaulWorldProfile.getState();
@@ -197,7 +221,7 @@
   const baseText = render_game_to_text;
   window.render_game_to_text = () => {
     const value = JSON.parse(baseText());
-    if (isModular()) value.road = { generatorVersion: course.generatorVersion, feature: roadChunkAt(course.seed, -readTruck().position.z), retainedFeatures: course.roadChunks.length };
+    if (isModular()) {const progress=isV3()?endlessHighwayProgress(course,readTruck().position):-readTruck().position.z;value.road={generatorVersion:course.generatorVersion,feature:roadChunkAt(course.seed,progress),retainedFeatures:course.roadChunks.length,progress,terrainAware:isV3()};}
     return JSON.stringify(value);
   };
   window.__longHaulRoadsReady = true;
