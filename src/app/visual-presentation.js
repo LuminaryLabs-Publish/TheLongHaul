@@ -57,9 +57,24 @@
     $('#freight-next').textContent = model.next;
     $('#freight-mass').textContent = model.mass;
     $('#freight-advice').textContent = model.transition ? '' : f.onboard ? getCargoProfile(f.contract.profileId).handlingHint : 'Wide left: safe  /  Express right: bonus';
-    // Present route choice only while the existing freight HUD offers both choices.
-    routeChoice.hidden = !playing || !!model.transition || !!f.onboard ||
-      !$('#freight-advice').textContent.includes('Wide left');
+    // Follow the real road/sign contract. Do not display a fork simply because
+    // the freight advice mentions the wide/express options.
+    const route = LongHaulGuidance.relevantRouteChoice(course, -readTruck().position.z, 270);
+    const visibleFork = !model.transition && !f.onboard && route?.kind === 'loading-route' &&
+      route.consistent && route.leadMeters < 270 &&
+      ['left','right'].includes(route.sides.safe) &&
+      ['left','right'].includes(route.sides.express) &&
+      route.sides.safe !== route.sides.express;
+    routeChoice.hidden = !visibleFork;
+    if (visibleFork && routeChoice.dataset.routeId !== String(route.id)) {
+      routeChoice.dataset.routeId = String(route.id);
+      const safe = routeChoice.querySelector('.alternative-b-choice.safe');
+      const express = routeChoice.querySelector('.alternative-b-choice.express');
+      safe.querySelector('strong').firstChild.textContent = `WIDE ${route.sides.safe.toUpperCase()}`;
+      express.querySelector('strong').firstChild.textContent = `EXPRESS ${route.sides.express.toUpperCase()}`;
+      safe.querySelector('.alternative-b-arrow').style.transform = route.sides.safe === 'left' ? 'scaleX(-1)' : 'none';
+      express.querySelector('.alternative-b-arrow').style.transform = route.sides.express === 'left' ? 'scaleX(-1)' : 'none';
+    }
     $('#freight-pay').textContent = `${f.completed} DELIVERED`;
     cargoRow.hidden = !f.onboard;
     $('#timer-box').hidden = !f.onboard; // elapsed time belongs to the driving cluster
