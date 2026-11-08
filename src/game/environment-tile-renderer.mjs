@@ -52,6 +52,13 @@ export function createEnvironmentTileRenderer({THREE,materials}){
   }
   function queueObject(cell,obj){
     if(cell.finished)throw Error('Cannot edit committed environment tile cell');
+    // Replace the original primitive/canopy tree art only while all three
+    // prebuilt GLB families are loaded; preserve old art on asset failure.
+    if(globalThis.LongHaulPrebuiltTrees?.ready && obj.role!=='on-road-paint' &&
+      ['tree','maple','oak','pine','fir','juniper','willow'].includes(obj.kind)){
+      cell.objectCount++;
+      return;
+    }
     const lod=cell.visualOnly||!cell.quality?'far':'near';
     const assembly=authoredEnvironmentObject(obj,{lod});
     const lim=cell.visualOnly||!cell.quality?ENVIRONMENT_RENDER_LIMITS.lowInstancesPerCell:ENVIRONMENT_RENDER_LIMITS.highInstancesPerCell;

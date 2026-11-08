@@ -1,3 +1,4 @@
+import {PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances} from '../game/prebuilt-tree-library.mjs';
 import * as LongHaulArt from '../game/landscape-style.mjs';
 import * as LongHaulGuidance from '../game/navigation-guidance.mjs';
 import { resolveRoadStructureContact } from "../game/road-structure-contact.mjs";
@@ -42,6 +43,7 @@ Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
 Object.assign(globalThis, { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass });
 Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary });
 Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
+Object.assign(globalThis,{PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances});
 // Guard dynamically-created Resume as well as Start until both host layers
 // are ready. This never changes disabled states owned by an existing control.
 const blockEarlyEntry = event => {
@@ -103,6 +105,16 @@ await new Promise((resolve, reject) => {
   script.onerror = () => reject(new Error("The 200m environment tile host could not load."));
   document.head.append(script);
 });
+// Load the local prebuilt foliage-card tree library after the existing
+// environment and lighting hosts. A failed import retains their old trees.
+await new Promise((resolve,reject) => {
+  const script=document.createElement('script');
+  script.src=new URL('./prebuilt-tree-host.js',import.meta.url).href;
+  script.async=false;script.onload=resolve;
+  script.onerror=()=>reject(new Error('The prebuilt tree host could not load.'));
+  document.head.append(script);
+});
+await window.LongHaulPrebuiltTrees?.readyPromise;
 // V2 remains opt-in until its browser/video acceptance is complete.
 await new Promise((resolve, reject) => {
   const script = document.createElement('script');
