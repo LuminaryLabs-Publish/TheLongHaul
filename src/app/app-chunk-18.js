@@ -112,14 +112,14 @@
           const d=vehicle.direction<0?-1:1;
           vehicle.group.rotation.x=-Math.atan(pos.grade*d);vehicle.group.rotation.z=Math.atan(pos.bank*d);
         }else{vehicle.group.rotation.x=0;vehicle.group.rotation.z=0;}
-        const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz),truckAbove=truck.position.y-height>4.8;
-        const collider=createVehicleCollider(pos,vehicleHeading,vehicle.collider),overlaps=!truckAbove&&separation<=vehicle.collisionReach&&vehicleCollidersOverlap(truckCollider,collider);
+        const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz);
+        const collider=createVehicleCollider({...pos,y:height},vehicleHeading,vehicle.collider),verticalOverlap=verticalContactOverlaps(truckCollider.minY,truckCollider.maxY,collider.minY,collider.maxY),overlaps=verticalOverlap&&separation<=vehicle.collisionReach&&vehicleCollidersOverlap(truckCollider,collider);
         if(!vehicle.hit&&arcadeRecoveryGrace<=0&&overlaps&&Math.max(Math.abs(truck.speed),vehicle.speed)>3){
           vehicle.hit=true;const key=vehicle.id,receipt=applyLongHaulOperationOnce(engine,runKey,key,()=>({seconds:5}));
           if(receipt.applied){spendTruckDamage(12+Math.min(10,Math.abs(truck.speed-vehicle.speed)*.3),"traffic-collision");spendCargoDamage(4,"traffic-collision");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.34,headingDelta:(i%2?1:-1)*.06,rollDelta:(i%2?1:-1)*.7,y:1.4,kind:"traffic"});engine.n.longHaulRun.penalty({id:key,kind:"traffic",label:"Traffic collision",seconds:5,collision:true});toast("CRASH · COMBO LOST","bad",1100);audio.hit()}
         }
         const alignment=Math.cos(truck.heading-pos.heading)*direction;
-        if(!truckAbove&&!overlaps&&alignment>.85&&Math.abs(relative)<(LONG_HAUL_TRUCK_COLLIDER.length+vehicle.collider.length)*.5){
+        if(verticalOverlap&&!overlaps&&alignment>.85&&Math.abs(relative)<(LONG_HAUL_TRUCK_COLLIDER.length+vehicle.collider.length)*.5){
           const side=Math.abs(dx*Math.cos(pos.heading)-dz*Math.sin(pos.heading)),gap=side-(LONG_HAUL_TRUCK_COLLIDER.width+vehicle.collider.width)*.5;
           if(gap>0&&gap<vehicle.minClearance){vehicle.minClearance=gap;vehicle.nearSpeed=truck.speed}
         }

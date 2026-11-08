@@ -93,7 +93,7 @@
       const visualOnly=options.visualOnly===true,owned={geometries:[],textures:[],materials:[]},group=new THREE.Group(),terrain=createTerrainMesh(patch);
       owned.geometries.push(terrain.geometry);group.add(terrain.mesh);
       if(!visualOnly){for(const depot of patch.depots)group.add(createDepot(depot,owned));for(const sign of patch.signs)group.add(createSign(sign,owned));for(const rock of patch.rocks)group.add(mesh(geometries.sphere,materials.rock,{x:rock.x,y:rock.y+.7,z:rock.z},{x:1.4,y:.75,z:1.2}))}
-      const obstacles=visualOnly?[]:[...patch.vegetation.map(tree=>({id:tree.id,x:tree.position[0],z:tree.position[2],radius:tree.obstacleRadius,kind:"tree"})),...patch.rocks.map(rock=>({id:rock.id,x:rock.x,z:rock.z,radius:rock.radius,kind:"rock"}))];
+      const obstacles=visualOnly?[]:[...patch.vegetation.map(tree=>({id:tree.id,x:tree.position[0],z:tree.position[2],y:tree.position[1],height:6,radius:tree.obstacleRadius,kind:"tree"})),...patch.rocks.map(rock=>({id:rock.id,x:rock.x,z:rock.z,y:rock.y,height:1.5,radius:rock.radius,kind:"rock"}))];
       const entry={group,owned,obstacles,visualOnly,patch,decorationStage:0};cellRoot.add(group);cellHosts.set(patch.cellId,entry);cellDecorationQueue.push({id:patch.cellId,entry});refreshObstacles();
     }
     function decorateCell(job){
@@ -211,7 +211,7 @@
       const rush=forwardBoost.advance(dt,{cancel:Boolean(brake||handbrake||drift||condition.fuel<=0||state.tipped)});
       const throttle=heldAction(keys,"throttle")||rush?1:0,boost=Boolean((rush||heldAction(keys,"boost")&&throttle)&&!brake&&!drift&&condition.fuel>0),steeringScale=settings.steering/100;
       engine.n.coreInput.setIntent({throttle,brake,steer:steer*steeringScale,handbrake,drift,boost});
-      engine.n.longHaulTruck.input({throttle:condition.fuel>0?throttle:0,brake,steer:steer*steeringScale,handbrake,drift,boost,rush,pitchControl:throttle-brake,steeringDamage:skillSteeringDamage,surface:surface.surface,surfaceGrip:surface.grip,roadClass:surface.road?.edge.roadClass,roadMaterial:surface.material,groundHeight:ground.height,groundNormal:ground.normal,barrierContacts:obstacleCandidates(state.position,60).filter(obstacle=>obstacle.kind==="roundabout-island")});
+      engine.n.longHaulTruck.input({throttle:condition.fuel>0?throttle:0,brake,steer:steer*steeringScale,handbrake,drift,boost,rush,pitchControl:throttle-brake,steeringDamage:skillSteeringDamage,surface:surface.surface,surfaceGrip:surface.grip,roadClass:surface.road?.edge.roadClass,roadMaterial:surface.material,groundHeight:ground.height,groundNormal:ground.normal,barrierContacts:obstacleCandidates(state.position,60).filter(obstacle=>obstacle.kind==="roundabout-island"&&verticalContactOverlaps(state.position.y-.92,state.position.y+3.78,obstacle.y,Number.isFinite(obstacle.y)?obstacle.y+(obstacle.height??.75):undefined))});
       engine.n.longHaulCourse.sample(state.position);
       engine.n.longHaulRun.sample({position:state.position,speed:state.speed,surface:surface.surface,trying:Boolean(throttle||brake)});
       if(run.status==="running"&&condition.fuel>0)meters.spend("fuel",arcadeFuelCost(dt,state,throttle,boost),"truck-motion");
@@ -478,7 +478,7 @@
       if(options.visualOnly||course?.geography)return;ensureArcadeNetwork();
       const entry=cellHosts.get(patch.cellId);if(!entry||entry.visualOnly)return;
       let changed=false;
-      for(const segment of patch.roads)for(const hazard of _lhHazardsAt(segment)){if(Math.hypot(hazard.x-course.origin.x,hazard.z-course.origin.z)<180||arcadeEncounters.some(event=>Math.hypot(event.point.x-hazard.x,event.point.z-hazard.z)<185))continue;entry.obstacles.push({id:hazard.id,x:hazard.x,z:hazard.z,radius:hazard.radius,kind:"lane-hazard"});entry.group.add(_lhHazardVisual(hazard));changed=true}
+      for(const segment of patch.roads)for(const hazard of _lhHazardsAt(segment)){if(Math.hypot(hazard.x-course.origin.x,hazard.z-course.origin.z)<180||arcadeEncounters.some(event=>Math.hypot(event.point.x-hazard.x,event.point.z-hazard.z)<185))continue;entry.obstacles.push({id:hazard.id,x:hazard.x,z:hazard.z,y:hazard.y,height:2,radius:hazard.radius,kind:"lane-hazard"});entry.group.add(_lhHazardVisual(hazard));changed=true}
       if(changed)refreshObstacles();
     }
     // Vehicle presentation is owned by app-chunk-9; terrain LOD does not override it.
@@ -532,7 +532,7 @@
       }
     }
     const _lhRoadClassRealizeBase=realizeCell;
-    realizeCell=function(patch,options={}){_lhRoadClassRealizeBase({...patch,roads:[],scenery:[]},options);const entry=cellHosts.get(patch.cellId);if(!entry)return;const paved=patch.roads.filter(road=>road.surface==="paved"),gravel=patch.roads.filter(road=>road.surface==="gravel"),dirt=patch.roads.filter(road=>road.surface==="dirt");_lhRoadMesh(entry.group,entry.owned,paved,_lhAsphaltMaterial,_lhPavedShoulderMaterial);_lhRoadMesh(entry.group,entry.owned,gravel,_lhGravelMaterial,_lhGravelShoulderMaterial);_lhRoadMesh(entry.group,entry.owned,dirt,_lhDirtMaterial,_lhDirtShoulderMaterial);for(const segment of paved){if(segment.laneCount===5){const laneWidth=segment.laneWidth||segment.width/5;for(let i=1;i<5;i++)_lhRoadLine(entry.group,segment,(i-2.5)*laneWidth,.12,_lhWhiteLineMaterial,true);_lhRoadLine(entry.group,segment,2.5*laneWidth,.1,_lhWhiteLineMaterial);_lhRoadLine(entry.group,segment,-2.5*laneWidth,.1,_lhWhiteLineMaterial)}else{if(segment.type!=="roundabout")_lhRoadLine(entry.group,segment,0,.16,_lhYellowLineMaterial,true);_lhRoadLine(entry.group,segment,segment.width*.43,.1,_lhWhiteLineMaterial);_lhRoadLine(entry.group,segment,-segment.width*.43,.1,_lhWhiteLineMaterial)}}let addedIslandObstacle=false;for(const roundabout of patch.roundabouts??[]){if(roundabout.island){_lhAddRoundaboutIsland(entry.group,entry.owned,roundabout.island);if(!options.visualOnly){entry.obstacles.push({id:`${roundabout.id}:center-island`,x:roundabout.island.x,z:roundabout.island.z,radius:roundabout.island.radius,kind:"roundabout-island"});addedIslandObstacle=true}}for(const marking of roundabout.yields??[])_lhAddYieldMarkings(entry.group,entry.owned,marking)}if(!options.visualOnly)for(const item of patch.scenery??[])_lhAddRoadside(entry.group,item);_lhAddLaneHazards(patch,options);if(addedIslandObstacle)refreshObstacles();batchCellStatics(entry)};
+    realizeCell=function(patch,options={}){_lhRoadClassRealizeBase({...patch,roads:[],scenery:[]},options);const entry=cellHosts.get(patch.cellId);if(!entry)return;const paved=patch.roads.filter(road=>road.surface==="paved"),gravel=patch.roads.filter(road=>road.surface==="gravel"),dirt=patch.roads.filter(road=>road.surface==="dirt");_lhRoadMesh(entry.group,entry.owned,paved,_lhAsphaltMaterial,_lhPavedShoulderMaterial);_lhRoadMesh(entry.group,entry.owned,gravel,_lhGravelMaterial,_lhGravelShoulderMaterial);_lhRoadMesh(entry.group,entry.owned,dirt,_lhDirtMaterial,_lhDirtShoulderMaterial);for(const segment of paved){if(segment.laneCount===5){const laneWidth=segment.laneWidth||segment.width/5;for(let i=1;i<5;i++)_lhRoadLine(entry.group,segment,(i-2.5)*laneWidth,.12,_lhWhiteLineMaterial,true);_lhRoadLine(entry.group,segment,2.5*laneWidth,.1,_lhWhiteLineMaterial);_lhRoadLine(entry.group,segment,-2.5*laneWidth,.1,_lhWhiteLineMaterial)}else{if(segment.type!=="roundabout")_lhRoadLine(entry.group,segment,0,.16,_lhYellowLineMaterial,true);_lhRoadLine(entry.group,segment,segment.width*.43,.1,_lhWhiteLineMaterial);_lhRoadLine(entry.group,segment,-segment.width*.43,.1,_lhWhiteLineMaterial)}}let addedIslandObstacle=false;for(const roundabout of patch.roundabouts??[]){if(roundabout.island){_lhAddRoundaboutIsland(entry.group,entry.owned,roundabout.island);if(!options.visualOnly){entry.obstacles.push({id:`${roundabout.id}:center-island`,x:roundabout.island.x,z:roundabout.island.z,y:terrainHeight(course,roundabout.island.x,roundabout.island.z),height:.75,radius:roundabout.island.radius,kind:"roundabout-island"});addedIslandObstacle=true}}for(const marking of roundabout.yields??[])_lhAddYieldMarkings(entry.group,entry.owned,marking)}if(!options.visualOnly)for(const item of patch.scenery??[]){_lhAddRoadside(entry.group,item);if(item.kind==="roadside-boulder"||item.kind==="utility-pole"){entry.obstacles.push({id:item.id,x:item.x,z:item.z,y:item.y,radius:item.kind==="roadside-boulder"?1.45:.18,height:item.kind==="roadside-boulder"?1.8:9.6,kind:item.kind});addedIslandObstacle=true}}_lhAddLaneHazards(patch,options);if(addedIslandObstacle)refreshObstacles();batchCellStatics(entry)};
 
     const _lhImpactGameplayBase=postTickGameplay;
     let impactSerial=0;
@@ -541,7 +541,7 @@
       for(const obstacle of obstacleCandidates(state.position,50)){
         if(obstacle.kind==="roundabout-island"){const key=`obstacle:${obstacle.id}`;if(activeContacts.has(key)&&vehicleColliderOverlapsCircle(truckCollider,obstacle.x,obstacle.z,obstacle.radius+.5))touching.add(key);continue}
         const distance=Math.hypot(state.position.x-obstacle.x,state.position.z-obstacle.z),key=`obstacle:${obstacle.id}`;
-        const overlaps=arcadeRecoveryGrace<=0&&state.position.y-terrainHeight(course,state.position.x,state.position.z)<4.5&&distance<obstacle.radius+5&&vehicleColliderOverlapsCircle(truckCollider,obstacle.x,obstacle.z,obstacle.radius);if(overlaps)touching.add(key);
+        const overlaps=arcadeRecoveryGrace<=0&&distance<obstacle.radius+5&&vehicleColliderOverlapsCircle(truckCollider,obstacle.x,obstacle.z,obstacle.radius,{minY:obstacle.y,maxY:Number.isFinite(obstacle.y)?obstacle.y+(obstacle.height??4):undefined});if(overlaps)touching.add(key);
         if(overlaps&&speed>3&&!activeContacts.has(key)){
           activeContacts.add(key);
           const severity=clamp((speed-3)/24,0,1),seconds=Math.round(8+severity*10),heavy=obstacle.kind==="tree",roadHazard=obstacle.kind==="lane-hazard",truckDamage=(heavy?14:roadHazard?7:10)+severity*(heavy?22:roadHazard?12:18),cargoDamage=(roadHazard?3:5)+severity*(roadHazard?8:15),side=hashText(key)%2?1:-1,result=applyLongHaulOperationOnce(engine,runKey,`${key}:${++impactSerial}`,()=>({seconds}));
@@ -558,7 +558,7 @@
       }
       for(const hazard of readWildlife().hazards){
         const distance=Math.hypot(state.position.x-hazard.x,state.position.z-hazard.z),key=`wildlife:${hazard.id}`;
-        const overlaps=arcadeRecoveryGrace<=0&&state.position.y-terrainHeight(course,state.position.x,state.position.z)<4.5&&distance<hazard.radius+5&&vehicleColliderOverlapsCircle(truckCollider,hazard.x,hazard.z,hazard.radius);if(overlaps)touching.add(key);
+        const overlaps=arcadeRecoveryGrace<=0&&distance<hazard.radius+5&&vehicleColliderOverlapsCircle(truckCollider,hazard.x,hazard.z,hazard.radius,{minY:terrainHeight(course,hazard.x,hazard.z),maxY:terrainHeight(course,hazard.x,hazard.z)+(hazard.kind==="elk"?3:2)});if(overlaps)touching.add(key);
         if(overlaps&&speed>2.5&&!activeContacts.has(key)){
           activeContacts.add(key);
           const severity=clamp((speed-2.5)/22,0,1),seconds=Math.round(7+severity*9),side=hazard.direction||1,result=applyLongHaulOperationOnce(engine,runKey,`${key}:${++impactSerial}`,()=>({seconds}));
@@ -587,7 +587,7 @@
         const receipt=applyLongHaulOperationOnce(engine,runKey,`recovery:${count}`,()=>({seconds}));
         if(receipt.applied){
           forwardBoost.reset({preserveCooldown:true});releaseDrivingInput();
-          const safe=state.lastSafe,ground=groundSample(safe),safeSurface=surfaceAt(safe),barriers=obstacleCandidates(safe,60).filter(obstacle=>obstacle.kind==="roundabout-island");
+          const safe=state.lastSafe,ground=groundSample(safe),safeSurface=surfaceAt(safe),barriers=obstacleCandidates(safe,60).filter(obstacle=>obstacle.kind==="roundabout-island"&&verticalContactOverlaps(safe.y-.92,safe.y+3.78,obstacle.y,Number.isFinite(obstacle.y)?obstacle.y+(obstacle.height??.75):undefined));
           engine.n.longHaulTruck.teleport({x:safe.x,y:ground.height+readDynamics().suspension.travel,z:safe.z,heading:safe.heading,speed:0,groundHeight:ground.height,groundNormal:ground.normal,surface:safeSurface.surface,surfaceGrip:safeSurface.grip,roadClass:safeSurface.road?.edge.roadClass,roadMaterial:safeSurface.material,barrierContacts:barriers});
           engine.n.longHaulRun.recovery(safe);engine.n.longHaulRun.penalty({id:`recovery:${count}`,kind:"recovery",label:"Roadside recovery",seconds,collision:false});
           if(!count&&condition.fuel<=.01)meters.restore("fuel",14,"emergency-fuel");
@@ -717,14 +717,14 @@
           const d=vehicle.direction<0?-1:1;
           vehicle.group.rotation.x=-Math.atan(pos.grade*d);vehicle.group.rotation.z=Math.atan(pos.bank*d);
         }else{vehicle.group.rotation.x=0;vehicle.group.rotation.z=0;}
-        const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz),truckAbove=truck.position.y-height>4.8;
-        const collider=createVehicleCollider(pos,vehicleHeading,vehicle.collider),overlaps=!truckAbove&&separation<=vehicle.collisionReach&&vehicleCollidersOverlap(truckCollider,collider);
+        const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz);
+        const collider=createVehicleCollider({...pos,y:height},vehicleHeading,vehicle.collider),verticalOverlap=verticalContactOverlaps(truckCollider.minY,truckCollider.maxY,collider.minY,collider.maxY),overlaps=verticalOverlap&&separation<=vehicle.collisionReach&&vehicleCollidersOverlap(truckCollider,collider);
         if(!vehicle.hit&&arcadeRecoveryGrace<=0&&overlaps&&Math.max(Math.abs(truck.speed),vehicle.speed)>3){
           vehicle.hit=true;const key=vehicle.id,receipt=applyLongHaulOperationOnce(engine,runKey,key,()=>({seconds:5}));
           if(receipt.applied){spendTruckDamage(12+Math.min(10,Math.abs(truck.speed-vehicle.speed)*.3),"traffic-collision");spendCargoDamage(4,"traffic-collision");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.34,headingDelta:(i%2?1:-1)*.06,rollDelta:(i%2?1:-1)*.7,y:1.4,kind:"traffic"});engine.n.longHaulRun.penalty({id:key,kind:"traffic",label:"Traffic collision",seconds:5,collision:true});toast("CRASH · COMBO LOST","bad",1100);audio.hit()}
         }
         const alignment=Math.cos(truck.heading-pos.heading)*direction;
-        if(!truckAbove&&!overlaps&&alignment>.85&&Math.abs(relative)<(LONG_HAUL_TRUCK_COLLIDER.length+vehicle.collider.length)*.5){
+        if(verticalOverlap&&!overlaps&&alignment>.85&&Math.abs(relative)<(LONG_HAUL_TRUCK_COLLIDER.length+vehicle.collider.length)*.5){
           const side=Math.abs(dx*Math.cos(pos.heading)-dz*Math.sin(pos.heading)),gap=side-(LONG_HAUL_TRUCK_COLLIDER.width+vehicle.collider.width)*.5;
           if(gap>0&&gap<vehicle.minClearance){vehicle.minClearance=gap;vehicle.nearSpeed=truck.speed}
         }

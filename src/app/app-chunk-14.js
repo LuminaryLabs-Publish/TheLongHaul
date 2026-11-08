@@ -52,7 +52,7 @@
       if(options.visualOnly||course?.geography)return;ensureArcadeNetwork();
       const entry=cellHosts.get(patch.cellId);if(!entry||entry.visualOnly)return;
       let changed=false;
-      for(const segment of patch.roads)for(const hazard of _lhHazardsAt(segment)){if(Math.hypot(hazard.x-course.origin.x,hazard.z-course.origin.z)<180||arcadeEncounters.some(event=>Math.hypot(event.point.x-hazard.x,event.point.z-hazard.z)<185))continue;entry.obstacles.push({id:hazard.id,x:hazard.x,z:hazard.z,radius:hazard.radius,kind:"lane-hazard"});entry.group.add(_lhHazardVisual(hazard));changed=true}
+      for(const segment of patch.roads)for(const hazard of _lhHazardsAt(segment)){if(Math.hypot(hazard.x-course.origin.x,hazard.z-course.origin.z)<180||arcadeEncounters.some(event=>Math.hypot(event.point.x-hazard.x,event.point.z-hazard.z)<185))continue;entry.obstacles.push({id:hazard.id,x:hazard.x,z:hazard.z,y:hazard.y,height:2,radius:hazard.radius,kind:"lane-hazard"});entry.group.add(_lhHazardVisual(hazard));changed=true}
       if(changed)refreshObstacles();
     }
     // Vehicle presentation is owned by app-chunk-9; terrain LOD does not override it.

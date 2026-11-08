@@ -8,7 +8,7 @@
       const visualOnly=options.visualOnly===true,owned={geometries:[],textures:[],materials:[]},group=new THREE.Group(),terrain=createTerrainMesh(patch);
       owned.geometries.push(terrain.geometry);group.add(terrain.mesh);
       if(!visualOnly){for(const depot of patch.depots)group.add(createDepot(depot,owned));for(const sign of patch.signs)group.add(createSign(sign,owned));for(const rock of patch.rocks)group.add(mesh(geometries.sphere,materials.rock,{x:rock.x,y:rock.y+.7,z:rock.z},{x:1.4,y:.75,z:1.2}))}
-      const obstacles=visualOnly?[]:[...patch.vegetation.map(tree=>({id:tree.id,x:tree.position[0],z:tree.position[2],radius:tree.obstacleRadius,kind:"tree"})),...patch.rocks.map(rock=>({id:rock.id,x:rock.x,z:rock.z,radius:rock.radius,kind:"rock"}))];
+      const obstacles=visualOnly?[]:[...patch.vegetation.map(tree=>({id:tree.id,x:tree.position[0],z:tree.position[2],y:tree.position[1],height:6,radius:tree.obstacleRadius,kind:"tree"})),...patch.rocks.map(rock=>({id:rock.id,x:rock.x,z:rock.z,y:rock.y,height:1.5,radius:rock.radius,kind:"rock"}))];
       const entry={group,owned,obstacles,visualOnly,patch,decorationStage:0};cellRoot.add(group);cellHosts.set(patch.cellId,entry);cellDecorationQueue.push({id:patch.cellId,entry});refreshObstacles();
     }
     function decorateCell(job){

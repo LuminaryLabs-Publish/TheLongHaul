@@ -77,7 +77,7 @@
       for (const side of [-1, 1]) {
         const x = a.x + a.nx * side * 6.6, z = a.z + a.nz * side * 6.6;
         entry.group.add(mesh(geometries.cone, materials.yellow, { x, y: a.y + .65, z }, { x: .38, y: 1.1, z: .38 }));
-        if (!visualOnly) entry.obstacles.push({ id: `${segment.id}:cone:${side}`, x, z, radius: .4, kind: 'lane-hazard' });
+        if (!visualOnly) entry.obstacles.push({ id: `${segment.id}:cone:${side}`, x, z, y: a.y, height: 1.3, radius: .4, kind: 'lane-hazard' });
       }
     }
     if (!['bridge','tunnel'].includes(feature) || b.structure !== feature || segment.type !== 'endless-highway') return;
