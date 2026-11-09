@@ -14,16 +14,16 @@ assert.match(html,/id="async-loading-door-left"/);
 assert.match(html,/id="async-loading-door-right"/);
 assert.doesNotMatch(html,/id="async-loading-truck(?:-3d(?:-host)?)?"/);
 assert.doesNotMatch(html,/loading-truck-3d\.mjs/);
-assert.match(html,/async-loading-scene\.js\?v=tlh-load-004/);
+assert.match(html,/async-loading-scene\.js\?v=tlh-load-005/);
 assert.doesNotMatch(source,/rotateY\(|scale\(|translateX\(/);
 assert.match(html,/lh-door-left-bolts/);
 assert.match(html,/lh-door-right-bolts/);
 assert.match(html,/id="async-loading-scene"[\s\S]*?background:transparent/);
-assert.match(html,/id="async-loading-door-left"[^>]*[\s\S]*?width:50%;transform:none;will-change:left/);
-assert.match(html,/id="async-loading-door-right"[^>]*[\s\S]*?width:50%;transform:none;will-change:right/);
+assert.match(html,/id="async-loading-door-left"[^>]*[\s\S]*?width:50%;min-width:50%;max-width:50%;transform:none;scale:1;translate:0px 0px;will-change:translate/);
+assert.match(html,/id="async-loading-door-right"[^>]*[\s\S]*?width:50%;min-width:50%;max-width:50%;transform:none;scale:1;translate:0px 0px;will-change:translate/);
 assert.doesNotMatch(html,/stroke="url\(#tlh-steel\)"/);
-assert.match(source,/\{left:'-52%'\}/);
-assert.match(source,/\{right:'-52%'\}/);
+assert.match(source,/\{translate:'-104% 0px'\}/);
+assert.match(source,/\{translate:'104% 0px'\}/);
 assert.doesNotMatch(source,/registerTruck3D|truck3D|truckEntered|truckExited/);
 assert.match(preview,/loading\.style\.background='transparent'/);
 assert.match(preview,/loading\.firstElementChild\.style\.visibility='hidden'/);
@@ -41,7 +41,7 @@ class Node{
   setAttribute(name,value){this.attributes[name]=String(value);}
   getAnimations(){return [];}
   animate(frames){
-    trace.push('animate:'+this.id+':'+(frames.at(-1).left??frames.at(-1).right));
+    trace.push('animate:'+this.id+':'+frames.at(-1).translate);
     return {cancel(){},finished:Promise.resolve()};
   }
 }
@@ -72,7 +72,7 @@ assert.equal(await api.finishBoot(),true);
 assert.ok(waits.some(ms=>ms>=500),'boot remains visible at least 500ms');
 assert.equal(elements['async-loading-scene'].hidden,true);
 assert.equal(api.getState().committed,1);
-assert.equal(api.getState().visualMode,'position-slide-doors');
+assert.equal(api.getState().visualMode,'translate-only-doors');
 
 trace.length=0;waits.length=0;now+=100;
 const course=api.begin({kind:'course'});
@@ -80,15 +80,21 @@ api.report(undefined,{progress:.425,phase:'Shaping terrain'});
 assert.equal(elements['async-loading-progress'].style.width,'43%');
 assert.equal(elements['async-loading-phase'].textContent,'Shaping terrain');
 assert.equal(elements['async-loading-door-left'].style.left,'0%');
+assert.equal(elements['async-loading-door-left'].style.translate,'0px 0px');
 assert.equal(elements['async-loading-door-left'].style.width,'50%');
 assert.equal(elements['async-loading-door-right'].style.right,'0%');
+assert.equal(elements['async-loading-door-right'].style.translate,'0px 0px');
 assert.equal(elements['async-loading-door-right'].style.width,'50%');
 assert.equal(await api.finish({operation:course,commit:()=>trace.push('commit')}),true);
 assert.deepEqual(trace,[
   'commit',
-  'animate:async-loading-door-left:-52%',
-  'animate:async-loading-door-right:-52%'
+  'animate:async-loading-door-left:-104% 0px',
+  'animate:async-loading-door-right:104% 0px'
 ],'destination must commit before both doors slide offscreen');
+assert.equal(elements['async-loading-door-left'].style.width,'50%');
+assert.equal(elements['async-loading-door-right'].style.width,'50%');
+assert.equal(elements['async-loading-door-left'].style.scale,'1');
+assert.equal(elements['async-loading-door-right'].style.scale,'1');
 assert.ok(waits.some(ms=>ms>=500));
 assert.equal(api.getState().active,false);
 assert.equal(api.getState().doorsOpened,true);
