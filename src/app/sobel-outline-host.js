@@ -3,7 +3,7 @@
  * geometric depth edges, including truck, traffic, terrain and architecture.
  * The DOM HUD remains crisp and untouched. No second gameplay renderer/loop. */
 (() => {
-  const status={enabled:false,mode:'depth-and-color-sobel',width:0,height:0,draws:0,fallback:null};
+  const status={enabled:false,mode:'depth-prioritized-sobel',width:0,height:0,draws:0,fallback:null};
   window.LongHaulOutlines={getState:()=>({...status})};
   if(!renderer?.setRenderTarget||!THREE?.DepthTexture||!THREE?.WebGLRenderTarget){
     status.fallback='Render target or depth textures unsupported';return;
@@ -20,8 +20,8 @@
     target.depthTexture.name='LH_SobelDepth';
     const uniforms={
       tColor:{value:target.texture},tDepth:{value:target.depthTexture},
-      texel:{value:new THREE.Vector2(1,1)},strength:{value:.86},
-      depthGain:{value:72},colorGain:{value:1.25},
+      texel:{value:new THREE.Vector2(1,1)},strength:{value:.84},
+      depthGain:{value:40},colorGain:{value:.32},
       cameraNear:{value:camera.near},cameraFar:{value:camera.far}
     };
     pass=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,transparent:false,
@@ -64,9 +64,16 @@
           float di=viewDepth(uvScreen+vec2(p.x,p.y))/denom;
           float depthEdge=length(vec2(-da+dc-2.0*dd+2.0*df-dg+di,
             -da-2.0*db-dc+dg+2.0*dh+di))*depthGain;
-          float edge=smoothstep(.15,.85,max(colorEdge,depthEdge));
+          // Strong geometry/depth silhouettes, weak material-color detail.
+          // Fade *color* edges with distance so clouds, alpha vegetation and
+          // tiny horizon texture changes don't become a noisy ink blanket.
+          float shapeInk=smoothstep(.20,.85,depthEdge);
+          float nearSurface=1.0-smoothstep(190.0,590.0,center);
+          float materialInk=smoothstep(.52,1.12,colorEdge)*nearSurface*.30;
+          float distanceFade=1.0-.42*smoothstep(240.0,780.0,center);
+          float edge=max(shapeInk,materialInk)*distanceFade;
           vec3 base=texture2D(tColor,uvScreen).rgb;
-          vec3 ink=vec3(.027,.058,.085);
+          vec3 ink=vec3(.018,.031,.049);
           gl_FragColor=vec4(mix(base,ink,edge*strength),1.0);
           #include <colorspace_fragment>
         }`

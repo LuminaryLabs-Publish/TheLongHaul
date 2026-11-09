@@ -433,6 +433,8 @@
   function toon(old, color, options = {}) {
     const mat = new THREE.MeshToonMaterial({ color: color ?? old.color, gradientMap: gradient,
       vertexColors: old.vertexColors, side: old.side, fog: true, ...options });
+    // Keep surface roles across the existing Toon material replacement.
+    mat.userData={...old.userData};
     replacements.set(old, mat); return mat;
   }
   for (const [key, color] of Object.entries({ terrain: 0xffffff, tree: 0xffffff, trunk: 0x72523b,
@@ -440,8 +442,12 @@
     wood: 0xa67b47, crate: 0xd89c58, crateDark: 0x765133, brick: 0xa75948,
     blue: 0x3689a3, yellow: 0xf6ba4f, white: 0xf2e9d6 })) {
     materials[key] = toon(materials[key], color);
+    if(key==='terrain')materials[key].userData.lhCelKind='terrain';
+    else if(key==='tree')materials[key].userData.lhCelKind='foliage';
+    else if(key==='truckRed'||key==='truckCream'||key==='truckDark')materials[key].userData.lhCelKind='vehicle';
   }
   const distantTerrain = toon(_lhUnifiedHorizonMaterial, 0xffffff, { side: THREE.DoubleSide });
+  distantTerrain.userData.lhCelKind='terrain';
   distantTerrain.onBeforeCompile = _lhUnifiedHorizonMaterial.onBeforeCompile;
   distantTerrain.customProgramCacheKey = () => 'long-haul-toon-horizon-v1';
   const applyMaterials = root => root.traverse(object => {
@@ -453,7 +459,14 @@
   realizeCell = function(patch, options) { originalRealize(patch, options); const entry = cellHosts.get(patch.cellId); if (entry) applyMaterials(entry.group); };
   const originalHorizonRealize = realizeHorizonCell;
   realizeHorizonCell = function(patch) { originalHorizonRealize(patch); const entry = horizonHosts.get(patch.cellId); if (entry) applyMaterials(entry.group); };
-  _lhAsphaltMaterial.color.set(0x344453); _lhPavedShoulderMaterial.color.set(0xa69b80);
+  // Road reads as a cool blue-gray corridor against greener earthwork and
+  // mountain terrain *before* either cel shading or Sobel edges are applied.
+  _lhAsphaltMaterial.color.set(0x3d596b); _lhPavedShoulderMaterial.color.set(0xa69b80);
+  _lhAsphaltMaterial.userData.lhCelKind='road';
+  _lhPavedShoulderMaterial.userData.lhCelKind='road';
+  materials.road.userData.lhCelKind='road';
+  materials.roughRoad.userData.lhCelKind='road';
+  materials.shoulder.userData.lhCelKind='road';
   _lhWhiteLineMaterial.color.set(0xfff4cf); _lhYellowLineMaterial.color.set(0xffc767);
   _lhHorizonForestMaterial.color.set(0x446b61); _lhHorizonTownMaterial.color.set(0x9e8c7a);
   materials.chrome.color.set(0xc6dfe3); materials.chrome.metalness = .25; materials.chrome.roughness = .4;
