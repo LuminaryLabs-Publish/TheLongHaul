@@ -13,6 +13,16 @@ assert.ok(html.indexOf('./src/app/async-loading-scene.js')<
 assert.match(html,/id="async-loading-door"/);
 assert.match(html,/id="async-loading-truck"/);
 assert.match(html,/tlh-rivets/);
+assert.match(html,/id="async-loading-scene"[^>]*[\\s\\S]*?background:transparent/);
+assert.match(html,/id="async-loading-door"[^>]*[\\s\\S]*?background:transparent/);
+const doorStart=html.indexOf('id="async-loading-door"');
+const truckStart=html.indexOf('id="async-loading-truck"');
+const phaseStart=html.indexOf('id="async-loading-phase"');
+const meterStart=html.indexOf('id="async-loading-progress"');
+assert.ok(doorStart>=0&&doorStart<phaseStart&&phaseStart<truckStart);
+assert.ok(doorStart<meterStart&&meterStart<truckStart);
+assert.match(preview,/loading\.style\.background='transparent'/);
+assert.match(preview,/loading\.firstElementChild\.style\.visibility='hidden'/);
 assert.match(generation,/LongHaulAsyncLoading\?\.begin\(\{kind:"course"\}\)/);
 assert.match(generation,/loader\.finish\(\{commit:complete/);
 assert.match(generation,/scenes\.loadScene\("driving"/);
