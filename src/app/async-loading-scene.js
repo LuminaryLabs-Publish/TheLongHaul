@@ -1,6 +1,6 @@
 /* TLH-LOAD-001: reusable host-side async scene presentation.
  * NexusEngine CoreScene remains the only authority for committing scene identity.
- * This host owns the temporary 2D view and the asynchronous reveal, never gameplay.
+ * This host owns temporary split-door presentation and async reveal, never gameplay.
  * The pinned CoreScene lacks native loadScene; use requestTransition only at commit.
  */
 (() => {
@@ -14,8 +14,8 @@
   if (!root || !doorLeft || !doorRight || !caption || !phase || !meter) return;
   const MIN_VISIBLE_MS = 500;
   let serial = 0, current = null;
-  let commits = 0, cancellations = 0, truck3D = null;
-  let truckEntered=false,truckExited=false,doorsOpened=false;
+  let commits = 0, cancellations = 0;
+  let doorsOpened=false;
 
   const delay = (ms, signal) => new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new Error('SCENE_LOAD_CANCELLED')); return; }
@@ -59,12 +59,10 @@
     root.style.opacity='1';root.style.transform='none';
     for(const door of [doorLeft,doorRight]){
       door.getAnimations?.().forEach(a=>a.cancel());
-      door.style.transform='rotateY(0deg)';
+      door.style.transform='translateX(0)';
     }
     caption.style.opacity='1';
-    truckEntered=false;truckExited=false;doorsOpened=false;
-    truck3D?.enter?.();
-    truckEntered=Boolean(truck3D?.getState?.().entered);
+    doorsOpened=false;
     meter.style.width='0%';phase.textContent=kind==='boot'?'STARTING ENGINE':'BUILDING THE HAUL';
     root.setAttribute('aria-busy','true');
     return operation;
@@ -72,7 +70,6 @@
   function cancel(operation=current, reason='cancelled') {
     if (!operation || current!==operation) return false;
     operation.status=reason;operation.controller.abort();cancellations++;
-    truck3D?.enter?.();
     root.hidden=true;root.style.display='none';root.style.pointerEvents='none';
     root.setAttribute('aria-busy','false');current=null;
     return true;
@@ -87,12 +84,7 @@
       if (current!==operation) return false;
       operation.status='revealing';
       const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-      // Actual authored Three.js truck exits right before the destination
-      // is committed. The overlay remains covered by the trailer doors.
-      if(truck3D?.getState?.().ready){
-        await truck3D.exit(signal);
-        truckEntered=true;truckExited=true;
-      }
+      // Both metal halves remain closed until the destination is committed.
       if (current!==operation || signal.aborted) return false;
       // Commit exactly once while the opaque trailer door still covers the
       // destination. The next animation frame lets the new scene render.
@@ -108,12 +100,12 @@
       caption.style.opacity='0';
       await Promise.all([
         animate(doorLeft,[
-          {transform:'rotateY(0deg)'},
-          {transform:'rotateY(-105deg)'}
+          {transform:'translateX(0)'},
+          {transform:'translateX(-102%)'}
         ],reduced?1:650,signal),
         animate(doorRight,[
-          {transform:'rotateY(0deg)'},
-          {transform:'rotateY(105deg)'}
+          {transform:'translateX(0)'},
+          {transform:'translateX(102%)'}
         ],reduced?1:650,signal)
       ]);
       doorsOpened=true;
@@ -154,17 +146,10 @@
   }
   window.LongHaulAsyncLoading={
     begin,run,finish,finishBoot,cancel,report,
-    registerTruck3D(adapter){
-      if(!adapter || typeof adapter.enter!=='function' || typeof adapter.exit!=='function')
-        throw new TypeError('Loading 3D truck adapter requires enter/exit');
-      truck3D=adapter;
-      if(current) {truck3D.enter();truckEntered=Boolean(truck3D.getState?.().entered);}
-    },
     fail(error){if(current)cancel(current,'failed');return error;},
     getState:()=>({active:Boolean(current),kind:current?.kind??null,
       status:current?.status??'inactive',minimumMs:MIN_VISIBLE_MS,
       committed:commits,cancelled:cancellations,pinnedSceneAdapter:true,
-      visualMode:'swing-doors',truckEntered,truckExited,doorsOpened,
-      authoredTruck:truck3D?.getState?.().ready===true})
+      visualMode:'slide-doors',doorsOpened})
   };
 })();
