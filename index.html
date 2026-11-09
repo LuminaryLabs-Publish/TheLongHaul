@@ -18,9 +18,9 @@
   <!-- TLH-LOAD-001: immediate first-paint splash; later owned by Presentation. -->
   <div id="async-loading-scene" role="status" aria-live="polite" aria-busy="true"
        aria-label="Preparing The Long Haul"
-       style="position:absolute;inset:0;z-index:95;overflow:hidden;display:block;pointer-events:auto;background:#971a21;color:#fff6e7">
+       style="position:absolute;inset:0;z-index:95;overflow:hidden;display:block;pointer-events:auto;background:transparent;color:#fff6e7">
     <div id="async-loading-door" aria-hidden="true"
-         style="position:absolute;inset:0;transform:translateY(0);will-change:transform;background:#911922">
+         style="position:absolute;inset:0;transform:translateY(0);will-change:transform;background:transparent">
       <svg viewBox="0 0 1200 675" preserveAspectRatio="xMidYMid slice"
            style="position:absolute;inset:0;width:100%;height:100%;display:block" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -62,6 +62,14 @@
         <path d="M100 90H1090M100 585H1090" stroke="#ef7680" stroke-opacity=".35" stroke-width="4"/>
         <path d="M120 105H1080" stroke="#220b12" stroke-opacity=".3" stroke-width="2"/>
       </svg>
+    <div aria-hidden="true" style="position:absolute;bottom:12%;left:50%;translate:-50% 0;width:min(420px,70%);text-align:center;font:900 clamp(13px,2vw,24px) Impact,system-ui,sans-serif;letter-spacing:.24em;text-shadow:0 2px 8px #170507">
+      THE LONG HAUL
+    </div>
+    <div id="async-loading-phase" style="position:absolute;bottom:7%;left:50%;translate:-50% 0;width:80%;text-align:center;font:800 clamp(9px,1vw,12px) system-ui,sans-serif;letter-spacing:.2em;text-shadow:0 1px 5px #21070c">STARTING ENGINE</div>
+    <div role="progressbar" aria-label="Scene loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+         style="position:absolute;bottom:4.6%;left:25%;width:50%;height:4px;background:#350d15bb;overflow:hidden">
+      <div id="async-loading-progress" style="height:100%;width:0%;background:#f3d9a1"></div>
+    </div>
     </div>
     <svg id="async-loading-truck" viewBox="0 0 560 240"
          style="position:absolute;left:50%;top:42%;width:min(53%,490px);height:auto;overflow:visible;transform:translate(0,0) scale(1);translate:-50% -50%;filter:drop-shadow(0 15px 12px #25070caa);will-change:transform,opacity"
@@ -82,14 +90,6 @@
       <g fill="#87959a"><circle cx="115" cy="187" r="9"/><circle cx="290" cy="187" r="9"/><circle cx="423" cy="187" r="9"/></g>
       <path d="M60 60H300" stroke="#fff5dc" stroke-width="5" opacity=".75"/>
     </svg>
-    <div aria-hidden="true" style="position:absolute;bottom:12%;left:50%;translate:-50% 0;width:min(420px,70%);text-align:center;font:900 clamp(13px,2vw,24px) Impact,system-ui,sans-serif;letter-spacing:.24em;text-shadow:0 2px 8px #170507">
-      THE LONG HAUL
-    </div>
-    <div id="async-loading-phase" style="position:absolute;bottom:7%;left:50%;translate:-50% 0;width:80%;text-align:center;font:800 clamp(9px,1vw,12px) system-ui,sans-serif;letter-spacing:.2em;text-shadow:0 1px 5px #21070c">STARTING ENGINE</div>
-    <div role="progressbar" aria-label="Scene loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
-         style="position:absolute;bottom:4.6%;left:25%;width:50%;height:4px;background:#350d15bb;overflow:hidden">
-      <div id="async-loading-progress" style="height:100%;width:0%;background:#f3d9a1"></div>
-    </div>
   </div>
   <script src="./src/app/async-loading-scene.js"></script>
   <div id="vignette"></div><div id="grain"></div>
