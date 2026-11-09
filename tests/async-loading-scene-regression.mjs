@@ -8,11 +8,15 @@ const html=await read('index.html');
 const generation=await read('src/app/app-chunk-6.js');
 const preview=await read('src/app/menu-attract-host.js');
 assert.match(html,/id="async-loading-scene"/);
+assert.ok(html.indexOf('./src/app/async-loading-scene.js')<
+          html.indexOf('./src/app/bootstrap.mjs'),'boot art mounts before engine startup');
 assert.match(html,/id="async-loading-door"/);
 assert.match(html,/id="async-loading-truck"/);
 assert.match(html,/tlh-rivets/);
 assert.match(generation,/LongHaulAsyncLoading\?\.begin\(\{kind:"course"\}\)/);
 assert.match(generation,/loader\.finish\(\{commit:complete/);
+assert.match(generation,/scenes\.loadScene\("driving"/);
+assert.match(generation,/transition\("ready"/);
 assert.match(generation,/progress:ratio/);
 assert.match(preview,/LongHaulAsyncLoading\?\.finishBoot/);
 
