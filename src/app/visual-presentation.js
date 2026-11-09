@@ -135,14 +135,19 @@
       'max-width':'none','max-height':'none','margin':'0','padding':'0',
       display:'block',background:'transparent','background-image':'none',
       'border':'0','box-shadow':'none','backdrop-filter':'none',
-      overflow:'visible','pointer-events':'none'
+      visibility:'visible',overflow:'visible','pointer-events':'none'
     });
     menuMaterial(titleLogo,{
       position:'absolute',left:compact?'50%':'6%',top:compact?'6%':'18%',
       width:compact?'min(74%,500px)':'min(46%,650px)',
       height:'auto','max-height':compact?'24%':'37%',
       transform:compact?'translateX(-50%)':'none',
-      'object-fit':'contain','pointer-events':'none'
+      'object-fit':'contain','pointer-events':'none',
+      'font-family':'Impact,Haettenschweiler,"Arial Narrow Bold",system-ui,sans-serif',
+      'font-size':compact?'clamp(36px,9cqw,80px)':'clamp(62px,6.2cqw,116px)',
+      'font-style':'italic','font-weight':'900','letter-spacing':'-.02em',
+      'line-height':'.94','white-space':'nowrap','color':'#f3f8f0',
+      'text-shadow':'0 5px 0 #091925bb,0 11px 26px #03080ddd'
     });
     menuMaterial(titleActions,{
       position:'absolute',left:compact?'50%':'auto',right:compact?'auto':'5%',
@@ -167,8 +172,9 @@
   arrangeTitle();
   window.addEventListener('resize',arrangeTitle,{passive:true});
   window.LongHaulMenuPresentation={
-    getState:()=>({version:1,host:'nexusengine-presentation',
+    getState:()=>({version:2,host:'nexusengine-presentation',
       background:'none',buttons:menuButtons.length,
+      legacyArtwork:false,legacyTruck:false,garageMenu:false,
       liveWorld:true,actionsRetained:true})
   };
 
