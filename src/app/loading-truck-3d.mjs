@@ -10,10 +10,13 @@ const canvas=document.getElementById('async-loading-truck-3d');
 const host=document.getElementById('async-loading-truck-3d-host');
 const overlay=document.getElementById('async-loading-scene');
 if(canvas&&host&&overlay){
-  let renderer=null,rig=null,disposed=false,raf=0,last=0,phase='enter',started=performance.now();
+  let renderer=null,rig=null,disposed=false,raf=0,last=null;
+  let phase='unstarted',phaseElapsed=0;
   let pendingExit=null,entryDone=false,exitDone=false;
   let loaded=false,renderCount=0;
-  const entryDuration=.42,exitDuration=.56;
+  const entryDuration=1.2,exitDuration=.7;
+  const entryListeners=new Set();
+  const ENTRY_X=-30,EXIT_X=30;
   const scene=new THREE.Scene();
   const camera=new THREE.OrthographicCamera(-14,14,7.875,-7.875,.1,90);
   camera.position.set(0,8,30);
@@ -32,7 +35,18 @@ if(canvas&&host&&overlay){
     crate:color(0xb48a5a),crateDark:color(0x70513d)
   };
   const ease=t=>{const p=Math.min(1,Math.max(0,t));return p*p*(3-2*p)};
-  const cancelPending=()=>{if(pendingExit){const {reject,signal,abort}=pendingExit;signal?.removeEventListener('abort',abort);pendingExit=null;reject(new Error('SCENE_LOAD_CANCELLED'));}};
+  function cancelPending(){
+    if(!pendingExit)return;
+    const {reject,signal,abort,beginExit}=pendingExit;
+    entryListeners.delete(beginExit);
+    signal?.removeEventListener('abort',abort);
+    pendingExit=null;
+    reject(new Error('SCENE_LOAD_CANCELLED'));
+  }
+  function scheduleFrame(){
+    if(!raf && !disposed && !overlay.hidden && overlay.style.display!=='none')
+      raf=requestAnimationFrame(tick);
+  }
   function resize(){
     if(!renderer)return;
     const w=Math.max(1,Math.floor(host.clientWidth||overlay.clientWidth||960));
@@ -46,69 +60,86 @@ if(canvas&&host&&overlay){
   function tick(now){
     raf=0;
     if(disposed||!renderer||!rig)return;
-    if(overlay.hidden||overlay.style.display==='none'){last=0;return;}
-    const dt=last?Math.min(.05,(now-last)/1000):0;last=now;
-    const t=Math.max(0,(now-started)/1000);
+    if(overlay.hidden||overlay.style.display==='none'){
+      last=null;
+      return;
+    }
+    // Advance only when an actual presentation frame is rendered. An async
+    // import or a busy worker may delay frames; wall-clock time must never
+    // teleport an unseen truck directly into its parked position.
+    const dt=last===null?0:Math.min(.05,Math.max(0,(now-last)/1000));
+    last=now;
+    if(phase==='enter'||phase==='exit')phaseElapsed+=dt;
     let x=0;
     if(phase==='enter'){
-      const p=ease(t/entryDuration);
-      x=-26+26*p;
-      if(p>=1){phase='idle';entryDone=true;}
-    }else if(phase==='exit'){
-      const p=ease(t/exitDuration);
-      x=0+29*p;
+      const p=ease(phaseElapsed/entryDuration);
+      x=ENTRY_X*(1-p);
       if(p>=1){
-        phase='offscreen';exitDone=true;
+        phase='idle';entryDone=true;x=0;
+        for(const done of [...entryListeners])done();
+        entryListeners.clear();
+      }
+    }else if(phase==='exit'){
+      const p=ease(phaseElapsed/exitDuration);
+      x=EXIT_X*p;
+      if(p>=1){
+        phase='offscreen';exitDone=true;x=EXIT_X;
         if(pendingExit){
           const {resolve,signal,abort}=pendingExit;
-          signal?.removeEventListener('abort',abort);pendingExit=null;resolve();
+          signal?.removeEventListener('abort',abort);
+          pendingExit=null;resolve();
         }
       }
-    }else if(phase==='offscreen')x=29;
+    }else if(phase==='offscreen')x=EXIT_X;
+    else if(phase==='unstarted')x=ENTRY_X;
     rig.root.position.set(x,-.7,0);
     rig.root.rotation.set(0,Math.PI/2,0);
-    if(phase!=='idle'&&phase!=='offscreen')
+    if(phase==='enter'||phase==='exit')
       for(const wheel of rig.wheels||[])wheel.rotateY(-dt*9);
     renderer.render(scene,camera);renderCount++;
-    if(phase!=='offscreen')raf=requestAnimationFrame(tick);
+    if(phase!=='offscreen')scheduleFrame();
   }
   function start(){
     if(disposed||!rig)return false;
     cancelPending();
-    phase='enter';entryDone=false;exitDone=false;started=performance.now();last=0;
-    host.style.visibility='visible';host.style.opacity='1';
+    entryListeners.clear();
     if(raf)cancelAnimationFrame(raf);
-    raf=requestAnimationFrame(tick);
+    raf=0;
+    phase='enter';phaseElapsed=0;last=null;
+    entryDone=false;exitDone=false;
+    rig.root.position.set(ENTRY_X,-.7,0);
+    rig.root.rotation.set(0,Math.PI/2,0);
+    host.style.visibility='visible';host.style.opacity='1';
+    // The initial pose is rendered explicitly, before any motion starts.
+    // Loading starts the timeline only when the host becomes visible.
+    renderer.render(scene,camera);renderCount++;
+    scheduleFrame();
     return true;
   }
-  async function exit(signal){
-    if(disposed||!rig)return;
-    if(signal?.aborted)throw new Error('SCENE_LOAD_CANCELLED');
-    if(phase==='offscreen')return;
+  function exit(signal){
+    if(disposed||!rig||phase==='offscreen')return Promise.resolve();
+    if(signal?.aborted)return Promise.reject(new Error('SCENE_LOAD_CANCELLED'));
     if(pendingExit)return pendingExit.promise;
-    // The boot scene may finish before the WebGL asset is fully visible.
-    // Never jump the truck to center: let its actual left-side entrance
-    // finish before starting the right-side exit.
-    if(phase==='enter'){
-      const remaining=Math.max(0,entryDuration*1000-(performance.now()-started));
-      if(remaining>0)await new Promise((resolve,reject)=>{
-        const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},remaining);
-        function abort(){clearTimeout(timer);reject(new Error('SCENE_LOAD_CANCELLED'));}
-        signal?.addEventListener('abort',abort,{once:true});
-      });
-    }
-    if(signal?.aborted)throw new Error('SCENE_LOAD_CANCELLED');
-    if(disposed)return;
-    if(raf)cancelAnimationFrame(raf);
-    phase='exit';started=performance.now();last=0;
-    // This transition is real 3D movement, not CSS movement of a flat truck.
-    rig.root.position.x=0;
     let resolveExit,rejectExit;
     const promise=new Promise((resolve,reject)=>{resolveExit=resolve;rejectExit=reject});
-    const abort=()=>{if(pendingExit){pendingExit=null;rejectExit(new Error('SCENE_LOAD_CANCELLED'));}};
-    pendingExit={promise,resolve:resolveExit,reject:rejectExit,signal,abort};
+    const beginExit=()=>{
+      if(!pendingExit||disposed||signal?.aborted)return;
+      entryListeners.delete(beginExit);
+      phase='exit';phaseElapsed=0;last=null;
+      // Do not force the position to zero; entrance completion establishes
+      // the actual center pose on a rendered frame.
+      scheduleFrame();
+    };
+    const abort=()=>{
+      if(!pendingExit)return;
+      entryListeners.delete(beginExit);
+      pendingExit=null;
+      rejectExit(new Error('SCENE_LOAD_CANCELLED'));
+    };
+    pendingExit={promise,resolve:resolveExit,reject:rejectExit,signal,abort,beginExit};
     signal?.addEventListener('abort',abort,{once:true});
-    raf=requestAnimationFrame(tick);
+    if(entryDone)beginExit();
+    else entryListeners.add(beginExit);
     return promise;
   }
   function dispose(){
@@ -130,11 +161,15 @@ if(canvas&&host&&overlay){
     loaded=true;
     const api={enter:start,exit,dispose,getState:()=>({
       ready:loaded,source:rig.heroSourceId,authored:true,phase,
-      entered:entryDone,exited:exitDone,renderCount
+      entered:entryDone,exited:exitDone,renderCount,
+      entranceProgress:entryDone?1:Math.min(1,phaseElapsed/entryDuration)
     })};
     window.LongHaulLoadingTruck3D=api;
-    window.LongHaulAsyncLoading?.registerTruck3D?.(api);
-    start();
+    // The async host owns the loading timeline; registration starts the
+    // current boot operation once. Never call start() again here.
+    if(!window.LongHaulAsyncLoading?.registerTruck3D)
+      start();
+    else window.LongHaulAsyncLoading.registerTruck3D(api);
   }catch(error){
     renderer?.dispose();
     console.warn('Authored loading truck render unavailable',error);
