@@ -90,7 +90,12 @@
       await commit();
       operation.committed=true;commits++;
       if (signal.aborted || current!==operation) return false;
-      await new Promise(resolve=>requestAnimationFrame(resolve));
+      // A background tab may throttle animation frames indefinitely.
+      // Bound the handoff without making the scene reveal timer-dependent.
+      await Promise.race([
+        new Promise(resolve=>requestAnimationFrame(resolve)),
+        delay(90,signal)
+      ]);
       await animate(door, [
         {transform:'translateY(0)'},
         {transform:'translateY(-106%)'}
