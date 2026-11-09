@@ -37,7 +37,7 @@
       if (!signal.aborted) resolve();
     }, () => {signal.removeEventListener('abort', onAbort); reject(new Error('SCENE_LOAD_CANCELLED'));});
   });
-  const report = (operation, info = {}) => {
+  const report = (operation=current, info = {}) => {
     if (current !== operation) return;
     const progress = Number.isFinite(info.progress) ? Math.max(0,Math.min(1,info.progress)) : null;
     if (progress !== null) {
