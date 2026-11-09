@@ -102,8 +102,9 @@
       }
       return true;
     } catch(error) {
+      const wasCancelled=signal.aborted;
       if (current===operation) cancel(operation,'failed');
-      if (!signal.aborted) throw error;
+      if (!wasCancelled) throw error;
       return false;
     }
   }
@@ -116,8 +117,9 @@
       if (operation.controller.signal.aborted) return false;
       return await finish({operation,commit});
     } catch(error) {
+      const wasCancelled=operation.controller.signal.aborted;
       if (current===operation) cancel(operation,'failed');
-      if (!operation.controller.signal.aborted) throw error;
+      if (!wasCancelled) throw error;
       return false;
     }
   }
