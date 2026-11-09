@@ -224,5 +224,12 @@
     if (isModular()) {const progress=isV3()?endlessHighwayProgress(course,readTruck().position):-readTruck().position.z;value.road={generatorVersion:course.generatorVersion,feature:roadChunkAt(course.seed,progress),retainedFeatures:course.roadChunks.length,progress,terrainAware:isV3()};}
     return JSON.stringify(value);
   };
+  // Read-only visual assembly used by the cinematic title/loading world.
+  // The same bridge/tunnel/construction geometry is used by active road cells.
+  window.LongHaulRoadPresentation = {
+    decoratePreview(entry, patch) {
+      for (const segment of patch.roads ?? []) structure(entry, segment, true);
+    }
+  };
   window.__longHaulRoadsReady = true;
 })();
