@@ -16,6 +16,7 @@ for(const asset of ['logo','endless','campaign','settings']){
 assert.match(source,/createPatchWorkerClient\(previewCourse/);
 assert.match(source,/createTerrainMesh\(patch\)/);
 assert.match(source,/_lhRoadMesh\(group/);
+assert.match(source,/_lhRoadLine\(group/);
 assert.match(source,/environmentCellPlanSteps\(/);
 assert.match(source,/renderPreview\?\./);
 assert.doesNotMatch(source,/requestAnimationFrame\(/);
@@ -25,7 +26,7 @@ let scene='title',now=0,frames=0,disposed=0,roadMeshes=0,terrainMeshes=0,treeDra
 let generationRequests=0,worldSaves=0;
 class Node{
   constructor(){
-    this.visible=true;this.children=[];this.style={};this.parent=null;
+    this.visible=true;this.children=[];this.style={};this.parent=null;this.userData={};
     this.position={x:0,y:0,z:0,set(x,y,z){Object.assign(this,{x,y,z})}};
     this.rotation={set(){}};
   }
@@ -56,7 +57,8 @@ const context={
   _lhDirtMaterial:material,_lhDirtShoulderMaterial:material,
   createEndlessHighway:(seed,{generatorVersion})=>({seed,generatorVersion,endless:{revision:0}}),
   createTerrainMesh:()=>{terrainMeshes++;return {mesh:new Node(),geometry:new Geometry()}},
-  _lhRoadMesh:()=>{roadMeshes++},
+  _lhRoadMesh:()=>{roadMeshes++},_lhRoadLine:()=>{},
+  _lhWhiteLineMaterial:material,_lhYellowLineMaterial:material,_lhAddRoadside:()=>{},
   environmentCellPlanSteps:function*(){yield {processedTiles:1};return {objects:[]}},
   createEnvironmentTileRenderer:()=>({
     startCell:()=>({}),queueObject(){},finalizeStep:()=>({finished:true}),releaseCell(){}
