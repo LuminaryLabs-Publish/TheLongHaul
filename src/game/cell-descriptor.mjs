@@ -1,3 +1,4 @@
+import { freightTerminalGroundHeight, terminalLocalPoint } from './freight-terminal-start.mjs';
 import {ROAD_V3_VERSION,roadV3TerrainHeight} from './road-v3-geometry.mjs';
 import { landscapeTint } from './landscape-style.mjs';
 import { roadCrossSection, roadTerrainHeight } from "./road-surface.mjs";
@@ -30,7 +31,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       if (midpointX >= bounds.minX && midpointX < bounds.maxX && midpointZ >= bounds.minZ && midpointZ < bounds.maxZ) ownedRoadSegments.push(segment);
   }
 
-  const localHeight = suppliedSampleHeight ?? ((x, z) => {
+  const localHeightRaw = suppliedSampleHeight ?? ((x, z) => {
     const natural = naturalTerrainHeight(course, x, z);
     if (course?.generatorVersion === ROAD_V3_VERSION) return roadV3TerrainHeight(natural, course, {x,z});
     let best = null;
@@ -45,6 +46,7 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
     const smoothBlend = blend * blend * (3 - 2 * blend);
     return natural + (roadElevation(course, best) - natural) * smoothBlend;
   });
+  const localHeight = (x,z)=>freightTerminalGroundHeight(course,x,z,localHeightRaw(x,z));
   const localSurface = (x, z) => sampleSurface?.(x, z) ?? null;
   const roundabouts = [];
   const roundaboutData = course.roundabouts?.length ? course.roundabouts : (course.optionalRoads ?? [])
@@ -106,7 +108,13 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
   const randomAt = (index, salt) => (hashText(`${seedOffset}:${salt}:${index}`) & 0xffffff) / 0xffffff;
   const clusterCount = 5 + Math.floor(randomAt(0, "clusters") * 6);
 
+  const insideTerminal = (x,z) => {
+    if(!course.freightTerminal)return false;
+    const point=terminalLocalPoint(course.freightTerminal,{x,y:0,z});
+    return point.x>-330&&point.x<60&&point.z>-240&&point.z<230;
+  };
   const blockedByRoad = (x, z, extra = 0) => {
+    if(insideTerminal(x,z))return true;
     const semantic = localSurface(x, z);
     if (semantic?.surface === "road" || semantic?.surface === "shoulder") return true;
     return terrainRoadSegments.some((road) => {
@@ -179,18 +187,18 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       for (const side of [-1, 1]) {
         const offset = road.width * 0.58 + 1.8;
         const px = x + nx * offset * side, pz = z + nz * offset * side;
-        if (!obstructsJunctionOrSign(px, pz, road.edgeId)) scenery.push({ id: `${road.id}:marker:${side}`, kind: "road-marker", x: px, y: localHeight(px, pz), z: pz, heading, side });
+        if (!insideTerminal(px,pz)&&!obstructsJunctionOrSign(px, pz, road.edgeId)) scenery.push({ id: `${road.id}:marker:${side}`, kind: "road-marker", x: px, y: localHeight(px, pz), z: pz, heading, side });
       }
     }
     if ((code & 7) === 3) {
       const side = code & 8 ? 1 : -1, offset = road.width * 0.65 + 6;
       const px = x + nx * offset * side, pz = z + nz * offset * side;
-      if (!obstructsJunctionOrSign(px, pz, road.edgeId)) scenery.push({ id: `${road.id}:pole`, kind: "utility-pole", x: px, y: localHeight(px, pz), z: pz, heading, side });
+      if (!insideTerminal(px,pz)&&!obstructsJunctionOrSign(px, pz, road.edgeId)) scenery.push({ id: `${road.id}:pole`, kind: "utility-pole", x: px, y: localHeight(px, pz), z: pz, heading, side });
     }
     if (road.surface !== "paved" && (code & 5) === 1) {
       const side = code & 16 ? 1 : -1, offset = road.width * 0.7 + 4;
       const px = x + nx * offset * side, pz = z + nz * offset * side;
-      if (!obstructsJunctionOrSign(px, pz, road.edgeId)) scenery.push({ id: `${road.id}:boulder`, kind: "roadside-boulder", x: px, y: localHeight(px, pz), z: pz, heading, side });
+      if (!insideTerminal(px,pz)&&!obstructsJunctionOrSign(px, pz, road.edgeId)) scenery.push({ id: `${road.id}:boulder`, kind: "roadside-boulder", x: px, y: localHeight(px, pz), z: pz, heading, side });
     }
   }
 

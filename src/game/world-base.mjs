@@ -1,3 +1,4 @@
+import { freightTerminalGroundHeight } from './freight-terminal-start.mjs';
 import { ROAD_V3_VERSION, roadV3TerrainHeight } from './road-v3-geometry.mjs';
 import { roadV3Project } from './road-v3-journey.mjs';
 import { landscapeRelief, roadV3NaturalHeight } from './landscape-style.mjs';
@@ -106,17 +107,17 @@ export function naturalTerrainHeight(course, x, z) {
 
 export function terrainHeight(course, x, z) {
   const natural = naturalTerrainHeight(course, x, z);
-  if (course?.generatorVersion === ROAD_V3_VERSION) return roadV3TerrainHeight(natural, course, {x,z});
+  if (course?.generatorVersion === ROAD_V3_VERSION) return freightTerminalGroundHeight(course,x,z,roadV3TerrainHeight(natural, course, {x,z}));
   let road = null;
   for(const {a,b,edge,segmentIndex} of terrainRoadSegments(course,{x,z})) {
     const info=segmentInfo({x,z},a,b);
     if(!road||info.distance<road.distance)road={...info,edge,segmentIndex};
   }
-  if (!road) return natural;
-  if (road.edge?.modular) return roadTerrainHeight(natural, road, x, z);
+  if (!road) return freightTerminalGroundHeight(course,x,z,natural);
+  if (road.edge?.modular) return freightTerminalGroundHeight(course,x,z,roadTerrainHeight(natural, road, x, z));
   const flattenRadius = road.edge.width * 0.78 + 16;
-  if (road.distance >= flattenRadius) return natural;
+  if (road.distance >= flattenRadius) return freightTerminalGroundHeight(course,x,z,natural);
   const blend = clamp(1 - road.distance / flattenRadius, 0, 1);
   const smoothBlend = blend * blend * (3 - 2 * blend);
-  return natural + (roadElevation(course, road) - natural) * smoothBlend;
+  return freightTerminalGroundHeight(course,x,z,natural + (roadElevation(course, road) - natural) * smoothBlend);
 }

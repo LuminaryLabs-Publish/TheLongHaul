@@ -24,7 +24,7 @@
     function finishLaunchIntro(skipped=false,preserveRun=false){
       if(!launchIntro.active)return;launchIntro.active=false;cinematic.hidden=true;document.body.classList.remove("cinematic");
       try{localStorage.setItem("longhaul-launch-seen-v1","1")}catch{}
-      const state=readTruck(),launchSpeed=readDynamics().maximumForwardSpeed*.5,ground=groundSample(state.position);
+      const state=readTruck(),launchSpeed=course?.freightTerminal?0:readDynamics().maximumForwardSpeed*.5,ground=groundSample(state.position);
       if(!preserveRun){engine.n.longHaulTruck.teleport({x:state.position.x,y:ground.height+readDynamics().suspension.travel,z:state.position.z,heading:state.heading,speed:launchSpeed,groundHeight:ground.height,groundNormal:ground.normal});engine.n.longHaulRun.start(state.position)}
       meters.setLocked("remaining-time",false,"run-start");
       updateCameraTarget(state,surfaceAt(state.position));arcadeScore.tick(0,{active:true});

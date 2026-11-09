@@ -1,3 +1,5 @@
+import {FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes} from '../game/freight-terminal-start.mjs';
+import {parseFreightTerminalGlb,createFreightTerminalThreeObject} from '../game/freight-terminal-glb.mjs';
 import {PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances} from '../game/prebuilt-tree-library.mjs';
 import * as LongHaulArt from '../game/landscape-style.mjs';
 import * as LongHaulGuidance from '../game/navigation-guidance.mjs';
@@ -43,6 +45,7 @@ Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TO
 Object.assign(globalThis, { LongHaulGuidance, LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact });
 Object.assign(globalThis, { ROAD_V3_VERSION, createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress });
 Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
+Object.assign(globalThis,{FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes,parseFreightTerminalGlb,createFreightTerminalThreeObject});
 Object.assign(globalThis, { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass });
 Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary });
 Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
@@ -71,6 +74,16 @@ await new Promise((resolve, reject) => {
   script.onerror = () => reject(new Error("The Endless road host could not load."));
   document.head.append(script);
 });
+// The authored freight yard joins the active highway graph and displays the
+// actual production GLB. Load before enabling start/resume actions.
+await new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src=new URL('./freight-terminal-host.js',import.meta.url).href;
+  script.async=false;script.onload=resolve;
+  script.onerror=()=>reject(new Error('Freight terminal host could not load'));
+  document.head.append(script);
+});
+await window.LongHaulFreightTerminal.readyPromise;
 await new Promise((resolve, reject) => {
   const script = document.createElement("script");
   script.src = new URL("./visual-presentation.js", import.meta.url).href;

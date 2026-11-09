@@ -92,7 +92,7 @@
         save.cash-=walletCost;
         const checkpoint={schema:"long-haul.freight-checkpoint/1",journey:freightJourney.snapshot(),truck:engine.n.longHaulTruck.snapshot(),run:engine.n.longHaulRun.snapshot(),
           meters:{fuel:meters.get("fuel").value,truck:meters.get("truck-condition").value,cargo:meters.get("cargo-condition").value},bankedPoints:risk.banked,bestMultiplier:risk.bestMultiplier,
-          initialType:freightInitialType,terminal:terminal||readRun().status==="failed",skillState:skillCheckpointState()};
+          initialType:freightInitialType,freightTerminal:course.freightTerminal?.id??null,terminal:terminal||readRun().status==="failed",skillState:skillCheckpointState()};
         const result=prepareFreightSave(save,checkpoint,{expectedRevision:freightRevision});
         if(!result.ok){if(["save-conflict","stale-contract","stale-checkpoint","inactive-session","closed-session"].includes(result.reason)){freightStorageConflict=true;freightStorageStatus="Another tab changed this haul · save paused"}else freightStorageStatus="Save unavailable · haul kept in this tab";return false}
         localStorage.setItem("longhaul-campaign-v1",JSON.stringify(result.save));
