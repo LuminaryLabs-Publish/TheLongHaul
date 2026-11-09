@@ -24,7 +24,7 @@ let draws=0;const renderer={render(){draws++}};
 const context={THREE,scene,worldRoot,camera,sun,renderer,window:{}};
 vm.runInNewContext(source,context,{timeout:2000});
 let state=context.window.LongHaulCelShading.getState();
-assert.deepEqual([...state.levels],[.025,.12,.50,.98]);
+assert.deepEqual([...state.levels],[.30,.52,.78,1.05]);
 assert.deepEqual([...state.thresholds],[.15,.45,.90]);
 // A level road facing the real gameplay sun (~0.75 dot product) must remain
 // a colored midtone, not become an almost-white slab.
@@ -42,11 +42,11 @@ function makeShader(material,name){
  material.onBeforeCompile(shader,renderer);
  assert.ok(shader.uniforms.uLHFourBandSun,'real sun uniform present');
  assert.ok(shader.fragmentShader.includes('normalize(normal)'),'fragment-space normal, not a camera-dependent varying');
- assert.ok(shader.fragmentShader.includes('lhChroma'),'color chroma preserved');
+ assert.ok(shader.fragmentShader.includes('lhToon=lhPigment*lhBand'),'original color retained');
  assert.ok(shader.fragmentShader.includes('lhPigmentLuma'),'pigment luminance preserved');
- assert.ok(shader.fragmentShader.includes('vec3(0.025)')&&shader.fragmentShader.includes('vec3(0.12)'));
- assert.ok(shader.fragmentShader.includes('vec3(0.98)'),'near-white highlight');
- assert.ok(shader.fragmentShader.includes('lhPigmentLuma*.40+uLHBandBias'),'road/terrain response differs by material');
+ assert.ok(shader.fragmentShader.includes('lhLight<.15?0.30')&&shader.fragmentShader.includes('lhLight<.45?0.52'));
+ assert.ok(shader.fragmentShader.includes('1.05'),'brightest band retains surface pigment');
+ assert.ok(shader.fragmentShader.includes('lhEngineLight*.24+uLHBandBias'),'per-material light response');
  assert.equal((shader.fragmentShader.match(/#include <opaque_fragment>/g)||[]).length,1);
  assert.ok(!shader.vertexShader.includes('vLHFourBandNormal'));
  return shader;
@@ -63,12 +63,12 @@ renderer.render(new THREE.Scene(),camera);assert.equal(context.window.LongHaulCe
 // Actual Four-Band color logic: a red cab retains its chroma and hue in the
 // midtone and near-white highlight; blue asphalt stays distinct from grass.
 const pigment=(hex)=>{const c=new THREE.Color(hex);return [c.r,c.g,c.b]};
-function grade(rgb,band,bias=0){const y=rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722,ch=rgb.map(c=>c-y);const scale=[.055,.19,.84,.095][band];const mid=Math.max(.25,Math.min(.70,.5*.70+y*.40+bias));const k=[.025,.12,mid,.98][band];return rgb.map((_,i)=>Math.max(0,Math.min(1,k+ch[i]*scale)));}
+function grade(rgb,band){const level=[.30,.52,.78,1.05][band];return rgb.map(c=>Math.max(0,Math.min(1,c*level)));}
 const red=pigment(0xd53628),blue=pigment(0x3d596b),green=pigment(0x769664);
 const rm=grade(red,2),bm=grade(blue,2,-.065),gm=grade(green,2,.075);
 assert.ok(rm[0]>rm[1]*1.3,'red truck stays red under midtone');
 assert.ok(bm[2]>bm[0],'asphalt remains cool rather than neutral gray');
 assert.ok(gm[1]>gm[0]&&gm[1]>bm[1],'landscape stays green and separable from pavement');
-assert.ok(grade(red,0).every(x=>x<.075),'deep shadow stays near black');
-assert.ok(grade(red,3).every(x=>x>.88),'highlight approaches white');
+assert.ok(grade(red,0).every((x,i)=>x<grade(red,2)[i]),'shadow darker than midtone');
+assert.ok(grade(red,3)[0]>grade(red,2)[0]&&grade(red,3)[1]<grade(red,3)[0]*.3,'highlight stays red');
 console.log(JSON.stringify({status:'PASS',materials:4,bands:state.levels,midtones:{red:rm,asphalt:bm,terrain:gm},scope:'fragment directional cel bands, hue retention, material split, atmospheric exclusions and postprocess order'}));

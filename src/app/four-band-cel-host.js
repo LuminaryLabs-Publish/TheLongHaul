@@ -5,7 +5,7 @@
  */
 (() => {
   'use strict';
-  const LEVELS=Object.freeze([.025,.12,.50,.98]);
+  const LEVELS=Object.freeze([.30,.52,.78,1.05]);
   const THRESHOLDS=Object.freeze([.15,.45,.90]);
   const state={enabled:true,bands:4,levels:[...LEVELS],thresholds:[...THRESHOLDS],
     materials:0,frames:0,skipped:0,errors:0};
@@ -49,25 +49,17 @@
         vec3 lhPigment=clamp(diffuseColor.rgb,0.0,1.0);
         vec3 lhLumaWeights=vec3(.2126,.7152,.0722);
         float lhPigmentLuma=dot(lhPigment,lhLumaWeights);
-        vec3 lhChroma=lhPigment-vec3(lhPigmentLuma);
         float lhDirect=max(0.0,dot(normalize(normal),normalize(uLHFourBandSun)));
-        // Existing engine lighting provides a small shadow/ambient cue.
-        // Never quantize the whole screen or move the light with the camera.
-        float lhEngineLight=clamp(dot(outgoingLight,lhLumaWeights)/max(.16,lhPigmentLuma),0.0,1.0);
-        float lhLight=clamp(lhDirect*.88+lhEngineLight*.12,0.0,1.0);
-        if(lhLight<${THRESHOLDS[0].toFixed(2)})
-          outgoingLight=clamp(vec3(${LEVELS[0].toFixed(3)})+lhChroma*.055,0.0,1.0);
-        else if(lhLight<${THRESHOLDS[1].toFixed(2)})
-          outgoingLight=clamp(vec3(${LEVELS[1].toFixed(2)})+lhChroma*.19,0.0,1.0);
-        else if(lhLight<${THRESHOLDS[2].toFixed(2)}) {
-          float lhMid=clamp(${LEVELS[2].toFixed(2)}*.70+lhPigmentLuma*.40+uLHBandBias,.25,.70);
-          outgoingLight=clamp(vec3(lhMid)+lhChroma*.84,0.0,1.0);
-        } else
-          outgoingLight=clamp(vec3(${LEVELS[3].toFixed(2)})+lhChroma*.095,0.0,1.0);
+        float lhEngineLight=clamp(dot(max(outgoingLight,vec3(0.0)),lhLumaWeights)/max(.12,lhPigmentLuma),0.0,1.0);
+        float lhLight=clamp(lhDirect*.76+lhEngineLight*.24+uLHBandBias,0.0,1.0);
+        float lhBand=lhLight<.15?0.30:(lhLight<.45?0.52:(lhLight<.90?0.78:1.05));
+        // Shade original pigment in distinct bands, instead of repainting it gray/white.
+        vec3 lhToon=lhPigment*lhBand;
+        outgoingLight=clamp(mix(lhToon,max(outgoingLight,vec3(0.0)),.12),0.0,1.0);
         #include <opaque_fragment>`);
     };
     const priorKey=material.customProgramCacheKey?.bind(material);
-    material.customProgramCacheKey=()=>`${priorKey?priorKey():''}|lh-pigment-cel-v2|${bias}`;
+    material.customProgramCacheKey=()=>`${priorKey?priorKey():''}|lh-pigment-cel-v3|${bias}`;
     material.needsUpdate=true;patched.add(material);state.materials++;
   }
   const previousRender=renderer.render.bind(renderer);
