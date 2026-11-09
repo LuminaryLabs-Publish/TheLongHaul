@@ -6,14 +6,16 @@
 (() => {
   'use strict';
   const root = document.getElementById('async-loading-scene');
-  const door = document.getElementById('async-loading-door');
-  const truck = document.getElementById('async-loading-truck');
+  const doorLeft = document.getElementById('async-loading-door-left');
+  const doorRight = document.getElementById('async-loading-door-right');
+  const caption = document.getElementById('async-loading-caption');
   const phase = document.getElementById('async-loading-phase');
   const meter = document.getElementById('async-loading-progress');
-  if (!root || !door || !truck || !phase || !meter) return;
+  if (!root || !doorLeft || !doorRight || !caption || !phase || !meter) return;
   const MIN_VISIBLE_MS = 500;
   let serial = 0, current = null;
-  let commits = 0, cancellations = 0;
+  let commits = 0, cancellations = 0, truck3D = null;
+  let truckEntered=false,truckExited=false,doorsOpened=false;
 
   const delay = (ms, signal) => new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new Error('SCENE_LOAD_CANCELLED')); return; }
@@ -55,10 +57,14 @@
     current=operation;
     root.hidden=false;root.style.display='block';root.style.visibility='visible';root.style.pointerEvents='auto';
     root.style.opacity='1';root.style.transform='none';
-    door.getAnimations?.().forEach(a=>a.cancel());
-    truck.getAnimations?.().forEach(a=>a.cancel());
-    door.style.transform='translateY(0)';
-    truck.style.transform='translate(0,0) scale(1)';
+    for(const door of [doorLeft,doorRight]){
+      door.getAnimations?.().forEach(a=>a.cancel());
+      door.style.transform='rotateY(0deg)';
+    }
+    caption.style.opacity='1';
+    truckEntered=false;truckExited=false;doorsOpened=false;
+    truck3D?.enter?.();
+    truckEntered=Boolean(truck3D?.getState?.().ready);
     meter.style.width='0%';phase.textContent=kind==='boot'?'STARTING ENGINE':'BUILDING THE HAUL';
     root.setAttribute('aria-busy','true');
     return operation;
@@ -66,6 +72,7 @@
   function cancel(operation=current, reason='cancelled') {
     if (!operation || current!==operation) return false;
     operation.status=reason;operation.controller.abort();cancellations++;
+    truck3D?.enter?.();
     root.hidden=true;root.style.display='none';root.style.pointerEvents='none';
     root.setAttribute('aria-busy','false');current=null;
     return true;
@@ -80,10 +87,12 @@
       if (current!==operation) return false;
       operation.status='revealing';
       const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-      await animate(truck, [
-        {transform:'translate(0,0) scale(1)',opacity:1},
-        {transform:'translate(2%,8%) scale(.25)',opacity:0}
-      ], reduced?1:380, signal);
+      // Actual authored Three.js truck exits right before the destination
+      // is committed. The overlay remains covered by the trailer doors.
+      if(truck3D?.getState?.().ready){
+        await truck3D.exit(signal);
+        truckExited=true;
+      }
       if (current!==operation || signal.aborted) return false;
       // Commit exactly once while the opaque trailer door still covers the
       // destination. The next animation frame lets the new scene render.
@@ -96,10 +105,18 @@
         new Promise(resolve=>requestAnimationFrame(resolve)),
         delay(90,signal)
       ]);
-      await animate(door, [
-        {transform:'translateY(0)'},
-        {transform:'translateY(-106%)'}
-      ],reduced?1:650,signal);
+      caption.style.opacity='0';
+      await Promise.all([
+        animate(doorLeft,[
+          {transform:'rotateY(0deg)'},
+          {transform:'rotateY(-105deg)'}
+        ],reduced?1:650,signal),
+        animate(doorRight,[
+          {transform:'rotateY(0deg)'},
+          {transform:'rotateY(105deg)'}
+        ],reduced?1:650,signal)
+      ]);
+      doorsOpened=true;
       if (current===operation) {
         operation.status='complete';current=null;
         root.hidden=true;root.style.display='none';root.style.pointerEvents='none';
@@ -137,9 +154,17 @@
   }
   window.LongHaulAsyncLoading={
     begin,run,finish,finishBoot,cancel,report,
+    registerTruck3D(adapter){
+      if(!adapter || typeof adapter.enter!=='function' || typeof adapter.exit!=='function')
+        throw new TypeError('Loading 3D truck adapter requires enter/exit');
+      truck3D=adapter;
+      if(current) {truck3D.enter();truckEntered=Boolean(truck3D.getState?.().ready);}
+    },
     fail(error){if(current)cancel(current,'failed');return error;},
     getState:()=>({active:Boolean(current),kind:current?.kind??null,
       status:current?.status??'inactive',minimumMs:MIN_VISIBLE_MS,
-      committed:commits,cancelled:cancellations,pinnedSceneAdapter:true})
+      committed:commits,cancelled:cancellations,pinnedSceneAdapter:true,
+      visualMode:'swing-doors',truckEntered,truckExited,doorsOpened,
+      authoredTruck:truck3D?.getState?.().ready===true})
   };
 })();
