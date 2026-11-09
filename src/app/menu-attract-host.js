@@ -66,6 +66,31 @@
         const ownedEntry={geometries:owned};
         _lhRoadMesh(group,ownedEntry,segments,asphalt,shoulder);
       }
+      // Draw road lane lines with the same painter as gameplay. Modular
+      // road segments batch their paint vertices rather than making one mesh
+      // per dash, keeping the title world's draw calls bounded.
+      for(const segment of patch.roads.filter(r=>r.surface==='paved')){
+        if(segment.laneCount===5){
+          const lane=segment.laneWidth||segment.width/5;
+          for(let i=1;i<5;i++)_lhRoadLine(group,segment,(i-2.5)*lane,.12,_lhWhiteLineMaterial,true);
+          _lhRoadLine(group,segment,2.5*lane,.1,_lhWhiteLineMaterial);
+          _lhRoadLine(group,segment,-2.5*lane,.1,_lhWhiteLineMaterial);
+        }else{
+          if(segment.type!=='roundabout')_lhRoadLine(group,segment,0,.16,_lhYellowLineMaterial,true);
+          _lhRoadLine(group,segment,segment.width*.43,.1,_lhWhiteLineMaterial);
+          _lhRoadLine(group,segment,-segment.width*.43,.1,_lhWhiteLineMaterial);
+        }
+      }
+      for(const [material,data] of group.userData.roadPaint??[]){
+        const geometry=new THREE.BufferGeometry();
+        geometry.setAttribute('position',new THREE.Float32BufferAttribute(data.positions,3));
+        geometry.setIndex(data.indices);geometry.computeVertexNormals();geometry.computeBoundingSphere();
+        group.add(new THREE.Mesh(geometry,material));owned.push(geometry);
+      }
+      delete group.userData.roadPaint;
+      // Reuse the actual roadway feature authoring (bridge, gallery, roadworks).
+      window.LongHaulRoadPresentation?.decoratePreview?.({group,owned:{geometries:owned},obstacles:[]},patch);
+      for(const object of patch.scenery??[])_lhAddRoadside(group,object);
       // Reuse the existing precomputed vegetation mesh when the authored GLB
       // host has not loaded; that host takes over the same deterministic
       // placements when ready.
