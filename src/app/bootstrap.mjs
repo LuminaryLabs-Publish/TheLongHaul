@@ -151,6 +151,15 @@ await new Promise(resolve => {
   script.onerror = () => { console.warn('Cinematic menu background unavailable; preserving menu controls'); resolve(); };
   document.head.append(script);
 });
+// Four high-contrast lighting bands belong to opaque world materials, before
+// the existing Sobel postprocess; the HTML HUD and sky stay unquantized.
+await new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src=new URL('./four-band-cel-host.js',import.meta.url).href;
+  script.async=false;script.onload=resolve;
+  script.onerror=()=>reject(new Error('Four-band cel shading host failed to load'));
+  document.head.append(script);
+});
 // Outline the entire rendered 3D game using its original depth and color.
 // One postprocess pass wraps the existing renderer, not a second world.
 await new Promise((resolve,reject)=>{
