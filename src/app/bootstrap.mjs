@@ -1,5 +1,6 @@
 import {FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes} from '../game/freight-terminal-start.mjs';
 import {parseFreightTerminalGlb,createFreightTerminalThreeObject} from '../game/freight-terminal-glb.mjs';
+import {FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies} from '../game/freight-terminal-activity.mjs';
 import {PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances} from '../game/prebuilt-tree-library.mjs';
 import * as LongHaulArt from '../game/landscape-style.mjs';
 import * as LongHaulGuidance from '../game/navigation-guidance.mjs';
@@ -46,6 +47,7 @@ Object.assign(globalThis, { LongHaulGuidance, LongHaulArt, ROAD_GENERATOR_VERSIO
 Object.assign(globalThis, { ROAD_V3_VERSION, createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress });
 Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
 Object.assign(globalThis,{FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes,parseFreightTerminalGlb,createFreightTerminalThreeObject});
+Object.assign(globalThis,{FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies});
 Object.assign(globalThis, { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass });
 Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary });
 Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
@@ -147,6 +149,15 @@ await new Promise(resolve => {
   script.async = false;
   script.onload = resolve;
   script.onerror = () => { console.warn('Cinematic menu background unavailable; preserving menu controls'); resolve(); };
+  document.head.append(script);
+});
+// Outline the entire rendered 3D game using its original depth and color.
+// One postprocess pass wraps the existing renderer, not a second world.
+await new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src=new URL('./sobel-outline-host.js',import.meta.url).href;
+  script.async=false;script.onload=resolve;
+  script.onerror=()=>reject(new Error('Sobel outline host failed to load'));
   document.head.append(script);
 });
 entryButtons.forEach(button => button.disabled = false);

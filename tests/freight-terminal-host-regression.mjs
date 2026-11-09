@@ -6,11 +6,17 @@ import {createEndlessHighway,endlessHighwayProgress,advanceEndlessHighway} from 
 import {nearestRoad} from '../src/game/world-base.mjs';
 import {attachFreightTerminalStart,terminalObstacleVolumes,FREIGHT_TERMINAL_VERSION,terminalWorldPoint,terminalLocalPoint,freightTerminalGroundHeight} from '../src/game/freight-terminal-start.mjs';
 import {parseFreightTerminalGlb,createFreightTerminalThreeObject} from '../src/game/freight-terminal-glb.mjs';
+import {FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies} from '../src/game/freight-terminal-activity.mjs';
+import {createTrafficVehicleFactory} from '../src/game/traffic-vehicle-authoring.mjs';
 const bytes=readFileSync(new URL('../assets/freight-terminal/terminal-yard.glb',import.meta.url));
 const asset=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
 const group=new THREE.Group(),hosts=new Map();let refresh=0,driving=0;
 const c={
-  THREE,URL,console,worldRoot:group,
+  THREE,URL,console,worldRoot:group,createTrafficVehicleFactory,
+  evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies,FREIGHT_TERMINAL_TRAFFIC,
+  simulationFrozen:()=>false,
+  obstacleCandidates:()=>[],
+  materials:{truckRed:{gradientMap:new THREE.DataTexture(new Uint8Array([255,255,255,255]),1,1)}},
   document:{currentScript:{src:'https://example.invalid/src/app/freight-terminal-host.js'}},
   fetch:async()=>({ok:true,arrayBuffer:async()=>asset}),
   createEndlessHighway,attachFreightTerminalStart,terminalObstacleVolumes,FREIGHT_TERMINAL_VERSION,
@@ -30,6 +36,11 @@ assert.equal(fresh.freightTerminal.id,FREIGHT_TERMINAL_VERSION);
 assert.ok(fresh.edges.some(e=>e.id==='terminal:start-ramp'));
 c.course=fresh;c.preTickDriving(1/60);
 assert.equal(driving,1);assert.equal(group.children[0].visible,true,'actual terminal visible at player spawn');
+assert.equal(c.LongHaulFreightTerminal.getState().traffic.length,3,'three authored moving freight trucks are initialized');
+for(let i=0;i<20*60;i++)c.preTickDriving(1/60);
+assert.ok(c.LongHaulFreightTerminal.getState().movingTrucks>0,'trucks enter and exit the freight terminal');
+const dynamic=c.obstacleCandidates(c.course.origin,1200).filter(o=>o.kind==='terminal-moving-truck');
+assert.ok(dynamic.length>=3,'moving freight trucks expose current collision volumes');
 const site=fresh.freightTerminal,volume=terminalObstacleVolumes(site)[0];
 const cellX=Math.floor(volume.x/160),cellZ=Math.floor(volume.z/160);
 c.realizeCell({cellId:`${cellX}:${cellZ}`,bounds:{minX:cellX*160,maxX:(cellX+1)*160,minZ:cellZ*160,maxZ:(cellZ+1)*160}},{});
