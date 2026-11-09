@@ -2090,7 +2090,7 @@ $("#result-title-btn").addEventListener("click", () => {
 });
 $("#loss-retry-btn").addEventListener("click", retrySame);
 $("#loss-new-btn").addEventListener("click", () => {
-  if (arcadeCampaign()) location.href = "./campaign.html#garage";
+  if (arcadeCampaign()) location.href = "./campaign.html";
   else newCourse();
 });
 $("#loss-title-btn").addEventListener("click", () => {
