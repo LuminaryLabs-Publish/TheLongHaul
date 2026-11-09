@@ -13,7 +13,7 @@ if(canvas&&host&&overlay){
   let renderer=null,rig=null,disposed=false,raf=0,last=0,phase='enter',started=performance.now();
   let pendingExit=null,entryDone=false,exitDone=false;
   let loaded=false,renderCount=0;
-  const entryDuration=.64,exitDuration=.52;
+  const entryDuration=.42,exitDuration=.56;
   const scene=new THREE.Scene();
   const camera=new THREE.OrthographicCamera(-14,14,7.875,-7.875,.1,90);
   camera.position.set(0,8,30);
