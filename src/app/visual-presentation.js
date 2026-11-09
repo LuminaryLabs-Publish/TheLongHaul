@@ -25,7 +25,10 @@
   const receipt = make('div', 'journey-receipt'); receipt.setAttribute('role', 'status');
   receipt.setAttribute('aria-live', 'polite'); receipt.hidden = true; objective.prepend(receipt);
   const session = make('span', 'journey-session'); $('#drive-box').append(session);
-  $('#skill-hud').append($('#skill-open'));
+  // XP is a sibling of the ability dock, never an overlay inside it.
+  // Preserve its original button, click handler and gameplay-owned data.
+  const xpButton = $('#skill-open');
+  stage.append(xpButton);
   $('#skill-hud').setAttribute('aria-label', 'Abilities and progression');
   const help = make('div', 'driving-onboarding');
   help.textContent = 'WASD drive  ·  SPACE boost  ·  S + turn drift  ·  M map'; stage.append(help);
@@ -111,59 +114,102 @@
     dock(cooldown, { 'font-variant-numeric': 'tabular-nums', width: '7ch', 'min-width': '7ch', 'text-align': 'center' });
   }
 
+  // One Presentation layout owner; all three docks are siblings in #game-stage.
+  // Avoid fixed positioning inside filtered/transformed parent containers.
   const applyHudDock = () => {
     const width = stage.clientWidth || window.innerWidth;
-    const compact = width < 680, narrow = width < 1060;
-    const edge = compact ? 10 : 18;
-    const top = compact ? 58 : 24;
-    const bottom = compact ? 166 : narrow ? 18 : 26;
-    // Reserve non-overlapping left and right rails.
-    const rail = compact ? '43%' : narrow ? '33%' : '29%';
-    const pxMax = compact ? 'none' : narrow ? '320px' : '390px';
+    const height = stage.clientHeight || window.innerHeight;
+    const mobile = width < 620, compact = width < 980;
+    const edge = mobile ? 10 : 20;
+    const touch = matchMedia('(pointer: coarse)').matches;
+    const safeBottom = mobile && touch ? 112 : 18;
+    const sideWidth = mobile ? Math.min(180,Math.floor((width-32)/2)) :
+      compact ? Math.min(230,Math.floor(width*.31)) : Math.min(300,Math.floor(width*.28));
+    const side = sideWidth + 'px';
+    const bottom = Math.max(safeBottom, Math.floor(height*.045))+'px';
+    // Top rails: concise objective on left, score on right.
     dock(objective, {
-      position: 'absolute', left: edge + 'px', right: 'auto',
-      top: top + 'px', width: compact ? 'calc(100% - 20px)' : rail,
-      'max-width': compact ? 'none' : pxMax, 'box-sizing': 'border-box'
+      position:'absolute',top:mobile?'58px':'22px',bottom:'auto',
+      left:edge+'px',right:'auto',width:mobile?'calc(100% - 20px)':side,
+      'max-width':mobile?'none':side,'box-sizing':'border-box'
     });
     dock(riskHud, {
-      position: 'absolute', left: 'auto', right: edge + 'px',
-      top: compact ? '8px' : top + 'px',
-      width: compact ? '172px' : narrow ? '210px' : '260px',
-      'max-width': compact ? '48%' : '27%', 'min-width': '0',
-      'box-sizing': 'border-box'
+      position:'absolute',top:mobile?'8px':'22px',bottom:'auto',
+      right:edge+'px',left:'auto',width:mobile?'160px':side,
+      'max-width':mobile?'48%':side,'min-width':'0','box-sizing':'border-box'
     });
+    // Bottom edges use two independent rails, with a guaranteed center gap.
     dock($('#drive-box'), {
-      position: 'absolute', left: edge + 'px', right: 'auto',
-      bottom: bottom + 'px', width: rail, 'max-width': pxMax,
-      'box-sizing': 'border-box', 'flex-wrap': 'nowrap'
+      position:'absolute',left:edge+'px',right:'auto',
+      top:'auto',bottom,width:side,'max-width':side,
+      'box-sizing':'border-box','flex-wrap':'nowrap','overflow':'hidden'
     });
     dock(skillHud, {
-      position: 'absolute', left: 'auto', right: edge + 'px',
-      bottom: bottom + 'px', width: rail, 'max-width': compact ? 'none' : '290px',
-      transform: 'none', 'box-sizing': 'border-box'
+      position:'absolute',left:'auto',right:edge+'px',
+      top:'auto',bottom,width:side,'max-width':side,
+      transform:'none','box-sizing':'border-box','overflow':'visible',
+      'pointer-events':'auto'
     });
-    // The XP control is centered only in its reserved bottom strip.
-    dock($('#skill-open'), {
-      position: 'fixed', left: '50%', right: 'auto',
-      bottom: compact ? 'calc(94px + env(safe-area-inset-bottom))' : '18px',
-      width: compact ? 'min(220px, 55vw)' : narrow ? '22%' : 'min(300px, 26vw)',
-      'max-width': '300px', transform: 'translateX(-50%)',
-      'box-sizing': 'border-box'
+    // Center strip remains below the ability art, not in the Q/E grid.
+    const centerGap = Math.max(0,width - 2*(sideWidth+edge+12));
+    const xpWidth = mobile ? Math.min(188,width-24) :
+      Math.min(240,Math.max(105,centerGap-8));
+    dock(xpButton, {
+      position:'absolute',left:'50%',right:'auto',top:'auto',
+      bottom:mobile&&touch?'calc(52px + env(safe-area-inset-bottom))':bottom,
+      width:xpWidth+'px','max-width':xpWidth+'px',
+      height:mobile?'46px':'50px','min-height':'0',
+      transform:'translateX(-50%)',margin:'0',padding:'6px 10px 11px',
+      'box-sizing':'border-box',display:'flex','flex-direction':'row',
+      'align-items':'center','justify-content':'space-between',
+      gap:'6px','white-space':'nowrap',overflow:'hidden',
+      background:'rgba(10,22,34,0.18)',border:'0','border-radius':'5px',
+      'clip-path':'none','pointer-events':'auto','z-index':'12',
+      'font-variant-numeric':'tabular-nums'
     });
-    // Route information stays in the unoccupied center band.
-    dock(routeChoice, {
-      position: 'absolute', left: '50%', right: 'auto',
-      top: compact ? '35%' : '28%', transform: 'translateX(-50%)',
-      width: compact ? 'calc(100% - 24px)' : 'min(400px, 40%)',
-      'max-width': '100%', 'box-sizing': 'border-box'
+    for(const [node,basis] of [
+      [$('#skill-level'),'52px'],[$('#skill-xp'),'86px'],[$('#skill-points'),'50px']
+    ]) dock(node,{
+      display:'block',position:'static',flex:'0 1 '+basis,
+      'min-width':'0',overflow:'hidden','text-overflow':'ellipsis',
+      'white-space':'nowrap','font-size':mobile?'9px':'11px',
+      'line-height':'18px','text-align':'center'
     });
-    // Clear any legacy auto-sized labels that would grow the rails.
-    for (const label of stage.querySelectorAll(
-      '#risk-hud .risk-heading, #skill-hud .skill-ability, #drive-box .speed-readout'
-    )) dock(label, { 'min-width': '0', 'max-width': '100%' });
+    dock($('#skill-xp-fill').parentElement, {
+      position:'absolute',left:'7px',right:'7px',bottom:'3px',top:'auto',
+      height:'4px',margin:'0',width:'auto',display:'block'
+    });
+    // Keep the two authored icons in a fixed grid without interfering with XP.
+    const slots = $('#skill-ability-slots');
+    dock(slots,{
+      display:'grid','grid-template-columns':'repeat(2,minmax(0,1fr))',
+      gap:'8px',width:'100%','box-sizing':'border-box'
+    });
+    for(const ability of slots.querySelectorAll('.skill-ability')){
+      dock(ability,{
+        'box-sizing':'border-box','min-width':'0','max-width':'100%',
+        flex:'none','font-variant-numeric':'tabular-nums'
+      });
+    }
+    // Critical notices stay within the right rail, above (not across) Q/E.
+    for(const id of ['skill-drift','skill-effects']){
+      dock($('#'+id), {
+        left:'auto',right:'0',bottom:'calc(100% + 5px)',
+        width:side,'max-width':side,'box-sizing':'border-box',
+        'white-space':'nowrap',overflow:'hidden','text-overflow':'ellipsis',
+        'font-size':mobile?'10px':'11px'
+      });
+    }
+    dock(routeChoice,{
+      position:'absolute',left:'50%',right:'auto',
+      top:mobile?'36%':'30%',bottom:'auto',
+      width:mobile?'calc(100% - 24px)':'min(400px,44%)',
+      'max-width':'100%',transform:'translateX(-50%)',
+      'box-sizing':'border-box'
+    });
   };
   applyHudDock();
-  window.addEventListener('resize', applyHudDock, { passive: true });
+  window.addEventListener('resize', applyHudDock, {passive:true});
 
   let receiptKey = '', receiptUntil = 0;
 
