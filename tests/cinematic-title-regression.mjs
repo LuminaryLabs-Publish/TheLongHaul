@@ -3,8 +3,18 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const source=fs.readFileSync(new URL('../src/app/menu-attract-host.js',import.meta.url),'utf8');
+const menuPresentation=fs.readFileSync(new URL('../src/app/visual-presentation.js',import.meta.url),'utf8');
 const markup=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+// TLH-MENU-001: the Presentation host owns UI composition; buttons retain
+// their native event handlers and no background artwork is used as a panel.
+assert.match(menuPresentation,/LongHaulMenuPresentation/);
+assert.match(menuPresentation,/titleActions/);
+assert.match(menuPresentation,/background-image':'none'/);
+assert.match(menuPresentation,/titleScreen,\{'background':'transparent'/);
+assert.match(menuPresentation,/menuButtons\s*=\s*menuItems\.map/);
+assert.match(menuPresentation,/window\.addEventListener\('resize',arrangeTitle/);
+assert.doesNotMatch(menuPresentation,/\.replaceWith\(.*start-btn/);
 assert.match(markup,/id="start-btn"[^>]*title-endless/);
 assert.match(markup,/id="campaign-coming-soon"[^>]*disabled/);
 assert.match(markup,/id="settings-btn"[^>]*title-settings/);
