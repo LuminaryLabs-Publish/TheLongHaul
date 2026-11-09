@@ -175,5 +175,46 @@
     }
     return result;
   };
+  // Reuse the exact loaded GLB meshes for the isolated title/loading world.
+  // The gameplay-owned cell registry and World state are never touched here.
+  // The regular gameplay rebuild takes the batches back on scene transition.
+  exposed.renderPreview=function renderTitlePreview(placements,focus,parent){
+    if(!state.ready||!parent||!Array.isArray(placements)||!Array.isArray(focus))return false;
+    try{
+      if(root.parent!==parent)parent.add(root);
+      const found=placements.map(tree=>({
+        id:tree.id,position:tree.position,species:speciesForTree(tree),
+        height:12*(tree.scale?.[1]??1),widthX:tree.scale?.[0]??1,
+        widthZ:tree.scale?.[2]??1,angle:Number(tree.rotation)||0
+      }));
+      const selected=selectVisibleTreeInstances(found,focus,{quality:settings.quality!==false});
+      const assigned=new Map();
+      for(const species of TREE_SPECIES)for(let lod=0;lod<3;lod++)
+        assigned.set(species.id+':'+lod,[]);
+      for(const tree of selected)
+        assigned.get(tree.species+':'+tree.lod)?.push(tree);
+      for(const [species,levels] of perSpecies.entries())
+        for(const [lod,level] of levels.entries()){
+          const trees=assigned.get(species+':'+lod)??[];
+          const info=TREE_SPECIES.find(t=>t.id===species);
+          for(const part of level.parts){
+            const count=Math.min(trees.length,MAX_INSTANCES),mesh=part.mesh;
+            mesh.count=count;
+            for(let i=0;i<count;i++){
+              const tree=trees[i],scale=tree.height/info.height;
+              dummy.position.set(...tree.position);
+              dummy.rotation.set(0,tree.angle,0);
+              dummy.scale.set(scale*tree.widthX,scale,scale*tree.widthZ);
+              dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+            }
+            mesh.instanceMatrix.needsUpdate=true;
+          }
+        }
+      return true;
+    }catch(error){
+      console.warn('Title tree preview fallback',error);
+      return false;
+    }
+  };
   exposed.readyPromise=loadLibrary();
 })();
