@@ -15,12 +15,12 @@
   <div id="game-stage">
   <canvas id="game-canvas" aria-label="The Long Haul game view" tabindex="-1"></canvas>
 
-  <!-- TLH-LOAD-002: trailer doors hinge outward over the live scene. -->
+  <!-- TLH-LOAD-003: separate trailer door halves slide outward over the live scene. -->
   <div id="async-loading-scene" role="status" aria-live="polite" aria-busy="true"
        aria-label="Preparing The Long Haul"
-       style="position:absolute;inset:0;z-index:95;overflow:hidden;display:block;pointer-events:auto;background:transparent;color:#fff6e7;perspective:1100px;transform-style:preserve-3d">
+       style="position:absolute;inset:0;z-index:95;overflow:hidden;display:block;pointer-events:auto;background:transparent;color:#fff6e7;">
     <div id="async-loading-door-left" aria-hidden="true"
-         style="position:absolute;top:0;bottom:0;left:0;width:50%;transform-origin:100% 50%;transform:rotateY(0deg);backface-visibility:hidden;will-change:transform">
+         style="position:absolute;top:0;bottom:0;left:0;width:50%;transform:translateX(0);will-change:transform">
       <svg viewBox="0 0 600 675" preserveAspectRatio="none" width="100%" height="100%"
            style="display:block;width:100%;height:100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -59,7 +59,7 @@
       </svg>
     </div>
     <div id="async-loading-door-right" aria-hidden="true"
-         style="position:absolute;top:0;bottom:0;right:0;width:50%;transform-origin:0% 50%;transform:rotateY(0deg);backface-visibility:hidden;will-change:transform">
+         style="position:absolute;top:0;bottom:0;right:0;width:50%;transform:translateX(0);will-change:transform">
       <svg viewBox="0 0 600 675" preserveAspectRatio="none" width="100%" height="100%"
            style="display:block;width:100%;height:100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -97,11 +97,6 @@
         </g>
       </svg>
     </div>
-    <div id="async-loading-truck-3d-host" aria-hidden="true"
-         style="position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2">
-      <canvas id="async-loading-truck-3d" aria-hidden="true"
-              style="display:block;width:100%;height:100%;background:transparent"></canvas>
-    </div>
     <div id="async-loading-caption" style="position:absolute;inset:auto 0 0;z-index:3;pointer-events:none;text-align:center;transform:translateZ(1px)">
       <div aria-hidden="true" style="font:900 clamp(13px,2vw,24px) Impact,system-ui,sans-serif;letter-spacing:.24em;text-shadow:0 2px 8px #170507">THE LONG HAUL</div>
       <div id="async-loading-phase" style="margin:12px auto 9px;font:800 clamp(9px,1vw,12px) system-ui,sans-serif;letter-spacing:.2em;text-shadow:0 1px 5px #21070c">STARTING ENGINE</div>
@@ -112,7 +107,6 @@
     </div>
   </div>
   <script src="./src/app/async-loading-scene.js"></script>
-  <script type="module" src="./src/app/loading-truck-3d.mjs"></script>
   <div id="vignette"></div><div id="grain"></div>
   <section id="title-screen" class="screen menu-screen active" aria-label="The Long Haul main menu">
     <div class="title-card" role="group" aria-label="Main menu" style="visibility:hidden">
