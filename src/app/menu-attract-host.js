@@ -223,6 +223,8 @@
       if(state.changed&&worker){worker.updateCourse(previewCourse);lastRevision=state.revision;}
       const point=previewFocus();
       streamNear(point);
+      // First painted canonical road cell establishes actual title readiness.
+      if(sceneId==='title'&&cells.size>0)window.LongHaulAsyncLoading?.finishBoot?.();
       const look=endlessHighwayPoint(previewCourse,progress+18);
       const dx=look.x-point.x,dz=look.z-point.z,len=Math.hypot(dx,dz)||1;
       const fx=dx/len,fz=dz/len;
@@ -266,6 +268,7 @@
       getPreviewTreeCandidates:()=>[...cells.values()].flatMap(e=>e.patch.vegetation??[])
     };
   }catch(e){
+    window.LongHaulAsyncLoading?.finishBoot?.();
     console.warn('Canonical title/loading preview unavailable; game controls stay usable',e);
     window.LongHaulTitleAttract={getState:()=>({active:false,status:'fallback',error:String(e),saveWrites:0})};
   }
