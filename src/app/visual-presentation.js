@@ -37,6 +37,59 @@
   routeChoice.setAttribute('role', 'group');
   routeChoice.innerHTML = '<div class="alternative-b-choice safe"><span class="alternative-b-arrow" aria-hidden="true"></span><strong>WIDE LEFT<small>SAFER</small></strong></div><div class="alternative-b-choice express"><strong>EXPRESS RIGHT<small>BONUS</small></strong><span class="alternative-b-arrow" aria-hidden="true"></span></div>';
   stage.append(routeChoice);
+  // TLH-023: Presentation-owned HUD materials, not a stylesheet cutover.
+  // These are static render properties: write them once, never on each frame.
+  // Keep the authored art, live data owners, input targets and fixed tile sizes.
+  const material = (element, properties) => {
+    if (!element) return;
+    for (const [name, value] of Object.entries(properties)) element.style.setProperty(name, value);
+  };
+  const transparentSurface = {
+    background: 'transparent', 'background-color': 'transparent',
+    'box-shadow': 'none', 'backdrop-filter': 'none', '-webkit-backdrop-filter': 'none',
+    border: '0', 'clip-path': 'none'
+  };
+  // Text-heavy information gets a shallow glass material instead of an opaque slab.
+  material(freightHud, {
+    background: 'rgba(8,20,34,0.26)', 'backdrop-filter': 'blur(2px)',
+    '-webkit-backdrop-filter': 'blur(2px)',
+    border: '0', 'border-left': '3px solid rgba(80,237,240,0.85)',
+    'clip-path': 'none', 'box-shadow': 'none'
+  });
+  // Everything needed at a glance floats above the world.
+  material(riskHud, transparentSurface);
+  material($('#drive-box'), transparentSurface);
+  material(skillHud, { background: 'transparent', 'box-shadow': 'none' });
+  material($('#skill-open'), {
+    background: 'rgba(10,22,34,0.20)', border: '0',
+    'border-left': '2px solid rgba(80,236,237,0.78)',
+    'clip-path': 'none', 'box-shadow': 'none',
+    'backdrop-filter': 'blur(2px)', '-webkit-backdrop-filter': 'blur(2px)'
+  });
+  material(routeChoice, { background: 'transparent', 'box-shadow': 'none' });
+  for (const choice of routeChoice.querySelectorAll('.alternative-b-choice')) {
+    material(choice, transparentSurface);
+  }
+  for (const ability of skillHud.querySelectorAll('.skill-ability')) {
+    // No panel paint; keep its intrinsic geometry and cooldown hit area.
+    material(ability, transparentSurface);
+  }
+  const contrast = '0 1px 2px rgba(0,0,0,.9), 0 2px 8px rgba(0,0,0,.68)';
+  const readable = [
+    '#freight-cargo','#freight-state','#freight-next',
+    '#risk-multiplier','#risk-pending','#risk-bank','#speed',
+    '#skill-level','#skill-xp','#skill-points'
+  ];
+  for (const selector of readable) material(document.querySelector(selector), { 'text-shadow': contrast });
+  for (const element of [
+    ...routeChoice.querySelectorAll('strong, small'),
+    ...skillHud.querySelectorAll('.skill-ability span, .skill-ability small')
+  ]) material(element, { 'text-shadow': contrast });
+  // Shallow meter tracks still communicate remaining fuel/condition.
+  for (const track of $('#condition-box').querySelectorAll('.meter')) {
+    material(track, { background: 'rgba(24,36,48,0.32)', 'border-color': 'rgba(255,255,255,0.08)' });
+  }
+
   let receiptKey = '', receiptUntil = 0;
 
   const baseHud = updateHud;
