@@ -209,12 +209,14 @@
       // Keep menu artwork and the real progress indicators, but expose the
       // existing WebGL canvas instead of the former static menu/loading paints.
       title.style.background='transparent';
-      loading.style.background='rgba(5,12,17,.20)';
-      if(loading.firstElementChild){
-        loading.firstElementChild.style.background='rgba(8,18,25,.45)';
-        loading.firstElementChild.style.backdropFilter='blur(3px)';
-        loading.firstElementChild.style.padding='min(4cqh,32px)';
-        loading.firstElementChild.style.borderRadius='8px';
+      // The moving trailer artwork is the only cover. The real 3D world is
+      // already rendering under a transparent generating screen, so lifting
+      // the door reveals actual scene pixels instead of an opaque card.
+      loading.style.background='transparent';
+      loading.style.backgroundImage='none';
+      if(loading.firstElementChild) {
+        loading.firstElementChild.style.visibility='hidden';
+        loading.firstElementChild.style.pointerEvents='none';
       }
       document.body.classList.add('world-visible','preview-world-visible');
       const moving=settings.motion&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
