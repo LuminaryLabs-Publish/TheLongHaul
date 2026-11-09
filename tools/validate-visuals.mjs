@@ -31,7 +31,7 @@ try{
   await context.addInitScript(installFixedBrowserClock,{audioSeconds:700});
   observed=await preparePage(context,server.url,{seed:'road-matrix-1',quality:true});page=observed.page;
   await page.waitForFunction(()=>window.__longHaulVisualsReady&&window.__longHaulRoadsReady);
-  check('Campaign unavailable, content link preserved',await page.locator('#campaign-coming-soon').isDisabled()&&await page.locator('a[href="./campaign.html#garage"]').count()===1);
+  check('Campaign unavailable and garage entry retired',await page.locator('#campaign-coming-soon').isDisabled()&&await page.locator('a[href="./campaign.html#garage"]').count()===0);
   await screenshot('01-title');await beginRun(page);await freezeClock(page);await page.keyboard.press('w');await step(150);
   const start=await page.evaluate(()=>({...readTruck().position}));await page.keyboard.down('w');await step(180);await page.keyboard.up('w');
   check('Ordinary keyboard driving remains responsive',await page.evaluate(p=>Math.hypot(readTruck().position.x-p.x,readTruck().position.z-p.z)>5,start));
