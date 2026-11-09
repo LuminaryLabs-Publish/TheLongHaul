@@ -90,6 +90,81 @@
     material(track, { background: 'rgba(24,36,48,0.32)', 'border-color': 'rgba(255,255,255,0.08)' });
   }
 
+  // Presentation-owned docking: reserve independent edge zones rather than
+  // stacking auto-sized panels over each other. No gameplay/input ownership.
+  const dock = (element, properties) => material(element, properties);
+  const oneLine = element => dock(element, {
+    'white-space': 'nowrap', 'overflow': 'hidden', 'text-overflow': 'ellipsis',
+    'max-width': '100%', 'min-width': '0'
+  });
+  for (const selector of [
+    '#freight-state', '#freight-cargo', '#freight-next', '#freight-mass',
+    '#risk-multiplier', '#risk-pending', '#risk-bank', '#speed',
+    '#skill-level', '#skill-xp', '#skill-points'
+  ]) oneLine(document.querySelector(selector));
+  for (const label of stage.querySelectorAll(
+    '#skill-hud .skill-ability span, #skill-hud .skill-ability small, #alternative-b-route strong'
+  )) oneLine(label);
+  dock($('#risk-pending'), { 'font-variant-numeric': 'tabular-nums', 'min-width': '5ch' });
+  dock($('#speed'), { 'font-variant-numeric': 'tabular-nums', 'min-width': '3ch' });
+  for (const cooldown of skillHud.querySelectorAll('.skill-ability small')) {
+    dock(cooldown, { 'font-variant-numeric': 'tabular-nums', width: '7ch', 'min-width': '7ch', 'text-align': 'center' });
+  }
+
+  const applyHudDock = () => {
+    const width = stage.clientWidth || window.innerWidth;
+    const compact = width < 680, narrow = width < 1060;
+    const edge = compact ? 10 : 18;
+    const top = compact ? 58 : 24;
+    const bottom = compact ? 166 : narrow ? 18 : 26;
+    // Reserve non-overlapping left and right rails.
+    const rail = compact ? '43%' : narrow ? '33%' : '29%';
+    const pxMax = compact ? 'none' : narrow ? '320px' : '390px';
+    dock(objective, {
+      position: 'absolute', left: edge + 'px', right: 'auto',
+      top: top + 'px', width: compact ? 'calc(100% - 20px)' : rail,
+      'max-width': compact ? 'none' : pxMax, 'box-sizing': 'border-box'
+    });
+    dock(riskHud, {
+      position: 'absolute', left: 'auto', right: edge + 'px',
+      top: compact ? '8px' : top + 'px',
+      width: compact ? '172px' : narrow ? '210px' : '260px',
+      'max-width': compact ? '48%' : '27%', 'min-width': '0',
+      'box-sizing': 'border-box'
+    });
+    dock($('#drive-box'), {
+      position: 'absolute', left: edge + 'px', right: 'auto',
+      bottom: bottom + 'px', width: rail, 'max-width': pxMax,
+      'box-sizing': 'border-box', 'flex-wrap': 'nowrap'
+    });
+    dock(skillHud, {
+      position: 'absolute', left: 'auto', right: edge + 'px',
+      bottom: bottom + 'px', width: rail, 'max-width': compact ? 'none' : '290px',
+      transform: 'none', 'box-sizing': 'border-box'
+    });
+    // The XP control is centered only in its reserved bottom strip.
+    dock($('#skill-open'), {
+      position: 'fixed', left: '50%', right: 'auto',
+      bottom: compact ? 'calc(94px + env(safe-area-inset-bottom))' : '18px',
+      width: compact ? 'min(220px, 55vw)' : narrow ? '22%' : 'min(300px, 26vw)',
+      'max-width': '300px', transform: 'translateX(-50%)',
+      'box-sizing': 'border-box'
+    });
+    // Route information stays in the unoccupied center band.
+    dock(routeChoice, {
+      position: 'absolute', left: '50%', right: 'auto',
+      top: compact ? '35%' : '28%', transform: 'translateX(-50%)',
+      width: compact ? 'calc(100% - 24px)' : 'min(400px, 40%)',
+      'max-width': '100%', 'box-sizing': 'border-box'
+    });
+    // Clear any legacy auto-sized labels that would grow the rails.
+    for (const label of stage.querySelectorAll(
+      '#risk-hud .risk-heading, #skill-hud .skill-ability, #drive-box .speed-readout'
+    )) dock(label, { 'min-width': '0', 'max-width': '100%' });
+  };
+  applyHudDock();
+  window.addEventListener('resize', applyHudDock, { passive: true });
+
   let receiptKey = '', receiptUntil = 0;
 
   const baseHud = updateHud;
@@ -148,7 +223,8 @@
   updateRiskHud = function() {
     baseRiskHud();
     const state = arcadeScore.snapshot(); riskHud.classList.toggle('idle', state.pending <= 0);
-    $('#risk-bank').textContent = `${state.banked.toLocaleString()} BANKED`;
+    // Base Presentation already writes the authoritative score; do not overwrite
+    // its text a second time in the same frame (visible label oscillation).
     // Repeated ambient flavor is not an actionable warning.
     encounterHud.hidden = currentScene() !== 'driving' || launchIntro.active || /^OPEN ROAD|^RAIN/.test(arcadeEventLabel);
   };
@@ -159,7 +235,7 @@
     if (skillHud.hidden || now - artSkillHudAt < 90) return;
     artSkillHudAt = now;
     const state = skillProgression.snapshot(), truck = readTruck(), pickups = drivingPickups.snapshot(), abilities = activeAbilities.snapshot();
-    $('#skill-points').textContent = state.points ? `U · ${state.points} UPGRADE${state.points === 1 ? '' : 'S'}` : 'U · SKILLS';
+    // Keep the base skills label as its single writer; no alternating copy.
     const drift = truck.drift ?? {};
     $('#skill-drift').hidden = !drift.active && !['release','released'].includes(drift.phase) && Math.abs(skillSteeringDamage) <= .12;
     const names = { boost: 'BOOST +25%', ability: 'POWER +50%', focus: 'COMBO / XP BONUS' };
