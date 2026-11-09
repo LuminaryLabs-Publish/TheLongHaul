@@ -47,6 +47,131 @@
     if (!element) return;
     for (const [name, value] of Object.entries(properties)) element.style.setProperty(name, value);
   };
+  // TLH-MENU-001: floating menu elements, authored by Presentation.
+  // Reuse the original buttons and their gameplay-owned event listeners.
+  // No new UI background layers, separate renderer, or navigation handlers.
+  const titleScreen = document.querySelector('#title-screen');
+  const titleCard = titleScreen?.querySelector('.title-card');
+  const titleLogo = titleScreen?.querySelector('.title-wordmark');
+  const titleActions = titleScreen?.querySelector('.menu-actions');
+  const titleFooter = titleScreen?.querySelector('.title-footer');
+  const menuItems = [
+    {id:'start-btn',index:'01',label:'ENDLESS DRIVE',hint:'START OR RESUME'},
+    {id:'campaign-coming-soon',index:'02',label:'CAMPAIGN',hint:'COMING SOON'},
+    {id:'settings-btn',index:'03',label:'SETTINGS',hint:'CONFIGURE YOUR DRIVE'}
+  ];
+  // Only native buttons are interactive. Text and imagery float directly
+  // over the shared rendered world, without cards or dark glass rectangles.
+  function menuText(element,value,properties) {
+    const label=document.createElement('span');
+    label.textContent=value;
+    for(const [property,setting] of Object.entries(properties))
+      label.style.setProperty(property,setting);
+    element.append(label);
+    return label;
+  }
+  function menuMaterial(element,properties) {
+    if(!element)return;
+    for(const [property,value] of Object.entries(properties))
+      element.style.setProperty(property,value,'important');
+  }
+  const menuButtons = menuItems.map(item=>{
+    const button=document.getElementById(item.id);
+    if(!button)return null;
+    // Preserve the original accessible title inside its visually-hidden span,
+    // and append visible Presentation-owned text without replacing the button.
+    const index=menuText(button,item.index,{
+      color:'#71e7e5','font-size':'clamp(10px,1.1cqw,15px)',
+      'font-weight':'800','letter-spacing':'.12em','align-self':'center',
+      'min-width':'2ch','text-align':'left'
+    });
+    const content=document.createElement('span');
+    content.style.setProperty('display','flex');
+    content.style.setProperty('flex-direction','column');
+    content.style.setProperty('align-items','flex-start');
+    content.style.setProperty('min-width','0');
+    menuText(content,item.label,{
+      color:'#f4f7f3','font-family':'Impact,Haettenschweiler,"Arial Narrow Bold",system-ui,sans-serif',
+      'font-size':'clamp(21px,3.15cqw,47px)','font-style':'italic',
+      'font-weight':'800','letter-spacing':'.025em','line-height':'1.02',
+      'white-space':'nowrap','text-shadow':'0 3px 11px #07111bef'
+    });
+    menuText(content,item.hint,{
+      color:'#c5dedb','font-size':'clamp(9px,.85cqw,12px)',
+      'font-weight':'750','letter-spacing':'.17em','line-height':'1.7',
+      'white-space':'nowrap','text-shadow':'0 2px 8px #07111bed'
+    });
+    button.append(content);
+    menuMaterial(button,{
+      'background':'transparent','background-image':'none','background-color':'transparent',
+      'box-shadow':'none','backdrop-filter':'none','-webkit-backdrop-filter':'none',
+      'clip-path':'none','border':'0','border-radius':'0',
+      'font-size':'14px','color':'#f4f7f3','pointer-events':'auto',
+      'display':'flex','align-items':'center','justify-content':'flex-start',
+      'gap':'clamp(12px,1.4cqw,22px)','padding':'4px 2px',
+      'height':'auto','min-height':'55px','aspect-ratio':'auto',
+      'width':'100%','overflow':'visible','text-align':'left',
+      'filter':'none','transform':'none','transition':'filter .16s ease'
+    });
+    const emphasize=state=>{
+      const enabled=!button.disabled;
+      menuMaterial(button,{'filter':state&&enabled?'drop-shadow(0 0 9px #5df3e7a8)':'none'});
+      index.style.color=state&&enabled?'#f1bf6b':'#71e7e5';
+      content.style.opacity=enabled?'1':'.48';
+    };
+    for(const eventName of ['pointerenter','focus'])button.addEventListener(eventName,()=>emphasize(true));
+    for(const eventName of ['pointerleave','blur'])button.addEventListener(eventName,()=>emphasize(false));
+    emphasize(false);
+    return button;
+  }).filter(Boolean);
+  const arrangeTitle = () => {
+    if(!titleScreen||!titleCard||!titleActions||!titleLogo)return;
+    const width=stage.clientWidth||window.innerWidth;
+    const height=stage.clientHeight||window.innerHeight;
+    const compact=width<720||height<420;
+    menuMaterial(titleScreen,{'background':'transparent','background-image':'none','backdrop-filter':'none'});
+    menuMaterial(titleCard,{
+      position:'absolute',inset:'0',width:'100%',height:'100%',
+      'max-width':'none','max-height':'none','margin':'0','padding':'0',
+      display:'block',background:'transparent','background-image':'none',
+      'border':'0','box-shadow':'none','backdrop-filter':'none',
+      overflow:'visible','pointer-events':'none'
+    });
+    menuMaterial(titleLogo,{
+      position:'absolute',left:compact?'50%':'6%',top:compact?'6%':'18%',
+      width:compact?'min(74%,500px)':'min(46%,650px)',
+      height:'auto','max-height':compact?'24%':'37%',
+      transform:compact?'translateX(-50%)':'none',
+      'object-fit':'contain','pointer-events':'none'
+    });
+    menuMaterial(titleActions,{
+      position:'absolute',left:compact?'50%':'auto',right:compact?'auto':'5%',
+      top:compact?'59%':'50%',bottom:'auto',
+      transform:compact?'translate(-50%,-50%)':'translateY(-50%)',
+      width:compact?'min(76%,440px)':'min(39%,500px)',
+      'max-width':'100%','margin':'0','padding':'0','gap':compact?'9px':'21px',
+      display:'flex','flex-direction':'column',
+      'align-items':'stretch','pointer-events':'none',
+      'background':'transparent'
+    });
+    for(const button of menuButtons)menuMaterial(button,{
+      'min-height':compact?'50px':'70px','pointer-events':'auto'
+    });
+    menuMaterial(titleFooter,{
+      position:'absolute',left:compact?'50%':'7%',bottom:compact?'4%':'8%',
+      transform:compact?'translateX(-50%)':'none',
+      'white-space':'nowrap','text-shadow':'0 2px 8px #000c',
+      'font-size':compact?'9px':'12px','pointer-events':'none'
+    });
+  };
+  arrangeTitle();
+  window.addEventListener('resize',arrangeTitle,{passive:true});
+  window.LongHaulMenuPresentation={
+    getState:()=>({version:1,host:'nexusengine-presentation',
+      background:'none',buttons:menuButtons.length,
+      liveWorld:true,actionsRetained:true})
+  };
+
   const transparentSurface = {
     background: 'transparent', 'background-color': 'transparent',
     'box-shadow': 'none', 'backdrop-filter': 'none', '-webkit-backdrop-filter': 'none',
