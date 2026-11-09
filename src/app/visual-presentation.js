@@ -194,7 +194,7 @@
     // Critical notices stay within the right rail, above (not across) Q/E.
     for(const id of ['skill-drift','skill-effects']){
       dock($('#'+id), {
-        left:'auto',right:'0',bottom:'calc(100% + 5px)',
+        left:'auto',right:'0',bottom:id==='skill-drift'?'calc(100% + 37px)':'calc(100% + 5px)',
         width:side,'max-width':side,'box-sizing':'border-box',
         'white-space':'nowrap',overflow:'hidden','text-overflow':'ellipsis',
         'font-size':mobile?'10px':'11px'
@@ -278,6 +278,9 @@
   let artSkillHudAt = -Infinity;
   updateSkillHud = function(now) {
     baseSkillHud(now);
+    // The independent XP dock has the same lifecycle as the ability HUD.
+    const xpDisplay = skillHud.hidden ? 'none' : 'flex';
+    if (xpButton.style.display !== xpDisplay) xpButton.style.display = xpDisplay;
     if (skillHud.hidden || now - artSkillHudAt < 90) return;
     artSkillHudAt = now;
     const state = skillProgression.snapshot(), truck = readTruck(), pickups = drivingPickups.snapshot(), abilities = activeAbilities.snapshot();
