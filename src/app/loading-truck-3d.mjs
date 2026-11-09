@@ -81,11 +81,24 @@ if(canvas&&host&&overlay){
     raf=requestAnimationFrame(tick);
     return true;
   }
-  function exit(signal){
-    if(disposed||!rig)return Promise.resolve();
-    if(signal?.aborted)return Promise.reject(new Error('SCENE_LOAD_CANCELLED'));
-    if(phase==='offscreen')return Promise.resolve();
+  async function exit(signal){
+    if(disposed||!rig)return;
+    if(signal?.aborted)throw new Error('SCENE_LOAD_CANCELLED');
+    if(phase==='offscreen')return;
     if(pendingExit)return pendingExit.promise;
+    // The boot scene may finish before the WebGL asset is fully visible.
+    // Never jump the truck to center: let its actual left-side entrance
+    // finish before starting the right-side exit.
+    if(phase==='enter'){
+      const remaining=Math.max(0,entryDuration*1000-(performance.now()-started));
+      if(remaining>0)await new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},remaining);
+        function abort(){clearTimeout(timer);reject(new Error('SCENE_LOAD_CANCELLED'));}
+        signal?.addEventListener('abort',abort,{once:true});
+      });
+    }
+    if(signal?.aborted)throw new Error('SCENE_LOAD_CANCELLED');
+    if(disposed)return;
     if(raf)cancelAnimationFrame(raf);
     phase='exit';started=performance.now();last=0;
     // This transition is real 3D movement, not CSS movement of a flat truck.
