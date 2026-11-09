@@ -11,7 +11,11 @@
     // The established title art already disables its old painted overlay.
     // Preserve the menu-screen class so its approved button layout is retained.
     const seed = 'the-long-haul:cinematic-preview-v2';
-    const previewCourse = createEndlessHighway(seed, {progress:0,generatorVersion:ROAD_GENERATOR_VERSION});
+    // Match the selected gameplay road generator without loading a player save.
+    const v3=/(?:^|[?&])road=v3(?:&|$)/.test(typeof location==='undefined'?'':location.search);
+    const previewCourse=v3
+      ? engine.n.longHaulRoadV3.buildPlayable(seed,{progress:0})
+      : createEndlessHighway(seed,{progress:0,generatorVersion:ROAD_GENERATOR_VERSION});
     const root = new THREE.Group();
     root.name='LH_CANONICAL_PREVIEW_WORLD';
     root.visible=false;
@@ -107,15 +111,24 @@
       }
       // The same n:authoring planner/renderer creates the gameplay roadside
       // scenery, and is incrementally stepped in this existing frame callback.
-      const iterator=environmentCellPlanSteps(seed,patch.bounds,{
-        terrainHeight:(x,z)=>terrainHeight(previewCourse,x,z),quality:settings.quality,
-        roadSafety:(x,z,margin)=>{
-          const nearest=nearestRoad(previewCourse,{x,z});
-          return !nearest||nearest.distance>=(Number(nearest.edge?.width)||28)*.5+margin;
-        }
-      });
+      const roadV3=previewCourse.generatorVersion===ROAD_V3_VERSION;
+      const progresses=roadV3?patch.roads.flatMap(r=>[r.a?.progress,r.b?.progress])
+        .filter(Number.isFinite):[];
+      const iterator=roadV3&&!progresses.length?null:
+        environmentCellPlanSteps(seed,patch.bounds,{
+          terrainHeight:(x,z)=>terrainHeight(previewCourse,x,z),quality:settings.quality,
+          roadPoint:roadV3?s=>{
+            const point=playableRoadV3Point(previewCourse,s),chunk=roadChunkAt(seed,s);
+            return {...point,kind:chunk.kind,chunkId:chunk.id};
+          }:null,
+          roadProgressBounds:roadV3?{min:Math.min(...progresses),max:Math.max(...progresses)}:null,
+          roadSafety:(x,z,margin)=>{
+            const nearest=nearestRoad(previewCourse,{x,z});
+            return !nearest||nearest.distance>=(Number(nearest.edge?.width)||28)*.5+margin;
+          }
+        });
       const env={iterator,render:factory.startCell({quality:settings.quality,visualOnly:false}),
-        phase:'plan',objects:null,index:0,finished:false};
+        phase:'plan',objects:null,index:0,finished:!iterator};
       const entry={id,patch,group,owned,env,proceduralTree,coordinates:patch.coordinates};
       cells.set(id,entry);root.add(group);builds++;
     }
