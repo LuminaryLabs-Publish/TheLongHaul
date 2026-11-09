@@ -97,6 +97,8 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
     heading: finite(value.heading),
     yawRate: 0,
     speed: 0,
+    // Boost-only high-speed reserve; held throttle sustains earned momentum.
+    boostCruiseSpeed: 0,
     longitudinalSpeed: 0,
     lateralSpeed: 0,
     driftAngle: 0,
@@ -178,6 +180,7 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             heading,
             yawRate: 0,
             speed,
+            boostCruiseSpeed: 0,
             longitudinalSpeed: speed,
             lateralSpeed: 0,
             driftAngle: 0,
@@ -277,6 +280,8 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             flightOrigin: launch && state.grounded ? { ...state.position } : state.flightOrigin,
             flightPeakHeight: launch && state.grounded ? 0 : state.flightPeakHeight,
             airTime: launch && state.grounded ? 0 : state.airTime,
+            // An impact/launch must not restore pre-collision boost speed.
+            boostCruiseSpeed: impact || launch ? 0 : state.boostCruiseSpeed,
             impactSequence: state.impactSequence + (impact ? 1 : 0),
             lastImpact: impact ? { sequence: state.impactSequence + 1, strength: impactStrength, speed: Math.abs(state.speed), kind: String(request.kind ?? "impact"), effectiveMass: load.effectiveMass, energy: 0.5 * load.effectiveMass * impactStrength * impactStrength } : state.lastImpact,
             drift: impactStrength > 3 || launch ? createDriftState(state.drift, true) : state.drift,
@@ -328,13 +333,25 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           const speedMultiplier = input.rush
             ? clamp(finite(profile.boost?.rushSpeedMultiplier, 1.8) + Math.max(0, finite(profile.boost?.speedMultiplier, 1.22) - 1.22), 1, 2.2)
             : input.boost ? clamp(finite(profile.boost?.speedMultiplier, 1.22), 1, 1.8) : 1;
-          const maximumForward = finite(profile.maximumForwardSpeed, 34) * speedMultiplier * (state.surface === "road" ? 1 : state.surface === "shoulder" ? 0.86 : 0.66);
+          const normalMaximum = finite(profile.maximumForwardSpeed, 34)
+            * (state.surface === "road" ? 1 : state.surface === "shoulder" ? 0.86 : 0.66);
+          const maximumForward = normalMaximum * speedMultiplier;
+          // Sustained overspeed is earned by boost, not by ordinary throttle.
+          // Letting go, braking, leaving reliable road traction, tipping or an
+          // actual impact releases the reserve instead of restoring speed.
+          const holdingThrottle = input.throttle >= 0.5 && input.brake <= 0
+            && !input.handbrake && !input.drift && state.grounded
+            && state.driveTraction >= 0.7 && state.surface === "road";
+          const boosting = input.boost || input.rush;
+          const speedBeforeThrust = Math.max(0, longitudinal);
+          const retainedCruise = holdingThrottle ? Math.max(0, finite(state.boostCruiseSpeed)) : 0;
+          const driveMaximum = Math.max(maximumForward, retainedCruise);
           const maximumReverse = finite(profile.maximumReverseSpeed, 10);
 
           const traction = state.grounded ? clamp(finite(state.driveTraction, 1), 0, 1) : 0;
           const effectiveThrottle = input.throttle * traction;
           const effectiveBrake = Math.max(input.brake, drift.active && input.drift ? 0.24 : 0) * traction;
-          const normalizedSpeed = clamp(Math.abs(longitudinal) / Math.max(1, maximumForward), 0, 1);
+          const normalizedSpeed = clamp(Math.abs(longitudinal) / Math.max(1, driveMaximum), 0, 1);
           const torqueCurve = 1 - normalizedSpeed * 0.5;
           if (effectiveThrottle > 0) {
             if (longitudinal < -0.2) longitudinal = Math.min(0, longitudinal + finite(profile.brakeForce, 17) * load.brakeScale * input.throttle * dt);
@@ -359,8 +376,15 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             // Sliding dissipates motion before the bounded reserve recovers any.
             if (drift.active) longitudinal *= Math.exp(-0.3 * dt);
           }
-          // Ease down after a burst instead of snapping instantly to the normal cap.
-          if (state.grounded) longitudinal = clamp(longitudinal, -maximumReverse, Math.max(maximumForward, state.speed - 12 * dt));
+          // Ordinary throttle cannot create new overspeed by itself. With no
+          // boost-earned reserve, it may hold the current speed but never
+          // accelerate above the higher of that speed and the normal cap.
+          if (!boosting && retainedCruise <= normalMaximum && longitudinal > normalMaximum)
+            longitudinal = Math.min(longitudinal, Math.max(normalMaximum, speedBeforeThrust));
+          // No automatic post-boost deceleration: throttle can sustain the
+          // speed earned by boost. Coast, grade and brake use their real forces.
+          if (state.grounded) longitudinal = clamp(longitudinal, -maximumReverse,
+            Math.max(driveMaximum, Math.max(0, state.speed)));
 
           const speedRatio = clamp(Math.abs(longitudinal) / Math.max(1, finite(profile.maximumForwardSpeed, 38)), 0, 1);
           const steering = profile.steering ?? DEFAULT_TRUCK_DYNAMICS_PROFILE.steering;
@@ -369,7 +393,11 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           const steerIntent = clamp(input.steer * (1 - damageMagnitude * 0.26) + steeringDamage * 0.16 * clamp(previousPlanarSpeed / 5, 0, 1), -1, 1);
           // Steering turns the visible front wheels irrespective of grip. Tire
           // contact forces, not steering or a target yaw rate, turn the truck.
-          const targetSteer = steerIntent * (finite(steering.lowSpeedAngle, 0.6)
+          // Beyond normal top speed, the truck has a wider turn radius.
+          // Tires still decide yaw/slip; this is not an artificial camera turn.
+          const overspeed = Math.max(0, Math.abs(longitudinal) / Math.max(1, normalMaximum) - 1);
+          const highSpeedAuthority = Math.max(0.5, 1 - 0.5 * overspeed);
+          const targetSteer = steerIntent * highSpeedAuthority * (finite(steering.lowSpeedAngle, 0.6)
             + (finite(steering.highSpeedAngle, 0.155) - finite(steering.lowSpeedAngle, 0.6)) * speedRatio);
           const steeringAngle = state.steeringAngle + (targetSteer - state.steeringAngle)
             * (1 - Math.exp(-finite(steering.response, 11) * dt));
@@ -383,6 +411,21 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           });
           longitudinal += tire.forwardAcceleration * dt;
           lateral += tire.lateralAcceleration * dt;
+          // Preserve the *velocity vector* at boost-earned cruising speed,
+          // including its slip direction, instead of snapping it to the nose.
+          // Only a held accelerator and stable traction can sustain it.
+          if (holdingThrottle && !boosting && retainedCruise > normalMaximum) {
+            const planarSpeed = Math.hypot(longitudinal, lateral);
+            if (planarSpeed > 0.1 && planarSpeed < retainedCruise) {
+              const scale = retainedCruise / planarSpeed;
+              longitudinal *= scale;
+              lateral *= scale;
+            }
+          }
+          const boostCruiseSpeed = holdingThrottle && (boosting || retainedCruise > 0)
+            ? Math.min(normalMaximum * 2.2,
+              Math.max(retainedCruise, boosting ? Math.max(0, Math.hypot(longitudinal, lateral)) : 0))
+            : 0;
           // Angular velocity is integrated from axle torque. The safety bound
           // is for numerical robustness, not a steering-derived yaw target.
           const yawRate = clamp(state.yawRate + tire.yawAcceleration * dt, -3, 3);
@@ -522,6 +565,7 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             heading,
             yawRate,
             speed: longitudinal,
+            boostCruiseSpeed: roundaboutContactImpacts.size ? 0 : boostCruiseSpeed,
             longitudinalSpeed: longitudinal,
             lateralSpeed: lateral,
             driftAngle,
