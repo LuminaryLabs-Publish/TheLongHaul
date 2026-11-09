@@ -64,7 +64,7 @@
     caption.style.opacity='1';
     truckEntered=false;truckExited=false;doorsOpened=false;
     truck3D?.enter?.();
-    truckEntered=Boolean(truck3D?.getState?.().ready);
+    truckEntered=Boolean(truck3D?.getState?.().entered);
     meter.style.width='0%';phase.textContent=kind==='boot'?'STARTING ENGINE':'BUILDING THE HAUL';
     root.setAttribute('aria-busy','true');
     return operation;
@@ -91,7 +91,7 @@
       // is committed. The overlay remains covered by the trailer doors.
       if(truck3D?.getState?.().ready){
         await truck3D.exit(signal);
-        truckExited=true;
+        truckEntered=true;truckExited=true;
       }
       if (current!==operation || signal.aborted) return false;
       // Commit exactly once while the opaque trailer door still covers the
@@ -158,7 +158,7 @@
       if(!adapter || typeof adapter.enter!=='function' || typeof adapter.exit!=='function')
         throw new TypeError('Loading 3D truck adapter requires enter/exit');
       truck3D=adapter;
-      if(current) {truck3D.enter();truckEntered=Boolean(truck3D.getState?.().ready);}
+      if(current) {truck3D.enter();truckEntered=Boolean(truck3D.getState?.().entered);}
     },
     fail(error){if(current)cancel(current,'failed');return error;},
     getState:()=>({active:Boolean(current),kind:current?.kind??null,
