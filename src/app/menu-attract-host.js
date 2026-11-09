@@ -8,8 +8,8 @@
   try {
     const title = document.querySelector('#title-screen');
     const loading = document.querySelector('#generating-screen');
-    // Remove the former painted highway overlay; preserve title controls.
-    title?.classList.remove('menu-screen');
+    // The established title art already disables its old painted overlay.
+    // Preserve the menu-screen class so its approved button layout is retained.
     const seed = 'the-long-haul:cinematic-preview-v2';
     const previewCourse = createEndlessHighway(seed, {progress:0,generatorVersion:ROAD_GENERATOR_VERSION});
     const root = new THREE.Group();
