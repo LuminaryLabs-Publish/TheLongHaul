@@ -38,7 +38,7 @@ if(canvas&&host&&overlay){
     const w=Math.max(1,Math.floor(host.clientWidth||overlay.clientWidth||960));
     const h=Math.max(1,Math.floor(host.clientHeight||overlay.clientHeight||540));
     renderer.setSize(w,h,false);
-    const span=13.5,aspect=w/h;
+    const span=8.2,aspect=w/h;
     camera.left=-span*aspect;camera.right=span*aspect;
     camera.top=span;camera.bottom=-span;
     camera.updateProjectionMatrix();
