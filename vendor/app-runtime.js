@@ -159,8 +159,21 @@
           document.body.classList.add("world-visible");
           meters.setLocked("remaining-time",true,"cinematic");
           beginLaunchIntro();
-          transition("ready",{packageId:course.packageId});
-          generation.ready=true;
+          // A newer NexusEngine Scene Kit may supply the native async API.
+          // The currently pinned kit uses its existing transition contract.
+          const scenes=engine.n.coreScene;
+          const advance=typeof scenes.loadScene==="function"
+            ? scenes.loadScene("driving",{
+                transitionId:"long-haul-load-"+runSerial,
+                hostBinding:{
+                  canLoad:scene=>scene?.kind==="web-three-scene",
+                  load:async t=>({mounted:true,sceneId:t.toSceneId}),
+                  unload:()=>({unloaded:true}),
+                  discard:()=>({discarded:true})
+                }
+              })
+            : transition("ready",{packageId:course.packageId});
+          return Promise.resolve(advance).then(()=>{generation.ready=true;});
         };
         // Keep CoreScene authoritative: asynchronous preparation and the
         // minimum-duration trailer reveal finish before requesting its
