@@ -294,19 +294,11 @@
     // Visual-first arcade display and procedural title vehicle.
     const arcadeOverlay=document.createElement("div");arcadeOverlay.id="arcade-overlay";arcadeOverlay.innerHTML='<div class="arcade-stat">⛽ <b id="arcade-fuel">100%</b></div><div class="arcade-stat">⚡ <b id="arcade-boost">W ×2 / ↑ ×2</b></div><div class="arcade-stat">↗ <b id="arcade-distance">0 mi</b></div><div class="arcade-stat">＄ <b id="arcade-earnings">$0</b></div><div id="arcade-flash" aria-live="polite"></div>';document.getElementById("game-stage").append(arcadeOverlay);
     function arcadeFlashBonus(message){const el=document.getElementById("arcade-flash");el.textContent=message;el.classList.remove("active");void el.offsetWidth;el.classList.add("active")}
-    const arcadeMenuTruck=new THREE.Group(),arcadeMenuPaint=new THREE.MeshLambertMaterial({color:0xe1a14e});
-    function arcadeMenuBox(mat,w,h,d,x,y,z){const part=new THREE.Mesh(arcadeTrafficGeometry,mat);part.scale.set(w,h,d);part.position.set(x,y,z);arcadeMenuTruck.add(part)}
-    arcadeMenuBox(arcadeMenuPaint,2.9,2.5,3.3,0,2.2,1.4);
-    arcadeMenuBox(arcadeTrafficMaterials[0],3,3.1,5.5,0,2.8,-2.8);
-    arcadeMenuBox(arcadeGlassMat,2.6,1,.12,0,3.03,3.1);
-    for(const side of [-1,1])for(const z of [-4.2,2.15]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.88,.88,.55,12),arcadeWheelMat);wheel.rotation.z=Math.PI/2;wheel.position.set(side*1.72,1,z);arcadeMenuTruck.add(wheel)}
-    scene.add(arcadeMenuTruck);arcadeMenuTruck.position.set(4,0,0);
+    // Title/Loading visuals belong to the canonical Presentation preview host.
     let arcadeLastHud=0;
     function arcadeVisualFrame(now){
-      const view=currentScene(),title=["title","dispatch"].includes(view)&&!campaignLaunch?.course;
-      if(view!=="driving")arcadeGaragePanel.hidden=true;else if(arcadeRoadsideMode())arcadeCullGarages(now);
-      arcadeMenuTruck.visible=title;
-      if(title){arcadeMenuTruck.rotation.y=-.5+Math.sin(now*.00031)*.22;arcadeMenuTruck.position.y=Math.sin(now*.0011)*.09;camera.position.set(11,6,17);camera.lookAt(2,2,-1)}
+      const view=currentScene();
+      if(view!=="driving")arcadeGaragePanel.hidden=true;
       const playing=view==="driving"&&!launchIntro.active;arcadeOverlay.classList.toggle("active",playing);
       if(playing&&now-arcadeLastHud>=66){arcadeLastHud=now;const run=readRun(),fuel=meters.get("fuel")?.value??0,intent=engine.n.coreInput.getIntent(),distance=run.distance||0;
         document.getElementById("arcade-fuel").textContent=Math.ceil(fuel)+"%";
