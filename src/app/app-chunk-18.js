@@ -9,6 +9,9 @@
     const arcadeTrafficGeometry=new THREE.BoxGeometry(1,1,1);
     const arcadeTrafficMaterials=[0x4c91b7,0xc7c2ac,0xb64c3c,0x496c57,0xb69d57].map(color=>new THREE.MeshLambertMaterial({color}));
     const arcadeVehicles=[];let arcadeCachedSave=null,arcadeEdgeCache=null,arcadeGarageCourse=null,arcadeGarageStops=[],arcadeTrafficEdge=null,arcadeTrafficEdgeCandidate=null,arcadeTrafficEdgeWait=0;
+    // Roadside Garage presentation is retired. Keep persisted economy fields
+    // readable so existing freight/campaign checkpoints remain compatible.
+    const arcadeGarageEnabled=false;
     const arcadeGarageRoot=new THREE.Group();dynamicRoot.add(arcadeGarageRoot);
     const arcadeGarageMaterials={paint:new THREE.MeshLambertMaterial({color:0x9c5a32}),roof:new THREE.MeshLambertMaterial({color:0x293a3e}),sign:new THREE.MeshLambertMaterial({color:0xe7b560}),dark:new THREE.MeshLambertMaterial({color:0x172329})};
     const arcadeGarageSignCanvas=document.createElement("canvas");arcadeGarageSignCanvas.width=256;arcadeGarageSignCanvas.height=96;const arcadeGarageSignContext=arcadeGarageSignCanvas.getContext("2d");arcadeGarageSignContext.fillStyle="#173a50";arcadeGarageSignContext.fillRect(0,0,256,96);arcadeGarageSignContext.fillStyle="#fff1d0";arcadeGarageSignContext.font="900 47px system-ui";arcadeGarageSignContext.textAlign="center";arcadeGarageSignContext.fillText("GARAGE",128,63);const arcadeGarageSignTexture=new THREE.CanvasTexture(arcadeGarageSignCanvas);arcadeGarageSignTexture.colorSpace=THREE.SRGBColorSpace;const arcadeGarageSignMaterial=new THREE.MeshBasicMaterial({map:arcadeGarageSignTexture,side:THREE.DoubleSide}),arcadeGarageSignGeometry=new THREE.PlaneGeometry(5.4,2);
@@ -244,7 +247,7 @@
       return null;
     }
     function arcadeBuildGarages(){
-      if(!arcadeRoadsideMode()||arcadeGarageCourse===course)return;
+      if(!arcadeGarageEnabled||!arcadeRoadsideMode()||arcadeGarageCourse===course)return;
       arcadeGarageCourse=course;arcadeGarageStops=[];arcadeGarageRoot.clear();if(arcadeGarageRoot.parent!==dynamicRoot)dynamicRoot.add(arcadeGarageRoot);
       const eligibleEdges=(course.edges??[]).filter(edge=>edge.surface==="paved"&&edge.type!=="roundabout"&&!String(edge.type||"").includes("ramp")&&Number(edge.width||0)<=32);
       for(let index=0;index<eligibleEdges.length;index++){
@@ -268,10 +271,11 @@
         }
       }
     }
-    function arcadeNearestGarage(position){let nearest=null;for(const stop of arcadeGarageStops){const distance=Math.hypot(position.x-stop.x,position.z-stop.z);if(distance<18&&(!nearest||distance<nearest.distance))nearest={stop,distance}}return nearest}
+    function arcadeNearestGarage(position){if(!arcadeGarageEnabled)return null;let nearest=null;for(const stop of arcadeGarageStops){const distance=Math.hypot(position.x-stop.x,position.z-stop.z);if(distance<18&&(!nearest||distance<nearest.distance))nearest={stop,distance}}return nearest}
     let arcadeLastGarageCull=-Infinity;
     function arcadeCullGarages(now){if(now-arcadeLastGarageCull<250)return;arcadeLastGarageCull=now;const position=readTruck().position;for(const stop of arcadeGarageStops){const dx=stop.x-position.x,dz=stop.z-position.z;stop.group.visible=dx*dx+dz*dz<650*650}}
     function arcadeShowGarage(focusItem=null){
+      if(!arcadeGarageEnabled)return;
       const wasHidden=arcadeGaragePanel.hidden,restoreFocus=wasHidden||arcadeGaragePanel.contains(document.activeElement),scrollTop=arcadeGaragePanel.scrollTop;
       if(wasHidden){releaseDrivingInput();forwardBoost.clearTaps();arcadeScore.tick(0,{active:false})}
       const save=arcadeUpgradeState(),upgrades=save.upgrades||{},cash=Number(save.cash)||0,saveAvailable=arcadeSaveWritable();
@@ -298,7 +302,7 @@
     let arcadeLastHud=0;
     function arcadeVisualFrame(now){
       const view=currentScene();
-      if(view!=="driving")arcadeGaragePanel.hidden=true;
+      arcadeGaragePanel.hidden=true;
       const playing=view==="driving"&&!launchIntro.active;arcadeOverlay.classList.toggle("active",playing);
       if(playing&&now-arcadeLastHud>=66){arcadeLastHud=now;const run=readRun(),fuel=meters.get("fuel")?.value??0,intent=engine.n.coreInput.getIntent(),distance=run.distance||0;
         document.getElementById("arcade-fuel").textContent=Math.ceil(fuel)+"%";
