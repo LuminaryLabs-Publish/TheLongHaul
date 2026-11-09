@@ -90,5 +90,5 @@ assert.match(host,/cloudPositioning:'world-bearing-sky'/);
 assert.match(host,/cloudDepthPolicy:'sky-first-landscape-overdraw'/);
 assert.match(host,/cloudLayers:cloudLayerCounts\.slice\(\)/);
 assert.match(host,/cloudVisibilityScale:\[1,1,1\]/);
-const html=await readFile(new URL('../index.html',import.meta.url),'utf8');assert.match(html,/id="campaign-coming-soon"[^>]*disabled/);assert.match(html,/campaign.html#garage/);
+const html=await readFile(new URL('../index.html',import.meta.url),'utf8');assert.match(html,/id="campaign-coming-soon"[^>]*disabled/);assert.doesNotMatch(html,/href="\.\/campaign\.html#garage"/);
 console.log('PASS presentation: seeded clouds, 240 relief samples, legacy terrain, worker seams, broad canopy geometry, HUD transition/urgency, preserved Campaign boundary.');
