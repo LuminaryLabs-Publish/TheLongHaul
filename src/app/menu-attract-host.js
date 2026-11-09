@@ -8,6 +8,8 @@
   try {
     const title = document.querySelector('#title-screen');
     const loading = document.querySelector('#generating-screen');
+    // Remove the former painted highway overlay; preserve title controls.
+    title?.classList.remove('menu-screen');
     const seed = 'the-long-haul:cinematic-preview-v2';
     const previewCourse = createEndlessHighway(seed, {progress:0,generatorVersion:ROAD_GENERATOR_VERSION});
     const root = new THREE.Group();
@@ -127,7 +129,7 @@
       for(const entry of [...cells.values()])if(!keep.has(entry.id))removeOwned(entry);
       for(const cell of wanted){
         if(pending>=MAX_PENDING)break;
-        if(cells.has(cell.id)||requested.has(cell.id))continue;
+        if(cells.has(cell.id)||requested.has(cell.id)||arrivals.some(p=>p.cell.id===cell.id))continue;
         requested.add(cell.id);pending++;generations++;
         worker.prepare(cell).then(patch=>{
           if(requested.has(cell.id))arrivals.push({cell,patch});
