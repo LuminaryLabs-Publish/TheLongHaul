@@ -65,7 +65,11 @@
     for(const door of [doorLeft,doorRight]){
       door.getAnimations?.().forEach(a=>a.cancel());
       door.style.transform='none';
+      door.style.scale='1';
       door.style.width='50%';
+      door.style.minWidth='50%';
+      door.style.maxWidth='50%';
+      door.style.translate='0px 0px';
     }
     doorLeft.style.left='0%';
     doorRight.style.right='0%';
@@ -107,15 +111,15 @@
       ]);
       caption.style.opacity='0';
       await Promise.all([
-        // Animate container-relative offsets, never width, scale, or rotate.
-        // A 50%-wide door at -52% left (or -52% right) is fully offscreen.
+        // Translate each full-size half out by more than its own width.
+        // Neither the menu nor the panels are scaled, squeezed, or rotated.
         animate(doorLeft,[
-          {left:'0%'},
-          {left:'-52%'}
+          {translate:'0px 0px'},
+          {translate:'-104% 0px'}
         ],reduced?1:700,signal),
         animate(doorRight,[
-          {right:'0%'},
-          {right:'-52%'}
+          {translate:'0px 0px'},
+          {translate:'104% 0px'}
         ],reduced?1:700,signal)
       ]);
       doorsOpened=true;
@@ -160,6 +164,6 @@
     getState:()=>({active:Boolean(current),kind:current?.kind??null,
       status:current?.status??'inactive',minimumMs:MIN_VISIBLE_MS,
       committed:commits,cancelled:cancellations,pinnedSceneAdapter:true,
-      visualMode:'position-slide-doors',doorsOpened})
+      visualMode:'translate-only-doors',doorsOpened})
   };
 })();
