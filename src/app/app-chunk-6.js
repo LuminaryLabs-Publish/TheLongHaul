@@ -6,7 +6,7 @@
     let campaignAutoStarted=false;
     const phases=["Choosing course","Building roads","Placing depots","Shaping terrain","Growing forests","Adding wildlife","Preparing truck","Checking course","Ready"];
     $("#phase-list").innerHTML=phases.map(phase=>`<div class="phase" data-phase="${phase}">${phase}</div>`).join("");
-    function startGeneration(seed,reuseCourse=false,exitId="start"){if(generation&&!generation.ready&&!generation.error)return;const current=engine.n.coreScene.getCurrentScene()?.id;if(!["title","dispatch","paused","results","loss","driving"].includes(current))return;clearWorld(false);resultTransitioned=false;lossTransitioned=false;lastDeliverySequence=0;lastPenaltyCount=0;activeContacts.clear();runSerial+=1;runKey=`${seed}:${runSerial}`;transition(exitId,{seed});generation={seed,reuseCourse:reuseCourse&&course,phaseIndex:0,initialCells:[],cursor:0,error:null};if(generation.reuseCourse)generation.generatedCourse=course;$("#course-code").textContent=`Course ${seedCode(seed)}`;updateLoadingUi()}
+    function startGeneration(seed,reuseCourse=false,exitId="start"){if(generation&&!generation.ready&&!generation.error)return;const current=engine.n.coreScene.getCurrentScene()?.id;if(!["title","dispatch","paused","results","loss","driving"].includes(current))return;clearWorld(false);window.LongHaulAsyncLoading?.begin({kind:"course"});resultTransitioned=false;lossTransitioned=false;lastDeliverySequence=0;lastPenaltyCount=0;activeContacts.clear();runSerial+=1;runKey=`${seed}:${runSerial}`;transition(exitId,{seed});generation={seed,reuseCourse:reuseCourse&&course,phaseIndex:0,initialCells:[],cursor:0,error:null};if(generation.reuseCourse)generation.generatedCourse=course;$("#course-code").textContent=`Course ${seedCode(seed)}`;updateLoadingUi()}
     let patchClient=null;
     function createResolvedCoursePatch(cell){return createCourseCellDescriptor(course,cell,course?.geography?{terrainSegments:12}:{terrainSegments:16})}
     function createRouteCells(value){const coordinates=new Set();for(const edge of value.edges??[]){for(const sample of edge.samples??[]){const cx=Math.floor(sample.x/CELL_SIZE),cz=Math.floor(sample.z/CELL_SIZE);for(let z=-1;z<=1;z++)for(let x=-1;x<=1;x++)coordinates.add(`${cx+x}:${cz+z}`)}}return [...coordinates].map(key=>{const [x,z]=key.split(":").map(Number);return cellFromCoordinates(x,z)})}
@@ -23,8 +23,20 @@
       {phase:"Checking course",run(){const expected=(ACTIVE_RADIUS*2+1)**2;if(activeWorldCells.length!==expected||cellHosts.size<expected){reconcileCells(9);return false}lastCellKey=`${Math.floor(course.origin.x/CELL_SIZE)}:${Math.floor(course.origin.z/CELL_SIZE)}`;registerHorizonWorld();buildWildlife()}},
       {phase:"Checking course",run(){const warm=new THREE.Group(),geometry=geometries.box.clone();geometry.setAttribute("color",new THREE.Float32BufferAttribute(new Float32Array(geometry.attributes.position.count*3).fill(.5),3));for(const material of [...Object.values(materials),_lhUnifiedHorizonMaterial,_lhMarkerMaterial,_lhMarkerReflectorMaterial,_lhAsphaltMaterial,_lhWhiteLineMaterial,_lhYellowLineMaterial]){warm.add(new THREE.Mesh(geometry,material),new THREE.InstancedMesh(geometry,material,1))}const owned={geometries:[],materials:[],textures:[]};warm.add(createSign({x:0,z:0,heading:0,title:"",subtitle:"",color:"#fff"},owned));scene.add(warm);return renderer.compileAsync(scene,camera).finally(()=>{warm.removeFromParent();warm.traverse(o=>{if(o.isInstancedMesh)o.dispose()});geometry.dispose();for(const key of ["materials","textures","geometries"])for(const value of owned[key])value.dispose()})}},
       {phase:"Ready",run(){
-        document.body.classList.add("world-visible");meters.setLocked("remaining-time",true,"cinematic");
-        beginLaunchIntro();transition("ready",{packageId:course.packageId});generation.ready=true;
+        const complete=()=>{
+          document.body.classList.add("world-visible");
+          meters.setLocked("remaining-time",true,"cinematic");
+          beginLaunchIntro();
+          transition("ready",{packageId:course.packageId});
+          generation.ready=true;
+        };
+        // Keep CoreScene authoritative: asynchronous preparation and the
+        // minimum-duration trailer reveal finish before requesting its
+        // established scene transition. Pinned CoreScene has no loadScene().
+        const loader=window.LongHaulAsyncLoading;
+        return loader?.getState().kind==="course"
+          ? loader.finish({commit:complete,phaseText:"ROAD READY"})
+          : complete();
       }}
     ]}
     function stepGeneration(){
@@ -33,7 +45,7 @@
       const finish=value=>{if(generation!==current||value===false)return;current.cursor++;current.phaseIndex=phases.indexOf(unit.phase);updateLoadingUi()};
       try{const value=unit.run();if(value?.then){current.pending=true;value.then(finish).catch(error=>{if(generation===current){current.error=error;showBootError(error)}}).finally(()=>{current.pending=false})}else finish(value)}catch(error){current.error=error;showBootError(error)}
     }
-    function updateLoadingUi(){const total=generation?.steps?.length||20;const done=generation?.cursor||0;const ratio=clamp(done/total,0,1);$("#progress-fill").style.width=`${Math.round(ratio*100)}%`;$("#progress-percent").textContent=`${Math.round(ratio*100)}%`;const phase=generation?.steps?.[generation.cursor]?.phase||"Ready";$("#phase-detail").textContent=phase;for(const element of $$(".phase")){const index=phases.indexOf(element.dataset.phase);element.classList.toggle("done",index<generation.phaseIndex||phase==="Ready");element.classList.toggle("active",element.dataset.phase===phase)}}
+    function updateLoadingUi(){const total=generation?.steps?.length||20;const done=generation?.cursor||0;const ratio=clamp(done/total,0,1);window.LongHaulAsyncLoading?.report?.(undefined,{progress:ratio,phase:generation?.steps?.[generation.cursor]?.phase||"Ready"});$("#progress-fill").style.width=`${Math.round(ratio*100)}%`;$("#progress-percent").textContent=`${Math.round(ratio*100)}%`;const phase=generation?.steps?.[generation.cursor]?.phase||"Ready";$("#phase-detail").textContent=phase;for(const element of $$(".phase")){const index=phases.indexOf(element.dataset.phase);element.classList.toggle("done",index<generation.phaseIndex||phase==="Ready");element.classList.toggle("active",element.dataset.phase===phase)}}
 
     function clearWorld(clearCourse=true){resetArcadeOverhaul();forwardBoost.reset();resetScrapeSparks();patchClient?.dispose();patchClient=null;activeContacts.clear();clearHorizonWorld?.();try{if(engine.n.coreWorld.getWorldDefinition(WORLD_ID))engine.n.coreWorld.removeWorld(WORLD_ID)}catch{}for(const id of [...cellHosts.keys()])releaseCell(id);resetCellStreamingQueues();cellRoot.clear();dynamicRoot.clear();for(const id of ["tree-trunks","tree-crowns-a","tree-crowns-b","grass"]){try{batches.retainCells(id,[]);flushBatch(id)}catch{}}truckRig=null;wildlifeRig=null;preparation=null;preloadedRouteCells=[];lastCellKey="";mapOpen=false;updateMapPanel();document.body.classList.remove("world-visible","driving","final-minute");if(clearCourse){course=null;courseEnvelope=null}engine.n.longHaulCourse.reset();engine.n.longHaulDelivery.reset();engine.n.longHaulWildlife.reset();engine.n.longHaulRun.reset();meters.reset()}
 
