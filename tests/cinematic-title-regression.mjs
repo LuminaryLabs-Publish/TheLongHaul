@@ -85,7 +85,7 @@ const context={
 };
 vm.runInNewContext(source,context,{filename:'menu-attract-host.js'});
 const api=context.window.LongHaulTitleAttract;
-assert.ok(api);assert.equal(titleClasses.has('menu-screen'),false);
+assert.ok(api);assert.equal(titleClasses.has('menu-screen'),true);
 const tick=async(milliseconds)=>{
   now=milliseconds;context.arcadeVisualFrame(now);
   await Promise.resolve();await Promise.resolve();await Promise.resolve();
