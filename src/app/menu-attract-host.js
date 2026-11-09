@@ -16,9 +16,9 @@
     root.name='LH_CANONICAL_PREVIEW_WORLD';
     root.visible=false;
     worldRoot.add(root);
-    const cells = new Map(), requested = new Set(), arrivals = [];
+    const cells = new Map(), requested = new Set(), failed = new Set(), arrivals = [];
     const CENTER_RADIUS=2, MAX_CELLS=25, MAX_PENDING=2, SPEED=22;
-    let worker=null, pending=0, lastFrame=null, progress=110, lastRevision=previewCourse.endless.revision;
+    let worker=null, pending=0, epoch=0, lastFrame=null, progress=110, lastRevision=previewCourse.endless.revision;
     let mode='inactive', active=false, error=null, builds=0, releases=0, generations=0;
     let atmosphere=null, hero=null, lastTreeRefresh=-Infinity;
     const factory = createEnvironmentTileRenderer({THREE,materials});
@@ -34,7 +34,7 @@
       cells.delete(entry.id);releases++;
     };
     function retireWorker() {
-      worker?.dispose();worker=null;requested.clear();pending=0;arrivals.length=0;
+      epoch++;worker?.dispose();worker=null;requested.clear();failed.clear();pending=0;arrivals.length=0;
     }
     function retireWorld() {
       retireWorker();
@@ -144,7 +144,7 @@
       }
     }
     function streamNear(point){
-      if(!worker)worker=createPatchWorkerClient(previewCourse,{quality:settings.quality});
+      if(!worker){worker=createPatchWorkerClient(previewCourse,{quality:settings.quality});epoch++;}
       const x=Math.floor(point.x/CELL_SIZE),z=Math.floor(point.z/CELL_SIZE),wanted=[];
       for(let dz=-CENTER_RADIUS;dz<=CENTER_RADIUS;dz++)
         for(let dx=-CENTER_RADIUS;dx<=CENTER_RADIUS;dx++)
@@ -153,18 +153,27 @@
       const keep=new Set(wanted.map(c=>c.id));
       for(const entry of [...cells.values()])if(!keep.has(entry.id))removeOwned(entry);
       for(const cell of wanted){
-        if(pending>=MAX_PENDING)break;
-        if(cells.has(cell.id)||requested.has(cell.id)||arrivals.some(p=>p.cell.id===cell.id))continue;
+        if(pending>=(mode==='generating'?1:MAX_PENDING))break;
+        if(cells.has(cell.id)||requested.has(cell.id)||failed.has(cell.id)||arrivals.some(p=>p.cell.id===cell.id))continue;
         requested.add(cell.id);pending++;generations++;
+        const requestEpoch=epoch;
         worker.prepare(cell).then(patch=>{
-          if(requested.has(cell.id))arrivals.push({cell,patch});
+          if(epoch===requestEpoch&&requested.has(cell.id))arrivals.push({cell,patch});
         }).catch(e=>{
-          if(requested.has(cell.id)&&mode!=='inactive')console.warn('Preview patch fallback',cell.id,e);
-        }).finally(()=>{requested.delete(cell.id);pending=Math.max(0,pending-1);});
+          if(epoch===requestEpoch&&requested.has(cell.id)){
+            failed.add(cell.id);error=String(e);
+            if(mode!=='inactive')console.warn('Preview patch fallback',cell.id,e);
+          }
+        }).finally(()=>{
+          if(epoch===requestEpoch){requested.delete(cell.id);pending=Math.max(0,pending-1);}
+        });
       }
       // Never allocate more than one new mesh-cell per frame.
       const ready=arrivals.shift();
-      if(ready&&keep.has(ready.cell.id)&&!cells.has(ready.cell.id))onPatch(ready.patch);
+      if(ready&&keep.has(ready.cell.id)&&!cells.has(ready.cell.id)){
+        try{onPatch(ready.patch)}catch(e){failed.add(ready.cell.id);error=String(e);
+          console.warn('Preview cell render fallback',ready.cell.id,e)}
+      }
       if(cells.size>MAX_CELLS)for(const entry of [...cells.values()].slice(0,cells.size-MAX_CELLS))removeOwned(entry);
       stepEnvironment();
     }
