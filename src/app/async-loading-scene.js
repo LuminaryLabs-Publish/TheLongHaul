@@ -27,7 +27,7 @@
     if (signal.aborted) { reject(new Error('SCENE_LOAD_CANCELLED')); return; }
     // Presentation-only animation. Native Web Animations keeps geometry fixed.
     if (typeof element.animate !== 'function') {
-      element.style.transform = frames[frames.length - 1].transform;
+      Object.assign(element.style, frames[frames.length - 1]);
       delay(duration, signal).then(resolve, reject);
       return;
     }
@@ -36,7 +36,12 @@
     signal.addEventListener('abort', onAbort, {once:true});
     motion.finished.then(() => {
       signal.removeEventListener('abort', onAbort);
-      if (!signal.aborted) resolve();
+      if (signal.aborted) return;
+      // Retain the completed position as ordinary layout, rather than
+      // leaving a composited transform/old animation controlling the door.
+      Object.assign(element.style, frames[frames.length - 1]);
+      motion.cancel();
+      resolve();
     }, () => {signal.removeEventListener('abort', onAbort); reject(new Error('SCENE_LOAD_CANCELLED'));});
   });
   const report = (operation=current, info = {}) => {
@@ -59,8 +64,11 @@
     root.style.opacity='1';root.style.transform='none';
     for(const door of [doorLeft,doorRight]){
       door.getAnimations?.().forEach(a=>a.cancel());
-      door.style.transform='translateX(0)';
+      door.style.transform='none';
+      door.style.width='50%';
     }
+    doorLeft.style.left='0%';
+    doorRight.style.right='0%';
     caption.style.opacity='1';
     doorsOpened=false;
     meter.style.width='0%';phase.textContent=kind==='boot'?'STARTING ENGINE':'BUILDING THE HAUL';
@@ -99,14 +107,16 @@
       ]);
       caption.style.opacity='0';
       await Promise.all([
+        // Animate container-relative offsets, never width, scale, or rotate.
+        // A 50%-wide door at -52% left (or -52% right) is fully offscreen.
         animate(doorLeft,[
-          {transform:'translateX(0)'},
-          {transform:'translateX(-102%)'}
-        ],reduced?1:650,signal),
+          {left:'0%'},
+          {left:'-52%'}
+        ],reduced?1:700,signal),
         animate(doorRight,[
-          {transform:'translateX(0)'},
-          {transform:'translateX(102%)'}
-        ],reduced?1:650,signal)
+          {right:'0%'},
+          {right:'-52%'}
+        ],reduced?1:700,signal)
       ]);
       doorsOpened=true;
       if (current===operation) {
@@ -150,6 +160,6 @@
     getState:()=>({active:Boolean(current),kind:current?.kind??null,
       status:current?.status??'inactive',minimumMs:MIN_VISIBLE_MS,
       committed:commits,cancelled:cancellations,pinnedSceneAdapter:true,
-      visualMode:'slide-doors',doorsOpened})
+      visualMode:'position-slide-doors',doorsOpened})
   };
 })();
