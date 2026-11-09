@@ -56,8 +56,8 @@
       // independent title ribbons, an illustrated flat plane, or copied shaders.
       for(const [surface,asphalt,shoulder] of [
         ['paved',_lhAsphaltMaterial,_lhPavedShoulderMaterial],
-        ['gravel',_lhRoughRoadMaterial??materials.roughRoad,materials.shoulder],
-        ['dirt',materials.roughRoad,materials.shoulder]
+        ['gravel',_lhGravelMaterial,_lhGravelShoulderMaterial],
+        ['dirt',_lhDirtMaterial,_lhDirtShoulderMaterial]
       ]) {
         const segments=patch.roads.filter(r=>r.surface===surface);
         if(!segments.length)continue;
