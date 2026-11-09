@@ -15,14 +15,14 @@ assert.match(menuPresentation,/titleScreen,\{'background':'transparent'/);
 assert.match(menuPresentation,/menuButtons\s*=\s*menuItems\.map/);
 assert.match(menuPresentation,/window\.addEventListener\('resize',arrangeTitle/);
 assert.doesNotMatch(menuPresentation,/\.replaceWith\(.*start-btn/);
-assert.match(markup,/id="start-btn"[^>]*title-endless/);
+assert.match(markup,/id="start-btn"[^>]*type="button"/);
 assert.match(markup,/id="campaign-coming-soon"[^>]*disabled/);
-assert.match(markup,/id="settings-btn"[^>]*title-settings/);
-assert.match(css,/#title-screen \.title-card\{[^}]*justify-self:center/);
-for(const asset of ['logo','endless','campaign','settings']){
-  assert.match(css+markup,new RegExp('art/menu/'+asset+'\\.webp'));
-  assert.ok(fs.statSync(new URL('../art/menu/'+asset+'.webp',import.meta.url)).size>1000);
-}
+assert.match(markup,/id="settings-btn"[^>]*type="button"/);
+assert.match(markup,/class="title-wordmark" role="heading"/);
+assert.match(markup,/style="visibility:hidden"/);
+assert.doesNotMatch(markup,/title-art-button|art\/menu\/logo\.webp/);
+assert.doesNotMatch(markup,/href="\.\/campaign\.html#garage"/);
+assert.match(menuPresentation,/visibility:'visible'/);
 assert.match(source,/createPatchWorkerClient\(previewCourse/);
 assert.match(source,/longHaulRoadV3\.buildPlayable/);
 assert.match(source,/createTerrainMesh\(patch\)/);
