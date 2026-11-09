@@ -14,6 +14,7 @@ for(const asset of ['logo','endless','campaign','settings']){
   assert.ok(fs.statSync(new URL('../art/menu/'+asset+'.webp',import.meta.url)).size>1000);
 }
 assert.match(source,/createPatchWorkerClient\(previewCourse/);
+assert.match(source,/longHaulRoadV3\.buildPlayable/);
 assert.match(source,/createTerrainMesh\(patch\)/);
 assert.match(source,/_lhRoadMesh\(group/);
 assert.match(source,/_lhRoadLine\(group/);
@@ -51,7 +52,7 @@ const context={
       remove(...keys){keys.forEach(key=>bodyClasses.delete(key))}}}
   },
   worldRoot,cellRoot,dynamicRoot,camera:{position:{set(){}},lookAt(){}},
-  WORLD_ID:'cinematic-test',CELL_SIZE:160,ROAD_GENERATOR_VERSION:'v2',
+  WORLD_ID:'cinematic-test',CELL_SIZE:160,ROAD_GENERATOR_VERSION:'v2',ROAD_V3_VERSION:'v3',
   _lhAsphaltMaterial:material,_lhPavedShoulderMaterial:material,
   _lhGravelMaterial:material,_lhGravelShoulderMaterial:material,
   _lhDirtMaterial:material,_lhDirtShoulderMaterial:material,
