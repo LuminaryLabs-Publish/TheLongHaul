@@ -4,8 +4,16 @@ import { LONG_HAUL_TRUCK_COLLIDER } from "./vehicle-collider.mjs";
 import { createDriftState, prepareDrift, resolveDrift } from "./drift-behavior.mjs";
 import { createTruckSpringMassState, advanceTruckSpringMass } from "./truck-spring-mass.mjs";
 import { cargoDynamics, normalizeCargoLoad } from "./cargo-profiles.mjs";
-import { createReactiveBodyState, advanceReactiveBody } from "./truck-reactive-body.mjs";
+import { createReactiveBodyState, advanceReactiveBody, chassisHeading } from "./truck-reactive-body.mjs";
 import { resolveTruckTireForces } from "./truck-tire-forces.mjs";
+
+function bodyAtHeading(heading = 0, verticalVelocity = 0) {
+  return createReactiveBodyState({
+    quaternion: { x: 0, y: Math.sin(heading * 0.5), z: 0, w: Math.cos(heading * 0.5) },
+    angularVelocity: { x: 0, y: 0, z: 0 },
+    verticalVelocity
+  });
+}
 
 function cargoState(profile, value, previous = null) {
   const cargo = normalizeCargoLoad(value);
@@ -105,7 +113,7 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
     drift: createDriftState(),
     movementVersion: "v2",
     springMass: createTruckSpringMassState(),
-    reactiveBody: createReactiveBodyState(),
+    reactiveBody: bodyAtHeading(finite(value.heading)),
     driveTraction: 1,
     contactLoads: {left: 0, right: 0, body: 0},
     weightTransfer: 0,
@@ -186,7 +194,7 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             driftAngle: 0,
             drift: createDriftState(state.drift, true),
             springMass: createTruckSpringMassState(),
-            reactiveBody: createReactiveBodyState(),
+            reactiveBody: bodyAtHeading(heading, finite(request.verticalSpeed)),
             driveTraction: 1,
             contactLoads: {left: 0, right: 0, body: 0},
             weightTransfer: 0,
@@ -266,16 +274,39 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           const launch = launchImpulse > 0.6;
           const impactStrength = Math.hypot(finite(request.speedDelta), finite(request.x), finite(request.z)) + Math.abs(rollImpulse) * 4;
           const impact = request.kind !== "launch" && impactStrength > 0.01;
+          const deltaVelocity = {
+            x: (forward.x * finite(request.speedDelta) + finite(request.x)) * load.momentumScale,
+            y: launchImpulse,
+            z: (forward.z * finite(request.speedDelta) + finite(request.z)) * load.momentumScale
+          };
+          // Both translation and rotation receive the same physical impulse.
+          // Optional world contact coordinates give the impulse a lever arm.
+          const offset = request.point ? {
+            x: finite(request.point.x) - state.position.x,
+            y: finite(request.point.y) - (state.groundHeight + state.reactiveBody.centerY),
+            z: finite(request.point.z) - state.position.z
+          } : { x: 0, y: 0, z: 0 };
+          const angularKick = {
+            x: (offset.y * deltaVelocity.z - offset.z * deltaVelocity.y) / 4.5,
+            y: (offset.z * deltaVelocity.x - offset.x * deltaVelocity.z) / 8,
+            z: (offset.x * deltaVelocity.y - offset.y * deltaVelocity.x) / 4.5
+          };
           state = {
             ...state,
             velocity: {
-              x: state.velocity.x + (forward.x * finite(request.speedDelta) + finite(request.x)) * load.momentumScale,
-              y: clamp(state.velocity.y + launchImpulse, -40, 28),
-              z: state.velocity.z + (forward.z * finite(request.speedDelta) + finite(request.z)) * load.momentumScale
+              x: state.velocity.x + deltaVelocity.x,
+              y: clamp(state.velocity.y + deltaVelocity.y, -40, 28),
+              z: state.velocity.z + deltaVelocity.z
             },
-            heading: normalizeAngle(state.heading + finite(request.headingDelta) * load.yawScale),
-            yawRate: state.yawRate + finite(request.yawDelta) * load.yawScale,
-            reactiveBody: { ...state.reactiveBody, angularVelocity: { ...state.reactiveBody.angularVelocity, z: clamp(state.reactiveBody.angularVelocity.z + (request.allowTip === false ? 0 : rollImpulse), -5, 5) } },
+            yawRate: state.yawRate + finite(request.yawDelta) * load.yawScale + angularKick.y,
+            reactiveBody: { ...state.reactiveBody,
+              verticalVelocity: clamp(state.reactiveBody.verticalVelocity + deltaVelocity.y, -40, 28),
+              angularVelocity: {
+                x: clamp(state.reactiveBody.angularVelocity.x + angularKick.x, -5, 5),
+                y: clamp(state.reactiveBody.angularVelocity.y + finite(request.yawDelta) * load.yawScale + angularKick.y + finite(request.headingDelta) * load.yawScale, -3, 3),
+                z: clamp(state.reactiveBody.angularVelocity.z + angularKick.z + (request.allowTip === false ? 0 : rollImpulse), -5, 5)
+              }
+            },
             grounded: launch ? false : state.grounded,
             flightOrigin: launch && state.grounded ? { ...state.position } : state.flightOrigin,
             flightPeakHeight: launch && state.grounded ? 0 : state.flightPeakHeight,
@@ -428,8 +459,8 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             : 0;
           // Angular velocity is integrated from axle torque. The safety bound
           // is for numerical robustness, not a steering-derived yaw target.
-          const yawRate = clamp(state.yawRate + tire.yawAcceleration * dt, -3, 3);
-          const heading = normalizeAngle(state.heading + yawRate * dt);
+          let yawRate = clamp(finite(state.reactiveBody?.angularVelocity?.y, state.yawRate), -3, 3);
+          let heading = normalizeAngle(state.heading + (yawRate + tire.yawAcceleration * dt) * dt);
           const nextForward = { x: Math.sin(heading), z: Math.cos(heading) };
           const nextRight = { x: nextForward.z, z: -nextForward.x };
           // A turn changes the body orientation before tires redirect its mass.
@@ -475,35 +506,14 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           let landingSequence = state.landingSequence;
           let lastLanding = state.lastLanding;
           let supportVelocity = state.supportVelocity;
-          if (grounded) {
-            positionY = targetRideHeight;
-            velocity.y = 0;
-            airTime = 0;
-            flightOrigin = null;
-            supportVelocity = clamp(-(state.groundNormal.x * velocity.x + state.groundNormal.z * velocity.z) / Math.max(0.25, state.groundNormal.y), -8, 12);
-          } else {
+          // The ground sample is a contact plane, never a height constraint.
+          // The single reactive rigid body integrates gravity and suspension.
+          if (!grounded) {
             if (!flightOrigin) { flightOrigin = { ...state.position }; flightPeakHeight = 0; }
-            if (state.grounded) velocity.y = Math.max(velocity.y, supportVelocity);
             airTime += dt;
-            velocity.y -= finite(profile.air?.gravity, 11.5) * dt;
-            positionY += velocity.y * dt;
-            flightPeakHeight = Math.max(flightPeakHeight, positionY - flightOrigin.y);
-            if (positionY <= targetRideHeight && velocity.y <= 0) {
-              const impactSpeed = -velocity.y;
-              // A small rebound is visual punctuation, not a second stunt.
-              if (airTime >= 0.25 && impactSpeed > 2) {
-                landingSequence += 1;
-                lastLanding = { sequence: landingSequence, airTime, impactSpeed, distance: Math.hypot(state.position.x - flightOrigin.x, state.position.z - flightOrigin.z), height: flightPeakHeight, effectiveMass: load.effectiveMass, energy: 0.5 * load.effectiveMass * impactSpeed * impactSpeed, loadStress };
-              }
-              suspensionCompression = Math.max(suspensionCompression, Math.min(1, load.staticCompression + impactSpeed * 0.065 / Math.sqrt(load.massRatio)));
-              suspensionVelocity = 0;
-              positionY = targetRideHeight;
-              const rebound = Math.min(Math.max(0, finite(suspension.maximumRebound, 1)), impactSpeed * Math.max(0, finite(suspension.landingRestitution, 0.065)) * load.launchScale);
-              velocity.y = rebound > 0.3 && airTime >= 0.25 ? rebound : 0;
-              grounded = velocity.y === 0;
-              airTime = 0; flightOrigin = null; flightPeakHeight = 0; supportVelocity = 0;
-            }
+            flightPeakHeight = Math.max(flightPeakHeight, state.position.y - flightOrigin.y);
           }
+          positionY += velocity.y * dt;
           // A damped visual spring is integrated once. The contact sphere does
           // not inherit body lean or accumulate artificial suspension energy.
           const damping = (suspensionVelocity >= 0 ? finite(suspension.compressionDamping, 8.5) : finite(suspension.extensionDamping, 6.4)) * load.dampingScale;
@@ -523,8 +533,6 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
           }
           longitudinal = velocity.x * nextForward.x + velocity.z * nextForward.z;
           lateral = velocity.x * nextRight.x + velocity.z * nextRight.z;
-          // Ground contact supports the sphere centre. Render lean never changes this radius.
-          if(position.y<targetRideHeight){position.y=targetRideHeight;velocity.y=Math.max(0,velocity.y);grounded=true;airTime=0}
           const driftAngle = Math.atan2(lateral, Math.max(0.01, Math.abs(longitudinal)));
           // Project the actual change in world velocity into the truck frame.
           // No steering-sign / drift-mode command is fed to the spring: a drift
@@ -535,9 +543,31 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             z: clamp(((velocity.x - state.velocity.x) * nextForward.x + (velocity.z - state.velocity.z) * nextForward.z) / dt, -35, 35)
           };
           const spring = advanceTruckSpringMass(state.springMass, grounded ? localAcceleration : { x: 0, y: localAcceleration.y, z: 0 }, load, dt, profile.springMass);
-          const sprungBalance = advanceReactiveBody(state.reactiveBody, spring, localAcceleration, load, profile, dt, grounded);
+          const sprungBalance = advanceReactiveBody(state.reactiveBody, spring, localAcceleration, load, profile, dt, true, {
+            yawAcceleration: tire.yawAcceleration,
+            normal: state.groundNormal
+          });
           const { body: nextBody, ...bodyTelemetry } = sprungBalance;
           const { tipped, rollAngle, rollVelocity } = bodyTelemetry;
+          // The chassis supplies the ONLY vertical position and orientation.
+          position.y = state.groundHeight + nextBody.centerY - load.centerOfMassHeight + contactRadius;
+          velocity.y = nextBody.verticalVelocity;
+          heading = normalizeAngle(chassisHeading(nextBody.quaternion));
+          yawRate = nextBody.angularVelocity.y;
+          const previousGrounded = state.grounded;
+          grounded = sprungBalance.driveTraction > 0.08 ||
+            (bodyTelemetry.contactLoads.body > load.effectiveMass * 9.81 * 0.08);
+          if (!previousGrounded && grounded) {
+            const impactSpeed = Math.max(0, -finite(state.velocity.y));
+            if (airTime >= 0.25 && impactSpeed > 2) {
+              landingSequence += 1;
+              lastLanding = { sequence: landingSequence, airTime, impactSpeed,
+                distance: flightOrigin ? Math.hypot(position.x - flightOrigin.x, position.z - flightOrigin.z) : 0,
+                height: flightPeakHeight, effectiveMass: load.effectiveMass,
+                energy: 0.5 * load.effectiveMass * impactSpeed * impactSpeed, loadStress };
+            }
+            airTime = 0; flightOrigin = null; flightPeakHeight = 0;
+          }
           if (sprungBalance.driveTraction < 0.15) drift = createDriftState(drift, true);
           const acceleration = clamp((longitudinal - state.longitudinalSpeed) / dt, -40, 40);
           // Preserve the existing cargo telemetry contract without inventing a
@@ -628,7 +658,8 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             lastSafe: { ...initial.lastSafe, ...saved.lastSafe },
             ...cargoState(getProfile(), saved.cargo, saved),
             springMass: createTruckSpringMassState(saved.springMass),
-            reactiveBody: createReactiveBodyState(saved.reactiveBody, cargoDynamics(getProfile(), saved.cargo).centerOfMassHeight)
+            reactiveBody: createReactiveBodyState(saved.reactiveBody?.quaternion ? saved.reactiveBody :
+              bodyAtHeading(finite(saved.heading)), cargoDynamics(getProfile(), saved.cargo).centerOfMassHeight)
           });
           return get();
         }
