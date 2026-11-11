@@ -62,24 +62,25 @@
     }
     function updateTruckVisual(dt){
       if(!truckRig)return;const state=readTruck(),rig=truckRig,travel=readDynamics().suspension?.travel??.92;
-      // Upright steering root follows the spherical ground support, never body roll.
-      rig.root.position.set(state.position.x,Math.max(state.position.y-travel+.02,terrainHeight(course,state.position.x,state.position.z)+.02),state.position.z);
-      rig.root.rotation.set(0,state.heading,0);
+      // V2 render geometry reads one world-space chassis pose. Legacy V1
+      // retains its independent ground-clearance and lean presentation.
+      const physicalPose=state.movementVersion==="v2"&&state.reactiveBody;
+      rig.root.position.set(state.position.x,
+        physicalPose?state.groundHeight:Math.max(state.position.y-travel+.02,terrainHeight(course,state.position.x,state.position.z)+.02),
+        state.position.z);
+      rig.root.rotation.set(0,physicalPose?0:state.heading,0);
       const normal=state.groundNormal??{x:0,y:1,z:0},s=Math.sin(state.heading),c=Math.cos(state.heading),forwardSlope=normal.x*s+normal.z*c,rightSlope=normal.x*c-normal.z*s;
       const pitch=state.grounded?Math.atan2(forwardSlope,Math.max(.25,normal.y)):0,slopeRoll=state.grounded?-Math.atan2(rightSlope,Math.max(.25,normal.y)):0;
       // The active V2 body's quaternion/ground contacts are the truck pose.
       // V1 retains its original visual grounding path for rollback.
       if(state.movementVersion==="v2"&&state.reactiveBody){
         const q=state.reactiveBody.quaternion;
-        const tilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch,0,slopeRoll,"XYZ"));
-        rig.leanPivot.quaternion.set(q.x,q.y,q.z,q.w).premultiply(tilt);
+        // No slope tilt, heading rotation, or smoothed roll is composed here:
+        // the complete world-space quaternion comes from the rigid chassis.
+        rig.leanPivot.quaternion.set(q.x,q.y,q.z,q.w);
         const comHeight=state.loadFactors?.centerOfMassHeight??1.35;
-        // Contact penalty springs have a small stationary sag. Compensate only
-        // that fixed rest compression because the visual wheels do not deform.
-        const contactHz=readDynamics().springMass?.contactFrequencyHz??1.6;
-        const restSag=9.81/Math.pow(2*Math.PI*contactHz,2);
-        const uprightFraction=Math.max(0,1-2*(q.x*q.x+q.z*q.z));
-        rig.leanPivot.position.y=state.reactiveBody.centerY+(1.5-comHeight)+restSag*uprightFraction;
+        // The pose already contains suspension travel and rollover height.
+        rig.leanPivot.position.y=state.reactiveBody.centerY+(1.5-comHeight);
       }else{
         const lean=state.tipped?state.rollAngle:clamp(state.bodyRoll,-1.12,1.12);
         rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lean+slopeRoll);
