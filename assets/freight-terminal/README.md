@@ -1,26 +1,12 @@
-# TLH-FREIGHT-START-001 — Authored Freight Terminal Start
+# TLH-FREIGHT-START-001 — Freight Terminal Start
 
-Static terminal-yard meshes exported from the user-authorized original 3D asset.
+The static start-yard GLB preserves the original freight-terminal layout and adds the Blender Kit V1 details: a cargo-handling gantry, dock markers and signage, roof vents, cargo corner guards, fuel-station details, yard lighting, entry signage, and perimeter trees. Its visual-only surfaces remain separate from gameplay collision and road ownership.
 
-- `terminal-yard.glb`: original 41 material batches, 46,532 triangles; loading docks,
-  trucks, cargo stacks, fuel station, gate, pavement, warehouse, original
-  roadside elements. No preview player truck.
-- Decorative highway and on-ramp pavement are **suppressed in the renderer**
-  (the source GLB preserves them for audit). NexusEngine draws the only
-  authoritative, seeded, drivable road surfaces. The original 3D
-  on-ramp and connection samples live in
-  `src/game/freight-terminal-start.mjs` and are transformed into the actual
-  generated highway network at `mergeProgress=320`.
-- Existing Road V2 and opt-in Road V3 both use the same real start hub on **new
-  Endless journeys**; Campaign and older saved Endless journeys preserve their
-  previous spawn locations. New terminal checkpoints record the hub identifier
-  and restore the corresponding road and visual layout.
-- The authored asset was modeled using `trimesh`, not Blender. No native Blender
-  authorship is claimed. Runtime GLB loading is verified in a Three.js fixture;
-  actual player-driven WebGL capture remains a separate visual acceptance gate.
-- Stored road and terrain transforms are world-seed-local, not fixed-world
-  coordinates. The garage, cargo, traffic and persistent wallet still belong to
-  their existing NexusEngine Kits.
+- `terminal-yard.glb`: 50 material batches, 83,496 triangles (bevels baked for export).
+- Built on the original terminal GLB and game-coordinate placement in `src/game/freight-terminal-start.mjs`.
+- Blender Kit sandbox prototype 0.0.4 authored the added geometry; Blender 4.3.2 baked modifiers and combined static geometry by material for the game's bounded GLB loader.
+- The GLB preserves the host's canonical `asphalt`, `dark_asphalt`, `lawn`, `lawn2`, `road_white`, and `road_yellow` material names so source highway/terrain surfaces remain suppressed. Yard asphalt remains visible.
+- NexusEngine-generated Road V2/V3 geometry remains the only authoritative drivable highway and collision surface.
+- The game GLB parser and existing Three.js freight-terminal host fixture pass. Actual WebGL gameplay screenshot/performance review remains pending; this asset is not marked AAA-approved.
 
-Original full authoring source and six-angle renders remain in the terminal
-production handoff. This file is the optimized **game** art only.
+The editable Blender scene, source/after renders, QA record, and iteration goal maps are archived in the shared `The Long Haul/03 - Work` Drive folder.
