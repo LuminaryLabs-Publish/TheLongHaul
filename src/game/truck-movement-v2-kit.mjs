@@ -15,6 +15,25 @@ function bodyAtHeading(heading = 0, verticalVelocity = 0) {
   });
 }
 
+function migratedBody(saved, heading, height) {
+  const body = saved && typeof saved === "object" ? saved : {};
+  if (!body.quaternion) return createReactiveBodyState(bodyAtHeading(heading), height);
+  if (body.poseSpace === "world") return createReactiveBodyState(body, height);
+  // Legacy reactive snapshots stored pitch/roll relative to an independent yaw.
+  const y = Math.sin(heading * 0.5), w = Math.cos(heading * 0.5);
+  const q = body.quaternion;
+  return createReactiveBodyState({
+    ...body,
+    quaternion: {
+      x: w * finite(q.x) + y * finite(q.z),
+      y: w * finite(q.y) + y * finite(q.w, 1),
+      z: w * finite(q.z) - y * finite(q.x),
+      w: w * finite(q.w, 1) - y * finite(q.y)
+    },
+    angularVelocity: { ...body.angularVelocity, y: finite(body.angularVelocity?.y) }
+  }, height);
+}
+
 function cargoState(profile, value, previous = null) {
   const cargo = normalizeCargoLoad(value);
   const loadFactors = cargoDynamics(profile, cargo);
@@ -659,8 +678,8 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             lastSafe: { ...initial.lastSafe, ...saved.lastSafe },
             ...cargoState(getProfile(), saved.cargo, saved),
             springMass: createTruckSpringMassState(saved.springMass),
-            reactiveBody: createReactiveBodyState(saved.reactiveBody?.quaternion ? saved.reactiveBody :
-              bodyAtHeading(finite(saved.heading)), cargoDynamics(getProfile(), saved.cargo).centerOfMassHeight)
+            reactiveBody: migratedBody(saved.reactiveBody, finite(saved.heading),
+              cargoDynamics(getProfile(), saved.cargo).centerOfMassHeight)
           });
           return get();
         }
