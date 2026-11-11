@@ -33,6 +33,7 @@ export function chassisHeading(q) {
 }
 export function createReactiveBodyState(value = {}, centerHeight = 1.35) {
   return {
+    poseSpace: 'world',
     quaternion: normalized(value.quaternion),
     angularVelocity: {
       x: clamp(finite(value.angularVelocity?.x), -6, 6),
