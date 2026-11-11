@@ -130,6 +130,7 @@ export async function createPrebuiltTreeMeshes(THREE,parsed,reuseMaterials=null)
         side:m.doubleSided?THREE.DoubleSide:THREE.FrontSide,
         alphaTest:m.alphaMode==='MASK'?(m.alphaCutoff??.36):0,
         transparent:false,depthWrite:true,vertexColors:false});
+      (mat.userData??={}).lhCelKind='foliage';
       materials.push(mat);
     }
   }

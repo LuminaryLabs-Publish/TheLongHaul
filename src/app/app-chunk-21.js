@@ -20,7 +20,7 @@ skillUpgradePanel.tabIndex = -1;
 $("#game-stage").append(skillUpgradePanel);
 function skillMenuOpen() { return !skillUpgradePanel.hidden; }
 function simulationFrozen() {
-  return currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
+  return comicHitStopHeld || currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
 }
 function consumeAction(action) {
   let used = false;
@@ -321,7 +321,7 @@ spendTruckDamage = function(amount, reason) {
   if (protection.shielded) { arcadeRecord("shield-protected", { amount, reason }); return 0; }
   const damage = skillLegacyTruckDamage(protection.damage * skillProgression.effects().armorMultiplier, reason);
   if (damage >= 6 && !["off-road", "recovery"].includes(reason)) {
-    const side = Math.sign(readTruck().input.steer) || (skillImpactId % 2 ? 1 : -1);
+    const side = comicDamageSide ?? (Math.sign(readTruck().input.steer) || (skillImpactId % 2 ? 1 : -1));
     skillSteeringDamage = clamp(skillSteeringDamage + side * damage * .012, -.8, .8);
   }
   return damage;
@@ -412,7 +412,7 @@ function activateSkillAbility(slot) {
 }
 
 const pickupGeometry = new THREE.OctahedronGeometry(1,0);
-const pickupMaterials = Object.fromEntries(Object.entries(PICKUP_DEFINITIONS).map(([id,def])=>[id,new THREE.MeshBasicMaterial({color:def.color})]));
+const pickupMaterials = Object.fromEntries(Object.entries(PICKUP_DEFINITIONS).map(([id,def])=>[id,new THREE.MeshToonMaterial({color:def.color,emissive:def.color,emissiveIntensity:.24})]));
 const pickupHosts = new Map();
 let skillPickupNetwork = null, skillPickupPlan = [];
 function planSkillPickups() {

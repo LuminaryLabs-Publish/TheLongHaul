@@ -24,6 +24,7 @@
       if(consumeAction("pause")){pauseGame();return surface}
       if(consumeAction("map")){mapOpen=true;releaseDrivingInput();updateMapPanel();audio.click();return surface}
       if(consumeAction("retry")){retrySame();return surface}
+      if(comicHitStopHeld)return surface;
       if(consumeAction("interact")){handleInteraction(state,run,condition,surface);if(simulationFrozen())return surface}
       const brake=heldAction(keys,"brake")?1:0,steer=(heldAction(keys,"steerLeft")?1:0)-(heldAction(keys,"steerRight")?1:0);
       const handbrake=heldAction(keys,"handbrake"),drift=heldAction(keys,"drift");

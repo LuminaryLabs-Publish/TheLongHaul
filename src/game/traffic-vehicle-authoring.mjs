@@ -36,15 +36,16 @@ export function trafficVariantForClass(kind, index, spawnSerial = 0) {
 
 export function createTrafficVehicleFactory({THREE, materials}) {
   if (!THREE?.MeshToonMaterial || !THREE?.BufferGeometry || !THREE?.ExtrudeGeometry ||
-      !materials?.truckRed?.gradientMap)
+      !materials?.truckRed)
     throw new Error('Traffic Authoring requires the existing illustrated Three.js host and four-band ramp');
-  const ownedMaterials=[], shapes=new Map(), templates=new Map(), palette=new Map();
-  const gradient=materials.truckRed.gradientMap;
+  const ownedMaterials=[], shapes=new Map(), templates=new Map(), palette=new Map(), breakupTemplates=new Map();
+  const gradient=materials.truckRed.gradientMap||new THREE.DataTexture(new Uint8Array([70,130,195,255]),4,1,THREE.RedFormat);
+  gradient.minFilter=THREE.NearestFilter;gradient.magFilter=THREE.NearestFilter;gradient.needsUpdate=true;
   const tone=(hex,extra={})=>{
     const key=`${hex}:${extra.emissive||0}:${extra.emissiveIntensity||0}`;
     if(palette.has(key))return palette.get(key);
     const mat=new THREE.MeshToonMaterial({color:hex,gradientMap:gradient,fog:true,side:THREE.DoubleSide,...extra});
-    ownedMaterials.push(mat);palette.set(key,mat);return mat;
+    (mat.userData??={}).lhCelKind='vehicle';ownedMaterials.push(mat);palette.set(key,mat);return mat;
   };
   const defaults={};for(const [k,v] of Object.entries(trimPalette)){
     const extra=k==='light'?{emissive:0xfabe78,emissiveIntensity:.46}:
@@ -266,7 +267,7 @@ export function createTrafficVehicleFactory({THREE, materials}) {
       add(`far_hub_${s}_${z}`,cylinder(R*.5,.025,9),defaults.chrome,[s*W*.48,R,z],[0,0,PI/2]);
     });
     const baked=bakeParts(parts);
-    return {partIds:parts.map(x=>x.id),meshes:baked.outputs,triangles:baked.triangleCount,wheels,profile:p,level};
+    return {parts,partIds:parts.map(x=>x.id),meshes:baked.outputs,triangles:baked.triangleCount,wheels,profile:p,level};
   }
   function sFor(i){return i%2?-1:1}
   function getTemplate(id,level){const key=`${id}:${level}`;if(!templates.has(key)){
@@ -323,10 +324,44 @@ export function createTrafficVehicleFactory({THREE, materials}) {
       get lod(){return lastLevel}
     };
   }
+  function createBreakup(id){
+    const p=TRAFFIC_FLEET_PROFILES[id];if(!p)throw new RangeError('Unknown breakup vehicle');
+    if(!breakupTemplates.has(id)){
+      const recipe=getTemplate(id,'near'),groups=new Map();
+      const breakParts=[];
+      for(const part of recipe.parts){
+        if(part.id!=='sculpted_lower_body'||id==='box'||id==='van'){breakParts.push(part);continue;}
+        // Split existing front/top triangles into a matching hood panel. No
+        // duplicate intact geometry or unrelated replacement debris.
+        const attr=part.geometry.getAttribute('position'),indices=part.geometry.index?.array||Array.from({length:attr.count},(_,i)=>i),hood=[],body=[];
+        for(let i=0;i<indices.length;i+=3){const tri=Array.from(indices.slice(i,i+3));const front=tri.reduce((n,k)=>n+attr.getZ(k),0)/3>p.length*.23;
+          const top=tri.reduce((n,k)=>n+attr.getY(k),0)/3>1.40;const out=front&&top?hood:body;
+          for(const k of tri)out.push(attr.getX(k),attr.getY(k),attr.getZ(k));}
+        for(const [name,vertices]of [['hood_panel',hood],['sculpted_lower_body',body]])if(vertices.length){const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));breakParts.push({...part,id:name,geometry});}
+      }
+      for(const part of breakParts){
+        const key=/door/.test(part.id)?(part.position[0]<0?'door-left':'door-right'):
+          /hood|bonnet/.test(part.id)?'hood':/bumper|grille/.test(part.id)?'bumper':
+          /roof|cab|glass|window/.test(part.id)?'cab':'body';
+        if(!groups.has(key))groups.set(key,[]);groups.get(key).push(part);
+      }
+      const outputs=[];
+      for(const [name,parts]of groups){
+        const baked=bakeParts(parts),group=new THREE.Group();group.name=`LH_${id}_break_${name}`;
+        for(const part of baked.outputs)group.add(new THREE.Mesh(part.geometry,part.material));
+        const center=new THREE.Box3().setFromObject(group).getCenter(new THREE.Vector3());
+        for(const part of group.children)part.geometry.translate(-center.x,-center.y,-center.z);
+        group.position.copy(center);outputs.push(group);
+      }
+      for(const [z]of recipe.wheels)for(const side of [-1,1])outputs.push(wheelPart(id,p.wheelRadius,side,z,false));
+      breakupTemplates.set(id,outputs);
+    }
+    return breakupTemplates.get(id).map(group=>group.clone(true));
+  }
   function prewarm(){for(const id of TRAFFIC_FLEET_SOURCE.vehicleIds){getTemplate(id,'near');getTemplate(id,'far')}}
   function stats(){return {templates:templates.size,primitives:shapes.size,materials:ownedMaterials.length,
       variants:TRAFFIC_FLEET_SOURCE.vehicleIds.map(id=>({id,nearParts:getTemplate(id,'near').partIds.length,
        nearTriangles:getTemplate(id,'near').triangles,farTriangles:getTemplate(id,'far').triangles,
        renderMeshesNear:getTemplate(id,'near').meshes.length,renderMeshesFar:getTemplate(id,'far').meshes.length}))}}
-  return {createVehicle,prewarm,stats,source:TRAFFIC_FLEET_SOURCE};
+  return {createVehicle,createBreakup,prewarm,stats,source:TRAFFIC_FLEET_SOURCE};
 }

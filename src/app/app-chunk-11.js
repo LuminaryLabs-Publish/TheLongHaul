@@ -31,6 +31,7 @@ $("#motion-switch").addEventListener("click", () => {
   settings.motion = !settings.motion;
   applySettings();
 });
+$("#hit-stop-range").addEventListener("input",event=>{settings.hitStop=clamp(Number(event.target.value)/100,0,1);saveSettings();});
 $("#steer-range").addEventListener("input", (event) => {
   settings.steering = finite(event.target.value, 100);
 });
@@ -104,7 +105,7 @@ function frame(now) {
     previous = scheduled = now;
     return;
   }
-  const frozenAtStart = simulationFrozen();
+
   const beforeScene = currentScene(), activeScene = beforeScene === "driving" || beforeScene === "generating", target = activeScene ? 1e3 / 60 : beforeScene === "title" ? 1e3 / 30 : 1e3 / 15;
   if (now < scheduled - 1.5) return;
   const interval = now - previous;
@@ -113,6 +114,8 @@ function frame(now) {
   if (scheduled < now - target) scheduled = now + target;
   performanceStats.begin(beforeScene, interval);
   const dt = clamp(interval / 1e3, 0, 1 / 15);
+  beginComicCrashFrame(dt,beforeScene);
+  const frozenAtStart = simulationFrozen();
   try {
     if (beforeScene === "generating") performanceStats.measure("generation", stepGeneration);
     let surface = null;
@@ -164,6 +167,7 @@ function frame(now) {
     arcadeVisualFrame(now);
     updateRiskHud();
     updateSkillHud(now);
+    updateComicCrashPresentation(dt,sceneId,simulate);
     performanceStats.measure("renderCpu", () => renderer.render(scene, camera));
     performanceStats.end();
     pressed.clear();

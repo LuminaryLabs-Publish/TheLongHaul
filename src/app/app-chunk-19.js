@@ -77,7 +77,7 @@
     const arcadeDamageBase=spendTruckDamage;
     spendTruckDamage=function(amount,reason){const result=arcadeDamageBase(amount,reason);if(amount>0){resetArcadeCombo();arcadeImpactStrength=Math.max(arcadeImpactStrength,clamp(amount/24,.2,1));arcadeRecord("impact",{reason,damage:result})}return result};
     function applyImpactCamera(){
-      if(!settings.motion||arcadeImpactStrength<.015)return;
+      if(comicShakeLife>0||!settings.motion||arcadeImpactStrength<.015)return;
       const now=skillVisualTime*65;camera.position.x+=Math.sin(now*1.7)*arcadeImpactStrength*.24;camera.position.y+=Math.cos(now)*arcadeImpactStrength*.16;
     }
     function updateRiskHud(){

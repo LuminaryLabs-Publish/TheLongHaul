@@ -44,6 +44,7 @@
         const active=slot.visuals.get(slot.selected);
         if(!active)continue;
         const distance=Math.hypot(v.group.position.x-truck.position.x,v.group.position.z-truck.position.z);
+        v.comicBreakup=()=>factory.createBreakup(slot.selected);
         active.setDistance(distance);
         active.spin(dt,v.direction<0?-v.speed:v.speed);
       }

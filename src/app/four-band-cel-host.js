@@ -1,88 +1,99 @@
-/* TLH-023: high-contrast four-band lighting on existing *lit* game surfaces.
- * Work on final fragment normals / actual albedo, not camera-facing vertex
- * normals or the entire already-lit image. Keep sky, labels, glass and HUD.
- * Existing NexusEngine scene, game camera, and subsequent Sobel own rendering.
- */
+/* Shared surface lighting for the actual Three.js r165 host. Nexus owns game
+ * state; this adapter owns GPU materials. No provider or engine substitution. */
 (() => {
   'use strict';
-  const LEVELS=Object.freeze([.30,.52,.78,1.05]);
-  const THRESHOLDS=Object.freeze([.15,.45,.90]);
-  const state={enabled:true,bands:4,levels:[...LEVELS],thresholds:[...THRESHOLDS],
-    materials:0,frames:0,skipped:0,errors:0};
-  window.LongHaulCelShading={getState:()=>({...state,levels:[...state.levels],thresholds:[...state.thresholds]})};
-  const patched=new WeakSet();
+  const style=globalThis.LongHaulToonStyle;
+  if(!style)throw Error('Long Haul toon style must load before the surface adapter');
+  const state={enabled:true,style:style.id,bands:4,levels:[...style.levels],thresholds:[...style.thresholds],
+    materials:0,frames:0,skipped:0,errors:0,visible:{}};
+  window.LongHaulCelShading={getState:()=>({...state,visible:{...state.visible},levels:[...state.levels],thresholds:[...state.thresholds]})};
+  const patched=new WeakSet(),skipped=new WeakSet();
   const direction=new THREE.Vector3(),viewSun=new THREE.Vector3(.4,.7,.5);
   const sunUniform={value:viewSun};
-  const supported=material=>material&&(material.isMeshStandardMaterial||material.isMeshPhysicalMaterial||
-    material.isMeshLambertMaterial||material.isMeshPhongMaterial||material.isMeshToonMaterial);
-  function eligible(material,mesh){
-    if(!supported(material)||material.userData?.noCelShading||material.wireframe||
-      material.transparent||material.opacity<1||material.depthWrite===false||
-      material.blending!==THREE.NormalBlending||
-      mesh?.userData?.noCelShading)return false;
-    // Lit luminous signage/lamps must not have their emissive detail erased.
-    const glow=material.emissive;
-    if(glow && material.emissiveIntensity>0 && glow.r+glow.g+glow.b>.05)return false;
-    return true;
+  const supported=m=>m&&(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial||m.isMeshLambertMaterial||m.isMeshPhongMaterial||m.isMeshToonMaterial);
+  const shared={uLHLevels:{value:new THREE.Vector4(...style.levels)},uLHThresholds:{value:new THREE.Vector3(...style.thresholds)},
+    uLHSoftness:{value:style.softness},uLHShadow:{value:new THREE.Vector3(...style.shadowTint)},
+    uLHMid:{value:new THREE.Vector3(...style.midTint)},uLHHighlight:{value:new THREE.Vector3(...style.highlightTint)}};
+  function role(m){return m.userData?.lhCelKind||(m.alphaTest>0?'foliage':m.metalness>.4?'metal':'structure');}
+  function eligible(m,obj){
+    const policy=style.roles[role(m)]??style.roles.structure;
+    return supported(m)&&!m.userData?.noCelShading&&!obj?.userData?.noCelShading&&!m.wireframe&&
+      m.blending===THREE.NormalBlending&&
+      ((!m.transparent&&m.opacity>=1&&m.depthWrite!==false)||policy.blend===true);
   }
-  const kindBias={road:-.065,terrain:.075,structure:0,vehicle:0,foliage:.02};
-  function apply(material,mesh){
-    if(patched.has(material))return;
-    if(!eligible(material,mesh)){state.skipped++;return;}
-    const bias=kindBias[material.userData?.lhCelKind]??0;
-    const previous=material.onBeforeCompile;
-    material.onBeforeCompile=function vividFourBandLighting(shader,rendererContext){
-      if(typeof previous==='function')previous.call(this,shader,rendererContext);
-      // Three.js r165 lit materials expose a *fragment* normal here, after
-      // normal maps, instancing, skeletal transforms, and double-side handling.
-      // Basic/Shader materials lack this contract and are deliberately skipped.
-      if(!shader.fragmentShader.includes('#include <normal_fragment_begin>')||
-         !shader.fragmentShader.includes('#include <opaque_fragment>')){
-        state.errors++;return;
+  function apply(m,obj){
+    if(!m)return;
+    const kind=role(m),policy=style.roles[kind]??style.roles.structure;
+    if(!eligible(m,obj)){
+      if(!skipped.has(m)){skipped.add(m);state.skipped++;}
+      const exclusion=m.isShaderMaterial?'atmosphere/custom':m.transparent?'transparent/effect':'unlit/sign';
+      state.visible[exclusion]=(state.visible[exclusion]??0)+1;return;
+    }
+    state.visible[kind]=(state.visible[kind]??0)+1;
+    if(patched.has(m))return;
+    const previous=m.onBeforeCompile;
+    m.onBeforeCompile=function sharedToonLighting(shader,context){
+      previous?.call(this,shader,context);
+      if(!shader.fragmentShader.includes('#include <normal_fragment_begin>')||!shader.fragmentShader.includes('#include <opaque_fragment>')){
+        state.errors++;throw Error(`Unsupported toon shader chunks: ${this.type}`);
       }
-      shader.uniforms.uLHFourBandSun=sunUniform;
-      shader.uniforms.uLHBandBias={value:bias};
-      shader.fragmentShader=`uniform vec3 uLHFourBandSun;
-        uniform float uLHBandBias;\n`+shader.fragmentShader.replace('#include <opaque_fragment>',`
-        // Quantize real fragment-space illumination; preserve each material's
-        // diffuse/vertex/texture color rather than repainting it gray.
+      Object.assign(shader.uniforms,shared,{uLHFourBandSun:sunUniform,uLHBandBias:{value:policy.bias},
+        uLHSpecular:{value:policy.specular},uLHRim:{value:policy.rim}});
+      // Toon assets retain their maps/instances but don't quantize light twice.
+      shader.fragmentShader=shader.fragmentShader.replace('#include <gradientmap_pars_fragment>',
+        'vec3 getGradientIrradiance(vec3 normal,vec3 lightDirection){return vec3(max(0.0,dot(normal,lightDirection)));}');
+      shader.fragmentShader=`uniform vec3 uLHFourBandSun,uLHThresholds,uLHShadow,uLHMid,uLHHighlight;
+        uniform vec4 uLHLevels;
+        uniform float uLHBandBias,uLHSoftness,uLHSpecular,uLHRim;\n`+
+        shader.fragmentShader.replace('#include <opaque_fragment>',`
         vec3 lhPigment=clamp(diffuseColor.rgb,0.0,1.0);
         vec3 lhLumaWeights=vec3(.2126,.7152,.0722);
         float lhPigmentLuma=dot(lhPigment,lhLumaWeights);
-        // Reflected diffuse includes the actual lights and shadow maps. Specular
-        // energy must not choose the band or bleach the base-color pigment.
         vec3 lhDiffuse=max(reflectedLight.directDiffuse+reflectedLight.indirectDiffuse,vec3(0.0));
-        float lhEngineLight=dot(lhDiffuse,lhLumaWeights)/max(.001,lhPigmentLuma);
+        float lhDiffuseWeight=1.0;
+        #ifdef STANDARD
+          lhDiffuseWeight=max(.04,1.0-metalnessFactor);
+        #endif
+        float lhEngineLight=dot(lhDiffuse,lhLumaWeights)/max(.001,lhPigmentLuma*lhDiffuseWeight);
+        // Fully metallic surfaces derive illumination from their real reflected
+        // specular light, including shadows; never from an unshadowed fake sun.
+        #ifdef STANDARD
+          lhEngineLight=mix(lhEngineLight,dot(reflectedLight.directSpecular+reflectedLight.indirectSpecular,lhLumaWeights)/max(.02,lhPigmentLuma),smoothstep(.85,1.0,metalnessFactor));
+        #endif
         float lhLight=clamp(lhEngineLight+uLHBandBias,0.0,1.0);
-        float lhBand=lhLight<.15?0.30:(lhLight<.45?0.52:(lhLight<.90?0.78:1.05));
-        // A subtle cool shadow / warm highlight ramp multiplies albedo in linear
-        // space. Keep saturation and texture/vertex color, including dark paint.
-        vec3 lhTint=lhLight<.15?vec3(.88,.94,1.08):(lhLight<.45?vec3(.94,.98,1.04):(lhLight<.90?vec3(1.0):vec3(1.04,1.01,.94)));
+        float lhWidth=max(uLHSoftness,min(.04,fwidth(lhLight)));
+        vec3 lhSteps=smoothstep(uLHThresholds-vec3(lhWidth),uLHThresholds+vec3(lhWidth),vec3(lhLight));
+        float lhBand=uLHLevels.x+dot(lhSteps,uLHLevels.yzw-uLHLevels.xyz);
+        vec3 lhTint=mix(uLHShadow,uLHMid,lhSteps.x);
+        lhTint=mix(lhTint,vec3(1.0),lhSteps.y);
+        lhTint=mix(lhTint,uLHHighlight,lhSteps.z);
         vec3 lhToon=lhPigment*lhBand;
-        // Preserve night/dim-light response instead of imposing a daytime floor.
         float lhNight=min(1.0,lhEngineLight/.15);
-        vec3 lhSpecular=min(max(outgoingLight-lhDiffuse,vec3(0.0)),lhPigment*.10);
-        outgoingLight=max(lhToon*lhTint*lhNight+lhSpecular,vec3(0.0));
+        vec3 lhReflected=max(reflectedLight.directSpecular+reflectedLight.indirectSpecular,vec3(0.0));
+        float lhSpecLuma=dot(lhReflected,lhLumaWeights);
+        vec3 lhSpecular=lhReflected/max(1.0,max(lhReflected.r,max(lhReflected.g,lhReflected.b)));
+        lhSpecular*=uLHSpecular*smoothstep(.025,.075,lhSpecLuma);
+        float lhRim=pow(1.0-clamp(abs(dot(normal,normalize(vViewPosition))),0.0,1.0),3.0);
+        lhRim*=uLHRim*lhNight*smoothstep(.0,.7,dot(normal,uLHFourBandSun));
+        outgoingLight=max(lhToon*lhTint*lhNight+lhSpecular+lhPigment*lhRim,vec3(0.0))+totalEmissiveRadiance;
         #include <opaque_fragment>`);
     };
-    const priorKey=material.customProgramCacheKey?.bind(material);
-    material.customProgramCacheKey=()=>`${priorKey?priorKey():''}|lh-pigment-cel-v4|${bias}`;
-    material.needsUpdate=true;patched.add(material);state.materials++;
+    const priorKey=m.customProgramCacheKey?.bind(m);
+    m.customProgramCacheKey=()=>`${priorKey?priorKey():''}|${style.id}|${kind}`;
+    m.needsUpdate=true;patched.add(m);state.materials++;
   }
   const previousRender=renderer.render.bind(renderer);
-  renderer.render=function renderFourBandWorld(renderScene,renderCamera){
+  renderer.render=function renderToonWorld(renderScene,renderCamera){
     if(renderScene===scene&&renderCamera===camera){
-      worldRoot.traverseVisible(obj=>{
+      state.visible={};
+      // Includes scene-level traffic, pickups and pooled debris, not only cells.
+      scene.traverseVisible(obj=>{
         if(!obj.isMesh)return;
         if(Array.isArray(obj.material))for(const m of obj.material)apply(m,obj);
         else apply(obj.material,obj);
       });
-      // Derive the sun vector from the game's authoritative directional light.
-      // Transform to camera/view space because fragment `normal` is view-space.
-      camera.updateMatrixWorld();
-      direction.copy(sun.position).sub(sun.target.position).normalize();
-      viewSun.copy(direction).transformDirection(camera.matrixWorldInverse);
-      state.frames++;
+      camera.updateMatrixWorld();direction.copy(sun.position).sub(sun.target.position).normalize();
+      viewSun.copy(direction).transformDirection(camera.matrixWorldInverse);state.frames++;
     }
     return previousRender(renderScene,renderCamera);
   };

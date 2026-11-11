@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import {TOON_STYLE} from '../src/game/toon-style.mjs';
 import {readFileSync} from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 
@@ -21,7 +22,7 @@ const emissive=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandar
 const custom=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.ShaderMaterial({vertexShader:'void main(){}',fragmentShader:'void main(){}'}));
 worldRoot.add(road,terrain,cab,clouds,sign,basic,emissive,custom);
 let draws=0;const renderer={render(){draws++}};
-const context={THREE,scene,worldRoot,camera,sun,renderer,window:{}};
+const context={LongHaulToonStyle:TOON_STYLE,THREE,scene,worldRoot,camera,sun,renderer,window:{}};
 vm.runInNewContext(source,context,{timeout:2000});
 let state=context.window.LongHaulCelShading.getState();
 assert.deepEqual([...state.levels],[.30,.52,.78,1.05]);
@@ -35,8 +36,8 @@ assert.ok(bootstrap.indexOf("./four-band-cel-host.js")<bootstrap.indexOf("./sobe
 renderer.render(scene,camera);
 state=context.window.LongHaulCelShading.getState();
 assert.equal(draws,1);
-assert.equal(state.materials,3,'only opaque lit road, terrain and truck receive quantized light');
-for(const unlit of [basic,sign,clouds,emissive,custom])assert.equal(unlit.material.onBeforeCompile,THREE.Material.prototype.onBeforeCompile,'UI, clouds, glow and unlit materials stay intact');
+assert.equal(state.materials,4,'opaque lit surfaces and emissive housings receive quantized light');
+for(const unlit of [basic,sign,clouds,custom])assert.equal(unlit.material.onBeforeCompile,THREE.Material.prototype.onBeforeCompile,'UI, clouds, glow and unlit materials stay intact');
 function makeShader(material,name){
  const shader={uniforms:{},vertexShader:THREE.ShaderLib[name].vertexShader,fragmentShader:THREE.ShaderLib[name].fragmentShader};
  material.onBeforeCompile(shader,renderer);
@@ -46,8 +47,9 @@ function makeShader(material,name){
  assert.ok(!shader.fragmentShader.includes('lhDirect*.76'),'no unshadowed directional override');
  assert.ok(shader.fragmentShader.includes('lhToon=lhPigment*lhBand'),'original color retained');
  assert.ok(shader.fragmentShader.includes('lhPigmentLuma'),'pigment luminance preserved');
- assert.ok(shader.fragmentShader.includes('lhLight<.15?0.30')&&shader.fragmentShader.includes('lhLight<.45?0.52'));
- assert.ok(shader.fragmentShader.includes('1.05'),'brightest band retains surface pigment');
+ assert.deepEqual([...shader.uniforms.uLHLevels.value.toArray()],TOON_STYLE.levels);
+ assert.ok(shader.fragmentShader.includes('+totalEmissiveRadiance'),'emission survives grading');
+ assert.equal(shader.uniforms.uLHLevels.value.w,1.05);
  assert.ok(shader.fragmentShader.includes('lhEngineLight+uLHBandBias'),'per-material light response');
  assert.equal((shader.fragmentShader.match(/#include <opaque_fragment>/g)||[]).length,1);
  assert.ok(!shader.vertexShader.includes('vLHFourBandNormal'));
@@ -59,7 +61,7 @@ makeShader(cab.material,'lambert');
 assert.ok(presentation.includes("_lhAsphaltMaterial.userData.lhCelKind='road'")&&
  presentation.includes("materials[key].userData.lhCelKind='terrain'"),'roles survive toon replacement');
 const lazy=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshPhongMaterial({color:0x88aa55}));worldRoot.add(lazy);renderer.render(scene,camera);
-assert.equal(context.window.LongHaulCelShading.getState().materials,4,'new streamed meshes get graded');
+assert.equal(context.window.LongHaulCelShading.getState().materials,5,'new streamed meshes get graded');
 makeShader(lazy.material,'phong');
 renderer.render(new THREE.Scene(),camera);assert.equal(context.window.LongHaulCelShading.getState().frames,2,'offscreen/postprocess scenes skip traversal');
 // Actual Four-Band color logic: a red cab retains its chroma and hue in the

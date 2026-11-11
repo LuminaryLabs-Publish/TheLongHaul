@@ -90,6 +90,7 @@
       const direction=arcadeRoadForward(road,truck.heading),freightPacing=course.endless?(freightState?.difficulty??freightDifficulty(endlessHighwayProgress(course,truck.position))):null,difficulty=freightPacing?.level??Math.min(3,readRun().rawTime/75),nearEvent=arcadeEncounters.find(event=>event.path===progress.path&&event.distance-progress.distance>-55&&event.distance-progress.distance<200);
       const count=freightPacing?(Math.floor(Math.max(0,endlessHighwayProgress(course,truck.position))/960)%4===3?2:nearEvent&&nearEvent.kind!=="weave"?2:freightPacing.trafficLimit):(nearEvent?.kind==="weave"?6:nearEvent&&nearEvent.kind!=="breakables"?2:4+Math.floor(difficulty/2));
       const truckCollider=createVehicleCollider(truck.position,truck.heading,LONG_HAUL_TRUCK_COLLIDER);
+      engine.n.longHaulImpact.beginFrame();
       for(let i=0;i<arcadeVehicles.length;i++){
         const vehicle=arcadeVehicles[i];
         const oldRelative=vehicle.path===progress.path?(vehicle.progress-progress.distance)*direction:Infinity;
@@ -103,8 +104,10 @@
           const overlap=arcadeEncounters.find(event=>event.path===vehicle.path&&Math.abs(event.distance-vehicle.progress)<100);
           if(overlap?.kind==="ramp")vehicle.lane=-Math.sign(overlap.lane)*Math.min(5,spawn.edge.width*.22);
           if(overlap?.kind==="roadblock")vehicle.lane=overlap.safeLane;
-          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.skillDisabled=0;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
+          resetComicTrafficVehicle(vehicle);
+          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.skillDisabled=0;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;engine.n.longHaulDestructibles.register(vehicle.id,vehicle.kind);
         }
+        if(["destroyed","retired"].includes(engine.n.longHaulDestructibles.get(vehicle.id)?.state)){vehicle.group.visible=false;continue;}
         // Traffic advances in road coordinates independently of the player.
         vehicle.skillDisabled=Math.max(0,(vehicle.skillDisabled||0)-dt);vehicle.progress+=vehicle.direction*vehicle.speed*dt*(vehicle.skillDisabled>0?.35:1);
         const pos=arcadePathPoint(vehicle.path,vehicle.progress,vehicle.lane);if(!pos){vehicle.active=false;vehicle.group.visible=false;continue}
@@ -117,9 +120,12 @@
         }else{vehicle.group.rotation.x=0;vehicle.group.rotation.z=0;}
         const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz);
         const collider=createVehicleCollider({...pos,y:height},vehicleHeading,vehicle.collider),verticalOverlap=verticalContactOverlaps(truckCollider.minY,truckCollider.maxY,collider.minY,collider.maxY),overlaps=verticalOverlap&&separation<=vehicle.collisionReach&&vehicleCollidersOverlap(truckCollider,collider);
-        if(!vehicle.hit&&arcadeRecoveryGrace<=0&&overlaps&&Math.max(Math.abs(truck.speed),vehicle.speed)>3){
-          vehicle.hit=true;const key=vehicle.id,receipt=applyLongHaulOperationOnce(engine,runKey,key,()=>({seconds:5}));
-          if(receipt.applied){spendTruckDamage(12+Math.min(10,Math.abs(truck.speed-vehicle.speed)*.3),"traffic-collision");spendCargoDamage(4,"traffic-collision");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.34,headingDelta:(i%2?1:-1)*.06,rollDelta:(i%2?1:-1)*.7,y:1.4,kind:"traffic"});engine.n.longHaulRun.penalty({id:key,kind:"traffic",label:"Traffic collision",seconds:5,collision:true});toast("CRASH · COMBO LOST","bad",1100);audio.hit()}
+        const contact=sweptVehicleImpact(comicPreviousTruckCollider||truckCollider,truckCollider,vehicle.previousCollider||collider,collider);
+        vehicle.previousCollider=collider;
+        if(arcadeRecoveryGrace<=0&&contact){
+          const targetVelocity={x:Math.sin(vehicleHeading)*vehicle.speed,z:Math.cos(vehicleHeading)*vehicle.speed};
+          const event=engine.n.longHaulImpact.contact({targetId:vehicle.id,contact,truck,targetVelocity,targetMass:DESTRUCTIBLE_PROFILES[vehicle.kind].mass,seed:course.seed});
+          if(event)applyComicTrafficImpact(vehicle,event,targetVelocity);
         }
         const alignment=Math.cos(truck.heading-pos.heading)*direction;
         if(verticalOverlap&&!overlaps&&alignment>.85&&Math.abs(relative)<(LONG_HAUL_TRUCK_COLLIDER.length+vehicle.collider.length)*.5){
@@ -131,6 +137,7 @@
           if(!vehicle.hit&&vehicle.minClearance<Infinity&&truck.speed>0&&alignment>.85)awardArcadeEvent({id:vehicle.id,kind:"near-miss",speed:Math.min(truck.speed,vehicle.nearSpeed),forward:true,clearance:vehicle.minClearance});
         }
       }
+      engine.n.longHaulImpact.endFrame();comicPreviousTruckCollider=truckCollider;
     }
     let arcadeBonuses=0,arcadeAttemptId="";
     const arcadeStartGeneration=startGeneration;

@@ -1,3 +1,8 @@
+import {TOON_STYLE} from '../game/toon-style.mjs';
+globalThis.LongHaulToonStyle=TOON_STYLE;
+import {createImpactClock,sweptVehicleImpact} from '../game/impact-kit.mjs';
+import {createComicCrashKits,DESTRUCTIBLE_PROFILES} from '../game/destructible-vehicle-kit.mjs';
+Object.assign(globalThis,{createImpactClock,sweptVehicleImpact,createComicCrashKits,DESTRUCTIBLE_PROFILES});
 import {createNeighborhoodTree} from '../game/neighborhood-tree.mjs';
 Object.assign(globalThis,{createNeighborhoodTree});
 import {FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes} from '../game/freight-terminal-start.mjs';

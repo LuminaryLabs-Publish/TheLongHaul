@@ -432,7 +432,11 @@
   const replacements = new Map();
   function toon(old, color, options = {}) {
     const mat = new THREE.MeshToonMaterial({ color: color ?? old.color, gradientMap: gradient,
-      vertexColors: old.vertexColors, side: old.side, fog: true, ...options });
+      map:old.map,normalMap:old.normalMap,normalScale:old.normalScale,
+      alphaMap:old.alphaMap,alphaTest:old.alphaTest,aoMap:old.aoMap,aoMapIntensity:old.aoMapIntensity,
+      emissive:old.emissive,emissiveMap:old.emissiveMap,emissiveIntensity:old.emissiveIntensity,
+      transparent:old.transparent,opacity:old.opacity,depthWrite:old.depthWrite,
+      vertexColors: old.vertexColors, side: old.side, fog: old.fog, ...options });
     // Keep surface roles across the existing Toon material replacement.
     mat.userData={...old.userData};
     replacements.set(old, mat); return mat;
@@ -469,6 +473,9 @@
   materials.shoulder.userData.lhCelKind='road';
   _lhWhiteLineMaterial.color.set(0xfff4cf); _lhYellowLineMaterial.color.set(0xffc767);
   _lhHorizonForestMaterial.color.set(0x446b61); _lhHorizonTownMaterial.color.set(0x9e8c7a);
+  materials.glass.userData.lhCelKind='glass';
+  materials.grass.userData.lhCelKind='foliage';
+  materials.chrome.userData.lhCelKind='metal';
   materials.chrome.color.set(0xc6dfe3); materials.chrome.metalness = .25; materials.chrome.roughness = .4;
 
   // Match sampled terrain color and geometry on both sides of the near/far seam.
@@ -523,20 +530,21 @@
   cloudPlane.dispose(); sky.visible = false;
   const atmosphere = new THREE.Group(); atmosphere.name='illustrated-atmosphere'; worldRoot.add(atmosphere);
   const skyUniforms = { topColor: {value:new THREE.Color(0x677ca9)}, horizonColor:{value:new THREE.Color(0xffce91)},
-    groundColor:{value:new THREE.Color(0xc6b5a2)}, sunColor:{value:new THREE.Color(0xffebba)} };
+    groundColor:{value:new THREE.Color(0xc6b5a2)}, sunColor:{value:new THREE.Color(0xffebba)},sunDirection:{value:new THREE.Vector3()} };
   const domeMaterial = new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:skyUniforms,
     vertexShader:'varying vec3 ray;void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-    fragmentShader:`uniform vec3 topColor,horizonColor,groundColor,sunColor;varying vec3 ray;
+    fragmentShader:`uniform vec3 topColor,horizonColor,groundColor,sunColor,sunDirection;varying vec3 ray;
       void main(){vec3 n=normalize(ray);float h=n.y;
       vec3 color=mix(groundColor,horizonColor,smoothstep(-.2,.035,h));
       color=mix(color,topColor,smoothstep(.025,.72,h));
-      float light=dot(n,normalize(vec3(-.55,.19,-.77)));
+      float light=dot(n,normalize(sunDirection));
       color=mix(color,sunColor,smoothstep(.995,.9985,light)*.92);
       color+=sunColor*pow(max(0.,light),28.)*.06;
       gl_FragColor=vec4(color,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
     }`});
+  skyUniforms.sunDirection.value.copy(sun.position).sub(sun.target.position).normalize();
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1500,32,18),domeMaterial); dome.renderOrder=-100; atmosphere.add(dome);
   const clouds = new THREE.Group(); clouds.name='shaped-cloud-banks'; atmosphere.add(clouds);
   // Procedural density volumes with Beer-Lambert extinction and sun-ray sampling.
@@ -546,7 +554,11 @@
   const cloudTypes=new Float32Array(count),cloudVariations=new Float32Array(count);
   cloudGeometry.setAttribute('cloudType',new THREE.InstancedBufferAttribute(cloudTypes,1));
   cloudGeometry.setAttribute('cloudVariation',new THREE.InstancedBufferAttribute(cloudVariations,1));
+  const cloudStyle=globalThis.LongHaulToonStyle.clouds;
   const cloudUniforms={
+    toonLevels:{value:new THREE.Vector3(...cloudStyle.levels)},
+    toonThresholds:{value:new THREE.Vector2(...cloudStyle.thresholds)},
+    toonSoftness:{value:cloudStyle.softness},toonRimLimit:{value:cloudStyle.rimLimit},
     cloudColor:{value:new THREE.Color(0xfff8ee)},
     cloudShadow:{value:new THREE.Color(0x8799ae)},
     sunColor:{value:new THREE.Color(0xffebcd)},
@@ -557,7 +569,7 @@
   const cloudMaterial=new THREE.ShaderMaterial({
     uniforms:cloudUniforms,transparent:true,depthTest:true,depthWrite:false,
     side:THREE.FrontSide,fog:false,blending:THREE.NormalBlending,
-    vertexShader:"\nattribute float cloudType,cloudVariation;\nuniform vec3 sunDirection;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nvoid main(){\n  mat4 world=modelMatrix*instanceMatrix;\n  vec3 x=world[0].xyz,y=world[1].xyz,z=world[2].xyz;\n  float sx=max(length(x),.001),sy=max(length(y),.001),sz=max(length(z),.001);\n  x/=sx;y/=sy;z/=sz;\n  vec3 eye=cameraPosition-world[3].xyz;\n  vEye=vec3(dot(eye,x)/sx,dot(eye,y)/sy,dot(eye,z)/sz);\n  vSun=normalize(vec3(dot(sunDirection,x)/sx,dot(sunDirection,y)/sy,dot(sunDirection,z)/sz));\n  vBacklit=max(dot(normalize(world[3].xyz-cameraPosition),sunDirection),0.);\n  vFace=position;vType=cloudType;vSeed=cloudVariation;\n  gl_Position=projectionMatrix*viewMatrix*world*vec4(position,1.);\n  gl_Position.z=gl_Position.w*.99998;\n}",fragmentShader:"\nuniform vec3 cloudColor,cloudShadow,sunColor;\nuniform float extinction,weather;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nfloat blob(vec3 p,vec3 c,vec3 r){\n  return 1.-smoothstep(.61,1.14,length((p-c)/r));\n}\nfloat densityAt(vec3 p){\n  if(any(greaterThan(abs(p),vec3(1.))))return 0.;\n  // Low-frequency deformation produces different, nonuniform silhouettes\n  // per bank while keeping the smooth density fade at proxy boundaries.\n  float curl=sin(p.x*4.7+p.z*3.9+vSeed*11.2);\n  vec3 sculpt=p+vec3(.11*curl,\n    .085*sin(p.y*5.1-p.z*3.6+vSeed*8.7),\n    .09*curl);\n  float shape=0.;\n  if(vType<.5){\n    shape=max(blob(sculpt,vec3(-.38,-.22,0.),vec3(.57,.46,.62)),\n              blob(sculpt,vec3(.27,-.14,.06),vec3(.60,.50,.61)));\n    shape=max(shape,blob(sculpt,vec3(-.08,.29,-.09),vec3(.47,.51,.48)));\n    shape=max(shape,blob(sculpt,vec3(.44,.14,-.05),vec3(.39,.42,.47)));\n  }else if(vType<1.5){\n    shape=max(blob(sculpt,vec3(0.,-.52,0.),vec3(.81,.31,.66)),\n              blob(sculpt,vec3(-.14,-.12,0.),vec3(.53,.52,.54)));\n    shape=max(shape,blob(sculpt,vec3(.05,.39,0.),vec3(.43,.55,.45)));\n    shape=max(shape,blob(sculpt,vec3(.18,.78,0.),vec3(.78,.16,.56)));\n  }else if(vType<2.5){\n    shape=max(blob(sculpt,vec3(-.36,.11,0.),vec3(.70,.13,.31)),\n              blob(sculpt,vec3(.35,.20,.03),vec3(.71,.11,.31)));\n    shape=max(shape,blob(sculpt,vec3(.03,-.10,-.1),vec3(.80,.09,.25)));\n  }else{\n    shape=max(blob(sculpt,vec3(-.41,-.09,0.),vec3(.67,.27,.69)),\n              blob(sculpt,vec3(.39,-.09,0.),vec3(.67,.25,.68)));\n    shape=max(shape,blob(sculpt,vec3(0.,.11,.09),vec3(.74,.18,.53)));\n  }\n  vec3 q=p*vec3(8.3,7.1,9.2)+vSeed*7.;\n  float large=sin(q.x*.57)*cos(q.y*.71)*sin(q.z*.63);\n  float small=sin(q.x*1.27+q.z*.68)*sin(q.y*1.21-q.z*.59);\n  float variability=clamp(.64+.31*large+.19*small,.14,1.);\n  float kind=vType<.5?1.0:(vType<1.5?1.22:(vType<2.5?.45:.75));\n  float boundary=1.-max(max(abs(p.x),abs(p.y)),abs(p.z));\n  float fade=smoothstep(0.,.14,boundary);\n  return shape*variability*kind*fade;\n}\nfloat lightThrough(vec3 p){\n  // Three density probes towards the actual directional light.\n  float tau=0.;\n  for(int j=0;j<3;j++){\n    p+=vSun*.26;\n    tau+=densityAt(p)*.26;\n  }\n  return exp(-extinction*1.7*tau);\n}\nvoid main(){\n  vec3 rd=normalize(vFace-vEye);\n  vec3 target=vec3(rd.x<0.?-1.:1.,rd.y<0.?-1.:1.,rd.z<0.?-1.:1.);\n  vec3 tfar=abs(target-vFace)/max(abs(rd),vec3(.00001));\n  float extent=max(0.,min(min(tfar.x,tfar.y),tfar.z));\n  if(extent<.0001)discard;\n  float stepLength=extent/12.;\n  float transmittance=1.,sunAtEdge=0.,edgeFound=0.;\n  vec3 lightAccum=vec3(0.),edgePoint=vFace;\n  for(int i=0;i<12;i++){\n    vec3 p=vFace+rd*(float(i)+.5)*stepLength;\n    float density=densityAt(p);\n    if(density>.015){\n      float lightT=lightThrough(p);\n      float absorption=1.-exp(-extinction*density*stepLength);\n      vec3 localColor=mix(cloudShadow,cloudColor,\n        clamp(.20+.68*lightT+.12*p.y,0.,1.));\n      localColor+=sunColor*(.08+.22*vBacklit)*lightT;\n      lightAccum+=transmittance*absorption*localColor;\n      transmittance*=1.-absorption;\n      if(edgeFound<.5){edgePoint=p;edgeFound=1.;}\n      sunAtEdge=max(sunAtEdge,lightT);\n      if(transmittance<.025)break;\n    }\n  }\n  float opacity=1.-transmittance;\n  if(opacity<.012)discard;\n  // Density-gradient rim: strongest at the translucent, sun-facing contour.\n  float e=.045;\n  vec3 grad=vec3(\n    densityAt(edgePoint+vec3(e,0.,0.))-densityAt(edgePoint-vec3(e,0.,0.)),\n    densityAt(edgePoint+vec3(0.,e,0.))-densityAt(edgePoint-vec3(0.,e,0.)),\n    densityAt(edgePoint+vec3(0.,0.,e))-densityAt(edgePoint-vec3(0.,0.,e)));\n  float rimNormal=pow(1.-abs(dot(normalize(grad+vec3(.00001)),rd)),3.);\n  float thinEdge=1.-smoothstep(.38,.97,opacity);\n  float silverRim=rimNormal*thinEdge*sunAtEdge*(.18+1.3*vBacklit);\n  vec3 shaded=lightAccum/max(opacity,.001)+sunColor*silverRim*.85;\n  gl_FragColor=vec4(shaded,opacity);\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n}"
+    vertexShader:"\nattribute float cloudType,cloudVariation;\nuniform vec3 sunDirection;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nvoid main(){\n  mat4 world=modelMatrix*instanceMatrix;\n  vec3 x=world[0].xyz,y=world[1].xyz,z=world[2].xyz;\n  float sx=max(length(x),.001),sy=max(length(y),.001),sz=max(length(z),.001);\n  x/=sx;y/=sy;z/=sz;\n  vec3 eye=cameraPosition-world[3].xyz;\n  vEye=vec3(dot(eye,x)/sx,dot(eye,y)/sy,dot(eye,z)/sz);\n  vSun=normalize(vec3(dot(sunDirection,x)/sx,dot(sunDirection,y)/sy,dot(sunDirection,z)/sz));\n  vBacklit=max(dot(normalize(world[3].xyz-cameraPosition),sunDirection),0.);\n  vFace=position;vType=cloudType;vSeed=cloudVariation;\n  gl_Position=projectionMatrix*viewMatrix*world*vec4(position,1.);\n  gl_Position.z=gl_Position.w*.99998;\n}",fragmentShader:"\nuniform vec3 cloudColor,cloudShadow,sunColor,toonLevels;\n uniform vec2 toonThresholds;\n uniform float toonSoftness,toonRimLimit;\nuniform float extinction,weather;\nvarying vec3 vFace,vEye,vSun;\nvarying float vType,vSeed,vBacklit;\nfloat blob(vec3 p,vec3 c,vec3 r){\n  return 1.-smoothstep(.61,1.14,length((p-c)/r));\n}\nfloat densityAt(vec3 p){\n  if(any(greaterThan(abs(p),vec3(1.))))return 0.;\n  // Low-frequency deformation produces different, nonuniform silhouettes\n  // per bank while keeping the smooth density fade at proxy boundaries.\n  float curl=sin(p.x*4.7+p.z*3.9+vSeed*11.2);\n  vec3 sculpt=p+vec3(.11*curl,\n    .085*sin(p.y*5.1-p.z*3.6+vSeed*8.7),\n    .09*curl);\n  float shape=0.;\n  if(vType<.5){\n    shape=max(blob(sculpt,vec3(-.38,-.22,0.),vec3(.57,.46,.62)),\n              blob(sculpt,vec3(.27,-.14,.06),vec3(.60,.50,.61)));\n    shape=max(shape,blob(sculpt,vec3(-.08,.29,-.09),vec3(.47,.51,.48)));\n    shape=max(shape,blob(sculpt,vec3(.44,.14,-.05),vec3(.39,.42,.47)));\n  }else if(vType<1.5){\n    shape=max(blob(sculpt,vec3(0.,-.52,0.),vec3(.81,.31,.66)),\n              blob(sculpt,vec3(-.14,-.12,0.),vec3(.53,.52,.54)));\n    shape=max(shape,blob(sculpt,vec3(.05,.39,0.),vec3(.43,.55,.45)));\n    shape=max(shape,blob(sculpt,vec3(.18,.78,0.),vec3(.78,.16,.56)));\n  }else if(vType<2.5){\n    shape=max(blob(sculpt,vec3(-.36,.11,0.),vec3(.70,.13,.31)),\n              blob(sculpt,vec3(.35,.20,.03),vec3(.71,.11,.31)));\n    shape=max(shape,blob(sculpt,vec3(.03,-.10,-.1),vec3(.80,.09,.25)));\n  }else{\n    shape=max(blob(sculpt,vec3(-.41,-.09,0.),vec3(.67,.27,.69)),\n              blob(sculpt,vec3(.39,-.09,0.),vec3(.67,.25,.68)));\n    shape=max(shape,blob(sculpt,vec3(0.,.11,.09),vec3(.74,.18,.53)));\n  }\n  vec3 q=p*vec3(8.3,7.1,9.2)+vSeed*7.;\n  float large=sin(q.x*.57)*cos(q.y*.71)*sin(q.z*.63);\n  float small=sin(q.x*1.27+q.z*.68)*sin(q.y*1.21-q.z*.59);\n  float variability=clamp(.64+.31*large+.19*small,.14,1.);\n  float kind=vType<.5?1.0:(vType<1.5?1.22:(vType<2.5?.45:.75));\n  float boundary=1.-max(max(abs(p.x),abs(p.y)),abs(p.z));\n  float fade=smoothstep(0.,.14,boundary);\n  return shape*variability*kind*fade;\n}\nfloat lightThrough(vec3 p){\n  // Three density probes towards the actual directional light.\n  float tau=0.;\n  for(int j=0;j<3;j++){\n    p+=vSun*.26;\n    tau+=densityAt(p)*.26;\n  }\n  return exp(-extinction*1.7*tau);\n}\nvoid main(){\n  vec3 rd=normalize(vFace-vEye);\n  vec3 target=vec3(rd.x<0.?-1.:1.,rd.y<0.?-1.:1.,rd.z<0.?-1.:1.);\n  vec3 tfar=abs(target-vFace)/max(abs(rd),vec3(.00001));\n  float extent=max(0.,min(min(tfar.x,tfar.y),tfar.z));\n  if(extent<.0001)discard;\n  float stepLength=extent/12.;\n  float transmittance=1.,sunAtEdge=0.,edgeFound=0.;\n  vec3 lightAccum=vec3(0.),edgePoint=vFace;\n  for(int i=0;i<12;i++){\n    vec3 p=vFace+rd*(float(i)+.5)*stepLength;\n    float density=densityAt(p);\n    if(density>.015){\n      float lightT=lightThrough(p);\n      float toonLight=toonLevels.x+(toonLevels.y-toonLevels.x)*smoothstep(toonThresholds.x-toonSoftness,toonThresholds.x+toonSoftness,lightT)+(toonLevels.z-toonLevels.y)*smoothstep(toonThresholds.y-toonSoftness,toonThresholds.y+toonSoftness,lightT);\n      float absorption=1.-exp(-extinction*density*stepLength);\n      vec3 localColor=mix(cloudShadow,cloudColor,\n        clamp(toonLight+.06*p.y,0.,1.));\n      localColor+=sunColor*(.08+.22*vBacklit)*lightT;\n      lightAccum+=transmittance*absorption*localColor;\n      transmittance*=1.-absorption;\n      if(edgeFound<.5){edgePoint=p;edgeFound=1.;}\n      sunAtEdge=max(sunAtEdge,lightT);\n      if(transmittance<.025)break;\n    }\n  }\n  float opacity=1.-transmittance;\n  if(opacity<.012)discard;\n  // Density-gradient rim: strongest at the translucent, sun-facing contour.\n  float e=.045;\n  vec3 grad=vec3(\n    densityAt(edgePoint+vec3(e,0.,0.))-densityAt(edgePoint-vec3(e,0.,0.)),\n    densityAt(edgePoint+vec3(0.,e,0.))-densityAt(edgePoint-vec3(0.,e,0.)),\n    densityAt(edgePoint+vec3(0.,0.,e))-densityAt(edgePoint-vec3(0.,0.,e)));\n  float rimNormal=pow(1.-abs(dot(normalize(grad+vec3(.00001)),rd)),3.);\n  float thinEdge=1.-smoothstep(.38,.97,opacity);\n  float silverRim=rimNormal*thinEdge*sunAtEdge*(.18+1.3*vBacklit);\n  vec3 shaded=lightAccum/max(opacity,.001)+sunColor*min(silverRim,toonRimLimit)*.45;\n  gl_FragColor=vec4(shaded,opacity);\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n}"
   });
   const cloudMesh=new THREE.InstancedMesh(cloudGeometry,cloudMaterial,count);
   cloudMesh.name='cloud-volumes';
@@ -670,6 +682,8 @@
     cloudUniforms.cloudShadow.value.set(0x8799ae).lerp(cloudRainShadow,weather);
     cloudUniforms.sunDirection.value.copy(sun.position).sub(sun.target.position).normalize();
     cloudUniforms.sunColor.value.copy(sun.color);
+    skyUniforms.sunDirection.value.copy(cloudUniforms.sunDirection.value);
+    skyUniforms.sunColor.value.copy(sun.color);
     cloudUniforms.weather.value=weather;
     sun.intensity=lerp(1.65,1.03,weather);hemi.intensity=lerp(1.4,1.25,weather);
     fill.position.set(state.position.x+80,state.position.y+75,state.position.z+110);

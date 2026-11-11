@@ -44,6 +44,7 @@ export function createEnvironmentTileRenderer({THREE,materials}){
     const mat=transparent?new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.82,side:THREE.DoubleSide,depthWrite:false,
       polygonOffset:true,polygonOffsetFactor:-2,fog:true}):
       new THREE.MeshToonMaterial({color:0xffffff,gradientMap:gradient,side:THREE.DoubleSide,fog:true});
+    (mat.userData??={}).lhCelKind=/leaf|foliage|grass|green/.test(role)?'foliage':/metal|steel/.test(role)?'metal':'structure';
     tones.set(key,mat);return mat;
   }
   function startCell({quality=true,visualOnly=false}={}){

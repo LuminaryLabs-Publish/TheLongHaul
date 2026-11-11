@@ -26,6 +26,7 @@ export function createHeroTruckMesh({ THREE, materials, createTruckGrounding }) 
   const grad = materials.truckRed.gradientMap;
   const tone = (color, extra = {}) => {
     const mat = new THREE.MeshToonMaterial({ color, gradientMap: grad, fog: true, ...extra });
+    (mat.userData??={}).lhCelKind='vehicle';
     ownedMaterials.push(mat); return mat;
   };
   const m = {

@@ -5,15 +5,15 @@
     const REQUIRED=["createEngine","defineDomainServiceKit","createCoreSceneKit","createCoreWorldDomain","createUniformGridPartition","createQuadtreePartition","createFlatWorldSurface","createCurvedHorizonSurface","defineWorldEffectProvider","createCoreInputKit","createCoreDataKit","createCoreSimulationKit","createCoreCameraKit","createCoreGraphicsKit","createCoreTransactionLedgerKit","createWorldPatchPreparationController","createSemanticWorldFeatureKit"];
     for(const name of REQUIRED)if(typeof N[name]!=="function")throw new Error(`Required NexusEngine export missing: ${name}`);
 
-    const settings={sound:true,steering:100,quality:true,motion:!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches};
+    const settings={sound:true,steering:100,quality:true,hitStop:1,motion:!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches};
     try{Object.assign(settings,JSON.parse(localStorage.getItem("the-long-haul-settings-v2")||"{}"))}catch{}
-    settings.sound=settings.sound!==false;settings.quality=settings.quality!==false;settings.motion=settings.motion!==false;settings.steering=clamp(finite(settings.steering,100),75,125);
+    settings.hitStop=clamp(finite(settings.hitStop,1),0,1);settings.sound=settings.sound!==false;settings.quality=settings.quality!==false;settings.motion=settings.motion!==false;settings.steering=clamp(finite(settings.steering,100),75,125);
 
     const scenes={boot:{kind:"web-canvas-scene",exits:{ready:{to:"title"}}},dispatch:{kind:"web-canvas-scene",exits:{start:{to:"generating"},back:{to:"title"}}},title:{kind:"web-canvas-scene",exits:{dispatch:{to:"dispatch"},start:{to:"generating"},settings:{to:"settings"},how:{to:"how-to-play"},credits:{to:"credits"}}},generating:{kind:"web-three-scene",exits:{ready:{to:"driving"},cancel:{to:"title"}}},driving:{kind:"web-three-scene",exits:{pause:{to:"paused"},retry:{to:"generating"},complete:{to:"results"},fail:{to:"loss"},title:{to:"title"}}},paused:{kind:"web-three-scene",exits:{resume:{to:"driving"},settings:{to:"settings"},retry:{to:"generating"},title:{to:"title"}}},results:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},loss:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},settings:{kind:"web-canvas-scene",exits:{title:{to:"title"},pause:{to:"paused"}}},credits:{kind:"web-canvas-scene",exits:{back:{to:"title"}}},"how-to-play":{kind:"web-canvas-scene",exits:{back:{to:"title"}}}};
     const inputKit=N.createCoreInputKit({id:"long-haul-input",initialState:{intent:{throttle:0,brake:0,steer:0,boost:false,handbrake:false,interact:false}},actions:Object.fromEntries(Object.keys(LONG_HAUL_BINDINGS).map(action=>[action,{}])),bindings:{keyboard:LONG_HAUL_BINDINGS},createApi({baseApi}){return{setIntent(intent={}){return baseApi.update({intent:clone(intent)},"updated")},getIntent(){return clone(baseApi.getState().intent??{})}}}});
     const core=createLongHaulCoreKits(N,{seed:"long-haul-boot",timeLimitSeconds:TIME_LIMIT_SECONDS});
     const product=createLongHaulProductKits(N);
-    const engine=N.createEngine({tick:{maxDelta:1/15,rejectReentry:true},kits:[N.createCoreSceneKit({scenes,initialSceneId:"boot"}),N.createCoreWorldDomain({childDomains:false}),inputKit,...core.kits,...product.kits]});
+    const engine=N.createEngine({tick:{maxDelta:1/15,rejectReentry:true},kits:[N.createCoreSceneKit({scenes,initialSceneId:"boot"}),N.createCoreWorldDomain({childDomains:false}),inputKit,...core.kits,...product.kits,...createComicCrashKits(N)]});
 
     let transitionSequence=0,pendingSceneTransition=null;
     function transition(exitId,payload={}){
@@ -230,6 +230,7 @@
       if(consumeAction("pause")){pauseGame();return surface}
       if(consumeAction("map")){mapOpen=true;releaseDrivingInput();updateMapPanel();audio.click();return surface}
       if(consumeAction("retry")){retrySame();return surface}
+      if(comicHitStopHeld)return surface;
       if(consumeAction("interact")){handleInteraction(state,run,condition,surface);if(simulationFrozen())return surface}
       const brake=heldAction(keys,"brake")?1:0,steer=(heldAction(keys,"steerLeft")?1:0)-(heldAction(keys,"steerRight")?1:0);
       const handbrake=heldAction(keys,"handbrake"),drift=heldAction(keys,"drift");
@@ -415,7 +416,7 @@
     function newCourse(){startGeneration(newSeed(course?.seed),false,currentScene()==="results"||currentScene()==="loss"?"fresh":"start")}
     function goTitle(){if(pendingSceneTransition)return;const id=currentScene();if(["driving","paused","results","loss"].includes(id))transition("title");clearWorld(true);campaignLaunch=null;campaignAutoStarted=false;try{sessionStorage.removeItem("longhaul-active-campaign")}catch{}audio.update(0,0,false)}
     function saveSettings(){try{localStorage.setItem("the-long-haul-settings-v2",JSON.stringify(settings))}catch{}}
-    function applySettings(){audio.enabled=settings.sound;$("#sound-switch").classList.toggle("on",settings.sound);$("#sound-switch").setAttribute("aria-pressed",String(settings.sound));$("#quality-switch").classList.toggle("on",settings.quality);$("#quality-switch").setAttribute("aria-pressed",String(settings.quality));$("#motion-switch").classList.toggle("on",settings.motion);$("#motion-switch").setAttribute("aria-pressed",String(settings.motion));$("#steer-range").value=String(settings.steering);resize();if(course)lastStreamingPlanKey=""}
+    function applySettings(){$("#hit-stop-range").value=String(settings.hitStop*100);audio.enabled=settings.sound;$("#sound-switch").classList.toggle("on",settings.sound);$("#sound-switch").setAttribute("aria-pressed",String(settings.sound));$("#quality-switch").classList.toggle("on",settings.quality);$("#quality-switch").setAttribute("aria-pressed",String(settings.quality));$("#motion-switch").classList.toggle("on",settings.motion);$("#motion-switch").setAttribute("aria-pressed",String(settings.motion));$("#steer-range").value=String(settings.steering);resize();if(course)lastStreamingPlanKey=""}
 
     addEventListener("resize",()=>{cachedMapBounds=null});
 
@@ -569,8 +570,8 @@
         const overlaps=arcadeRecoveryGrace<=0&&distance<obstacle.radius+5&&vehicleColliderOverlapsCircle(truckCollider,obstacle.x,obstacle.z,obstacle.radius,{minY:obstacle.y,maxY:Number.isFinite(obstacle.y)?obstacle.y+(obstacle.height??4):undefined});if(overlaps)touching.add(key);
         if(overlaps&&Math.max(speed,obstacle.speed||0)>3&&!activeContacts.has(key)){
           activeContacts.add(key);
-          const severity=clamp((Math.max(speed,obstacle.speed||0)-3)/24,0,1),seconds=Math.round(8+severity*10),heavy=obstacle.kind==="tree",roadHazard=obstacle.kind==="lane-hazard",yardTruck=obstacle.kind==="terminal-moving-truck",truckDamage=(heavy?14:roadHazard?7:10)+severity*(heavy?22:roadHazard?12:18),cargoDamage=(roadHazard?3:5)+severity*(roadHazard?8:15),side=hashText(key)%2?1:-1,result=applyLongHaulOperationOnce(engine,runKey,`${key}:${++impactSerial}`,()=>({seconds}));
-          if(result.applied){engine.n.longHaulRun.penalty({id:key,kind:"collision",label:yardTruck?"Freight yard truck collision":heavy?"Heavy tree collision":roadHazard?"Road hazard collision":"Boulder collision",seconds,collision:true});const appliedDamage=spendTruckDamage(truckDamage,"major-impact");spendCargoDamage(cargoDamage,"major-impact");engine.n.longHaulTruck.impulse({speedDelta:-state.speed*((roadHazard?.58:.72)+severity*(roadHazard?.12:.18)),headingDelta:side*(.08+severity*.16),rollDelta:side*((roadHazard?.25:.7)+severity*(roadHazard?.55:1.65)),y:(roadHazard?.12:.45)+severity*(roadHazard?.5:1.2)});toast(`${yardTruck?"Freight truck":heavy?"Tree":roadHazard?"Road hazard":"Boulder"} collision · ${Math.round(appliedDamage)}% truck damage`,`bad`,2600);audio.hit()}
+          const severity=clamp((Math.max(speed,obstacle.speed||0)-3)/24,0,1),seconds=Math.round(8+severity*10),heavy=obstacle.kind==="tree",roadHazard=obstacle.kind==="lane-hazard",yardTruck=obstacle.kind==="terminal-moving-truck",truckDamage=(heavy?14:roadHazard?7:10)+severity*(heavy?22:roadHazard?12:18),cargoDamage=(roadHazard?3:5)+severity*(roadHazard?8:15),comicEvent=comicObstacleEvent(state,obstacle),result=applyLongHaulOperationOnce(engine,runKey,`${key}:${++impactSerial}`,()=>({seconds}));
+          if(result.applied){engine.n.longHaulRun.penalty({id:key,kind:"collision",label:yardTruck?"Freight yard truck collision":heavy?"Heavy tree collision":roadHazard?"Road hazard collision":"Boulder collision",seconds,collision:true});const appliedDamage=spendComicTruckDamage(truckDamage,"major-impact",comicEvent);spendCargoDamage(cargoDamage,"major-impact");if(comicEvent){queueComicImpulse(state,comicEvent.response.impulse);presentComicImpact(comicEvent);}toast(`${yardTruck?"Freight truck":heavy?"Tree":roadHazard?"Road hazard":"Boulder"} collision · ${Math.round(appliedDamage)}% truck damage`,`bad`,2600);audio.hit()}
         }
       }
       for(const contact of state.roundaboutContacts??[]){
@@ -720,6 +721,7 @@
       const direction=arcadeRoadForward(road,truck.heading),freightPacing=course.endless?(freightState?.difficulty??freightDifficulty(endlessHighwayProgress(course,truck.position))):null,difficulty=freightPacing?.level??Math.min(3,readRun().rawTime/75),nearEvent=arcadeEncounters.find(event=>event.path===progress.path&&event.distance-progress.distance>-55&&event.distance-progress.distance<200);
       const count=freightPacing?(Math.floor(Math.max(0,endlessHighwayProgress(course,truck.position))/960)%4===3?2:nearEvent&&nearEvent.kind!=="weave"?2:freightPacing.trafficLimit):(nearEvent?.kind==="weave"?6:nearEvent&&nearEvent.kind!=="breakables"?2:4+Math.floor(difficulty/2));
       const truckCollider=createVehicleCollider(truck.position,truck.heading,LONG_HAUL_TRUCK_COLLIDER);
+      engine.n.longHaulImpact.beginFrame();
       for(let i=0;i<arcadeVehicles.length;i++){
         const vehicle=arcadeVehicles[i];
         const oldRelative=vehicle.path===progress.path?(vehicle.progress-progress.distance)*direction:Infinity;
@@ -733,8 +735,10 @@
           const overlap=arcadeEncounters.find(event=>event.path===vehicle.path&&Math.abs(event.distance-vehicle.progress)<100);
           if(overlap?.kind==="ramp")vehicle.lane=-Math.sign(overlap.lane)*Math.min(5,spawn.edge.width*.22);
           if(overlap?.kind==="roadblock")vehicle.lane=overlap.safeLane;
-          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.skillDisabled=0;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;
+          resetComicTrafficVehicle(vehicle);
+          vehicle.speed=(freightPacing?.trafficSpeed??12)+vehicle.kind*2+(freightPacing?0:difficulty);vehicle.hit=false;vehicle.passed=false;vehicle.skillDisabled=0;vehicle.minClearance=Infinity;vehicle.nearSpeed=0;vehicle.active=true;vehicle.id=`traffic:${++arcadeTrafficSerial}`;engine.n.longHaulDestructibles.register(vehicle.id,vehicle.kind);
         }
+        if(["destroyed","retired"].includes(engine.n.longHaulDestructibles.get(vehicle.id)?.state)){vehicle.group.visible=false;continue;}
         // Traffic advances in road coordinates independently of the player.
         vehicle.skillDisabled=Math.max(0,(vehicle.skillDisabled||0)-dt);vehicle.progress+=vehicle.direction*vehicle.speed*dt*(vehicle.skillDisabled>0?.35:1);
         const pos=arcadePathPoint(vehicle.path,vehicle.progress,vehicle.lane);if(!pos){vehicle.active=false;vehicle.group.visible=false;continue}
@@ -747,9 +751,12 @@
         }else{vehicle.group.rotation.x=0;vehicle.group.rotation.z=0;}
         const dx=pos.x-truck.position.x,dz=pos.z-truck.position.z,separation=Math.hypot(dx,dz);
         const collider=createVehicleCollider({...pos,y:height},vehicleHeading,vehicle.collider),verticalOverlap=verticalContactOverlaps(truckCollider.minY,truckCollider.maxY,collider.minY,collider.maxY),overlaps=verticalOverlap&&separation<=vehicle.collisionReach&&vehicleCollidersOverlap(truckCollider,collider);
-        if(!vehicle.hit&&arcadeRecoveryGrace<=0&&overlaps&&Math.max(Math.abs(truck.speed),vehicle.speed)>3){
-          vehicle.hit=true;const key=vehicle.id,receipt=applyLongHaulOperationOnce(engine,runKey,key,()=>({seconds:5}));
-          if(receipt.applied){spendTruckDamage(12+Math.min(10,Math.abs(truck.speed-vehicle.speed)*.3),"traffic-collision");spendCargoDamage(4,"traffic-collision");engine.n.longHaulTruck.impulse({speedDelta:-truck.speed*.34,headingDelta:(i%2?1:-1)*.06,rollDelta:(i%2?1:-1)*.7,y:1.4,kind:"traffic"});engine.n.longHaulRun.penalty({id:key,kind:"traffic",label:"Traffic collision",seconds:5,collision:true});toast("CRASH · COMBO LOST","bad",1100);audio.hit()}
+        const contact=sweptVehicleImpact(comicPreviousTruckCollider||truckCollider,truckCollider,vehicle.previousCollider||collider,collider);
+        vehicle.previousCollider=collider;
+        if(arcadeRecoveryGrace<=0&&contact){
+          const targetVelocity={x:Math.sin(vehicleHeading)*vehicle.speed,z:Math.cos(vehicleHeading)*vehicle.speed};
+          const event=engine.n.longHaulImpact.contact({targetId:vehicle.id,contact,truck,targetVelocity,targetMass:DESTRUCTIBLE_PROFILES[vehicle.kind].mass,seed:course.seed});
+          if(event)applyComicTrafficImpact(vehicle,event,targetVelocity);
         }
         const alignment=Math.cos(truck.heading-pos.heading)*direction;
         if(verticalOverlap&&!overlaps&&alignment>.85&&Math.abs(relative)<(LONG_HAUL_TRUCK_COLLIDER.length+vehicle.collider.length)*.5){
@@ -761,6 +768,7 @@
           if(!vehicle.hit&&vehicle.minClearance<Infinity&&truck.speed>0&&alignment>.85)awardArcadeEvent({id:vehicle.id,kind:"near-miss",speed:Math.min(truck.speed,vehicle.nearSpeed),forward:true,clearance:vehicle.minClearance});
         }
       }
+      engine.n.longHaulImpact.endFrame();comicPreviousTruckCollider=truckCollider;
     }
     let arcadeBonuses=0,arcadeAttemptId="";
     const arcadeStartGeneration=startGeneration;
@@ -1022,7 +1030,7 @@
     const arcadeDamageBase=spendTruckDamage;
     spendTruckDamage=function(amount,reason){const result=arcadeDamageBase(amount,reason);if(amount>0){resetArcadeCombo();arcadeImpactStrength=Math.max(arcadeImpactStrength,clamp(amount/24,.2,1));arcadeRecord("impact",{reason,damage:result})}return result};
     function applyImpactCamera(){
-      if(!settings.motion||arcadeImpactStrength<.015)return;
+      if(comicShakeLife>0||!settings.motion||arcadeImpactStrength<.015)return;
       const now=skillVisualTime*65;camera.position.x+=Math.sin(now*1.7)*arcadeImpactStrength*.24;camera.position.y+=Math.cos(now)*arcadeImpactStrength*.16;
     }
     function updateRiskHud(){
@@ -1511,7 +1519,7 @@ skillUpgradePanel.tabIndex = -1;
 $("#game-stage").append(skillUpgradePanel);
 function skillMenuOpen() { return !skillUpgradePanel.hidden; }
 function simulationFrozen() {
-  return currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
+  return comicHitStopHeld || currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
 }
 function consumeAction(action) {
   let used = false;
@@ -1812,7 +1820,7 @@ spendTruckDamage = function(amount, reason) {
   if (protection.shielded) { arcadeRecord("shield-protected", { amount, reason }); return 0; }
   const damage = skillLegacyTruckDamage(protection.damage * skillProgression.effects().armorMultiplier, reason);
   if (damage >= 6 && !["off-road", "recovery"].includes(reason)) {
-    const side = Math.sign(readTruck().input.steer) || (skillImpactId % 2 ? 1 : -1);
+    const side = comicDamageSide ?? (Math.sign(readTruck().input.steer) || (skillImpactId % 2 ? 1 : -1));
     skillSteeringDamage = clamp(skillSteeringDamage + side * damage * .012, -.8, .8);
   }
   return damage;
@@ -1903,7 +1911,7 @@ function activateSkillAbility(slot) {
 }
 
 const pickupGeometry = new THREE.OctahedronGeometry(1,0);
-const pickupMaterials = Object.fromEntries(Object.entries(PICKUP_DEFINITIONS).map(([id,def])=>[id,new THREE.MeshBasicMaterial({color:def.color})]));
+const pickupMaterials = Object.fromEntries(Object.entries(PICKUP_DEFINITIONS).map(([id,def])=>[id,new THREE.MeshToonMaterial({color:def.color,emissive:def.color,emissiveIntensity:.24})]));
 const pickupHosts = new Map();
 let skillPickupNetwork = null, skillPickupPlan = [];
 function planSkillPickups() {
@@ -2060,6 +2068,153 @@ function skillSnapshot(){return{progression:skillProgression.snapshot(),abilitie
 window.longHaulSkills={snapshot:skillSnapshot};
 
 
+// app-chunk-22.js
+// TLH-043 presentation adapter. Physics and transient kit state remain in Nexus;
+// meshes, comic lettering and real-time hit-stop presentation live in this host.
+let comicDamageSide=null;
+let comicHitStopHeld=false,comicPreviousTruckCollider=null,comicShakeLife=0;
+const comicClock=createImpactClock(),comicOffset=new THREE.Vector3(),comicDirection=new THREE.Vector3();
+let comicPresentationTime=0,comicRun='',comicImpactCount=0,comicDestructionCount=0;
+const comicRoot=new THREE.Group();comicRoot.name='LH_COMIC_CRASH_EFFECTS';worldRoot.add(comicRoot);
+const comicStage=$('#game-stage'),comicBursts=Array.from({length:4},()=>{
+ const node=document.createElement('div');node.className='comic-impact-burst';node.setAttribute('aria-hidden','true');node.hidden=true;comicStage.append(node);return{node,life:0,point:new THREE.Vector3(),tier:'solid'};
+});
+const comicFragments=Array.from({length:80},()=>({root:new THREE.Group(),life:0,ownerId:null,velocity:new THREE.Vector3(),spin:new THREE.Vector3(),floor:0,radius:.2}));
+for(const item of comicFragments){item.root.visible=false;comicRoot.add(item.root);}
+const comicPuffGeo=new THREE.IcosahedronGeometry(1,1);
+const comicPuffMats=[0xffcf3e,0xf2782f,0x5c536d].map(color=>{const mat=new THREE.MeshToonMaterial({color,emissive:color,emissiveIntensity:color===0x5c536d?0:.3});mat.userData.lhCelKind='structure';return mat;});
+const comicPuffs=Array.from({length:24},(_,i)=>{const mesh=new THREE.Mesh(comicPuffGeo,comicPuffMats[i%3]);mesh.visible=false;comicRoot.add(mesh);return{mesh,life:0,total:0,velocity:new THREE.Vector3(),size:1};});
+function clearComicPresentation(){
+ camera.position.sub(comicOffset);comicOffset.set(0,0,0);comicClock.reset();comicHitStopHeld=false;comicShakeLife=0;
+ for(const b of comicBursts){b.life=0;b.node.hidden=true;}
+ for(const p of comicPuffs){p.life=0;p.mesh.visible=false;}
+ for(const f of comicFragments){f.life=0;f.root.visible=false;f.root.clear();}
+}
+function resetComicCrashes(){clearComicPresentation();comicPreviousTruckCollider=null;comicRun=runKey;engine.n.longHaulImpact.reset();engine.n.longHaulDestructibles.reset();for(const v of arcadeVehicles){v.previousCollider=null;v.comicBreakup=null;v.group.scale.set(1,1,1);} }
+const comicPreviousReset=resetArcadeOverhaul;
+resetArcadeOverhaul=function(){resetComicCrashes();comicPreviousReset();};
+window.addEventListener('blur',()=>{comicClock.reset();comicHitStopHeld=false;comicPreviousTruckCollider=null;});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){comicClock.reset();comicHitStopHeld=false;comicPreviousTruckCollider=null;}});
+function resetComicTrafficVehicle(v){
+ if(v.id){engine.n.longHaulDestructibles.remove(v.id);engine.n.longHaulImpact.release(v.id);}
+ v.previousCollider=null;v.comicBreakup=null;v.group.scale.set(1,1,1);
+}
+function queueComicImpulse(truck,impulse){
+ // Movement owns cargo momentum scaling. Remove its existing scalar here to
+ // avoid applying mass twice: Impact Kit already used both physical masses.
+ // V1 is a byte-preserved rollback kit. Its public snapshot API clears the
+ // old cruise floor before queuing an impact, without changing V1 source.
+ if(truck.boostCruiseSpeed>0)engine.n.longHaulTruck.loadSnapshot({...truck,boostCruiseSpeed:0});
+ const scale=Math.max(.01,finite(truck.loadFactors?.momentumScale,1));
+ engine.n.longHaulTruck.impulse({...impulse,x:impulse.x/scale,z:impulse.z/scale});
+}
+function spendComicTruckDamage(amount,reason,event){
+ comicDamageSide=event?-Math.sign(event.normal.x*Math.cos(event.heading)-event.normal.z*Math.sin(event.heading)):null;
+ try{return spendTruckDamage(amount,reason);}finally{comicDamageSide=null;}
+}
+function applyComicTrafficImpact(vehicle,event,targetVelocity){
+ const response=event.response,receipt=applyLongHaulOperationOnce(engine,runKey,event.id,()=>({seconds:response.tier==='scrape'?0:5}));
+ if(!receipt.applied)return;
+ vehicle.hit=true;
+ // Keep the existing armor/shield, cargo protection and score owners.
+ const damage=spendComicTruckDamage(response.truckDamage,'traffic-collision',event);spendCargoDamage(response.cargoDamage,'traffic-collision');
+ queueComicImpulse(readTruck(),response.impulse);
+ engine.n.longHaulRun.penalty({id:event.id,kind:'traffic',label:'Traffic collision',seconds:response.tier==='scrape'?0:5,collision:true});
+ const destruction=engine.n.longHaulDestructibles.impact(vehicle.id,event);
+ if(destruction.destroyed){
+  spawnComicBreakup(vehicle,event,targetVelocity);vehicle.group.visible=false;comicDestructionCount++;
+ }else if(destruction.state==='damaged')vehicle.group.scale.y=Math.max(.88,destruction.health/DESTRUCTIBLE_PROFILES[vehicle.kind].health*.12+.88);
+ presentComicImpact(event,destruction.destroyed);
+ arcadeRecord('comic-impact',{id:event.id,target:event.targetId,tier:response.tier,closingSpeed:event.closingSpeed,normal:event.normal,damage,destroyed:destruction.destroyed===true});
+ audio.hit();
+}
+function comicObstacleEvent(truck,obstacle){
+ const dx=truck.position.x-obstacle.x,dz=truck.position.z-obstacle.z,length=Math.hypot(dx,dz)||1;
+ const normal={x:dx/length,z:dz/length};
+ return engine.n.longHaulImpact.contact({targetId:`obstacle:${obstacle.id}`,truck,targetMass:100000,seed:course?.seed,
+  targetVelocity:{x:finite(obstacle.velocity?.x),z:finite(obstacle.velocity?.z)},contact:{normal,point:{x:obstacle.x+normal.x*obstacle.radius,y:truck.position.y+1,z:obstacle.z+normal.z*obstacle.radius}}});
+}
+function presentComicImpact(event,destroyed=false){
+ comicImpactCount++;const r=event.response;
+ const stopScale=settings.motion?finite(settings.hitStop,1):0;
+ comicClock.request(r.hitStop,stopScale);
+ if(settings.motion){comicShakeLife=Math.max(comicShakeLife,r.tier==='scrape'?.08:.25+r.severity*.10);comicDirection.set(event.normal.x,0,event.normal.z);}
+ let b=comicBursts.find(x=>x.life<=0);if(!b)b=comicBursts.reduce((a,c)=>a.life<c.life?a:c);
+ const words=r.tier==='scrape'?['SKRR!']:destroyed?['KAPOW!','WHAM!']:['BAM!','WAP!'];
+ b.node.textContent=words[(comicImpactCount-1)%words.length];b.tier=r.tier;b.life=r.tier==='scrape'?.3:.48;b.point.set(event.point.x,event.point.y+1,event.point.z);
+ b.node.dataset.tier=r.tier;b.node.hidden=false;b.node.style.rotate=`${settings.motion?(comicImpactCount%3-1)*8:0}deg`;
+ if(destroyed)for(let i=0;i<(settings.motion?9:3);i++){
+  const p=comicPuffs.find(x=>x.life<=0);if(!p)break;
+  p.total=p.life=.35+(i%3)*.18;p.size=.6+(i%3)*.4;p.mesh.material=comicPuffMats[settings.motion?i%3:2];
+  p.mesh.position.set(event.point.x,event.point.y,event.point.z);p.mesh.scale.setScalar(.1);p.mesh.visible=true;
+  const angle=i*2.399;p.velocity.set(Math.cos(angle)*(2+i*.2),2+i*.35,Math.sin(angle)*(2+i*.2));
+ }
+}
+function spawnComicBreakup(vehicle,event,velocity){
+ vehicle.group.updateWorldMatrix(true,true);
+ const pieces=vehicle.comicBreakup?vehicle.comicBreakup():vehicle.group.children.filter(p=>p.visible).slice(0,12).map(p=>p.clone(true));
+ const matrix=vehicle.group.matrixWorld;
+ for(let i=0;i<Math.min(14,pieces.length);i++){
+  const f=comicFragments.find(x=>x.life<=0);if(!f)break;
+  const piece=pieces[i];piece.updateMatrix();const worldMatrix=matrix.clone().multiply(piece.matrix);
+  f.ownerId=vehicle.id;f.root.clear();f.root.add(piece);piece.position.set(0,0,0);piece.quaternion.identity();piece.scale.set(1,1,1);
+  worldMatrix.decompose(f.root.position,f.root.quaternion,f.root.scale);
+  const angle=(i+event.tick%7)*2.399,spread=2+event.response.severity*5;
+  f.velocity.set(velocity.x-event.normal.x*spread+Math.cos(angle)*spread,3+i%3,velocity.z-event.normal.z*spread+Math.sin(angle)*spread);
+  f.spin.set(Math.sin(angle)*4,Math.cos(angle)*3,2);f.floor=vehicle.group.position.y;
+  const box=new THREE.Box3().setFromObject(f.root);f.radius=Math.max(.1,(box.max.y-box.min.y)*.5);
+  f.root.position.y=Math.max(f.root.position.y,f.floor+f.radius);f.life=3.4;f.root.visible=true;
+ }
+}
+function beginComicCrashFrame(dt,sceneId){
+ camera.position.sub(comicOffset);comicOffset.set(0,0,0);
+ if(comicRun!==runKey)resetComicCrashes();
+ if(sceneId!=='driving'){
+  comicClock.reset();comicHitStopHeld=false;
+  if(sceneId!=='paused'&&sceneId!=='settings')clearComicPresentation();
+  return;
+ }
+ if(mapOpen||skillMenuOpen()||!arcadeGaragePanel.hidden||launchIntro.active){comicClock.reset();comicHitStopHeld=false;return;}
+ comicHitStopHeld=comicClock.advance(dt);
+}
+function updateComicCrashPresentation(dt,sceneId,simulate){
+ if(sceneId!=='driving'||mapOpen||skillMenuOpen()||!arcadeGaragePanel.hidden)return;
+ comicPresentationTime+=dt;
+ if(comicRoot.parent!==worldRoot)worldRoot.add(comicRoot);
+ const truck=readTruck();
+ for(const f of comicFragments){if(f.life<=0)continue;
+  if(simulate){f.life=Math.max(0,f.life-dt);f.velocity.y-=14*dt;f.root.position.addScaledVector(f.velocity,dt);
+   if(f.root.position.y<f.floor+f.radius){f.root.position.y=f.floor+f.radius;f.velocity.y=Math.abs(f.velocity.y)*.25;f.velocity.x*=.72;f.velocity.z*=.72;}
+   f.root.rotation.x+=f.spin.x*dt;f.root.rotation.y+=f.spin.y*dt;f.root.rotation.z+=f.spin.z*dt;
+  }
+  if(f.life<=0||Math.hypot(f.root.position.x-truck.position.x,f.root.position.y-truck.position.y,f.root.position.z-truck.position.z)>160){f.life=0;f.root.visible=false;f.root.clear();}
+ }
+ for(const p of comicPuffs){if(p.life<=0)continue;p.life=Math.max(0,p.life-dt);p.mesh.visible=p.life>0;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.scale.setScalar(p.size*(1-p.life/p.total)*2+.1);}
+ for(const v of engine.n.longHaulDestructibles.snapshot())if(v.state==='destroyed'&&!comicFragments.some(f=>f.life>0&&f.ownerId===v.id))engine.n.longHaulDestructibles.retire(v.id);
+ const stage=comicStage.getBoundingClientRect();
+ const protectedRects=['#freight-hud','#journey-objective','#skill-hud','#risk-hud','#drive-box'].flatMap(selector=>{const el=$(selector);if(!el||el.hidden)return[];const r=el.getBoundingClientRect();return r.width&&r.height?[r]:[];});
+ camera.updateMatrixWorld();
+ for(const b of comicBursts){if(b.life<=0)continue;b.life=Math.max(0,b.life-dt);b.node.hidden=b.life<=0;
+  const p=b.point.clone().project(camera);if(p.z< -1||p.z>1){b.node.hidden=true;continue;}
+  const w=Math.min(stage.width*.5,b.tier==='heavy'?240:180),h=100;
+  const baseX=clamp((p.x*.5+.5)*stage.width,w*.5+8,stage.width-w*.5-8),baseY=clamp((-p.y*.5+.5)*stage.height,h*.5+8,stage.height-h*.5-8);
+  let position=null;
+  for(const [dx,dy]of [[0,0],[0,-120],[180,0],[-180,0],[0,120]]){
+   const x=clamp(baseX+dx,w*.5+8,stage.width-w*.5-8),y=clamp(baseY+dy,h*.5+8,stage.height-h*.5-8);
+   if(!protectedRects.some(r=>x+w*.5>r.left-stage.left&&x-w*.5<r.right-stage.left&&y+h*.5>r.top-stage.top&&y-h*.5<r.bottom-stage.top)){position={x,y};break;}
+  }
+  if(!position){b.node.hidden=true;continue;}
+  b.node.style.left=`${position.x}px`;b.node.style.top=`${position.y}px`;b.node.style.width=`${w}px`;b.node.style.opacity=String(Math.min(1,b.life/.12));
+ }
+ if(comicShakeLife>0){comicShakeLife=Math.max(0,comicShakeLife-dt);if(settings.motion){
+  const amount=Math.min(.35,comicShakeLife)*Math.sin(comicPresentationTime*67)*.8;
+  comicOffset.copy(comicDirection).multiplyScalar(amount);comicOffset.y=Math.cos(comicPresentationTime*81)*amount*.35;camera.position.add(comicOffset);camera.updateMatrixWorld();
+ }}
+}
+// Explicit authoring/diagnostic attachment; no temporary state enters saves.
+window.LongHaulComicCrashes={getState:()=>({truckId:engine.n.longHaulImpact.profile.truckId,impact:engine.n.longHaulImpact.snapshot(),vehicles:engine.n.longHaulDestructibles.snapshot(),held:comicHitStopHeld,remaining:comicClock.remaining,impacts:comicImpactCount,destroyed:comicDestructionCount,fragments:comicFragments.filter(f=>f.life>0).length,puffs:comicPuffs.filter(p=>p.life>0).length,bursts:comicBursts.filter(b=>b.life>0).length,limits:{fragments:80,puffs:24,bursts:4}})};
+
+
 // app-chunk-11.js
 $("#credits-btn").addEventListener("click",()=>transition("credits"));$("#credits-back-btn").addEventListener("click",()=>transition("back"));
 $("#start-btn").addEventListener("click", () => {
@@ -2094,6 +2249,7 @@ $("#motion-switch").addEventListener("click", () => {
   settings.motion = !settings.motion;
   applySettings();
 });
+$("#hit-stop-range").addEventListener("input",event=>{settings.hitStop=clamp(Number(event.target.value)/100,0,1);saveSettings();});
 $("#steer-range").addEventListener("input", (event) => {
   settings.steering = finite(event.target.value, 100);
 });
@@ -2167,7 +2323,7 @@ function frame(now) {
     previous = scheduled = now;
     return;
   }
-  const frozenAtStart = simulationFrozen();
+
   const beforeScene = currentScene(), activeScene = beforeScene === "driving" || beforeScene === "generating", target = activeScene ? 1e3 / 60 : beforeScene === "title" ? 1e3 / 30 : 1e3 / 15;
   if (now < scheduled - 1.5) return;
   const interval = now - previous;
@@ -2176,6 +2332,8 @@ function frame(now) {
   if (scheduled < now - target) scheduled = now + target;
   performanceStats.begin(beforeScene, interval);
   const dt = clamp(interval / 1e3, 0, 1 / 15);
+  beginComicCrashFrame(dt,beforeScene);
+  const frozenAtStart = simulationFrozen();
   try {
     if (beforeScene === "generating") performanceStats.measure("generation", stepGeneration);
     let surface = null;
@@ -2227,6 +2385,7 @@ function frame(now) {
     arcadeVisualFrame(now);
     updateRiskHud();
     updateSkillHud(now);
+    updateComicCrashPresentation(dt,sceneId,simulate);
     performanceStats.measure("renderCpu", () => renderer.render(scene, camera));
     performanceStats.end();
     pressed.clear();

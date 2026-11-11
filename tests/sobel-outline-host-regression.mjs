@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import {TOON_STYLE} from '../src/game/toon-style.mjs';
 import {readFileSync} from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 const source=readFileSync(new URL('../src/app/sobel-outline-host.js',import.meta.url),'utf8');
@@ -10,7 +11,7 @@ const renderer={
  render(s,c){calls.push(['render',s===scene]);if(fail&&target)throw new Error('broken offscreen render')},
  getDrawingBufferSize(v){return v.set(800,450)}
 };
-const context={THREE,renderer,scene,camera,console,window:{}};
+const context={LongHaulToonStyle:TOON_STYLE,THREE,renderer,scene,camera,console,window:{}};
 vm.runInNewContext(source,context,{timeout:2000});
 assert.equal(context.window.LongHaulOutlines.getState().enabled,true);
 renderer.render(scene,camera);
@@ -20,11 +21,11 @@ assert.equal(renderer.getRenderTarget(),null);
 assert.equal(context.window.LongHaulOutlines.getState().draws,1);
 assert.equal(context.window.LongHaulOutlines.getState().width,800);
 assert.equal(context.window.LongHaulOutlines.getState().height,450);
-assert.ok(source.includes('shapeInk=smoothstep')&&source.includes('nearSurface=1.0-smoothstep'),
- 'Sobel prioritizes depth geometry and fades color detail in sky/horizon');
-assert.ok(source.includes('materialInk=smoothstep')&&source.includes('colorEdge)*nearSurface*.30'),
- 'noisy color detail cannot outweigh silhouette edges');
-assert.ok(source.includes('strength:{value:.84}')&&source.includes('depthGain:{value:40}')&&source.includes('colorGain:{value:.32}'));
+assert.ok(source.includes('shapeInk=smoothstep')&&source.includes('shapeInk*=1.0-.7*smoothstep'),
+ 'depth silhouettes fade distant foliage');
+assert.ok(!source.includes('materialInk')&&!source.includes('colorEdge'),'no texture or transparency color outlines');
+assert.ok(source.includes('strength:{value:inkStyle.strength}'));
+assert.ok(!source.includes('float a=luminance'),'no redundant color-edge fetches');
 const count=calls.length;renderer.render(new THREE.Scene(),camera);
 assert.equal(calls.length,count+1,'other scenes are unmodified');
 fail=true;renderer.render(scene,camera);

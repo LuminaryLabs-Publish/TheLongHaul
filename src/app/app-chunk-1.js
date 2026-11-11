@@ -2,15 +2,15 @@
     const REQUIRED=["createEngine","defineDomainServiceKit","createCoreSceneKit","createCoreWorldDomain","createUniformGridPartition","createQuadtreePartition","createFlatWorldSurface","createCurvedHorizonSurface","defineWorldEffectProvider","createCoreInputKit","createCoreDataKit","createCoreSimulationKit","createCoreCameraKit","createCoreGraphicsKit","createCoreTransactionLedgerKit","createWorldPatchPreparationController","createSemanticWorldFeatureKit"];
     for(const name of REQUIRED)if(typeof N[name]!=="function")throw new Error(`Required NexusEngine export missing: ${name}`);
 
-    const settings={sound:true,steering:100,quality:true,motion:!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches};
+    const settings={sound:true,steering:100,quality:true,hitStop:1,motion:!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches};
     try{Object.assign(settings,JSON.parse(localStorage.getItem("the-long-haul-settings-v2")||"{}"))}catch{}
-    settings.sound=settings.sound!==false;settings.quality=settings.quality!==false;settings.motion=settings.motion!==false;settings.steering=clamp(finite(settings.steering,100),75,125);
+    settings.hitStop=clamp(finite(settings.hitStop,1),0,1);settings.sound=settings.sound!==false;settings.quality=settings.quality!==false;settings.motion=settings.motion!==false;settings.steering=clamp(finite(settings.steering,100),75,125);
 
     const scenes={boot:{kind:"web-canvas-scene",exits:{ready:{to:"title"}}},dispatch:{kind:"web-canvas-scene",exits:{start:{to:"generating"},back:{to:"title"}}},title:{kind:"web-canvas-scene",exits:{dispatch:{to:"dispatch"},start:{to:"generating"},settings:{to:"settings"},how:{to:"how-to-play"},credits:{to:"credits"}}},generating:{kind:"web-three-scene",exits:{ready:{to:"driving"},cancel:{to:"title"}}},driving:{kind:"web-three-scene",exits:{pause:{to:"paused"},retry:{to:"generating"},complete:{to:"results"},fail:{to:"loss"},title:{to:"title"}}},paused:{kind:"web-three-scene",exits:{resume:{to:"driving"},settings:{to:"settings"},retry:{to:"generating"},title:{to:"title"}}},results:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},loss:{kind:"web-three-scene",exits:{retry:{to:"generating"},fresh:{to:"generating"},title:{to:"title"}}},settings:{kind:"web-canvas-scene",exits:{title:{to:"title"},pause:{to:"paused"}}},credits:{kind:"web-canvas-scene",exits:{back:{to:"title"}}},"how-to-play":{kind:"web-canvas-scene",exits:{back:{to:"title"}}}};
     const inputKit=N.createCoreInputKit({id:"long-haul-input",initialState:{intent:{throttle:0,brake:0,steer:0,boost:false,handbrake:false,interact:false}},actions:Object.fromEntries(Object.keys(LONG_HAUL_BINDINGS).map(action=>[action,{}])),bindings:{keyboard:LONG_HAUL_BINDINGS},createApi({baseApi}){return{setIntent(intent={}){return baseApi.update({intent:clone(intent)},"updated")},getIntent(){return clone(baseApi.getState().intent??{})}}}});
     const core=createLongHaulCoreKits(N,{seed:"long-haul-boot",timeLimitSeconds:TIME_LIMIT_SECONDS});
     const product=createLongHaulProductKits(N);
-    const engine=N.createEngine({tick:{maxDelta:1/15,rejectReentry:true},kits:[N.createCoreSceneKit({scenes,initialSceneId:"boot"}),N.createCoreWorldDomain({childDomains:false}),inputKit,...core.kits,...product.kits]});
+    const engine=N.createEngine({tick:{maxDelta:1/15,rejectReentry:true},kits:[N.createCoreSceneKit({scenes,initialSceneId:"boot"}),N.createCoreWorldDomain({childDomains:false}),inputKit,...core.kits,...product.kits,...createComicCrashKits(N)]});
 
     let transitionSequence=0,pendingSceneTransition=null;
     function transition(exitId,payload={}){

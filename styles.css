@@ -655,3 +655,7 @@ body.alternative-b-hud.driving #skill-hud .skill-ability:focus-visible {
   body.alternative-b-hud.driving #skill-hud {bottom:calc(90px + env(safe-area-inset-bottom));}
   body.alternative-b-hud.driving #skill-hud #skill-open {bottom:calc(40px + env(safe-area-inset-bottom));}
 }
+
+/* Comic crash lettering stays editable and never intercepts driving input. */
+.comic-impact-burst{position:absolute;z-index:9;pointer-events:none;transform:translate(-50%,-50%);height:100px;display:grid;place-items:center;background:#ffda38;color:#fff9de;border:0;font:italic 900 clamp(22px,4cqw,40px)/1 Impact,Haettenschweiler,sans-serif;letter-spacing:.025em;text-shadow:3px 3px #572b35,-2px -2px #572b35,2px -2px #572b35,-2px 2px #572b35;filter:drop-shadow(3px 4px 0 #2c233a);clip-path:polygon(0 44%,15% 36%,7% 12%,33% 22%,44% 0,54% 23%,78% 4%,76% 29%,100% 27%,89% 50%,100% 74%,76% 72%,83% 98%,59% 82%,45% 100%,35% 79%,12% 94%,17% 69%,0 70%)}
+.comic-impact-burst[hidden]{display:none}.comic-impact-burst[data-tier=scrape]{background:#a2eff2;height:70px;font-size:24px}.comic-impact-burst[data-tier=heavy]{background:#ff8a35}
