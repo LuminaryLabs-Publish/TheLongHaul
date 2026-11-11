@@ -73,7 +73,7 @@ export function advanceReactiveBody(previous, spring, acceleration, load, profil
   const omega = 2 * Math.PI * frequency;
   const springK = mass * omega ** 2 / 4;
   const shockC = mass * omega * clamp(finite(cfg.contactDampingRatio, 0.92), 0.5, 1.3) / 4;
-  let normalTotal = 0, bottomLeft = 0, bottomRight = 0, bodyContact = 0;
+  let normalTotal = 0, bottomLeft = 0, bottomRight = 0, bottomFront = 0, bottomRear = 0, bodyContact = 0;
   let leftClearance = Infinity, rightClearance = Infinity;
   const torque = { x: 0, y: 0, z: 0 };
   // Four wheel footprint corners plus four chassis/roof corners are the
@@ -93,7 +93,7 @@ export function advanceReactiveBody(previous, spring, acceleration, load, profil
       normalTotal += force;
       const moment = cross(r, { x: normal.x * force, y: normal.y * force, z: normal.z * force });
       torque.x += moment.x; torque.y += moment.y; torque.z += moment.z;
-      if (localY === -height) { if (x < 0) bottomLeft += force; else bottomRight += force; }
+      if (localY === -height) { if (x < 0) bottomLeft += force; else bottomRight += force; if (z > 0) bottomFront += force; else bottomRear += force; }
       else bodyContact += force;
     }
   }
@@ -132,7 +132,7 @@ export function advanceReactiveBody(previous, spring, acceleration, load, profil
     body, rollAngle: roll, rollVelocity: body.angularVelocity.z, bodyPitch: pitch, bodyRoll: roll, tipped,
     rolloverRisk: Math.max(0, 1 - gripRatio), rolloverExposure: 0,
     driveTraction: gripRatio, wheelLiftLeft: leftLift, wheelLiftRight: rightLift,
-    contactLoads: { left: bottomLeft, right: bottomRight, body: bodyContact },
+    contactLoads: { left: bottomLeft, right: bottomRight, front: bottomFront, rear: bottomRear, body: bodyContact },
     rollMode: tipped ? 'tipped' : gripRatio < 0.35 ? 'critical' : Math.max(leftLift, rightLift) > 0.12 ? 'wheel-lift' : 'planted'
   };
 }
