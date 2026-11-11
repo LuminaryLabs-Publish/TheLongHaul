@@ -1,4 +1,7 @@
-$("#credits-btn").addEventListener("click",()=>transition("credits"));$("#credits-back-btn").addEventListener("click",()=>transition("back"));
+let creditsReturn="title";
+$("#credits-btn").addEventListener("click",()=>{creditsReturn="title";transition("credits")});
+$("#pause-credits-btn").addEventListener("click",()=>{creditsReturn="paused";transition("credits")});
+$("#credits-back-btn").addEventListener("click",()=>transition(creditsReturn==="paused"?"pause":"back"));
 $("#start-btn").addEventListener("click", () => {
   if (currentScene() !== "title" || pendingSceneTransition) return;
   const resume = $("#freight-resume-btn");
@@ -40,7 +43,6 @@ $("#pause-settings-btn").addEventListener("click", () => {
   settingsReturn = "paused";
   transition("settings");
 });
-$("#pause-retry-btn").addEventListener("click", retrySame);
 $("#pause-title-btn").addEventListener("click", goTitle);
 $("#result-retry-btn").addEventListener("click", retrySame);
 $("#result-new-btn").addEventListener("click", () => {

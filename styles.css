@@ -659,3 +659,18 @@ body.alternative-b-hud.driving #skill-hud .skill-ability:focus-visible {
 /* Comic crash lettering stays editable and never intercepts driving input. */
 .comic-impact-burst{position:absolute;z-index:9;pointer-events:none;transform:translate(-50%,-50%);height:100px;display:grid;place-items:center;background:#ffda38;color:#fff9de;border:0;font:italic 900 clamp(22px,4cqw,40px)/1 Impact,Haettenschweiler,sans-serif;letter-spacing:.025em;text-shadow:3px 3px #572b35,-2px -2px #572b35,2px -2px #572b35,-2px 2px #572b35;filter:drop-shadow(3px 4px 0 #2c233a);clip-path:polygon(0 44%,15% 36%,7% 12%,33% 22%,44% 0,54% 23%,78% 4%,76% 29%,100% 27%,89% 50%,100% 74%,76% 72%,83% 98%,59% 82%,45% 100%,35% 79%,12% 94%,17% 69%,0 70%)}
 .comic-impact-burst[hidden]{display:none}.comic-impact-burst[data-tier=scrape]{background:#a2eff2;height:70px;font-size:24px}.comic-impact-burst[data-tier=heavy]{background:#ff8a35}
+
+/* Icon-only pause menu: the active road remains visible. */
+#pause-screen{place-items:center start;background:linear-gradient(90deg,rgba(4,15,25,.78),rgba(4,15,25,.30) 38%,rgba(4,15,25,.18));}
+#pause-screen .pause-card{width:auto;max-height:100%;overflow:visible;padding:0;border:0;border-radius:0;background:none;box-shadow:none;margin-left:clamp(4px,3vw,54px)}
+#pause-screen h2{color:#f5faf8;font-size:clamp(30px,5vh,52px);text-shadow:0 3px 12px #061423;margin:0 0 1vh}
+#pause-screen .pause-actions{display:flex;flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:clamp(1px,.5vh,6px)}
+.pause-icon-button{display:flex;align-items:center;gap:4px;width:max-content;max-width:80vw;border:0;background:transparent;padding:0;cursor:pointer;color:#fff;text-align:left}
+.pause-icon{display:block;flex:none;width:clamp(58px,14vh,126px);height:clamp(48px,11vh,102px);background-image:url('./assets/ui/pause-icons.png');background-repeat:no-repeat;background-size:200% 200%;transition:transform .15s,filter .15s}
+.pause-play .pause-icon{background-position:0 0;filter:drop-shadow(0 0 7px #56e8ea)}
+.pause-settings .pause-icon{background-position:100% 0}.pause-credits .pause-icon{background-position:0 100%}.pause-home .pause-icon{background-position:100% 100%}
+.pause-label{font-weight:850;text-transform:uppercase;letter-spacing:.09em;color:#c9fffd;text-shadow:0 2px 7px #000;opacity:0;transition:opacity .15s}
+.pause-icon-button:hover .pause-icon,.pause-icon-button:focus-visible .pause-icon{transform:scale(1.08);filter:drop-shadow(0 0 10px #67f8fb)}
+.pause-icon-button:hover .pause-label,.pause-icon-button:focus-visible .pause-label{opacity:1}
+.pause-icon-button:focus-visible{outline:3px solid #8efaff;outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion:reduce){.pause-icon,.pause-label{transition:none}}
