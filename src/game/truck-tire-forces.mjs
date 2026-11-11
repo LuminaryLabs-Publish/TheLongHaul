@@ -34,7 +34,12 @@ export function resolveTruckTireForces(motion, load, profile, contact = {}) {
   // Braking moves support forward. This is the existing single compliant mass,
   // not a second spring or independently simulated cargo weight.
   const springZ = clamp(finite(contact.springDisplacementZ), -0.3, 0.3);
-  const frontShare = clamp(0.48 + springZ * 0.34, 0.36, 0.6);
+  const measuredFront = Math.max(0, finite(contact.contactLoads?.front));
+  const measuredRear = Math.max(0, finite(contact.contactLoads?.rear));
+  const measuredTotal = measuredFront + measuredRear;
+  const frontShare = measuredTotal > mass * 9.81 * 0.03
+    ? clamp(measuredFront / measuredTotal, 0.05, 0.95)
+    : clamp(0.48 + springZ * 0.34, 0.36, 0.6);
   const normalFront = mass * 9.81 * frontShare * support;
   const normalRear = mass * 9.81 * (1 - frontShare) * support;
   const activeSlide = Boolean(contact.driftActive);
