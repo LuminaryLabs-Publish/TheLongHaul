@@ -28,14 +28,14 @@ function resetComicTrafficVehicle(v){
  if(v.id){engine.n.longHaulDestructibles.remove(v.id);engine.n.longHaulImpact.release(v.id);}
  v.previousCollider=null;v.comicFlight=null;v.comicBreakup=null;v.group.scale.set(1,1,1);
 }
-function queueComicImpulse(truck,impulse){
+function queueComicImpulse(truck,impulse,point=null){
  // Movement owns cargo momentum scaling. Remove its existing scalar here to
  // avoid applying mass twice: Impact Kit already used both physical masses.
  // V1 is a byte-preserved rollback kit. Its public snapshot API clears the
  // old cruise floor before queuing an impact, without changing V1 source.
  if(truck.boostCruiseSpeed>0)engine.n.longHaulTruck.loadSnapshot({...truck,boostCruiseSpeed:0});
  const scale=Math.max(.01,finite(truck.loadFactors?.momentumScale,1));
- engine.n.longHaulTruck.impulse({...impulse,x:impulse.x/scale,z:impulse.z/scale});
+ engine.n.longHaulTruck.impulse({...impulse,x:impulse.x/scale,z:impulse.z/scale,...(point?{point}:null)});
 }
 function spendComicTruckDamage(amount,reason,event){
  comicDamageSide=event?-Math.sign(event.normal.x*Math.cos(event.heading)-event.normal.z*Math.sin(event.heading)):null;
@@ -47,7 +47,7 @@ function applyComicTrafficImpact(vehicle,event,targetVelocity){
  vehicle.hit=true;
  // Keep the existing armor/shield, cargo protection and score owners.
  const damage=spendComicTruckDamage(response.truckDamage,'traffic-collision',event);spendCargoDamage(response.cargoDamage,'traffic-collision');
- queueComicImpulse(readTruck(),response.impulse);
+ queueComicImpulse(readTruck(),response.impulse,event.point);
  engine.n.longHaulRun.penalty({id:event.id,kind:'traffic',label:'Traffic collision',seconds:response.tier==='scrape'?0:5,collision:true});
  const destruction=engine.n.longHaulDestructibles.impact(vehicle.id,event);
  // Propel the visible car away from the impact, with forward momentum.
