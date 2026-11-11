@@ -1,3 +1,5 @@
+import {createNeighborhoodTree} from '../game/neighborhood-tree.mjs';
+Object.assign(globalThis,{createNeighborhoodTree});
 import {FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes} from '../game/freight-terminal-start.mjs';
 import {parseFreightTerminalGlb,createFreightTerminalThreeObject} from '../game/freight-terminal-glb.mjs';
 import {FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies} from '../game/freight-terminal-activity.mjs';

@@ -36,6 +36,15 @@
       // Fetch concurrently to bound startup latency. LOD0 owns the two
       // canonical embedded textures; lighter LODs reuse its PBR materials.
       await Promise.all(TREE_SPECIES.map(async species=>{
+        if(species.id==='red_maple'&&typeof createNeighborhoodTree==='function'){
+          const response=await fetch(new URL('../neighborhood/Tree_Maple.glb',assetBase));
+          if(!response.ok)throw Error('Neighborhood maple unavailable');
+          const bytes=await response.arrayBuffer();
+          // The solid canopy is only 292 triangles. Fixed geometry at all
+          // distances avoids leaf-card noise and changes of silhouette.
+          perSpecies.set(species.id,[0,1,2].map(()=>createNeighborhoodTree(THREE,bytes,species.height)));
+          return;
+        }
         const parsed=await Promise.all(species.files.map((_,lod)=>fetchGlb(filename(species,lod))));
         const first=await createPrebuiltTreeMeshes(THREE,parsed[0]);
         const levels=[first];

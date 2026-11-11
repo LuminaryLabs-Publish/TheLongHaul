@@ -18,7 +18,7 @@
   function eligible(material,mesh){
     if(!supported(material)||material.userData?.noCelShading||material.wireframe||
       material.transparent||material.opacity<1||material.depthWrite===false||
-      material.blending!==THREE.NormalBlending||material.alphaTest>0||
+      material.blending!==THREE.NormalBlending||
       mesh?.userData?.noCelShading)return false;
     // Lit luminous signage/lamps must not have their emissive detail erased.
     const glow=material.emissive;
@@ -49,17 +49,24 @@
         vec3 lhPigment=clamp(diffuseColor.rgb,0.0,1.0);
         vec3 lhLumaWeights=vec3(.2126,.7152,.0722);
         float lhPigmentLuma=dot(lhPigment,lhLumaWeights);
-        float lhDirect=max(0.0,dot(normalize(normal),normalize(uLHFourBandSun)));
-        float lhEngineLight=clamp(dot(max(outgoingLight,vec3(0.0)),lhLumaWeights)/max(.12,lhPigmentLuma),0.0,1.0);
-        float lhLight=clamp(lhDirect*.76+lhEngineLight*.24+uLHBandBias,0.0,1.0);
+        // Reflected diffuse includes the actual lights and shadow maps. Specular
+        // energy must not choose the band or bleach the base-color pigment.
+        vec3 lhDiffuse=max(reflectedLight.directDiffuse+reflectedLight.indirectDiffuse,vec3(0.0));
+        float lhEngineLight=dot(lhDiffuse,lhLumaWeights)/max(.001,lhPigmentLuma);
+        float lhLight=clamp(lhEngineLight+uLHBandBias,0.0,1.0);
         float lhBand=lhLight<.15?0.30:(lhLight<.45?0.52:(lhLight<.90?0.78:1.05));
-        // Shade original pigment in distinct bands, instead of repainting it gray/white.
+        // A subtle cool shadow / warm highlight ramp multiplies albedo in linear
+        // space. Keep saturation and texture/vertex color, including dark paint.
+        vec3 lhTint=lhLight<.15?vec3(.88,.94,1.08):(lhLight<.45?vec3(.94,.98,1.04):(lhLight<.90?vec3(1.0):vec3(1.04,1.01,.94)));
         vec3 lhToon=lhPigment*lhBand;
-        outgoingLight=clamp(mix(lhToon,max(outgoingLight,vec3(0.0)),.12),0.0,1.0);
+        // Preserve night/dim-light response instead of imposing a daytime floor.
+        float lhNight=min(1.0,lhEngineLight/.15);
+        vec3 lhSpecular=min(max(outgoingLight-lhDiffuse,vec3(0.0)),lhPigment*.10);
+        outgoingLight=max(lhToon*lhTint*lhNight+lhSpecular,vec3(0.0));
         #include <opaque_fragment>`);
     };
     const priorKey=material.customProgramCacheKey?.bind(material);
-    material.customProgramCacheKey=()=>`${priorKey?priorKey():''}|lh-pigment-cel-v3|${bias}`;
+    material.customProgramCacheKey=()=>`${priorKey?priorKey():''}|lh-pigment-cel-v4|${bias}`;
     material.needsUpdate=true;patched.add(material);state.materials++;
   }
   const previousRender=renderer.render.bind(renderer);

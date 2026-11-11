@@ -41,12 +41,14 @@ function makeShader(material,name){
  const shader={uniforms:{},vertexShader:THREE.ShaderLib[name].vertexShader,fragmentShader:THREE.ShaderLib[name].fragmentShader};
  material.onBeforeCompile(shader,renderer);
  assert.ok(shader.uniforms.uLHFourBandSun,'real sun uniform present');
- assert.ok(shader.fragmentShader.includes('normalize(normal)'),'fragment-space normal, not a camera-dependent varying');
+ assert.ok(shader.fragmentShader.includes('reflectedLight.directDiffuse+reflectedLight.indirectDiffuse'),'bands follow real diffuse light and shadows');
+ assert.ok(shader.fragmentShader.includes('lhEngineLight/.15'),'night stays dark');
+ assert.ok(!shader.fragmentShader.includes('lhDirect*.76'),'no unshadowed directional override');
  assert.ok(shader.fragmentShader.includes('lhToon=lhPigment*lhBand'),'original color retained');
  assert.ok(shader.fragmentShader.includes('lhPigmentLuma'),'pigment luminance preserved');
  assert.ok(shader.fragmentShader.includes('lhLight<.15?0.30')&&shader.fragmentShader.includes('lhLight<.45?0.52'));
  assert.ok(shader.fragmentShader.includes('1.05'),'brightest band retains surface pigment');
- assert.ok(shader.fragmentShader.includes('lhEngineLight*.24+uLHBandBias'),'per-material light response');
+ assert.ok(shader.fragmentShader.includes('lhEngineLight+uLHBandBias'),'per-material light response');
  assert.equal((shader.fragmentShader.match(/#include <opaque_fragment>/g)||[]).length,1);
  assert.ok(!shader.vertexShader.includes('vLHFourBandNormal'));
  return shader;
