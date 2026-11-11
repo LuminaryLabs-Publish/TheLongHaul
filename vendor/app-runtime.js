@@ -230,7 +230,6 @@
       if(consumeAction("pause")){pauseGame();return surface}
       if(consumeAction("map")){mapOpen=true;releaseDrivingInput();updateMapPanel();audio.click();return surface}
       if(consumeAction("retry")){retrySame();return surface}
-      if(comicHitStopHeld)return surface;
       if(consumeAction("interact")){handleInteraction(state,run,condition,surface);if(simulationFrozen())return surface}
       const brake=heldAction(keys,"brake")?1:0,steer=(heldAction(keys,"steerLeft")?1:0)-(heldAction(keys,"steerRight")?1:0);
       const handbrake=heldAction(keys,"handbrake"),drift=heldAction(keys,"drift");
@@ -724,6 +723,19 @@
       engine.n.longHaulImpact.beginFrame();
       for(let i=0;i<arcadeVehicles.length;i++){
         const vehicle=arcadeVehicles[i];
+        if(vehicle.comicFlight){
+          const flight=vehicle.comicFlight;flight.age+=dt;flight.distance+=Math.hypot(flight.vx,flight.vz)*dt;
+          vehicle.group.position.x+=flight.vx*dt;vehicle.group.position.z+=flight.vz*dt;
+          flight.vy-=9.8*dt;vehicle.group.position.y+=flight.vy*dt;
+          const floor=terrainHeight(course,vehicle.group.position.x,vehicle.group.position.z)+1;
+          if(vehicle.group.position.y<floor){vehicle.group.position.y=floor;flight.vy=Math.abs(flight.vy)*.45;}
+          vehicle.group.rotation.z+=dt*(1+flight.event.response.severity*2);vehicle.group.rotation.x+=dt*.7;
+          if(flight.distance>=300||flight.age>=24){
+            if(flight.destroyed)spawnComicBreakup(vehicle,flight.event,{x:flight.vx,z:flight.vz});
+            vehicle.group.visible=false;vehicle.active=false;vehicle.comicFlight=null;
+          }
+          continue;
+        }
         const oldRelative=vehicle.path===progress.path?(vehicle.progress-progress.distance)*direction:Infinity;
         if(!vehicle.active||vehicle.path!==progress.path||oldRelative < -90||oldRelative>720){
           if(i>=count){vehicle.active=false;vehicle.group.visible=false;continue}
@@ -1519,7 +1531,7 @@ skillUpgradePanel.tabIndex = -1;
 $("#game-stage").append(skillUpgradePanel);
 function skillMenuOpen() { return !skillUpgradePanel.hidden; }
 function simulationFrozen() {
-  return comicHitStopHeld || currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
+  return currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
 }
 function consumeAction(action) {
   let used = false;
@@ -2090,14 +2102,14 @@ function clearComicPresentation(){
  for(const p of comicPuffs){p.life=0;p.mesh.visible=false;}
  for(const f of comicFragments){f.life=0;f.root.visible=false;f.root.clear();}
 }
-function resetComicCrashes(){clearComicPresentation();comicPreviousTruckCollider=null;comicRun=runKey;engine.n.longHaulImpact.reset();engine.n.longHaulDestructibles.reset();for(const v of arcadeVehicles){v.previousCollider=null;v.comicBreakup=null;v.group.scale.set(1,1,1);} }
+function resetComicCrashes(){clearComicPresentation();comicPreviousTruckCollider=null;comicRun=runKey;engine.n.longHaulImpact.reset();engine.n.longHaulDestructibles.reset();for(const v of arcadeVehicles){v.previousCollider=null;v.comicFlight=null;v.comicBreakup=null;v.group.scale.set(1,1,1);} }
 const comicPreviousReset=resetArcadeOverhaul;
 resetArcadeOverhaul=function(){resetComicCrashes();comicPreviousReset();};
 window.addEventListener('blur',()=>{comicClock.reset();comicHitStopHeld=false;comicPreviousTruckCollider=null;});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){comicClock.reset();comicHitStopHeld=false;comicPreviousTruckCollider=null;}});
 function resetComicTrafficVehicle(v){
  if(v.id){engine.n.longHaulDestructibles.remove(v.id);engine.n.longHaulImpact.release(v.id);}
- v.previousCollider=null;v.comicBreakup=null;v.group.scale.set(1,1,1);
+ v.previousCollider=null;v.comicFlight=null;v.comicBreakup=null;v.group.scale.set(1,1,1);
 }
 function queueComicImpulse(truck,impulse){
  // Movement owns cargo momentum scaling. Remove its existing scalar here to
@@ -2121,10 +2133,16 @@ function applyComicTrafficImpact(vehicle,event,targetVelocity){
  queueComicImpulse(readTruck(),response.impulse);
  engine.n.longHaulRun.penalty({id:event.id,kind:'traffic',label:'Traffic collision',seconds:response.tier==='scrape'?0:5,collision:true});
  const destruction=engine.n.longHaulDestructibles.impact(vehicle.id,event);
- if(destruction.destroyed){
-  spawnComicBreakup(vehicle,event,targetVelocity);vehicle.group.visible=false;comicDestructionCount++;
- }else if(destruction.state==='damaged')vehicle.group.scale.y=Math.max(.88,destruction.health/DESTRUCTIBLE_PROFILES[vehicle.kind].health*.12+.88);
- presentComicImpact(event,destruction.destroyed);
+ // Propel the visible car away from the impact, with forward momentum.
+ const truck=readTruck(),heading=finite(truck.heading),forwardX=Math.sin(heading),forwardZ=Math.cos(heading);
+ const speed=Math.max(18,Math.abs(finite(truck.speed))+12+response.severity*8);
+ const awayX=-event.normal.x,awayZ=-event.normal.z;
+ const dx=forwardX*.82+awayX*.18,dz=forwardZ*.82+awayZ*.18,len=Math.hypot(dx,dz)||1;
+ vehicle.comicFlight={vx:dx/len*speed,vz:dz/len*speed,vy:5+response.severity*4,age:0,distance:0,event,destroyed:destruction.destroyed===true};
+ vehicle.previousCollider=null;
+ if(destruction.destroyed){comicDestructionCount++;}
+ else if(destruction.state==='damaged')vehicle.group.scale.y=Math.max(.88,destruction.health/DESTRUCTIBLE_PROFILES[vehicle.kind].health*.12+.88);
+ presentComicImpact({...event,response:{...response,hitStop:.2}},destruction.destroyed);
  arcadeRecord('comic-impact',{id:event.id,target:event.targetId,tier:response.tier,closingSpeed:event.closingSpeed,normal:event.normal,damage,destroyed:destruction.destroyed===true});
  audio.hit();
 }
@@ -2177,20 +2195,20 @@ function beginComicCrashFrame(dt,sceneId){
  if(mapOpen||skillMenuOpen()||!arcadeGaragePanel.hidden||launchIntro.active){comicClock.reset();comicHitStopHeld=false;return;}
  comicHitStopHeld=comicClock.advance(dt);
 }
-function updateComicCrashPresentation(dt,sceneId,simulate){
+function updateComicCrashPresentation(dt,sceneId,simulate,simulationDt=dt){
  if(sceneId!=='driving'||mapOpen||skillMenuOpen()||!arcadeGaragePanel.hidden)return;
  comicPresentationTime+=dt;
  if(comicRoot.parent!==worldRoot)worldRoot.add(comicRoot);
  const truck=readTruck();
  for(const f of comicFragments){if(f.life<=0)continue;
-  if(simulate){f.life=Math.max(0,f.life-dt);f.velocity.y-=14*dt;f.root.position.addScaledVector(f.velocity,dt);
+  if(simulate){const step=simulationDt;f.life=Math.max(0,f.life-step);f.velocity.y-=14*step;f.root.position.addScaledVector(f.velocity,step);
    if(f.root.position.y<f.floor+f.radius){f.root.position.y=f.floor+f.radius;f.velocity.y=Math.abs(f.velocity.y)*.25;f.velocity.x*=.72;f.velocity.z*=.72;}
-   f.root.rotation.x+=f.spin.x*dt;f.root.rotation.y+=f.spin.y*dt;f.root.rotation.z+=f.spin.z*dt;
+   f.root.rotation.x+=f.spin.x*step;f.root.rotation.y+=f.spin.y*step;f.root.rotation.z+=f.spin.z*step;
   }
   if(f.life<=0||Math.hypot(f.root.position.x-truck.position.x,f.root.position.y-truck.position.y,f.root.position.z-truck.position.z)>160){f.life=0;f.root.visible=false;f.root.clear();}
  }
  for(const p of comicPuffs){if(p.life<=0)continue;p.life=Math.max(0,p.life-dt);p.mesh.visible=p.life>0;p.mesh.position.addScaledVector(p.velocity,dt);p.mesh.scale.setScalar(p.size*(1-p.life/p.total)*2+.1);}
- for(const v of engine.n.longHaulDestructibles.snapshot())if(v.state==='destroyed'&&!comicFragments.some(f=>f.life>0&&f.ownerId===v.id))engine.n.longHaulDestructibles.retire(v.id);
+ for(const v of engine.n.longHaulDestructibles.snapshot())if(v.state==='destroyed'&&!arcadeVehicles.some(car=>car.id===v.id&&car.comicFlight)&&!comicFragments.some(f=>f.life>0&&f.ownerId===v.id))engine.n.longHaulDestructibles.retire(v.id);
  const stage=comicStage.getBoundingClientRect();
  const protectedRects=['#freight-hud','#journey-objective','#skill-hud','#risk-hud','#drive-box'].flatMap(selector=>{const el=$(selector);if(!el||el.hidden)return[];const r=el.getBoundingClientRect();return r.width&&r.height?[r]:[];});
  camera.updateMatrixWorld();
@@ -2331,8 +2349,11 @@ function frame(now) {
   scheduled += target;
   if (scheduled < now - target) scheduled = now + target;
   performanceStats.begin(beforeScene, interval);
-  const dt = clamp(interval / 1e3, 0, 1 / 15);
-  beginComicCrashFrame(dt,beforeScene);
+  const realDt = clamp(interval / 1e3, 0, 1 / 15);
+  const slowRemaining = comicClock.remaining;
+  beginComicCrashFrame(clamp(interval / 1e3, 0, .25),beforeScene);
+  const slowPart = comicHitStopHeld ? Math.min(realDt, slowRemaining) : 0;
+  const dt = realDt - slowPart * .9;
   const frozenAtStart = simulationFrozen();
   try {
     if (beforeScene === "generating") performanceStats.measure("generation", stepGeneration);
@@ -2385,7 +2406,7 @@ function frame(now) {
     arcadeVisualFrame(now);
     updateRiskHud();
     updateSkillHud(now);
-    updateComicCrashPresentation(dt,sceneId,simulate);
+    updateComicCrashPresentation(realDt,sceneId,simulate,dt);
     performanceStats.measure("renderCpu", () => renderer.render(scene, camera));
     performanceStats.end();
     pressed.clear();

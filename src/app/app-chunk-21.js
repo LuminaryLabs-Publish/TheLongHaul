@@ -20,7 +20,7 @@ skillUpgradePanel.tabIndex = -1;
 $("#game-stage").append(skillUpgradePanel);
 function skillMenuOpen() { return !skillUpgradePanel.hidden; }
 function simulationFrozen() {
-  return comicHitStopHeld || currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
+  return currentScene() !== "driving" || launchIntro.active || mapOpen || !arcadeGaragePanel.hidden || skillMenuOpen();
 }
 function consumeAction(action) {
   let used = false;

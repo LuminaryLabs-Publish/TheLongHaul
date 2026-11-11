@@ -24,9 +24,10 @@ sandbox.beginComicCrashFrame(1/60,'driving'); // reset run-local state first
 engine.n.longHaulDestructibles.register('a');vehicle.comicBreakup=()=>factory.createBreakup('sedan');
 const event={id:'e1',tick:1,targetId:'a',point:{x:0,y:1,z:2},normal:{x:.6,z:-.8},closingSpeed:30,response:{tier:'heavy',severity:1,truckDamage:20,cargoDamage:4,targetDamage:300,hitStop:.09,impulse:{x:3,z:-5,headingDelta:.1}}};
 sandbox.applyComicTrafficImpact(vehicle,event,{x:0,z:10});
-assert.equal(damage,20);assert.equal(cargo,4);assert.equal(impulses.length,1);assert.equal(vehicle.group.visible,false);assert.equal(engine.n.longHaulDestructibles.get('a').state,'destroyed');
+assert.equal(damage,20);assert.equal(cargo,4);assert.equal(impulses.length,1);assert.equal(vehicle.group.visible,true);assert.ok(vehicle.comicFlight);assert.ok(Math.hypot(vehicle.comicFlight.vx,vehicle.comicFlight.vz)>Math.abs(truck.speed));assert.equal(engine.n.longHaulDestructibles.get('a').state,'destroyed');
 sandbox.applyComicTrafficImpact(vehicle,event,{x:0,z:10});assert.equal(damage,20);assert.equal(impulses.length,1,'no duplicate shove');
 sandbox.beginComicCrashFrame(1/60,'driving');assert.equal(sandbox.window.LongHaulComicCrashes.getState().held,true);
+sandbox.spawnComicBreakup(vehicle,event,{x:vehicle.comicFlight.vx,z:vehicle.comicFlight.vz});vehicle.comicFlight=null;vehicle.group.visible=false;
 sandbox.updateComicCrashPresentation(1/60,'driving',false);let state=sandbox.window.LongHaulComicCrashes.getState();assert.ok(state.fragments>0&&state.fragments<=80);assert.ok(state.bursts>0);assert.ok(nodes.some(n=>n.textContent==='KAPOW!'||n.textContent==='WHAM!'));
 for(let i=0;i<30;i++)sandbox.presentComicImpact({...event,id:'burst'+i},true);
 state=sandbox.window.LongHaulComicCrashes.getState();assert.ok(state.puffs<=24&&state.bursts<=4);
@@ -46,6 +47,7 @@ for(let frame=0;frame<36000;frame++){
  if(held)heldFrames++;else simulated+=1/60;
  if(frame%120===0){if(vehicle.id)engine.n.longHaulDestructibles.remove(vehicle.id);vehicle.id='stress-'+frame;vehicle.group.visible=true;vehicle.comicBreakup=()=>factory.createBreakup('sedan');engine.n.longHaulDestructibles.register(vehicle.id);
   sandbox.applyComicTrafficImpact(vehicle,{...event,id:'stress-'+frame,targetId:vehicle.id,tick:frame},{x:0,z:10});}
+ vehicle.comicFlight=null;
  sandbox.updateComicCrashPresentation(1/60,'driving',!held);
  const current=sandbox.window.LongHaulComicCrashes.getState();peakFragments=Math.max(peakFragments,current.fragments);peakPuffs=Math.max(peakPuffs,current.puffs);peakBursts=Math.max(peakBursts,current.bursts);
  assert.ok(current.fragments<=80&&current.puffs<=24&&current.bursts<=4&&current.vehicles.length<=14);

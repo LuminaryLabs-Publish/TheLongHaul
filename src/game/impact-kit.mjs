@@ -46,7 +46,7 @@ export function resolveImpactResponse(event,profile=IMPACT_PROFILE){
  const tier=speed<profile.solidSpeed?'scrape':speed<profile.heavySpeed?'solid':'heavy';
  return {tier,severity,impulse:{x,z,y:0,headingDelta,yawDelta:headingDelta*2,
   rollDelta:clamp((x*Math.cos(event.heading)-z*Math.sin(event.heading))*.06,-.8,.8),kind:'comic-impact',allowTip:severity>.85},
-  hitStop:(tier==='scrape'?0:tier==='solid'?.035+severity*.02:.065+severity*.025)*clamp(finite(profile.hitStopScale,1),0,1),
+  hitStop:(tier==='scrape'?0:.2)*clamp(finite(profile.hitStopScale,1),0,1),
   truckDamage:tier==='scrape'?speed*.35:12+Math.min(10,speed*.3),cargoDamage:tier==='scrape'?0:4,
   targetDamage:speed*speed*mass/(mass+target)*.23};
 }
@@ -75,7 +75,7 @@ export function createImpactKit(options={}){
 }
 // Transient clock belongs to presentation, independent of the game simulation.
 export function createImpactClock(){let remaining=0;return{
- request(seconds,scale=1){remaining=Math.max(remaining,clamp(finite(seconds)*clamp(finite(scale),0,1),0,.09));},
+ request(seconds,scale=1){remaining=Math.max(remaining,clamp(finite(seconds)*clamp(finite(scale),0,1),0,.2));},
  advance(seconds){const held=remaining>0;remaining=Math.max(0,remaining-clamp(finite(seconds),0,.25));return held;},
  reset(){remaining=0;},get remaining(){return remaining;}
 };}

@@ -113,8 +113,11 @@ function frame(now) {
   scheduled += target;
   if (scheduled < now - target) scheduled = now + target;
   performanceStats.begin(beforeScene, interval);
-  const dt = clamp(interval / 1e3, 0, 1 / 15);
-  beginComicCrashFrame(dt,beforeScene);
+  const realDt = clamp(interval / 1e3, 0, 1 / 15);
+  const slowRemaining = comicClock.remaining;
+  beginComicCrashFrame(clamp(interval / 1e3, 0, .25),beforeScene);
+  const slowPart = comicHitStopHeld ? Math.min(realDt, slowRemaining) : 0;
+  const dt = realDt - slowPart * .9;
   const frozenAtStart = simulationFrozen();
   try {
     if (beforeScene === "generating") performanceStats.measure("generation", stepGeneration);
@@ -167,7 +170,7 @@ function frame(now) {
     arcadeVisualFrame(now);
     updateRiskHud();
     updateSkillHud(now);
-    updateComicCrashPresentation(dt,sceneId,simulate);
+    updateComicCrashPresentation(realDt,sceneId,simulate,dt);
     performanceStats.measure("renderCpu", () => renderer.render(scene, camera));
     performanceStats.end();
     pressed.clear();

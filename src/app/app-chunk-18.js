@@ -93,6 +93,19 @@
       engine.n.longHaulImpact.beginFrame();
       for(let i=0;i<arcadeVehicles.length;i++){
         const vehicle=arcadeVehicles[i];
+        if(vehicle.comicFlight){
+          const flight=vehicle.comicFlight;flight.age+=dt;flight.distance+=Math.hypot(flight.vx,flight.vz)*dt;
+          vehicle.group.position.x+=flight.vx*dt;vehicle.group.position.z+=flight.vz*dt;
+          flight.vy-=9.8*dt;vehicle.group.position.y+=flight.vy*dt;
+          const floor=terrainHeight(course,vehicle.group.position.x,vehicle.group.position.z)+1;
+          if(vehicle.group.position.y<floor){vehicle.group.position.y=floor;flight.vy=Math.abs(flight.vy)*.45;}
+          vehicle.group.rotation.z+=dt*(1+flight.event.response.severity*2);vehicle.group.rotation.x+=dt*.7;
+          if(flight.distance>=300||flight.age>=24){
+            if(flight.destroyed)spawnComicBreakup(vehicle,flight.event,{x:flight.vx,z:flight.vz});
+            vehicle.group.visible=false;vehicle.active=false;vehicle.comicFlight=null;
+          }
+          continue;
+        }
         const oldRelative=vehicle.path===progress.path?(vehicle.progress-progress.distance)*direction:Infinity;
         if(!vehicle.active||vehicle.path!==progress.path||oldRelative < -90||oldRelative>720){
           if(i>=count){vehicle.active=false;vehicle.group.visible=false;continue}

@@ -17,6 +17,8 @@ for(const heading of [0,.3,1.2,Math.PI]){
 }
 const makeEvent=(side=1,mass=6500)=>({id:'one',targetId:'car',heading:0,effectiveMass:mass,targetMass:1400,closingSpeed:24,normal:{x:side*.6,z:-.8},contactOffset:{x:side*1.4,z:3}});
 const right=resolveImpactResponse(makeEvent()),left=resolveImpactResponse(makeEvent(-1));
+assert.equal(right.hitStop,.2,'heavy impacts slow time for 0.2 seconds');
+assert.equal(resolveImpactResponse({...makeEvent(),closingSpeed:8}).hitStop,.2,'solid impacts slow time for 0.2 seconds');
 assert.ok(right.impulse.x>0&&left.impulse.x<0);assert.ok(right.impulse.headingDelta>0&&left.impulse.headingDelta<0);
 assert.equal(right.impulse.x,-left.impulse.x);assert.equal(right.impulse.z,left.impulse.z);
 assert.ok(resolveImpactResponse(makeEvent(1,14000)).impulse.x<right.impulse.x,'loaded mass reduces deflection');
@@ -27,7 +29,7 @@ model.beginFrame();const event=model.contact({targetId:'a',contact:hit,truck});a
 model.beginFrame();assert.equal(model.contact({targetId:'a',contact:hit,truck}),null);model.endFrame();
 model.beginFrame();model.endFrame();model.beginFrame();assert.ok(model.contact({targetId:'a',contact:hit,truck}),'separation permits fresh episode');model.endFrame();
 model.beginFrame();assert.equal(model.contact({targetId:'away',contact:hit,truck:{...truck,velocity:{x:0,z:-24}}}),null,'separating contact produces no extra impact');model.endFrame();
-const clock=createImpactClock();clock.request(.09);let frozen=0;while(clock.advance(1/60))frozen++;assert.ok(frozen>=5&&frozen<=6);assert.equal(clock.remaining,0);clock.request(.09,0);assert.equal(clock.advance(.01),false);clock.request(.09,.5);assert.equal(clock.remaining,.045);clock.reset();assert.equal(clock.remaining,0);
+const clock=createImpactClock();clock.request(.2);assert.equal(clock.remaining,.2);clock.advance(.1);assert.ok(Math.abs(clock.remaining-.1)<1e-9);clock.reset();clock.request(.09);let frozen=0;while(clock.advance(1/60))frozen++;assert.ok(frozen>=5&&frozen<=6);assert.equal(clock.remaining,0);clock.request(.09,0);assert.equal(clock.advance(.01),false);clock.request(.09,.5);assert.equal(clock.remaining,.045);clock.reset();assert.equal(clock.remaining,0);
 assert.equal(sweptVehicleImpact({...collider(0,0),x:NaN},collider(0,0),car(0,0),car(0,0)),null);
 assert.equal(model.contact({targetId:'invalid',contact:{...hit,normal:{x:NaN,z:0}},truck}),null);
 const d=createDestructibleVehicleKit();d.register('car',0);const minor={...event,id:'minor',response:{targetDamage:1}};assert.equal(d.impact('car',minor).state,'damaged');assert.equal(d.impact('car',minor).applied,false);d.impact('car',{...minor,id:'two'});assert.equal(d.impact('car',minor).applied,false,'old duplicate rejected');assert.equal(d.impact('car',{...event,id:'heavy',response:{targetDamage:500}}).destroyed,true);assert.equal(d.impact('car',minor).applied,false);d.retire('car');assert.equal(d.get('car').state,'retired');d.remove('car');d.register('car');assert.equal(d.get('car').state,'intact');d.reset();assert.equal(d.snapshot().length,0);
