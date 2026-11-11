@@ -9,7 +9,11 @@ const cross = (a, b) => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z
 const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
 function normalized(q = identity()) {
   const x = finite(q.x), y = finite(q.y), z = finite(q.z), w = finite(q.w, 1);
-  const inv = 1 / (Math.hypot(x, y, z, w) || 1);
+  const norm = Math.hypot(x, y, z, w) || 1;
+  // Preserve already-unit snapshots byte-for-byte. Repeated save/load must
+  // not introduce cumulative rounding or break exact deterministic replay.
+  if (Math.abs(norm - 1) < 1e-12) return { x, y, z, w };
+  const inv = 1 / norm;
   return { x: x * inv, y: y * inv, z: z * inv, w: w * inv };
 }
 function rotated(q, x, y, z) {
