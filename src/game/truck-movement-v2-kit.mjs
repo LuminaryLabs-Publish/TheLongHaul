@@ -303,8 +303,8 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
               verticalVelocity: clamp(state.reactiveBody.verticalVelocity + deltaVelocity.y, -40, 28),
               angularVelocity: {
                 x: clamp(state.reactiveBody.angularVelocity.x + angularKick.x, -5, 5),
-                y: clamp(state.reactiveBody.angularVelocity.y + finite(request.yawDelta) * load.yawScale + angularKick.y + finite(request.headingDelta) * load.yawScale, -3, 3),
-                z: clamp(state.reactiveBody.angularVelocity.z + angularKick.z + (request.allowTip === false ? 0 : rollImpulse), -5, 5)
+                y: clamp(state.reactiveBody.angularVelocity.y + angularKick.y + (request.point ? 0 : finite(request.yawDelta) * load.yawScale + finite(request.headingDelta) * load.yawScale), -3, 3),
+                z: clamp(state.reactiveBody.angularVelocity.z + angularKick.z + (request.point ? 0 : request.allowTip === false ? 0 : rollImpulse), -5, 5)
               }
             },
             grounded: launch ? false : state.grounded,
@@ -438,6 +438,7 @@ export function createLongHaulMovementV2Kit(N, options = {}) {
             grounded: state.grounded, traction: state.driveTraction,
             surfaceGrip: state.surfaceGrip, gripKey,
             springDisplacementZ: state.springMass?.displacement?.z,
+            contactLoads: state.contactLoads,
             driftActive: drift.active, handbrake: input.handbrake
           });
           longitudinal += tire.forwardAcceleration * dt;
