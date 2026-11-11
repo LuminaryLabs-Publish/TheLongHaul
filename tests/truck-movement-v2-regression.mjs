@@ -6,7 +6,7 @@ import { createLongHaulProductKits } from '../src/game/product-kits.mjs';
 import { resolveTruckTireForces } from '../src/game/truck-tire-forces.mjs';
 import { createTruckSpringMassState, advanceTruckSpringMass } from '../src/game/truck-spring-mass.mjs';
 import { DEFAULT_TRUCK_DYNAMICS_PROFILE } from '../src/game/truck-dynamics-profile-kit.mjs';
-import { createReactiveBodyState, advanceReactiveBody } from '../src/game/truck-reactive-body.mjs';
+import { createReactiveBodyState, advanceReactiveBody, chassisHeading } from '../src/game/truck-reactive-body.mjs';
 assert.equal(createHash('sha256').update(readFileSync(new URL('../src/game/truck-kit.mjs',import.meta.url))).digest('hex'),'2302d88ab6707a6dd67ed203c6d44b339615d410e5d2bece8284fe447f5b69bc','V1 source must remain byte-identical');
 const ground = { groundHeight: 0, groundNormal: {x:0,y:1,z:0}, surface: 'road',surfaceGrip:1,roadMaterial:'paved'};
 const v2 = createLongHaulProductKits(N);
@@ -103,7 +103,7 @@ const loaded=rig(24,'v2','unstable');const loadedTurn=loaded.drive(50,{throttle:
 const secured=rig(24,'v2','heavy');assert.ok(Math.abs(secured.drive(50,{throttle:1,steer:0.8}).cargoShift)<1e-12,'secured heavy freight never invents a second moving mass');
 const migratedSource=rig(24,'v1'); assert.ok(!migratedSource.drive(5,{steer:.2}).springMass,'V1 remains unchanged');
 const snap=drift.api.snapshot();const restore=rig(1);restore.api.loadSnapshot(snap);assert.deepEqual(restore.api.getState().springMass,snap.springMass,'V2 save restores internal spring state');assert.deepEqual(restore.api.getState().reactiveBody,snap.reactiveBody,'V2 save restores rigid body orientation and inertia');
-const migrated=rig(1);const old=rig(12,'v1');old.drive(60,{throttle:1,steer:.3});migrated.api.loadSnapshot(old.api.snapshot());assert.deepEqual(migrated.api.getState().springMass,createTruckSpringMassState(),'V1 save loads with neutral new spring');assert.ok(migrated.api.getState().reactiveBody.quaternion.w===1,'V1 save starts with neutral box orientation');
+const migrated=rig(1);const old=rig(12,'v1');old.drive(60,{throttle:1,steer:.3});migrated.api.loadSnapshot(old.api.snapshot());assert.deepEqual(migrated.api.getState().springMass,createTruckSpringMassState(),'V1 save loads with neutral new spring');assert.ok(Math.abs(chassisHeading(migrated.api.getState().reactiveBody.quaternion) - old.api.getState().heading) < 1e-8, 'V1 save preserves the truck heading inside its world-space body orientation');
 const beforePause=drift.api.snapshot();drift.engine.world.__longHaulScene='pause';drift.frame({steer:1});assert.deepEqual(drift.api.getState().springMass,beforePause.springMass,'pause freezes spring');assert.deepEqual(drift.api.getState().reactiveBody,beforePause.reactiveBody,'pause freezes box orientation');
 drift.engine.world.__longHaulScene='driving';drift.api.teleport({x:0,y:.92,z:0,heading:0,speed:0,...ground});drift.engine.tick(0);assert.deepEqual(drift.api.getState().springMass,createTruckSpringMassState(),'roadside recovery resets spring');assert.equal(drift.api.getState().reactiveBody.quaternion.w,1,'roadside recovery restores orientation');
 console.log('Movement V2 regression passed: box contacts, angular continuity, spring passivity, tire grip, braking, drift, cargo, V1 rollback, migration, pause and recovery.');
