@@ -151,6 +151,7 @@
   <div id="boot-failure"><div class="panel"><div class="eyebrow">The truck could not leave the yard</div><h2>Road closed</h2><p id="boot-error" class="lead">Reload the page to try again.</p><button id="reload-btn" class="btn primary">Reload</button></div></div>
   <script>document.getElementById("reload-btn").addEventListener("click",()=>location.reload());window.__longHaulBooted=false;window.longHaulBootReady=()=>document.getElementById("boot-failure")?.classList.remove("show");const bootFailure=(message)=>{const panel=document.getElementById("boot-failure"),text=document.getElementById("boot-error");if(text)text.textContent=message||"The game modules could not start.";panel?.classList.add("show")};window.addEventListener("error",event=>{if(!window.__longHaulBooted)bootFailure(event.message)});setTimeout(()=>{if(!window.__longHaulBooted)bootFailure("The game is still loading. You can wait or reload.")},12000);</script>
 
+  <script src="./src/app/settings-native-ui.js"></script>
   <script type="module" src="./src/app/bootstrap.mjs"></script>
   </div>
 </body>
