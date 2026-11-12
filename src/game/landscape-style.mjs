@@ -52,8 +52,8 @@ export function landscapeTint(seed, x, z, height = 0) {
   const field = noise(seed, x / 230, z / 230, 'field');
   const ridge = smoothRange(75, 170, height);
   // Linear RGB. Broad color blocks, not a photo texture or per-vertex glitter.
-  const meadow = [.30 + field * .10, .52 + field * .13, .21 + field * .06];
-  const highland = [.28 + field * .07, .44 + field * .10, .30 + field * .06];
+  const meadow = [.37 + field * .10, .63 + field * .12, .25 + field * .06];
+  const highland = [.31 + field * .08, .51 + field * .11, .30 + field * .07];
   const blend = smoothRange(.33, .72, region);
   return meadow.map((c, i) => mix(mix(c, highland[i], blend), [.50, .43, .32][i], ridge * .65));
 }

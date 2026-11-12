@@ -119,7 +119,14 @@ await new Promise((resolve, reject) => {
   const script = document.createElement("script");
   script.src = new URL("./lighting-shadow-host.js", import.meta.url).href;
   script.async = false; script.onload = resolve;
-  script.onerror = () => reject(new Error("The illustrated lighting host could not load."));
+  script.onerror=()=>reject(new Error("The illustrated lighting host could not load."));
+  document.head.append(script);
+});
+await new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src=new URL('./lighting-host.js',import.meta.url).href;
+  script.async=false;script.onload=resolve;
+  script.onerror=()=>reject(new Error('The lighting controller could not load'));
   document.head.append(script);
 });
 await new Promise((resolve, reject) => {

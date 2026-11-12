@@ -22,7 +22,7 @@ const emissive=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandar
 const custom=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.ShaderMaterial({vertexShader:'void main(){}',fragmentShader:'void main(){}'}));
 worldRoot.add(road,terrain,cab,clouds,sign,basic,emissive,custom);
 let draws=0;const renderer={render(){draws++}};
-const context={LongHaulToonStyle:TOON_STYLE,THREE,scene,worldRoot,camera,sun,renderer,window:{}};
+const context={LongHaulToonStyle:TOON_STYLE,THREE,scene,worldRoot,camera,sun,renderer,window:{},arcadeWeatherAmount:0};
 vm.runInNewContext(source,context,{timeout:2000});
 let state=context.window.LongHaulCelShading.getState();
 assert.deepEqual([...state.levels],[.30,.52,.78,1.05]);
@@ -43,14 +43,15 @@ function makeShader(material,name){
  material.onBeforeCompile(shader,renderer);
  assert.ok(shader.uniforms.uLHFourBandSun,'real sun uniform present');
  assert.ok(shader.fragmentShader.includes('reflectedLight.directDiffuse+reflectedLight.indirectDiffuse'),'bands follow real diffuse light and shadows');
- assert.ok(shader.fragmentShader.includes('lhEngineLight/.15'),'night stays dark');
- assert.ok(!shader.fragmentShader.includes('lhDirect*.76'),'no unshadowed directional override');
+ assert.ok(shader.fragmentShader.includes('lhCastVisibility'),'actual cast shadows are tracked separately');
+ assert.ok(shader.fragmentShader.includes('lhShadowFactor'),'cast-shadow contrast is independently controlled');
+ assert.ok(!shader.fragmentShader.includes('getShadow( directionalShadowMap[ 0 ]'),'no second shadow sampling pass');
  assert.ok(shader.fragmentShader.includes('lhToon=lhPigment*lhBand'),'original color retained');
  assert.ok(shader.fragmentShader.includes('lhPigmentLuma'),'pigment luminance preserved');
  assert.deepEqual([...shader.uniforms.uLHLevels.value.toArray()],TOON_STYLE.levels);
  assert.ok(shader.fragmentShader.includes('+totalEmissiveRadiance'),'emission survives grading');
  assert.equal(shader.uniforms.uLHLevels.value.w,1.05);
- assert.ok(shader.fragmentShader.includes('lhEngineLight+uLHBandBias'),'per-material light response');
+ assert.ok(shader.fragmentShader.includes('lhForm')&&shader.fragmentShader.includes('uLHShadeFloor'),'per-material shape lighting remains readable');
  assert.equal((shader.fragmentShader.match(/#include <opaque_fragment>/g)||[]).length,1);
  assert.ok(!shader.vertexShader.includes('vLHFourBandNormal'));
  return shader;

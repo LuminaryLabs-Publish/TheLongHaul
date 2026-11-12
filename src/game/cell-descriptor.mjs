@@ -91,7 +91,8 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       const moisture = (hashText(`${course.seed}:moisture:${Math.floor(x / 24)}:${Math.floor(z / 24)}`) & 0xffff) / 0xffff;
       const elevation = clamp((y + 18) / 46, 0, 1);
       const roadTint = surface?.surface === "road" ? 0.045 : surface?.surface === "shoulder" ? 0.02 : 0;
-      if (course.generatorVersion === 'long-haul-endless-v2') {
+      // V2 and terrain-aware V3 must use the same near/far world palette.
+      if (course.generatorVersion === 'long-haul-endless-v2' || course.generatorVersion === ROAD_V3_VERSION) {
         const [r, g, b] = landscapeTint(course.seed, x, z, y); colors.push({r, g, b});
       } else colors.push({ r: 0.19 + moisture * 0.1 + elevation * 0.09 + roadTint, g: 0.32 + moisture * 0.19 - elevation * 0.035 - roadTint * 0.7, b: 0.15 + moisture * 0.07 + elevation * 0.07 - roadTint * 0.5 });
     }

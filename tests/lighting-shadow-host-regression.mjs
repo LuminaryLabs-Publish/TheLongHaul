@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import {TOON_STYLE} from '../src/game/toon-style.mjs';
 import {readFileSync} from 'node:fs';
 import {lightingPreset,LIGHTING_SHADOW_PRESETS,LIGHTING_SOURCE,shadowAnchor,shouldRefresh,selectClosest,planarDistanceSquared,profileSummary} from '../src/game/lighting-shadow-policy.mjs';
 class V3 {constructor(x=0,y=0,z=0){this.set(x,y,z)}set(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;return this}copy(v){return this.set(v.x,v.y,v.z)}}
@@ -53,6 +54,8 @@ const context={THREE,window,document:{createElement:()=>canvas},renderer,worldRo
  },console};
 const source=readFileSync(new URL('../src/app/lighting-shadow-host.js',import.meta.url),'utf8');
 vm.runInNewContext(source,context,{timeout:2000});
+context.LongHaulToonStyle=TOON_STYLE;
+vm.runInNewContext(readFileSync(new URL('../src/app/lighting-host.js',import.meta.url),'utf8'),context,{timeout:2000});
 assert.equal(renderer.shadowMap.enabled,true);assert.equal(renderer.shadowMap.autoUpdate,false);
 assert.equal(sun.castShadow,true);assert.equal(fill.castShadow,false);
 assert.equal(sun.shadow.mapSize.x,1024);
@@ -66,6 +69,7 @@ assert.ok(metrics.shadowCasters>0&&metrics.shadowCasters<=54);
 assert.ok(metrics.occlusionInstances>0&&metrics.occlusionInstances<=46);
 assert.equal(metrics.shadowUpdates,1);
 assert.equal(sun.position.x,-112+shadowAnchor(state,lightingPreset(true)).x);
+assert.equal(window.LongHaulIllumination.getState().owner,'long-haul:lighting-host');
 context.arcadeVisualFrame(10);
 assert.equal(window.LongHaulLighting.getState().shadowUpdates,1);
 context.arcadeVisualFrame(80);

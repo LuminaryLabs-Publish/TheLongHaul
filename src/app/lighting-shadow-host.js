@@ -8,16 +8,14 @@
   let anchor=null, casters=new Set(), selectionCount=0, mapUpdates=0, aoCount=0;
   const local = new THREE.Vector3(), dummy=new THREE.Object3D();
   const candidates=[], trees=[], occlusion=[];
-  const fill = worldRoot.children.find(node=>node.isDirectionalLight && node!==sun);
-  // Single authority for scene illumination; shadow scheduling remains independent.
-  sun.color.set(0xffd8a4);
-  if(fill){fill.color.set(0xc7ddff);fill.intensity=.70;fill.castShadow=false;}
-  hemi.color.set(0xe1edff);hemi.groundColor.set(0x78866b);
+  // Light colors and strengths belong to lighting-host.js, not this shadow scheduler.
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate=false;
   renderer.shadowMap.needsUpdate=true;
   sun.castShadow=true;
+  // Layer 1 holds only bounded tree-shadow proxies; camera gameplay remains layer 0.
+  sun.shadow.camera.layers?.enable?.(1);
   sun.shadow.camera.near=1;
   sun.shadow.camera.far=390;
   sun.shadow.bias=-0.00018;
@@ -194,10 +192,7 @@
     const active=currentScene()==='driving'&&Boolean(course);
     aoMesh.visible=active;
     if(!active)return;
-    const state=readTruck(), weather=clamp(arcadeWeatherAmount,0,1);
-    // Keep unoccluded terrain readable while retaining directional cast-shadow contrast.
-    sun.intensity=lerp(2.10,1.28,weather);
-    hemi.intensity=lerp(1.28,1.18,weather);
+    const state=readTruck();
     const wanted=shadowAnchor(state,preset);
     if(shouldRefresh(lastMapAt,now,anchor,wanted,preset)){
       anchor=wanted;lastMapAt=now;mapUpdates++;
@@ -205,9 +200,8 @@
     }
     // Keep direction fixed to the last map focus between shadow updates.
     const focus=anchor||wanted;
-    sun.position.set(focus.x-112,focus.y+165,focus.z-98);
-    sun.target.position.set(focus.x,focus.y,focus.z);
-    sun.target.updateMatrixWorld();
+    // The illumination host consumes the same snapped pose before the render.
+    window.__longHaulShadowFocus=focus;
     if(!Number.isFinite(lastSelectAt)||now-lastSelectAt>=1000/preset.selectionHz){
       lastSelectAt=now;refreshCasters(state);rebuildOcclusion(state);
       renderer.shadowMap.needsUpdate=true;

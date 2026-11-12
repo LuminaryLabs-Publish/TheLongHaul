@@ -56,7 +56,7 @@
           float depthEdge=length(vec2(-da+dc-2.0*dd+2.0*df-dg+di,
             -da-2.0*db-dc+dg+2.0*dh+di))*depthGain;
           // Only depth-writing surfaces create ink. Fade small distant foliage.
-          float shapeInk=smoothstep(.20,.85,depthEdge);
+          float shapeInk=smoothstep(.32,1.05,depthEdge);
           shapeInk*=1.0-.7*smoothstep(120.0,520.0,center);
           float distanceFade=1.0-.42*smoothstep(240.0,780.0,center);
           float edge=shapeInk*distanceFade;

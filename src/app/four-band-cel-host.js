@@ -11,7 +11,8 @@
   const direction=new THREE.Vector3(),viewSun=new THREE.Vector3(.4,.7,.5);
   const sunUniform={value:viewSun};
   const supported=m=>m&&(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial||m.isMeshLambertMaterial||m.isMeshPhongMaterial||m.isMeshToonMaterial);
-  const shared={uLHLevels:{value:new THREE.Vector4(...style.levels)},uLHThresholds:{value:new THREE.Vector3(...style.thresholds)},
+  const shared={uLHWeather:{value:0},uLHCastShade:{value:style.illumination.shadowedSunFactor},
+    uLHLevels:{value:new THREE.Vector4(...style.levels)},uLHThresholds:{value:new THREE.Vector3(...style.thresholds)},
     uLHSoftness:{value:style.softness},uLHShadow:{value:new THREE.Vector3(...style.shadowTint)},
     uLHMid:{value:new THREE.Vector3(...style.midTint)},uLHHighlight:{value:new THREE.Vector3(...style.highlightTint)}};
   function role(m){return m.userData?.lhCelKind||(m.alphaTest>0?'foliage':m.metalness>.4?'metal':'structure');}
@@ -37,14 +38,25 @@
       if(!shader.fragmentShader.includes('#include <normal_fragment_begin>')||!shader.fragmentShader.includes('#include <opaque_fragment>')){
         state.errors++;throw Error(`Unsupported toon shader chunks: ${this.type}`);
       }
-      Object.assign(shader.uniforms,shared,{uLHFourBandSun:sunUniform,uLHBandBias:{value:policy.bias},
+      Object.assign(shader.uniforms,shared,{uLHFourBandSun:sunUniform,
+        uLHShadeFloor:{value:policy.shadeFloor??.48},uLHBandBias:{value:policy.bias},
         uLHSpecular:{value:policy.specular},uLHRim:{value:policy.rim}});
       // Toon assets retain their maps/instances but don't quantize light twice.
       shader.fragmentShader=shader.fragmentShader.replace('#include <gradientmap_pars_fragment>',
         'vec3 getGradientIrradiance(vec3 normal,vec3 lightDirection){return vec3(max(0.0,dot(normal,lightDirection)));}');
+      // Intercept the existing directional shadow sample (no extra PCF lookup).
+      // All other standard Three lighting and material chunks are preserved.
+      const lightChunk=THREE.ShaderChunk.lights_fragment_begin;
+      const sourceShadow='directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;';
+      if(!lightChunk.includes(sourceShadow))throw Error('Three directional shadow source changed');
+      const trackedShadow=`float lhVisible = ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
+        directLight.color *= lhVisible;
+        lhCastVisibility=min(lhCastVisibility,lhVisible);`;
+      shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',
+        'float lhCastVisibility=1.0;\n'+lightChunk.replace(sourceShadow,trackedShadow));
       shader.fragmentShader=`uniform vec3 uLHFourBandSun,uLHThresholds,uLHShadow,uLHMid,uLHHighlight;
         uniform vec4 uLHLevels;
-        uniform float uLHBandBias,uLHSoftness,uLHSpecular,uLHRim;\n`+
+        uniform float uLHBandBias,uLHSoftness,uLHSpecular,uLHRim,uLHShadeFloor,uLHCastShade,uLHWeather;\n`+
         shader.fragmentShader.replace('#include <opaque_fragment>',`
         vec3 lhPigment=clamp(diffuseColor.rgb,0.0,1.0);
         vec3 lhLumaWeights=vec3(.2126,.7152,.0722);
@@ -60,7 +72,11 @@
         #ifdef STANDARD
           lhEngineLight=mix(lhEngineLight,dot(reflectedLight.directSpecular+reflectedLight.indirectSpecular,lhLumaWeights)/max(.02,lhPigmentLuma),smoothstep(.85,1.0,metalnessFactor));
         #endif
-        float lhLight=clamp(lhEngineLight+uLHBandBias,0.0,1.0);
+        // Form shading remains readable even when the sun is behind the face.
+        // A true caster is darkened independently by lhCastVisibility.
+        float lhFacing=max(dot(normal,normalize(uLHFourBandSun)),0.0);
+        float lhForm=clamp(max(uLHShadeFloor,.60+.40*lhFacing)+uLHBandBias,0.0,1.0);
+        float lhLight=lhForm*(1.0-.10*uLHWeather);
         float lhWidth=max(uLHSoftness,min(.04,fwidth(lhLight)));
         vec3 lhSteps=smoothstep(uLHThresholds-vec3(lhWidth),uLHThresholds+vec3(lhWidth),vec3(lhLight));
         float lhBand=uLHLevels.x+dot(lhSteps,uLHLevels.yzw-uLHLevels.xyz);
@@ -68,14 +84,14 @@
         lhTint=mix(lhTint,vec3(1.0),lhSteps.y);
         lhTint=mix(lhTint,uLHHighlight,lhSteps.z);
         vec3 lhToon=lhPigment*lhBand;
-        float lhNight=min(1.0,lhEngineLight/.15);
+        float lhShadowFactor=mix(uLHCastShade,1.0,clamp(lhCastVisibility,0.0,1.0));
         vec3 lhReflected=max(reflectedLight.directSpecular+reflectedLight.indirectSpecular,vec3(0.0));
         float lhSpecLuma=dot(lhReflected,lhLumaWeights);
         vec3 lhSpecular=lhReflected/max(1.0,max(lhReflected.r,max(lhReflected.g,lhReflected.b)));
         lhSpecular*=uLHSpecular*smoothstep(.025,.075,lhSpecLuma);
         float lhRim=pow(1.0-clamp(abs(dot(normal,normalize(vViewPosition))),0.0,1.0),3.0);
-        lhRim*=uLHRim*lhNight*smoothstep(.0,.7,dot(normal,uLHFourBandSun));
-        outgoingLight=max(lhToon*lhTint*lhNight+lhSpecular+lhPigment*lhRim,vec3(0.0))+totalEmissiveRadiance;
+        lhRim*=uLHRim*lhShadowFactor*smoothstep(.0,.7,dot(normal,uLHFourBandSun));
+        outgoingLight=max(lhToon*lhTint*lhShadowFactor+lhSpecular*lhShadowFactor+lhPigment*lhRim,vec3(0.0))+totalEmissiveRadiance;
         #include <opaque_fragment>`);
     };
     const priorKey=m.customProgramCacheKey?.bind(m);
@@ -93,7 +109,9 @@
         else apply(obj.material,obj);
       });
       camera.updateMatrixWorld();direction.copy(sun.position).sub(sun.target.position).normalize();
-      viewSun.copy(direction).transformDirection(camera.matrixWorldInverse);state.frames++;
+      viewSun.copy(direction).transformDirection(camera.matrixWorldInverse);
+      shared.uLHWeather.value=Math.max(0,Math.min(1,typeof arcadeWeatherAmount==='number'?arcadeWeatherAmount:0));
+      state.frames++;
     }
     return previousRender(renderScene,renderCamera);
   };

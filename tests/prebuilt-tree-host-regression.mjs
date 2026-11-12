@@ -28,7 +28,7 @@ class Attr{constructor(array,size){this.array=array;this.itemSize=size;}}
 class Mat{constructor(props){Object.assign(this,props);}dispose(){}}
 class FakeTextureLoader{load(url,callback){const t={url,dispose(){}};queueMicrotask(()=>callback(t));return t;}}
 class FakeInstance extends Group{
-  constructor(g,m,capacity){super();this.geometry=g;this.material=m;this.capacity=capacity;this.count=capacity;this.isMesh=true;this.matrix=[];this.instanceMatrix={setUsage(){},needsUpdate:false};}
+  constructor(g,m,capacity){super();this.geometry=g;this.material=m;this.capacity=capacity;this.count=capacity;this.isMesh=true;this.matrix=[];this.instanceMatrix={setUsage(){},needsUpdate:false};this.layers={mask:1,set(n){this.mask=1<<n}};}
   setMatrixAt(i,m){this.matrix[i]=m;}
   dispose(){}
 }
@@ -73,7 +73,7 @@ assert.equal(window.LongHaulPrebuiltTrees.ready,true);
 assert.equal(loaded.size,9);
 assert.equal(target.cellRoot.children.length,1);
 const modelRoot=target.cellRoot.children[0];
-assert.equal(modelRoot.children.length,18);
+assert.equal(modelRoot.children.length,24,'18 display batches plus 6 bounded LOD0 shadow batches');
 const job={id:'test-cell',entry};
 target.decorateCell(job);
 assert.equal(entry.group.children.some(x=>x.material===fakeMaterial.tree),false);
@@ -82,7 +82,8 @@ assert.equal(target.updateCloudLayers(null,1200),'original update result');
 const status=window.LongHaulPrebuiltTrees.getState();
 assert.equal(status.visible,3);
 assert.ok(status.triangles>0);
-assert.equal(modelRoot.children.reduce((n,x)=>n+x.count,0),6,'two materials for three tree instances');
+assert.equal(modelRoot.children.filter(x=>!x.name.startsWith('LH_TREE_SHADOW_')).reduce((n,x)=>n+x.count,0),6,'display batches have two materials per tree');
+assert.equal(modelRoot.children.filter(x=>x.name.startsWith('LH_TREE_SHADOW_')).reduce((n,x)=>n+x.count,0),6,'only selected near shadow batches cast');
 assert.ok(modelRoot.children.every(x=>x.count<=240));
 target.clearWorld();
 assert.equal(window.LongHaulPrebuiltTrees.getState().visible,0);

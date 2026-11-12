@@ -179,9 +179,7 @@
       if(readRun().status!=="running")return;
       arcadeWeatherTime+=dt;const phase=arcadeWeatherTime%105,target=phase>24&&phase<66?1:0;
       arcadeWeatherAmount=lerp(arcadeWeatherAmount,target,1-Math.exp(-dt*.35));
-      sun.intensity=lerp(.86,.44,arcadeWeatherAmount);hemi.intensity=lerp(1.05,.8,arcadeWeatherAmount);
-      skyMaterial.uniforms.topColor.value.setRGB(lerp(.329,.19,arcadeWeatherAmount),lerp(.49,.29,arcadeWeatherAmount),lerp(.573,.37,arcadeWeatherAmount));
-      skyMaterial.uniforms.horizonColor.value.setRGB(lerp(.933,.49,arcadeWeatherAmount),lerp(.718,.57,arcadeWeatherAmount),lerp(.467,.61,arcadeWeatherAmount));
+      // Weather progression is gameplay state. The presentation host owns illumination and sky.
       rainMaterial.opacity=arcadeWeatherAmount*.38;rainMesh.visible=arcadeWeatherAmount>.05;rainGeometry.setDrawRange(0,(settings.quality?rainCount:60)*2);
       for(let i=0;i<rainCount;i++){const j=i*6,x=((i*7.31)%48)-24,y=18-((i*4.17+arcadeWeatherTime*32)%38),z=-5-(i*1.89)%55;rainPositions.set([x,y,z,x-.35,y-1.5,z+.5],j)}rainGeometry.attributes.position.needsUpdate=true;
       _lhAsphaltMaterial.roughness=lerp(.9,.58,arcadeWeatherAmount);
@@ -209,6 +207,6 @@
       launchIntro.active=false;cinematic.hidden=true;document.body.classList.remove("cinematic");arcadeScore.reset();arcadeNetwork=null;arcadeNetworkCourse=null;arcadeEncounters=[];
       arcadeEncounterHosts.clear();encounterRoot.clear();arcadeBrokenProps.clear();arcadeUsedRamps.clear();arcadeWarned.clear();arcadeEventHistory.length=0;arcadeActiveStunt=null;
       arcadeRecoveryGrace=0;arcadeImpactStrength=0;arcadeLastCollisionCount=0;arcadeLastLanding=0;arcadeWeatherTime=0;arcadeWeatherAmount=0;arcadeTrafficSerial=0;
-      sun.intensity=.86;hemi.intensity=1.05;skyMaterial.uniforms.topColor.value.set(0x547d92);skyMaterial.uniforms.horizonColor.value.set(0xeeb777);rainMaterial.opacity=0;rainMesh.visible=false;_lhAsphaltMaterial.roughness=.9;
+      rainMaterial.opacity=0;rainMesh.visible=false;_lhAsphaltMaterial.roughness=.9;
       for(const item of debrisPool){item.life=0;item.mesh.visible=false}riskHud.hidden=true;encounterHud.hidden=true;impactVeil.style.opacity="0";
     }

@@ -26,7 +26,7 @@
   function releaseStaged(){
     root.removeFromParent();
     for(const models of perSpecies.values())for(const level of models){
-      for(const part of level.parts){part.mesh?.removeFromParent();part.mesh?.dispose?.();part.geometry?.dispose?.();}
+      for(const part of level.parts){part.shadowMesh?.removeFromParent();part.shadowMesh?.dispose?.();part.mesh?.removeFromParent();part.mesh?.dispose?.();part.geometry?.dispose?.();}
     }
     for(const models of perSpecies.values())for(const material of models[0]?.materials??[]){material.map?.dispose?.();material.dispose?.();}
     perSpecies.clear();
@@ -62,6 +62,16 @@
         mesh.userData.prebuiltTrees=true;
         mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         root.add(mesh);part.mesh=mesh;state.batches++;
+        // Layer-1 shadow proxies reuse real GLB silhouette geometry. Only a
+        // bounded subset of near trees casts; the full foliage batches do not.
+        if(level===levels[0]){
+          const proxy=new THREE.InstancedMesh(part.geometry,part.material,12);
+          proxy.name=`LH_TREE_SHADOW_${part.role}`;
+          proxy.layers.set(1);proxy.castShadow=true;proxy.receiveShadow=false;
+          proxy.frustumCulled=false;proxy.count=0;
+          proxy.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+          root.add(proxy);part.shadowMesh=proxy;
+        }
       }
       cellRoot.add(root);
       state.status='loaded';state.ready=true;exposed.ready=true;
@@ -151,6 +161,23 @@
         mesh.instanceMatrix.needsUpdate=true;
       }
     }
+    // Limit both instance count and triangle work in the shadow map.
+    const nearest=candidates.filter(tree=>tree.distance<=80).slice(0,quality?12:5);
+    for(const [species,levels] of perSpecies.entries()){
+      const chosen=nearest.filter(tree=>tree.species===species);
+      const info=TREE_SPECIES.find(tree=>tree.id===species);
+      for(const part of levels[0].parts){
+        const proxy=part.shadowMesh;if(!proxy)continue;
+        proxy.count=chosen.length;
+        for(let i=0;i<chosen.length;i++){
+          const tree=chosen[i],scale=tree.height/info.height;
+          dummy.position.set(...tree.position);dummy.rotation.set(0,tree.angle,0);
+          dummy.scale.set(scale*tree.widthX,scale,scale*tree.widthZ);
+          dummy.updateMatrix();proxy.setMatrixAt(i,dummy.matrix);
+        }
+        proxy.instanceMatrix.needsUpdate=true;
+      }
+    }
     state.status='active';state.activeCells=cellHosts.size;
     state.visible=candidates.length;state.farInstances=candidates.filter(x=>x.lod===2).length;
     state.triangles=TREE_SPECIES.reduce((total,species)=>total+perSpecies.get(species.id).reduce((sum,level,lod)=>sum+level.triangles*assigned.get(`${species.id}:${lod}`).length,0),0);
@@ -172,7 +199,7 @@
   };
   const beforeClear=clearWorld;
   clearWorld=function prebuiltTreesClear(...args){
-    for(const levels of perSpecies.values())for(const level of levels)for(const part of level.parts)part.mesh.count=0;
+    for(const levels of perSpecies.values())for(const level of levels)for(const part of level.parts){part.mesh.count=0;if(part.shadowMesh)part.shadowMesh.count=0;}
     previousLod.clear();state.visible=0;state.activeCells=0;
     return beforeClear(...args);
   };
@@ -208,6 +235,7 @@
           const info=TREE_SPECIES.find(t=>t.id===species);
           for(const part of level.parts){
             const count=Math.min(trees.length,MAX_INSTANCES),mesh=part.mesh;
+            if(part.shadowMesh)part.shadowMesh.count=0;
             mesh.count=count;
             for(let i=0;i<count;i++){
               const tree=trees[i],scale=tree.height/info.height;
