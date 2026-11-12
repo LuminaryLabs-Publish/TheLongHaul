@@ -30,7 +30,7 @@
     const mat=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false});
     const overlay=new THREE.Scene(),quad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),mat);overlay.add(quad);
     const ortho=new THREE.OrthographicCamera(-1,1,1,-1,0,10);ortho.position.z=1;
-    const icons=new Map();let tab="Gameplay",guide=false,focus=0,drag=-1,lastScene="",lastSignature="",dirty=true;
+    const icons=new Map();let tab="Gameplay",guide=false,focus=0,creditsFocus=2,drag=-1,lastScene="",lastSignature="",dirty=true;
     for(let n=1;n<=34;n++){const image=new Image();image.onload=()=>{icons.set(n,image);dirty=true};image.src="./assets/ui/settings/icons/ui-"+String(n).padStart(3,"0")+".svg"}
     const C=context;
     function icon(n,x,y,size=46){size*=Math.max(1,Math.min(1.5,(settings.uiScale||100)/100));const image=icons.get(n);if(image)C.drawImage(image,x-size/2,y-size/2,size,size);else {C.fillStyle=WHITE;C.font="bold 30px sans-serif";C.fillText("◈",x,y)}}
@@ -59,7 +59,7 @@
         text("CREATED BY LUMINARY LABS",275,315,39);
         text("Powered by NexusEngine and Three.js",275,379,29,MUTED);
         text("Procedural vehicles, roads, scenery, effects and audio",275,444,25,MUTED);
-        text("NexusEngine source  •  Three.js license",275,540,22,CYAN);
+        text("NexusEngine source",275,540,23,CYAN);text("Three.js license",725,540,23,CYAN);if(creditsFocus===0)panel(265,502,335,60);if(creditsFocus===1)panel(710,502,290,60);if(creditsFocus===2)panel(264,780,265,75);
         icon(5,298,815);text("BACK",345,825);C.restore();texture.needsUpdate=true;dirty=false;return
       }
       text("SETTINGS",260,150,79);icon(1,1184,117,68);
@@ -102,9 +102,9 @@
     const pointerUp=()=>{drag=-1};
     const keyDown=e=>{
       if(!["settings","credits"].includes(currentScene())||!["Escape","Tab","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter"," "].includes(e.key))return;
-      e.preventDefault();
+      e.preventDefault();e.stopImmediatePropagation?.();
       if(e.key==="Escape"){if(currentScene()==="credits")onCreditsBack();else if(guide)guide=false;else onBack();dirty=true;return}
-      if(currentScene()==="credits"){if(e.key==="Enter"||e.key===" ")onCreditsBack();return}
+      if(currentScene()==="credits"){if(["Tab","ArrowDown","ArrowRight","ArrowUp","ArrowLeft"].includes(e.key)){const dir=e.key==="ArrowUp"||e.key==="ArrowLeft"||(e.key==="Tab"&&e.shiftKey)?2:1;creditsFocus=(creditsFocus+dir)%3;dirty=true}else if(e.key==="Enter"||e.key===" "){if(creditsFocus===2)onCreditsBack();else window.open(creditsFocus===0?"https://github.com/LuminaryLabs-Dev/NexusEngine":"./vendor/THREE-LICENSE.txt","_blank","noopener")}return}
       if(e.key==="Tab"){tab=tabs[(tabs.indexOf(tab)+(e.shiftKey?2:1))%3];guide=false;focus=0;dirty=true;return}
       if(guide){if(e.key==="Enter")guide=false;dirty=true;return}
       if(e.key==="ArrowDown"||e.key==="ArrowUp"){focus=(focus+(e.key==="ArrowDown"?1:schema[tab].length-1))%schema[tab].length;dirty=true;return}
@@ -118,7 +118,7 @@
     document.addEventListener("keydown",keyDown,true);
     return {
       descriptors,
-      getState:()=>({scene:currentScene(),tab,guide,focus,iconCount:icons.size,backend:"three-canvas-texture"}),
+      getState:()=>({scene:currentScene(),tab,guide,focus,creditsFocus,iconCount:icons.size,backend:"three-canvas-texture"}),
       render(){
         const sceneId=currentScene();if(sceneId!=="settings"&&sceneId!=="credits"){lastScene=sceneId;return}
         if(lastScene!==sceneId){lastScene=sceneId;guide=false;focus=0;dirty=true}
