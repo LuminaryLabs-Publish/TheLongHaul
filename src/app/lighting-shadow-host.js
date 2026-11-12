@@ -9,9 +9,10 @@
   const local = new THREE.Vector3(), dummy=new THREE.Object3D();
   const candidates=[], trees=[], occlusion=[];
   const fill = worldRoot.children.find(node=>node.isDirectionalLight && node!==sun);
-  sun.color.set(0xffcf94);
-  if(fill){fill.color.set(0xa6caff);fill.intensity=.48;fill.castShadow=false;}
-  hemi.color.set(0xc3deff);hemi.groundColor.set(0x495b62);
+  // Single authority for scene illumination; shadow scheduling remains independent.
+  sun.color.set(0xffd8a4);
+  if(fill){fill.color.set(0xc7ddff);fill.intensity=.70;fill.castShadow=false;}
+  hemi.color.set(0xe1edff);hemi.groundColor.set(0x78866b);
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate=false;
@@ -194,8 +195,9 @@
     aoMesh.visible=active;
     if(!active)return;
     const state=readTruck(), weather=clamp(arcadeWeatherAmount,0,1);
-    sun.intensity=lerp(1.95,1.14,weather);
-    hemi.intensity=lerp(.93,1.08,weather);
+    // Keep unoccluded terrain readable while retaining directional cast-shadow contrast.
+    sun.intensity=lerp(2.10,1.28,weather);
+    hemi.intensity=lerp(1.28,1.18,weather);
     const wanted=shadowAnchor(state,preset);
     if(shouldRefresh(lastMapAt,now,anchor,wanted,preset)){
       anchor=wanted;lastMapAt=now;mapUpdates++;
