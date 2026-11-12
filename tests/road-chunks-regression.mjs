@@ -87,7 +87,7 @@ for (const progress of [0,319.999,320,640,960,1280,3840,99123,-800,1000000]) {
   const original=JSON.stringify(a.edges);
   advanceEndlessHighway(a,progress+20000); advanceEndlessHighway(a,progress);
   assert.equal(JSON.stringify(a.edges),original,'regeneration independent of visited order');
-  assert.ok(a.edges.length<=20 && a.nodes.length===13);
+  assert.ok(a.edges.length<=24 && a.nodes.length<=16);
 }
 // Pixel path and physical path share actual triangle heights, including banking.
 for(let i=0;i<12;i++) {

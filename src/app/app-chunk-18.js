@@ -279,6 +279,18 @@
         add(paint,8,3.6,6,0,2,0);add(roof,8.5,.45,6.5,0,4,0);add(dark,2.4,2.5,.2,-2,1.45,3.08);add(dark,2.4,2.5,.2,2,1.45,3.08);add(sign,4.8,.7,.2,0,4.9,3.25);
         arcadeLabelGarage(group,lane);group.position.set(pos.x,pos.y,pos.z);group.rotation.y=pos.heading;group.visible=false;arcadeGarageRoot.add(group);arcadeGarageStops.push({id:`roadside-garage:${edge.id}`,edge,progress,lane,x:pos.x,z:pos.z,group});
       }
+      // An authored detached garage is a legitimate roadside service stop.
+      // Reuse the existing garage UI and transaction rules; the GLB supplies
+      // the actual building, so no duplicate primitive shop is rendered.
+      if(course.endless)for(const town of course.towns??[]){
+        const parcel=town.parcels.find(p=>p.assetId==='Garage_Detached');
+        if(!parcel)continue;
+        const group=new THREE.Group();group.name=`LH_TOWN_GARAGE_${town.id}`;
+        group.position.set(parcel.x,parcel.y,parcel.z);group.visible=false;
+        arcadeGarageRoot.add(group);
+        arcadeGarageStops.push({id:`town-garage:${town.id}`,edge:course.edges.find(e=>e.id===town.roadIds[1]),
+          progress:parcel.progress,lane:0,x:parcel.x,z:parcel.z,group});
+      }
       if(!arcadeGarageStops.length&&!course.endless){
         const edges=eligibleEdges,start=hashText(`${course.seed}:roadside-garage:fallback`)%Math.max(1,edges.length);
         for(let step=0;step<edges.length&&!arcadeGarageStops.length;step++){

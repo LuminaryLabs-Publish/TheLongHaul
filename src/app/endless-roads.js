@@ -3,9 +3,12 @@
 (() => {
   const isV3 = () => course?.generatorVersion === ROAD_V3_VERSION && course?.terrainAware;
   const isModular = () => course?.generatorVersion === ROAD_GENERATOR_VERSION || isV3();
-  // Explicit opt-in for *new* sessions. Resume always honors the checkpoint's
-  // actual generator. The legacy format and untouched V2 default remain safe.
-  const roadOptIn = /(?:^|[?&])road=v3(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
+  // New runs use terrain-aware V3; ?road=v2 retains a V2 fallback.
+  // Resume always honors the checkpoint's original generator.
+  // New sessions now use the terrain-following winding alignment. Saved V1/V2
+  // journeys keep their exact generator and coordinates; ?road=v2 is a safe
+  // explicit fallback for baseline and compatibility comparisons.
+  const roadV2Fallback = /(?:^|[?&])road=v2(?:&|$)/.test(typeof location === 'undefined' ? '' : location.search);
   const previousPoint = endlessHighwayPoint, previousProgress = endlessHighwayProgress;
   const previousAdvance = advanceEndlessHighway;
   endlessHighwayPoint = function(source,progress,lateral=0,route='safe') {
@@ -26,7 +29,7 @@
   generateEndlessCourse = function(seed) {
     const saved = freightResumeCheckpoint, progress=saved?.journey.progress ?? 0;
     const generatorVersion=saved ? saved.journey.generatorVersion ?? LEGACY_ROAD_VERSION
-      : roadOptIn ? ROAD_V3_VERSION : ROAD_GENERATOR_VERSION;
+      : roadV2Fallback ? ROAD_GENERATOR_VERSION : ROAD_V3_VERSION;
     const value=generatorVersion===ROAD_V3_VERSION
       ? engine.n.longHaulRoadV3.buildPlayable(seed,{progress})
       : createEndlessHighway(seed,{progress,generatorVersion});

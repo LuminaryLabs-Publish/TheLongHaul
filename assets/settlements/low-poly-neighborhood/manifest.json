@@ -1,0 +1,129 @@
+{
+  "schema": "long-haul.settlement-assets/1",
+  "source": "Luminary Assets / Low Poly Neighborhood / Generic / LowPolyNeighborhood-GLB-OBJ-v0.9.0-rc1.zip",
+  "googleDriveFileId": "1ESmhh2pcFsDQrarGe_HbJl_nOHVhoAGX",
+  "sourceSha256": "8df29f9e2eda2f7a3a533fb5dbee53aaebe7a9da30aa660ee4812c5004a4802e",
+  "licenseStatus": "Internal Luminary Labs source; distribution rights not independently reviewed",
+  "geometry": "static indexed glTF 2.0, embedded materials, no transforms or external textures",
+  "buildings": [
+    {
+      "id": "Apartment_LowRise",
+      "file": "Apartment_LowRise.glb",
+      "sha256": "38f471e48321229ccbc807f191ab8d7dc7248612870be81a5623494a1a80a155",
+      "size": 53152,
+      "primitives": 92
+    },
+    {
+      "id": "Garage_Detached",
+      "file": "Garage_Detached.glb",
+      "sha256": "abedf6c3415c20213672bc1dec9a499e749611b3625b463e05d2eaafc163543d",
+      "size": 9008,
+      "primitives": 13
+    },
+    {
+      "id": "Gazebo_Park",
+      "file": "Gazebo_Park.glb",
+      "sha256": "d4d51207f5a4336346123741cf2a8f2cbd53541f728e897db8240ab805d502fd",
+      "size": 11812,
+      "primitives": 15
+    },
+    {
+      "id": "House_Bungalow",
+      "file": "House_Bungalow.glb",
+      "sha256": "df507cdbec0adf27363a1951b3abaa3688556f9ca9331883d766d4f01186c032",
+      "size": 19468,
+      "primitives": 30
+    },
+    {
+      "id": "House_Cottage",
+      "file": "House_Cottage.glb",
+      "sha256": "14c4791b4b251c95ab31ba7f735e15c2ccfb9cff2c3c79503abd28460351bf80",
+      "size": 18140,
+      "primitives": 28
+    },
+    {
+      "id": "House_Craftsman",
+      "file": "House_Craftsman.glb",
+      "sha256": "7e606f9512ae1c321370cf52fb98ee2c34fc7ad601e8df587f31256fb1787cdb",
+      "size": 18544,
+      "primitives": 29
+    },
+    {
+      "id": "House_Duplex",
+      "file": "House_Duplex.glb",
+      "sha256": "686b25134c1de60e2836faaac13b285933de38becd15f4ac806a41eb3a095d87",
+      "size": 22680,
+      "primitives": 37
+    },
+    {
+      "id": "House_Modern",
+      "file": "House_Modern.glb",
+      "sha256": "937ac87e2b651e7f698a8c279c872bfee08f995da8574319d9b15eb2ecbd6148",
+      "size": 16952,
+      "primitives": 26
+    },
+    {
+      "id": "House_Ranch",
+      "file": "House_Ranch.glb",
+      "sha256": "13fecb789322344fc2727ee2fdf818ed9b54fce28e69173531fe6a33998b6ff2",
+      "size": 14288,
+      "primitives": 22
+    },
+    {
+      "id": "House_SplitLevel",
+      "file": "House_SplitLevel.glb",
+      "sha256": "8d9538834165d61ae4bd3e96027d08bb698101ab8e7cba8189cdb34660efc9f1",
+      "size": 15564,
+      "primitives": 24
+    },
+    {
+      "id": "House_Townhouse",
+      "file": "House_Townhouse.glb",
+      "sha256": "7aa9449071bd2dc18f678cad0213b806e8578c00b9b0b02f91f740f836dbf9fb",
+      "size": 21796,
+      "primitives": 35
+    },
+    {
+      "id": "House_TwoStory",
+      "file": "House_TwoStory.glb",
+      "sha256": "48a65c058a9263fc3a2c69f99e04d4c19539fee5a6fb74bfb12c7f0c2078e5cc",
+      "size": 21220,
+      "primitives": 34
+    },
+    {
+      "id": "House_Victorian",
+      "file": "House_Victorian.glb",
+      "sha256": "b75294fac930dab3f46f2b405b1c86829504677dce2c395f842ed5df4c608c12",
+      "size": 29692,
+      "primitives": 48
+    },
+    {
+      "id": "Shed_Garden",
+      "file": "Shed_Garden.glb",
+      "sha256": "69aeec60844b10c40b9bb943b0544c39a214a95299b0a9a0f89f5ac7cbb8c714",
+      "size": 11184,
+      "primitives": 16
+    },
+    {
+      "id": "Shop_Bookstore",
+      "file": "Shop_Bookstore.glb",
+      "sha256": "87c094c608fd0def192fd6167dc3d2a1ee5c5d6768492eb1bc902fffa25fd2e2",
+      "size": 14336,
+      "primitives": 22
+    },
+    {
+      "id": "Shop_Cafe",
+      "file": "Shop_Cafe.glb",
+      "sha256": "d030cee483043d7fa23991d9c26ff9e255d016c1f424d48f4e64e105e466212e",
+      "size": 20896,
+      "primitives": 30
+    },
+    {
+      "id": "Shop_CornerMarket",
+      "file": "Shop_CornerMarket.glb",
+      "sha256": "29cabd7fca164a0f7a27a067f7fe29a34d80242c39c4a6ea581f236769c76712",
+      "size": 14508,
+      "primitives": 22
+    }
+  ]
+}

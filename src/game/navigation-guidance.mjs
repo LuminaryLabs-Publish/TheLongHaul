@@ -20,6 +20,7 @@ export function relevantRouteChoice(course, progress, lead = 310) {
     sides: Object.freeze(sides), consistent, signIds: (choice.signIds ?? []).slice(),
     text: !consistent ? 'Follow physical road signs' : choice.kind === 'loading-route' ?
       `${sides.safe === 'left' ? 'Wide left' : 'Wide right'} safe · ${sides.express === 'right' ? 'Express right' : 'Express left'} bonus` :
+      choice.kind === 'town-loop' ? `${choice.label} · ${sides.option === 'left' ? 'Left' : 'Right'} exit · Returns to highway` :
       `${sides.option === 'left' ? 'Left' : 'Right'} optional · Highway continues` };
 }
 export function deriveGuidance({ scene = 'driving', truck, run, freight, course, fuel = 100, condition = 100,

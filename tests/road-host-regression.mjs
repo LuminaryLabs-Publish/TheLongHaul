@@ -49,7 +49,7 @@ const c = {
 };
 c.window=c;vm.runInNewContext(readFileSync(new URL('../src/app/endless-roads.js',import.meta.url),'utf8'),c,{timeout:1000});
 assert.equal(c.__longHaulRoadsReady,true);
-assert.equal(c.generateEndlessCourse('new').generatorVersion,ROAD_GENERATOR_VERSION);
+assert.equal(c.generateEndlessCourse('new').generatorVersion,ROAD_V3_VERSION,'new sessions use terrain-aware winding V3');
 c.freightResumeCheckpoint={journey:{progress:1500},truck:{position:{x:11,z:-1500},heading:3}};
 assert.equal(c.generateEndlessCourse('old').generatorVersion,LEGACY_ROAD_VERSION);
 assert.equal(c.generateEndlessCourse('old').origin.x,11);c.freightResumeCheckpoint=null;

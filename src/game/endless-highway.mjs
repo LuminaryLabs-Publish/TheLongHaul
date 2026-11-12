@@ -2,6 +2,7 @@
 // own patch realization; this module only retains the nearby drivable corridor.
 import { hashText, edgeLength } from './shared.mjs';
 import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, ROAD_LIMITS, roadChunkAt, roadChunkSample, roadChunkContract } from './road-chunks.mjs';
+import {townStartsInWindow,generateConnectedTown} from './connected-settlements.mjs';
 const roadVersion = value => typeof value === 'object' ? value.generatorVersion ?? ROAD_GENERATOR_VERSION : ROAD_GENERATOR_VERSION;
 const modular = value => roadVersion(value) === ROAD_GENERATOR_VERSION;
 
@@ -157,6 +158,7 @@ function rebuildWindow(course, centerSection) {
   const first = centerSection - r.sectionsBehind, last = centerSection + r.sectionsAhead;
   const oldEdges = new Map((course.edges ?? []).map(edge => [edge.id, edge]));
   const nodes = [], edges = [], stations = [], signs = [], routeChoices = [];
+  const towns=[],townBranches=[];
   for (let index = first; index <= last + 1; index++) {
     const point = endlessHighwayPoint(course, index * r.sectionLength);
     nodes.push({ id: nodeId(index), x: point.x, z: point.z, branchId: 'trunk', progress: index * r.sectionLength });
@@ -246,7 +248,15 @@ function rebuildWindow(course, centerSection) {
       }
     }
   }
+  // Bounded deterministic settlements compose real side-road edges with both
+  // trunk junctions; never replace the freight path or introduce dead ends.
+  if(modular(course))for(const start of townStartsInWindow(first,last)){
+    const layout=generateConnectedTown(course.seed,start);
+    edges.push(...layout.edges);nodes.push(...layout.nodes);towns.push(layout.town);
+    signs.push(layout.sign);routeChoices.push(layout.routeChoice);townBranches.push(layout.branch);
+  }
   course.roadChunks = chunks;
+  course.towns=towns;
   const depots = stations.map(station => {
     const point = endlessHighwayPoint(course, station.progress, 68);
     return { id: `${station.id}:relay`, nodeId: nodeId(Math.round(station.entryProgress / r.sectionLength)),
@@ -272,6 +282,8 @@ function rebuildWindow(course, centerSection) {
     nodeIds: nodes.map(n => n.id), edgeIds: edges.filter(e => !e.optional).map(e => e.id), length: edges.filter(e => !e.optional).reduce((sum, edge) => sum + edge.length, 0) }];
   course.optionalRoads = edges.filter(e => e.type === 'scenic-bypass').map(e => ({ id: e.id, name: e.branchName, entryNodeId: e.from, exitNodeId: e.to, entryEdgeId: e.id, exitEdgeId: e.id }));
   course.branches.push(...edges.filter(e => e.type === 'scenic-bypass').map(e => ({ id: e.branchId, name: e.branchName, nodeIds: [e.from, e.to], edgeIds: [e.id], length: e.length, optional: true })));
+  course.branches.push(...townBranches);
+  course.optionalRoads.push(...townBranches.map(b=>({id:b.id,name:b.name,entryNodeId:b.nodeIds[0],exitNodeId:b.nodeIds.at(-1),entryEdgeId:b.edgeIds[0],exitEdgeId:b.edgeIds.at(-1)})));
   course.bounds = { minX: Math.min(...xs) - 180, maxX: Math.max(...xs) + 180, minZ: -(last + 1) * r.sectionLength - 180, maxZ: -first * r.sectionLength + 180 };
   course.endless = { ...course.endless, centerSection, firstSection: first, lastSection: last,
     windowStart: first * r.sectionLength, windowEnd: (last + 1) * r.sectionLength,
@@ -292,7 +304,7 @@ export function createEndlessHighway(seed, { progress = 0, generatorVersion = RO
     schema: 'long-haul.course-package/1', packageId: `endless-${hashText(text).toString(36)}`,
     seed: text, generatorVersion,
     origin: { id: 'origin', x: spawn.x, z: spawn.z, heading: spawn.heading }, hub: null,
-    nodes: [], edges: [], branches: [], depots: [], signs: [], optionalRoads: [], roundabouts: [], routeChoices: [], wildlife: [],
+    nodes: [], edges: [], branches: [], depots: [], signs: [], optionalRoads: [], roundabouts: [], routeChoices: [], towns: [], wildlife: [],
     validDepotId: null, scoring: { parTimeSeconds: 600, parDistance: ENDLESS_HIGHWAY_RULES.stationSpacing }, bounds: null,
     endless: { schema: 'long-haul.endless-highway/1', sectionLength: ENDLESS_HIGHWAY_RULES.sectionLength,
       stationSpacing: ENDLESS_HIGHWAY_RULES.stationSpacing, revision: 0, furthestProgress: Math.max(0, initialProgress), maximumProgress: Math.max(0, initialProgress) },

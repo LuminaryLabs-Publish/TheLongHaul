@@ -4,7 +4,9 @@ import {createImpactClock,sweptVehicleImpact} from '../game/impact-kit.mjs';
 import {createComicCrashKits,DESTRUCTIBLE_PROFILES} from '../game/destructible-vehicle-kit.mjs';
 Object.assign(globalThis,{createImpactClock,sweptVehicleImpact,createComicCrashKits,DESTRUCTIBLE_PROFILES});
 import {createNeighborhoodTree} from '../game/neighborhood-tree.mjs';
+import {parseSettlementGlb,createSettlementGeometry} from '../game/settlement-glb.mjs';
 Object.assign(globalThis,{createNeighborhoodTree});
+Object.assign(globalThis,{parseSettlementGlb,createSettlementGeometry});
 import {FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes} from '../game/freight-terminal-start.mjs';
 import {parseFreightTerminalGlb,createFreightTerminalThreeObject} from '../game/freight-terminal-glb.mjs';
 import {FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies} from '../game/freight-terminal-activity.mjs';
@@ -147,6 +149,17 @@ await new Promise((resolve,reject) => {
   document.head.append(script);
 });
 await window.LongHaulPrebuiltTrees?.readyPromise;
+// The shared-drive GLB library supplies actual town buildings. Its absence
+// leaves connected roads traversable, never a synthetic placeholder model.
+await new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src=new URL('./connected-town-host.js',import.meta.url).href;
+  script.async=false;script.onload=resolve;
+  script.onerror=()=>reject(new Error('Connected town presenter could not load'));
+  document.head.append(script);
+});
+await window.LongHaulTowns?.readyPromise;
+
 // V2 remains opt-in until its browser/video acceptance is complete.
 await new Promise((resolve, reject) => {
   const script = document.createElement('script');

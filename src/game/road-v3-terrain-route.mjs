@@ -39,12 +39,18 @@ export function classifyTerrainRoadV3Structure(seed, point, authored = null) {
 function preferredX(seed,index) {
   if (index <= 0) return 0;
   const z=-index*TERRAIN_ROAD_V3.regionLength;
+  // Fresh connected-world seeds intentionally seek broad winding valleys.
+  // Historical V3 checkpoints keep their original alignment byte-for-byte.
+  const winding=seed.startsWith('haul-winding-');
+  const phase=hashUnit(seed,'connected-winding-phase')*Math.PI*2;
+  const preferred=winding?320*Math.sin(index*.83+phase)+80*Math.sin(index*.43+phase*.5):0;
   let best=null;
   for(let i=-4;i<=4;i++){
     const x=i*110;
     const h=H(seed,x,z), ax=(H(seed,x+45,z)-H(seed,x-45,z))/90;
     const az=(H(seed,x,z+45)-H(seed,x,z-45))/90;
     const score=h*.72+Math.abs(ax)*47+Math.abs(az)*20+Math.abs(x)*.004
+      +(winding?Math.abs(x-preferred)*.12:0)
       +hashUnit(seed,`${index}:${i}:tie`)*.6;
     if(!best||score<best.score)best={score,x};
   }
