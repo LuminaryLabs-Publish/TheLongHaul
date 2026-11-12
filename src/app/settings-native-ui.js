@@ -24,7 +24,7 @@
   };
   const descriptors=Object.freeze(Object.fromEntries(tabs.map(name=>[name,Object.freeze(schema[name].map(row=>Object.freeze({...row,id:"settings."+name.toLowerCase()+"."+row.id})))])));
   function createLongHaulSettingsUI({THREE,renderer,settings,currentScene,saveSettings,applySettings,resize,audio,camera,onBack,onCreditsBack}) {
-    const canvas=document.createElement("canvas");canvas.width=W;canvas.height=H;
+    document.body?.classList?.add("native-settings-ui-ready");const canvas=document.createElement("canvas");canvas.width=W;canvas.height=H;
     const context=canvas.getContext("2d",{alpha:true});
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
     const mat=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false});
