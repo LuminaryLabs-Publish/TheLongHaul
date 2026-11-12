@@ -86,7 +86,7 @@
     }
     const point=e=>{const b=renderer.domElement.getBoundingClientRect(),scale=Math.max(.75,Math.min(1.5,(settings.uiScale||100)/100));return{x:((e.clientX-b.left)/b.width*W-W/2)/scale+W/2,y:((e.clientY-b.top)/b.height*H-H/2)/scale+H/2}};
     function hit(p,move=false){
-      if(currentScene()==="credits"){if(!move&&p.y>730)onCreditsBack();return}
+      if(currentScene()==="credits"){if(!move&&p.y>730)onCreditsBack();else if(!move&&p.y>490&&p.y<575){if(p.x<700)window.open("https://github.com/LuminaryLabs-Dev/NexusEngine","_blank","noopener");else window.open("./vendor/THREE-LICENSE.txt","_blank","noopener")}return}
       if(p.y>=180&&p.y<=265){const i=Math.floor((p.x-255)/370);if(!move&&i>=0&&i<3){tab=tabs[i];guide=false;focus=0;dirty=true}return}
       if(p.y>770){if(!move){if(guide){guide=false;dirty=true}else onBack()}return}
       if(guide)return;
