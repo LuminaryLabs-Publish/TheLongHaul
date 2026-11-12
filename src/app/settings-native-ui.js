@@ -33,8 +33,8 @@
     const icons=new Map();let tab="Gameplay",guide=false,focus=0,drag=-1,lastScene="",lastSignature="",dirty=true;
     for(let n=1;n<=34;n++){const image=new Image();image.onload=()=>{icons.set(n,image);dirty=true};image.src="./assets/ui/settings/icons/ui-"+String(n).padStart(3,"0")+".svg"}
     const C=context;
-    function icon(n,x,y,size=46){const image=icons.get(n);if(image)C.drawImage(image,x-size/2,y-size/2,size,size);else {C.fillStyle=WHITE;C.font="bold 30px sans-serif";C.fillText("◈",x,y)}}
-    function text(t,x,y,size=30,color=WHITE,align="left"){C.font="750 "+size+"px Arial, sans-serif";C.textAlign=align;C.fillStyle="#091b21";C.fillText(String(t),x+2,y+3);C.fillStyle=color;C.fillText(String(t),x,y)}
+    function icon(n,x,y,size=46){size*=Math.max(1,Math.min(1.5,(settings.uiScale||100)/100));const image=icons.get(n);if(image)C.drawImage(image,x-size/2,y-size/2,size,size);else {C.fillStyle=WHITE;C.font="bold 30px sans-serif";C.fillText("◈",x,y)}}
+    function text(t,x,y,size=30,color=WHITE,align="left"){size*=Math.max(1,Math.min(1.5,(settings.uiScale||100)/100));C.font="750 "+size+"px Arial, sans-serif";C.textAlign=align;C.fillStyle="#091b21";C.fillText(String(t),x+2,y+3);C.fillStyle=color;C.fillText(String(t),x,y)}
     function panel(x,y,w,h,outline=CYAN,fill="rgba(4,25,33,.3)"){C.beginPath();C.roundRect(x,y,w,h,15);C.fillStyle=fill;C.fill();C.lineWidth=3;C.strokeStyle=outline;C.stroke()}
     function line(y){C.fillStyle="rgba(120,230,235,.42)";C.fillRect(250,y,1100,2)}
     function get(row){return row.scale?Math.round(settings[row.id]*row.scale):settings[row.id]}
@@ -52,7 +52,7 @@
     }
     function paint(){
       C.clearRect(0,0,W,H);
-      C.save();const scale=Math.max(.75,Math.min(1.5,(settings.uiScale||100)/100));
+      C.save();const scale=Math.max(.75,Math.min(1,(settings.uiScale||100)/100));
       C.translate(W/2,H/2);C.scale(scale,scale);C.translate(-W/2,-H/2);
       if(currentScene()==="credits"){
         text("THE LONG HAUL",265,185,82);line(225);
@@ -98,7 +98,7 @@
       else if(!move){if(row.type==="choice"){const a=row.choices,k=a.indexOf(settings[row.id]);change(row,a[(k+(p.x<1050?a.length-1:1))%a.length])}else change(row)}
     }
     const pointerDown=e=>{if(!["settings","credits"].includes(currentScene()))return;e.preventDefault();hit(point(e))};
-    const pointerMove=e=>{if(drag>=0&&currentScene()==="settings")hit(point(e),true)};
+    const pointerMove=e=>{if(currentScene()!=="settings")return;const p=point(e);if(drag>=0){hit(p,true);return}if(!guide&&p.y>=294&&p.y<780){const index=Math.floor((p.y-294)/94);if(schema[tab][index]&&index!==focus){focus=index;dirty=true}}};
     const pointerUp=()=>{drag=-1};
     const keyDown=e=>{
       if(!["settings","credits"].includes(currentScene())||!["Escape","Tab","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter"," "].includes(e.key))return;
