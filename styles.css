@@ -674,3 +674,9 @@ body.alternative-b-hud.driving #skill-hud .skill-ability:focus-visible {
 .pause-icon-button:hover .pause-label,.pause-icon-button:focus-visible .pause-label{opacity:1}
 .pause-icon-button:focus-visible{outline:3px solid #8efaff;outline-offset:2px;border-radius:8px}
 @media (prefers-reduced-motion:reduce){.pause-icon,.pause-label{transition:none}}
+
+/* TLH-NATIVE-SETTINGS: UI is drawn in the existing Three.js renderer.
+   Keep original semantic controls for assistive technology, off the visual stage. */
+#settings-screen.active,#credits-screen.active{background:transparent!important;backdrop-filter:none!important;pointer-events:none!important}
+#settings-screen .panel,#credits-screen .panel{position:absolute!important;left:-9999px!important;top:auto!important;max-width:1px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}
+#game-canvas{pointer-events:auto}
