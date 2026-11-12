@@ -124,7 +124,7 @@
         if(lastScene!==sceneId){lastScene=sceneId;guide=false;focus=0;dirty=true}
         const signature=JSON.stringify({sceneId,settings,tab,guide,focus});
         if(dirty||signature!==lastSignature){lastSignature=signature;paint()}
-        const previousAutoClear=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();renderer.render(overlay,ortho);renderer.autoClear=previousAutoClear
+        const previousAutoClear=renderer.autoClear;renderer.autoClear=false;try{renderer.clearDepth();renderer.render(overlay,ortho)}finally{renderer.autoClear=previousAutoClear}
       },
       dispose(){renderer.domElement.removeEventListener("pointerdown",pointerDown);window.removeEventListener("pointermove",pointerMove);window.removeEventListener("pointerup",pointerUp);document.removeEventListener("keydown",keyDown,true);texture.dispose();mat.dispose();quad.geometry.dispose()}
     }
