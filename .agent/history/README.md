@@ -1,0 +1,7 @@
+# The Long Haul — Historical Agent Records Index
+> **Documentation authority cutover (2026-11-11).** Source baseline: `main` at `d9cfa2244e98459a5186b17ffa6e0bb99f60f709`. These documents describe observed source contracts; they do not constitute a fresh gameplay, render, or hardware acceptance result.
+
+July 2026 campaign of layered audits and the October/November task-specific implementation notes are **historical evidence**. Keep originals and their paths for Git and tracker references; the current agent entry is `../START_HERE.md`, technical architecture `../../docs/ARCHITECTURE.md` and project state is the Drive 00 - Current Handoff.
+Dated families retained in place: `architecture-audit/`, `central-sync-audit/`, `deploy-audit/`, `gameplay-audit/`, `interaction-audit/`, `render-audit/`, `trackers/`, `turn-ledger/` and the focused accessibility/audio/clock/core/adoption/course/generation/horizon/input/lifecycle/map/motion/pause/renderer/runtime/streaming/world audits.
+Root files `current-audit.md`, `next-steps.md`, `known-gaps.md`, `validation.md` describe July near-world-streaming work—not the current project's task or test state. `product-intent.md` preserves historical requests and verbatim user intent, but does not grant publication or override subsequent decisions.
+Do not delete records, relocate machine-read files or assume old audit checklists remain open. Promote findings only after source/Task Tracker reconciliation.

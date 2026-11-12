@@ -1,0 +1,8 @@
+# Rendering — Source Contract
+> **Documentation authority cutover (2026-11-11).** Source baseline: `main` at `d9cfa2244e98459a5186b17ffa6e0bb99f60f709`. These documents describe observed source contracts; they do not constitute a fresh gameplay, render, or hardware acceptance result.
+
+**Owner boundary:** NexusEngine World/Presentation supplies state/descriptors; `src/app` hosts and Three.js 0.165.0 own GPU scene/material/render targets. `vendor/manifest.json` is the pin. `src/game/toon-style.mjs` configures bands, `src/app/four-band-cel-host.js` applies authored material bands, and `src/app/sobel-outline-host.js` composites one depth-outline pass after the world. Do not create another renderer or pass pipeline.
+**Sequence:** Nexus state → game Three scene → four-band toon world → Sobel depth outline → screen, with crisp DOM HUD outside the postprocess. The Nexus PR #4 portable render-graph change was not in the pinned game and is not implicitly installed.
+**Quality target:** intentional color/material separation and near/mid/far depth, coherent tree silhouettes, readable roads, authored freight terminal, weather and cloud transparency, consistently outlined truck and props, minimized central HUD obstruction.
+**Current evidence:** source integration exists on main; reported screenshot shows qualitative concerns, and full source-pinned browser acceptance of the new physics branch has not occurred. Never label source inspection as GPU visual approval.
+**Tests:** `tests/four-band-cel-host-regression.mjs`, `tests/sobel-outline-host-regression.mjs`, `tests/lighting-shadow-host-regression.mjs`, `npm run validate:visuals` and authentic WebGL screenshots.

@@ -1,0 +1,7 @@
+# Environment Tiles — Source and Integration Contract
+> **Documentation authority cutover (2026-11-11).** Source baseline: `main` at `d9cfa2244e98459a5186b17ffa6e0bb99f60f709`. These documents describe observed source contracts; they do not constitute a fresh gameplay, render, or hardware acceptance result.
+
+**Owner split:** LUM-000162 owns generated/art-authored source; LUM-000154 owns adaptation to game World/Road. Source files `src/game/environment-tile-authoring.mjs`, `environment-tile-catalog.mjs`, `environment-tile-planner.mjs`, `environment-tile-renderer.mjs`; host `src/app/environment-tiles-host.js`.
+**Located collection:** Generated Tiles (internal shared-drive source; locate by title) contains LH-ENV-001..100 GLB, 4 selectable scenes each and 5 QA/index files. The structural QA record reports 100 GLBs/400 scenes PASS; visual quality, engine authoring/import and in-game integration remain unverified.
+**Safety:** 200 m authored tile art versus game 160 m World cell and real curved road graph; suppress illustrative road deck and imported directional lights. Reproject props to real road/terrain and exclude hidden colliders/occlusions; bound GLB lifecycle, instancing and LOD.
+**Acceptance:** correct GLB/manifest checksum, four-scene selection, 200m seams, road/junction/terrain clearance, save/reload reconstruction, real WebGL appearance, FPS/memory on target hardware. `tests/environment-tile-*.mjs` and `npm run build:environment-tiles` are necessary but not sufficient.
