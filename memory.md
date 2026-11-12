@@ -1,4 +1,4 @@
-# The Long Haul repository memory
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is historical repository decisions. Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\n# The Long Haul repository memory
 
 ## Purpose
 
@@ -48,6 +48,6 @@ The Long Haul is a browser-based trucking game evolving toward a 3D American hig
 
 ## Luminary Framework
 
-Reviewed 2026-10-27 through connected Google Drive: [00 - Luminary Framework](https://docs.google.com/document/d/1lZLgr2A99EBzMwoLl4iEY7NiFVFG6LjU8snI2eP3ZWI/edit). This is the company discovery and governance map, not a replacement for repository implementation history or project trackers. Keep work bounded, retain acceptance evidence, preserve access boundaries, and link authoritative records instead of duplicating live state. Project workspace organization uses the eleven lifecycle folders described there; do not restructure this repository to mirror Drive folders.
+Reviewed 2026-10-27 through connected Google Drive: 00 - Luminary Framework (internal shared-drive source; locate by title). This is the company discovery and governance map, not a replacement for repository implementation history or project trackers. Keep work bounded, retain acceptance evidence, preserve access boundaries, and link authoritative records instead of duplicating live state. Project workspace organization uses the eleven lifecycle folders described there; do not restructure this repository to mirror Drive folders.
 
 - Steering alone never enters the rollover state. Its lean is bounded and critically damped, returning to neutral when steering is released; ground alignment remains visual. Scrape sparks remain at hard lean. Severe collision impulses retain their existing rollover/recovery behavior.

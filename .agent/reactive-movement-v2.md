@@ -1,4 +1,4 @@
-# Movement V2 — reactive box balance
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is historical physics implementation and acceptance notes. Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](../docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\n# Movement V2 — reactive box balance
 
 Scope: `LuminaryLabs-Publish/TheLongHaul` only. The existing `truck-kit.mjs` (V1), NexusEngine, assets, world tiles, and deployment workflows are unchanged.
 

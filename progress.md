@@ -1,4 +1,4 @@
-Original prompt: Epxlain every performance issue. be hyper critical and then look through the nexus engine to see if we are implementign anyting in away tha tmake the perfomacne super bad on a macbook pro. It shoudl aos have a boost to start so the truck starts at 50% of it defualt speed.
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is historical development journal. Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\nOriginal prompt: Epxlain every performance issue. be hyper critical and then look through the nexus engine to see if we are implementign anyting in away tha tmake the perfomacne super bad on a macbook pro. It shoudl aos have a boost to start so the truck starts at 50% of it defualt speed.
 
 ## 2026-10-19
 

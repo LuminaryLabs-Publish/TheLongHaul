@@ -1,4 +1,4 @@
-# Known gaps
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is July 2026 near-world streaming audit. Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](../docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\n# Known gaps
 
 **Timestamp:** `2026-07-18T15-38-25-04-00`
 

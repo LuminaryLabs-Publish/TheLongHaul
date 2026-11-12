@@ -1,4 +1,4 @@
-# The Long Haul product intent and cleanup brief
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is preserved user requests and interpreted intent (not automatically approved current requirements). Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](../docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\n# The Long Haul product intent and cleanup brief
 
 **Recorded:** 2026-10-16
 

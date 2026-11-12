@@ -1,4 +1,4 @@
-# MacBook Pro performance audit
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is historical performance measurement and repair notes. Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](../docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\n# MacBook Pro performance audit
 
 Date: 2026-10-19, America/New_York. Result: **FAIL for reliably smooth 60 fps during loading and streaming; PARTIAL evidence for sustained steady-state performance.**
 

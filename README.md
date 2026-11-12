@@ -1,58 +1,39 @@
 # The Long Haul
 
-A deterministic browser truck-delivery game built with NexusEngine and Three.js.
+A stylized browser trucking game using the **NexusEngine** game domain Kits and a **Three.js** rendering host.
+
+## Start here: one authority per purpose
+
+- 00 - Current Handoff (internal shared-drive source; locate by title) — current source state, active task, risks and next action.
+- Master Game Definition (internal shared-drive source; locate by title) — stable game vision and accepted direction.
+- Task Tracker (internal shared-drive source; locate by title) — canonical gameplay and asset outcomes.
+- [Technical documentation index](docs/INDEX.md) — architecture, source contracts, validation and historical report routing.
+- [Architecture](docs/ARCHITECTURE.md) · [Validation](docs/VALIDATION.md) — single technical ownership and acceptance definitions.
+- [Historical agent audits](.agent/history/README.md) — previously captured research, not the active backlog.
 
 ## Play
 
-Choose **Campaign** for geographic highway deliveries or **Endless** for one continuous freight journey. Each run begins with a short, skippable camera introduction in the actual game world.
+The current game sources include an Endless freight journey and Campaign/garage integration. In Endless, enter a pickup gate, carry cargo via safe/express routes, receive pay and XP, recover or service the truck, and continue. Standard/fragile/heavy/hazardous/unstable freight changes mass, handling and damage. The exact startup sequence and visual state must be checked in a real source-pinned runtime.
 
-In Endless, start empty and drive through a marked loading gate. Take the wide left-hand route or the shorter, narrower express route for a qualified combo bonus. Bring the load through the blue receiver, collect payment and keep driving toward the next contract. A missed pickup moves ahead; a destroyed or expired load produces replacement freight without ending the journey. Truck destruction remains a terminal failure.
+Keyboard: WASD or arrows drive (S brakes and then reverses), Shift drift, Space boost, double-tap forward rush, X handbrake, Q/E abilities, F interact or roadside recovery, U skills, M map, C camera, Escape pause, R retry. Confirm live binding and mobile control parity before publishing.
 
-Standard, fragile, heavy, hazardous and unstable freight change the truck's actual mass, acceleration, braking, suspension and load behavior. The HUD shows the current load, mass, deadline, condition and next gate. Deliveries include modest fuel and repair service; roadside garages offer paid servicing and existing upgrades. **Resume haul** restores a saved continuous journey, with atomic payment receipts preventing duplicate payouts.
-
-- **WASD / arrow keys:** drive; **S / Down** brakes, then reverses. **Shift:** drift. Brake into a turn, build a slide, then countersteer to redirect the truck. A full stop loses stored momentum.
-- **Space:** held boost. Double-tap **W / Up** for a five-second rush with a three-second recharge. **X:** handbrake.
-- **Q / E:** two distinct equipped abilities. Mini Trucks clear breakable obstacles; Road Shield absorbs impacts; Shockwave can be discovered through progression.
-- **U:** skills and abilities. Driving maneuvers earn XP and skill points separately from cash. Choose among three rotating stat, modifier and ability upgrades; each tier remains independent. Skills, map and garage menus freeze simulation, including cargo deadlines and cooldowns.
-- **F:** use a roadside garage or recover a rolled/stuck truck; Campaign retains its stopped delivery interaction. Endless loads and delivers while moving. Recovery costs time and cargo condition and has an eight-second cooldown.
-- **M:** route map. **C:** camera. **Escape:** pause. **R:** retry.
-- Qualified close passes, clean ramp landings and clean express routes build a combo up to **×5**. Four clean seconds bank it. Crashes lose pending points; banked points survive and add cash at **20 points per $1**. A missed pickup may offer one timed express-route chance to rescue an active multiplier.
-
-Weight-transfer driving now has **recoverable wheel lift and rollover risk**: normal high-speed cornering leans the body outward, while a controlled drift leans into the slide. Aggressive countersteering, high lateral acceleration and shifting cargo can tip the truck. Ease steering to settle a lift; after a full roll, stop and use F roadside recovery. The HUD reports wheel lift and tip danger. See [the authoritative .agent feature contract](.agent/feature-weight-transfer-rollover.md) and [engineering lessons](.agent/lessons.md).
-
-Collect focus, boost, ability-power and repair pickups. Repairs restore 12 hull and straighten steering; they do not restore cargo. Impact damage can pull steering to one side. Countersteer, find a repair pickup, or stop and press **F** for a time-costing roadside repair. Tire, exhaust, suspension, bodywork and equipped-power geometry reflect your upgrades.
-
-Traffic, optional ramps, breakable cargo, roadblocks and changing weather are paced along a deterministic rolling highway. Loading forks have protected approaches; heavier loads receive more warning and traffic spacing. Road geometry, live hosts and contact history are bounded as the journey advances. Touch controls appear on devices with a coarse pointer. Campaign, garage purchases, fleet upgrades and delivery progression remain available. Hawaii uses an explicit free ship transfer and a separate Maui road haul; shipping never awards delivery pay.
-
-## Develop and validate
+## Build and validate
 
 ```sh
 npm ci
-npm run build
+npm run build:host
 npm test
-```
-
-Serve this directory through a local HTTP server to play. The committed browser runtime is generated from `src/app`; run the build after changing those chunks. Browser validation and video capture require Chromium/Playwright plus `ffmpeg` and `ffprobe`:
-
-```sh
 npm run validate:gameplay
-npm run validate:skills
-npm run record:freight
-npm run record:skills
+npm run validate:visuals
 ```
 
-Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` when Chromium is installed outside Playwright's normal cache. The freight capture harness drives the actual WebGL page with keyboard input and captures each rendered frame at a fixed simulation timestep. It produces an edited 60-second, 30-fps video with matching original game audio and a retained uninterrupted input/state trace. This is reproducible presentation evidence, not a native hardware frame-rate claim. `node tools/record-freight-gameplay.mjs --journey-only=true` runs the continuous journey gate without recording every output frame.
+Run the committed browser output on a local HTTP server. Browser/capture commands require appropriate Playwright/Chromium support and, where used, FFmpeg. The complete command menu is in `package.json`; source/pin/capture policy is in [docs/VALIDATION.md](docs/VALIDATION.md). A unit-test pass does not establish graphics or gameplay acceptance.
 
-See [skills, drift and abilities](docs/skills-and-abilities.md), [skill-system validation](docs/skills-validation.md), the [continuous freight audit and outcomes](docs/continuous-freight.md), [continuous freight validation](docs/continuous-freight-validation.md), and the [preceding gameplay overhaul evidence](docs/gameplay-validation.md) for exact coverage and remaining human/hardware acceptance. The separate final-art initiative is LUM-000162.
+## Source ownership and version
 
-## Runtime
+- `src/game/`: product/game Kits, terrain, truck, freight, roads and game rules.
+- `src/app/`: One Three.js host, projections/materials/postprocess and UI.
+- `vendor/manifest.json`: pinned NexusEngine `b941c9b2995e3449c6987908657753e2cf2df242`, Three.js 0.165.0 and vendor integrity hashes.
+- `tests/`, `tools/`, `audit/`: executable evidence; `assets/`, `art/`, `manifests/`: authored/runtime assets and manifests.
 
-- `index.html` — current playable game
-- `src/long-haul-core.mjs` — Long Haul configuration for Core Data packages and random streams Core Simulation meters Core Camera smoothing Core Graphics instance batches Core Transaction Ledger and Core World patch preparation
-- `core-integration.html` — browser smoke page for the promoted Core child capabilities
-
-## Ownership
-
-NexusEngine Core owns deterministic data simulation camera descriptors graphics descriptors world lifecycle and idempotency. The Long Haul owns course truck delivery scoring and Three.js host semantics.
-
-The browser smoke pins NexusEngine commit `b941c9b2995e3449c6987908657753e2cf2df242`.
+**Baseline examined for this documentation cutover:** `main` commit `d9cfa2244e98459a5186b17ffa6e0bb99f60f709`. The separate `work/unified-truck-physics-render-20261111` branch is unaccepted; its source-only simulations do not prove a full host/WebGL release. This documentation-only branch neither merges those game changes nor changes GitHub Actions.

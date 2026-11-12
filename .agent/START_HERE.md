@@ -1,100 +1,38 @@
-# START HERE: The Long Haul near-world streaming cadence audit
+# START HERE — The Long Haul
 
-**Last updated:** `2026-07-18T15-38-25-04-00`  
-**Repository:** `LuminaryLabs-Publish/TheLongHaul`  
-**Branch:** `main`  
-**Reviewed runtime source revision:** `753488e40e69fc13471df42959628ef3052e5992`  
-**Reviewed pre-audit repository head:** `2c21dbcd06f823633b2bad3d9977ab1ebe6bcbdd`  
-**Status:** `near-world-streaming-desired-set-cadence-work-budget-authority-audited`
+> **Active agent entry point, 2026-11-11.** This replaces the stale July near-world streaming audit as the repository's default instruction router. It does **not** replace the user's current task, the Framework Master, the Task Tracker, source code or an accepted decision.
 
-## Summary
+## 1. First-read order
+1. 00 - Current Handoff (internal shared-drive source; locate by title): exact current stage, source/branch, open blockers and one next action.
+2. Master Game Definition (internal shared-drive source; locate by title): game identity, approved direction and design boundaries.
+3. Project Resource Index (internal shared-drive source; locate by title): verified GitHub, Drive, assets and guide links.
+4. Canonical Task Tracker (internal shared-drive source; locate by title): one current TLH project backlog and separate 223-item LH asset register.
+5. [Technical index](../docs/INDEX.md), [Architecture](../docs/ARCHITECTURE.md), [Validation](../docs/VALIDATION.md), and only the relevant [system contract](../docs/systems/).
 
-All 11 Publish repositories were compared. Ten were eligible after excluding `LuminaryLabs-Publish/TheCavalryOfRome`. Every eligible repository had central-ledger coverage, root `.agent` state, and a current `main` head matching its recorded documentation head. TheLongHaul had the oldest synchronized central timestamp and was the only selected project.
+## 2. Governing Luminary guidance
+Consult the Framework Master (internal shared-drive source; locate by title) first and Master Guide Tracker (internal shared-drive source; locate by title) for task-specific Game Development, Gameplay-Forward, Naming, Outcome-Based Tasking, Context Handoff and Sandbox Rendering & Validation requirements. Use only the Luminary shared-drive project, not My Drive.
 
-The focused audit found that near-world preparation work runs on every driving frame even while the truck remains in the same 192-unit cell. The host rebuilds the 3x3 desired window, republishes focus, runs `updateDesired()`, pumps generation, issues three manual prefetch requests, and pumps again. Only Core World focus/update and near-host reconciliation are gated by a changed cell key.
+## 3. Identify the actual source before work
+Repository: `LuminaryLabs-Publish/TheLongHaul`.
+Audited main baseline: `d9cfa2244e98459a5186b17ffa6e0bb99f60f709`; re-read GitHub HEAD before any edit.
+Pinned NexusEngine: `b941c9b2995e3449c6987908657753e2cf2df242`; Three.js `0.165.0` via `vendor/manifest.json`.
+`work/unified-truck-physics-render-20261111` is an **unaccepted gameplay implementation candidate**, not merged into main or validated in real WebGL.
+`docs/longhaul-authority-cutover-20261111` is a documentation-only branch; it must not be mistaken for a game release or deployed source revision.
+Treat code as authority for what is implemented, the tracker as authority for the task, and evidence as authority for whether it passed.
 
-With `ACTIVE_RADIUS = 1`, the caller creates at least 56 source-visible objects or arrays per driving frame before controller-owned clones, sets, arrays, statistics and queue results. At a hypothetical 60 displayed frames per second this is 3,360 caller-owned constructions per second. This is source arithmetic, not measured browser or memory evidence.
+## 4. Task and asset namespaces
+Current TLH-001..TLH-043 are registered project outcomes under LUM-000154 (gameplay) and LUM-000162 (assets). Historical `TLH-018..TLH-240` filenames on older image-reference records are **aliases**, not new or live tasks. Assets are canonically `LH-01-001` through `LH-07-030` in `Asset Master List`.
+223 existing PNG reference files were mapped to their LH IDs; all remain unapproved pending individual visual/provenance inspection. Their 223 original DOCX packets were moved and renamed to LH IDs, retaining Drive IDs. Do not regenerate the image library or equate a PNG with an accepted model. The 100 `LH-ENV-*` GLBs are separate structural-QA candidates, not in-game visual acceptance.
 
-## Intent
+## 5. Execute and validate only authorized work
+- Confirm the requested outcome, exact repository and task ID, accepted decisions, dependencies, scope and approval gates.
+- Read the affected game modules and their current canonical specs. Preserve V1/V2/V3 compatibility and parallel work.
+- For gameplay updates, build/test the real pinned Nexus runtime and source-pinned browser/physical game; distinguish source checks, rendered WebGL, performance and human acceptance.
+- Record exact SHA, tested commands, actual errors, screenshots/video provenance, review status and next action in the existing tracker and current handoff.
+- Never edit GitHub Actions, NexusEngine Core, another repo, access permissions, public marketing or deployment unless explicitly authorized. A main push here triggers GitHub Pages automatically.
+- Do not create parallel task trackers, GitHub Issues or speculative empty document structures.
 
-Create one renderer-neutral authority for near-world streaming generation, meaningful focus cadence, desired-window settlement, canonical prefetch planning, pump admission, stale-work rejection and matching-frame proof.
+## 6. Historical sources are not current directions
+The old July audit material is retained under `.agent/` for provenance. The former root `current-audit.md`, `next-steps.md`, `known-gaps.md` and `validation.md` are labeled **ARCHIVED CONTEXT**. Consult [historical index](history/README.md) when a particular old finding is relevant; do not execute it automatically. Root `memory.md` and `progress.md` are similarly labeled historical. The active technical spec is in `docs/`, not whichever dated report happens to have the latest filename.
 
-## What needs to happen
-
-```txt
-StreamingGenerationAdmissionCommand
-  -> StreamingGenerationAdmissionResult
-
-StreamingFocusAdmissionCommand
-  -> StreamingFocusAdmissionResult
-
-DesiredWindowSettlementCommand
-  -> DesiredWindowSettlementResult
-
-PrefetchPlanCommand
-  -> PrefetchPlanResult
-
-PatchPreparationPumpCommand
-  -> PatchPreparationPumpResult
-
-StreamingProjectionCommitCommand
-  -> NearWorldStreamingDigest
-  -> FirstNearWorldStreamingBoundFrameAck
-```
-
-## Checklist
-
-- [x] Compared all 11 Publish repositories.
-- [x] Excluded `LuminaryLabs-Publish/TheCavalryOfRome`.
-- [x] Confirmed ten eligible ledgers and root `.agent` states.
-- [x] Confirmed all ten eligible `main` heads matched their recorded documentation heads.
-- [x] Selected only TheLongHaul by the oldest synchronized documented-selection rule.
-- [x] Identified the complete interaction loop and active domains.
-- [x] Documented all 20 installed kits, two providers, one controller, nine adapters and four proof/deployment surfaces.
-- [x] Documented the conservative 56-construction caller-owned floor per driving frame.
-- [x] Added the timestamped streaming cadence audit family.
-- [x] Kept runtime, gameplay, rendering, tests and deployment unchanged.
-- [ ] Add stable streaming generation, cell and direction keys.
-- [ ] Cache and diff the desired 3x3 active window.
-- [ ] Settle one canonical controller/product prefetch plan.
-- [ ] Admit pumps from queue state and work budgets instead of every driving frame.
-- [ ] Execute source, browser, artifact and Pages fixtures.
-
-## Current census
-
-```txt
-Core kits: 8
-product DSKs: 12
-engine-installed kits: 20
-Core World effect providers: 2
-standalone controllers: 1
-browser/product adapters: 9
-proof/deployment adapters: 4
-total source-backed surfaces: 36
-render surfaces: 3
-proposed streaming-cadence surfaces: 20
-```
-
-## Read this run first
-
-1. `current-audit.md`
-2. `known-gaps.md`
-3. `trackers/2026-07-18T15-38-25-04-00/project-breakdown.md`
-4. `architecture-audit/2026-07-18T15-38-25-04-00-near-world-streaming-cadence-budget-dsk-map.md`
-5. `streaming-system-audit/2026-07-18T15-38-25-04-00-desired-set-cadence-work-budget-contract.md`
-6. `render-audit/2026-07-18T15-38-25-04-00-streaming-work-visible-frame-proof-gap.md`
-7. `gameplay-audit/2026-07-18T15-38-25-04-00-driving-near-world-streaming-loop.md`
-8. `interaction-audit/2026-07-18T15-38-25-04-00-streaming-command-result-map.md`
-9. `deploy-audit/2026-07-18T15-38-25-04-00-streaming-browser-pages-fixture-gate.md`
-10. `central-sync-audit/2026-07-18T15-38-25-04-00-oldest-selection-streaming-audit.md`
-11. `turn-ledger/2026-07-18T15-38-25-04-00.md`
-12. `next-steps.md`
-13. `validation.md`
-
-## Retained audits
-
-The horizon patch/host convergence audit and all prior best-run, map, world, runtime-fault, input, WebGL, accessibility, clock, audio, generation, pause, delivery and rollback audits remain unresolved and preserved.
-
-## Next safe ledge
-
-Do not add an ad hoc `if (key === lastCellKey) return` around the entire streaming function. First separate active-window cadence from direction-sensitive prefetch cadence, consume controller results, preserve queued work, and prove identical patch and host membership.
+**Current next action:** read the live `00 - Current Handoff`; that document alone establishes the immediate dependency-ready action. Do not construct a competing checklist here.

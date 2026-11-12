@@ -1,4 +1,4 @@
-# The Long Haul Movement Kit V2 — invisible spring-mass
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is historical physics implementation and acceptance notes. Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](../docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\n# The Long Haul Movement Kit V2 — invisible spring-mass
 
 **Scope:** The Long Haul only. V1 remains byte-for-byte unchanged in `src/game/truck-kit.mjs`. `createLongHaulProductKits` selects V2 by default; `movementVersion: "v1"` is rollback. Only one truck kit is registered.
 

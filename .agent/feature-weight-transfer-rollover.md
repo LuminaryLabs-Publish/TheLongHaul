@@ -1,4 +1,4 @@
-# Feature contract: weight transfer, recoverable wheel lift, and rollover
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is historical physics implementation and acceptance notes. Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](../docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\n# Feature contract: weight transfer, recoverable wheel lift, and rollover
 
 **Outcome:** The truck feels heavy without sluggish steering. Body roll, cargo shift, wheel contact visualization and tipping share one stability calculation, not random animation.
 

@@ -1,4 +1,4 @@
-# Performance cleanup implementation
+> **ARCHIVED CONTEXT / NOT THE CURRENT TASK — 2026-11-11 documentation cutover.** This is historical performance measurement and repair notes. Preserve it as original evidence; do not treat its headings, unchecked steps, branch names or completion claims as current execution authority. Use the live handoff (internal shared-drive source; locate by title), [project technical index](../docs/INDEX.md) where the relative link applies, and exact repository source. The following original content is retained unchanged.\n\n# Performance cleanup implementation
 
 Date: 2026-10-19. Scope: The Long Haul repository only. Upstream Nexus Engine source and deployment files are unchanged. Existing local game/UI work is preserved with its required modules.
 
