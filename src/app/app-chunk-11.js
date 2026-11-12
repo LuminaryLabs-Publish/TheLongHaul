@@ -71,15 +71,17 @@ function resize() {
   const stage = document.getElementById("game-stage") || document.documentElement;
   const { width: rawWidth, height: rawHeight } = stage.getBoundingClientRect();
   const width = Math.max(1, Math.round(rawWidth)), height = Math.max(1, Math.round(rawHeight));
-  const pixelBudget = settings.quality ? 2304e3 : 1036800;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.quality ? 1.25 : 0.85, Math.sqrt(pixelBudget / (width * height))));
+  const pixelBudget = {Low:1036800,Medium:1600000,High:2304000}[settings.graphicsQuality] ?? 2304000;const resolutionLimit={Performance:.7,Balanced:1,Sharp:1.25}[settings.renderResolution] ?? 1;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, resolutionLimit, Math.sqrt(pixelBudget / (width * height))));
   renderer.setSize(width, height, false);
-  camera.aspect = width / height;
+  camera.fov=settings.fov??58;camera.aspect = width / height;
   camera.updateProjectionMatrix();
 }
 addEventListener("resize", resize);
 resize();
 applySettings();
+const settingsNativeUI=window.createLongHaulSettingsUI?.({THREE,renderer,settings,currentScene,saveSettings,applySettings,resize,audio,camera,onBack:()=>$("#settings-back-btn").click(),onCreditsBack:()=>$("#credits-back-btn").click()});
+window.LongHaulSettingsUI=settingsNativeUI;
 window.render_game_to_text = () => {
   const truck = readTruck(), run = readRun();
   return JSON.stringify({ scene: currentScene(), mode: arcadeCampaign() ? "campaign" : "endless", coordinates: "meters; x east, y up, z south; heading 0 faces +z", player: { position: truck.position, velocity: truck.velocity, heading: truck.heading, speed: truck.speed, normalTopSpeed: readDynamics().maximumForwardSpeed, grounded: truck.grounded, tipped: truck.tipped, landingSequence: truck.landingSequence, lastLanding: truck.lastLanding }, run: { status: run.status, distance: run.distance, time: run.rawTime, recoveryCount: run.recoveryCount }, fuel: meters.get("fuel")?.value, presentation: { contactShape: truck.contactShape, contactRadius: truck.contactRadius, lean: truckRig?.leanPivot.rotation.z, clearance: truckRig?.grounding.minimumClearance, scraping, sparks: scrapeLife.filter((n) => n > 0).length }, boost: { ...forwardBoost.snapshot(), visualStrength: boostVisualStrength, streaks: boostStreaks.visible }, cinematic: { ...launchIntro }, risk: arcadeScore.snapshot(), encounters: { label: arcadeEventLabel, planned: arcadeEncounters.length, active: arcadeEncounterHosts.size, rampsUsed: arcadeUsedRamps.size, propsBroken: arcadeBrokenProps.size, traffic: arcadeVehicles.filter((v) => v.active).length }, weather: { rain: arcadeWeatherAmount, time: arcadeWeatherTime }, skills: skillSnapshot(), freight: window.LongHaulFreight?.getState(), events: arcadeEventHistory.slice(-16), loading: generation && !generation.ready ? generation.cursor : null });
@@ -173,7 +175,7 @@ function frame(now) {
     updateRiskHud();
     updateSkillHud(now);
     updateComicCrashPresentation(realDt,sceneId,simulate,dt);
-    performanceStats.measure("renderCpu", () => renderer.render(scene, camera));
+    performanceStats.measure("renderCpu", () => {renderer.render(scene, camera);settingsNativeUI?.render()});
     performanceStats.end();
     pressed.clear();
   } catch (error) {
