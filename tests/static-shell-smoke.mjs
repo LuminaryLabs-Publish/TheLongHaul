@@ -70,4 +70,16 @@ assert.doesNotMatch(campaign,/function tick\(t\)|id="roadCanvas"|function draw\(
 assert.match(campaign,/loadGeographicCourse/);
 assert.match(combined,/campaignLaunch\.course/);
 for(const match of campaign.matchAll(/<script(?:[^>]*)>([\s\S]*?)<\/script>/g)){if(match[1].includes('import(')){const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:match[1],encoding:'utf8'});assert.equal(result.status,0,result.stderr)}}
+// Pause assets remain independently addressable and the runtime uses the existing retry flow.
+assert.match(index,/id="pause-restart-btn"[^>]*aria-label="Restart Same Course"/);
+assert.match(chunks[10],/pause-restart-btn/);
+assert.match(chunks[10],/retrySame\(\)/);
+const pauseStyles=readFileSync(join(root,"styles.css"),"utf8");
+for(const name of ["keep-driving","settings","credits","main-menu","restart"]){
+  const icon=readFileSync(join(root,"assets/ui/pause",name+".svg"),"utf8");
+  assert.match(icon,/viewBox="0 0 128 128"/);
+  assert.match(icon,/<\/svg>/);
+  assert.ok(pauseStyles.includes("assets/ui/pause/"+name+".svg"));
+}
+assert.doesNotMatch(pauseStyles,/pause-icons\.png/,"legacy pause sprite no longer used in CSS");
 console.log("The Long Haul static shell smoke passed");

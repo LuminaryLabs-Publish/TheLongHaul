@@ -39,6 +39,11 @@ $("#steer-range").addEventListener("input", (event) => {
   settings.steering = finite(event.target.value, 100);
 });
 $("#resume-btn").addEventListener("click", resumeGame);
+// Restart uses the same checked retry flow as the delivery-result screen.
+$("#pause-restart-btn").addEventListener("click", () => {
+  if (currentScene() !== "paused" || pendingSceneTransition || !course) return;
+  retrySame();
+});
 $("#pause-settings-btn").addEventListener("click", () => {
   settingsReturn = "paused";
   transition("settings");
