@@ -664,8 +664,7 @@
     clearHorizon:new THREE.Color(0xffd29b),rainHorizon:new THREE.Color(0xb9c7cf),
     clearFog:new THREE.Color(0xebc8a4),rainFog:new THREE.Color(0xafc0c9),
     clearCloud:new THREE.Color(0xf8f8f4),rainCloud:new THREE.Color(0xc9d0de)};
-  const groundColor=new THREE.Color(0x557568),sunColor=new THREE.Color(0xffd69b);
-  hemi.color.set(0xd7e5ff);hemi.groundColor.copy(groundColor);sun.color.copy(sunColor);
+  // The lighting host owns light colors and intensities; this host owns atmosphere and fog.
   function atmosphereFrame(state, milliseconds) {
     const weather=clamp(arcadeWeatherAmount,0,1),seconds=milliseconds/1000;
     ensureCloudLayout(activeCloudSeed());
@@ -685,7 +684,6 @@
     skyUniforms.sunDirection.value.copy(cloudUniforms.sunDirection.value);
     skyUniforms.sunColor.value.copy(sun.color);
     cloudUniforms.weather.value=weather;
-    sun.intensity=lerp(1.65,1.03,weather);hemi.intensity=lerp(1.4,1.25,weather);
     fill.position.set(state.position.x+80,state.position.y+75,state.position.z+110);
     fill.target.position.set(state.position.x,state.position.y,state.position.z);fill.target.updateMatrixWorld();
   }
