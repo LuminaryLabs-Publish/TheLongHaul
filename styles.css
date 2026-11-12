@@ -680,3 +680,7 @@ body.alternative-b-hud.driving #skill-hud .skill-ability:focus-visible {
 #settings-screen.active,#credits-screen.active{background:transparent!important;backdrop-filter:none!important;pointer-events:none!important}
 #settings-screen .panel,#credits-screen .panel{position:absolute!important;left:-9999px!important;top:auto!important;max-width:1px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}
 #game-canvas{pointer-events:auto}
+
+/* Remove inherited fake landscape layers when native Settings/Credits are active. */
+#settings-screen.active::before,#credits-screen.active::before{content:none!important;display:none!important}
+body:has(#settings-screen.active) #game-canvas,body:has(#credits-screen.active) #game-canvas{opacity:1!important}
