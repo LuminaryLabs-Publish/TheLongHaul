@@ -72,7 +72,7 @@
     passCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
     status.enabled=true;
     renderer.render=function renderOutlinedWorld(renderScene,renderCamera){
-      if(failed||running||renderScene!==scene||renderCamera!==camera)
+      if(failed||running||renderScene!==scene||renderCamera!==camera||(typeof settings!=="undefined"&&settings.reducedEffects))
         return sourceRender(renderScene,renderCamera);
       const prior=originalTarget();running=true;
       try {

@@ -1,0 +1,177 @@
+{
+  "schema": "tlh.ui-icons.v1",
+  "format": "svg",
+  "source": "NexusEngine-compatible game-owned vector icon assets; initial generated PNGs separately available in sandbox",
+  "icons": [
+    {
+      "id": "UI-001",
+      "name": "settings",
+      "path": "icons/ui-001.svg"
+    },
+    {
+      "id": "UI-002",
+      "name": "gameplay",
+      "path": "icons/ui-002.svg"
+    },
+    {
+      "id": "UI-003",
+      "name": "audio",
+      "path": "icons/ui-003.svg"
+    },
+    {
+      "id": "UI-004",
+      "name": "video",
+      "path": "icons/ui-004.svg"
+    },
+    {
+      "id": "UI-005",
+      "name": "back",
+      "path": "icons/ui-005.svg"
+    },
+    {
+      "id": "UI-006",
+      "name": "pause",
+      "path": "icons/ui-006.svg"
+    },
+    {
+      "id": "UI-007",
+      "name": "steering-response",
+      "path": "icons/ui-007.svg"
+    },
+    {
+      "id": "UI-008",
+      "name": "camera-motion",
+      "path": "icons/ui-008.svg"
+    },
+    {
+      "id": "UI-009",
+      "name": "impact-slow-motion",
+      "path": "icons/ui-009.svg"
+    },
+    {
+      "id": "UI-010",
+      "name": "control-guide",
+      "path": "icons/ui-010.svg"
+    },
+    {
+      "id": "UI-011",
+      "name": "sound-enabled",
+      "path": "icons/ui-011.svg"
+    },
+    {
+      "id": "UI-012",
+      "name": "master-volume",
+      "path": "icons/ui-012.svg"
+    },
+    {
+      "id": "UI-013",
+      "name": "music-volume",
+      "path": "icons/ui-013.svg"
+    },
+    {
+      "id": "UI-014",
+      "name": "effects-volume",
+      "path": "icons/ui-014.svg"
+    },
+    {
+      "id": "UI-015",
+      "name": "graphics-quality",
+      "path": "icons/ui-015.svg"
+    },
+    {
+      "id": "UI-016",
+      "name": "rendering-resolution",
+      "path": "icons/ui-016.svg"
+    },
+    {
+      "id": "UI-017",
+      "name": "ui-scale",
+      "path": "icons/ui-017.svg"
+    },
+    {
+      "id": "UI-018",
+      "name": "camera-field-of-view",
+      "path": "icons/ui-018.svg"
+    },
+    {
+      "id": "UI-019",
+      "name": "reduced-visual-effects",
+      "path": "icons/ui-019.svg"
+    },
+    {
+      "id": "UI-020",
+      "name": "previous",
+      "path": "icons/ui-020.svg"
+    },
+    {
+      "id": "UI-021",
+      "name": "next",
+      "path": "icons/ui-021.svg"
+    },
+    {
+      "id": "UI-022",
+      "name": "toggle-on",
+      "path": "icons/ui-022.svg"
+    },
+    {
+      "id": "UI-023",
+      "name": "toggle-off",
+      "path": "icons/ui-023.svg"
+    },
+    {
+      "id": "UI-024",
+      "name": "slider-track",
+      "path": "icons/ui-024.svg"
+    },
+    {
+      "id": "UI-025",
+      "name": "slider-handle",
+      "path": "icons/ui-025.svg"
+    },
+    {
+      "id": "UI-026",
+      "name": "selection-focus",
+      "path": "icons/ui-026.svg"
+    },
+    {
+      "id": "UI-027",
+      "name": "keep-driving",
+      "path": "icons/ui-027.svg"
+    },
+    {
+      "id": "UI-028",
+      "name": "main-menu",
+      "path": "icons/ui-028.svg"
+    },
+    {
+      "id": "UI-029",
+      "name": "credits",
+      "path": "icons/ui-029.svg"
+    },
+    {
+      "id": "UI-030",
+      "name": "keyboard",
+      "path": "icons/ui-030.svg"
+    },
+    {
+      "id": "UI-031",
+      "name": "touch-controls",
+      "path": "icons/ui-031.svg"
+    },
+    {
+      "id": "UI-032",
+      "name": "controller",
+      "path": "icons/ui-032.svg"
+    },
+    {
+      "id": "UI-033",
+      "name": "reset-defaults",
+      "path": "icons/ui-033.svg"
+    },
+    {
+      "id": "UI-034",
+      "name": "information",
+      "path": "icons/ui-034.svg"
+    }
+  ]
+}
