@@ -69,6 +69,8 @@ $("#loss-title-btn").addEventListener("click", () => {
 });
 function showBootError(error) {
   console.error(error);
+  window.LongHaulStartup?.fail(error);
+  window.LongHaulAsyncLoading?.fail(error);
   $("#boot-error").textContent = String(error?.message ?? error);
   $("#boot-failure").classList.add("show");
 }
@@ -91,8 +93,8 @@ window.render_game_to_text = () => {
   const truck = readTruck(), run = readRun();
   return JSON.stringify({ scene: currentScene(), mode: arcadeCampaign() ? "campaign" : "endless", coordinates: "meters; x east, y up, z south; heading 0 faces +z", player: { position: truck.position, velocity: truck.velocity, heading: truck.heading, speed: truck.speed, normalTopSpeed: readDynamics().maximumForwardSpeed, grounded: truck.grounded, tipped: truck.tipped, landingSequence: truck.landingSequence, lastLanding: truck.lastLanding }, run: { status: run.status, distance: run.distance, time: run.rawTime, recoveryCount: run.recoveryCount }, fuel: meters.get("fuel")?.value, presentation: { contactShape: truck.contactShape, contactRadius: truck.contactRadius, lean: truckRig?.leanPivot.rotation.z, clearance: truckRig?.grounding.minimumClearance, scraping, sparks: scrapeLife.filter((n) => n > 0).length }, boost: { ...forwardBoost.snapshot(), visualStrength: boostVisualStrength, streaks: boostStreaks.visible }, cinematic: { ...launchIntro }, risk: arcadeScore.snapshot(), encounters: { label: arcadeEventLabel, planned: arcadeEncounters.length, active: arcadeEncounterHosts.size, rampsUsed: arcadeUsedRamps.size, propsBroken: arcadeBrokenProps.size, traffic: arcadeVehicles.filter((v) => v.active).length }, weather: { rain: arcadeWeatherAmount, time: arcadeWeatherTime }, skills: skillSnapshot(), freight: window.LongHaulFreight?.getState(), events: arcadeEventHistory.slice(-16), loading: generation && !generation.ready ? generation.cursor : null });
 };
-window.__longHaulBooted = true;
-window.longHaulBootReady?.();
+window.__longHaulRuntimeReady = true;
+window.LongHaulStartup?.runtimeReady();
 transition("ready");
 const performanceStats = createPerformanceStats();
 let previous = performance.now(), scheduled = previous, lastHud = -Infinity, lastMap = -Infinity, frameFailed = false;
@@ -139,7 +141,7 @@ function frame(now) {
     engine.world.__longHaulScene = simulate ? "driving" : beforeScene === "driving" ? "paused" : beforeScene;
     performanceStats.measure("simulation", () => engine.tick(simulate ? dt : 0));
     const sceneId = updateSceneUi();
-    if (sceneId === "title" && campaignLaunch?.course && !campaignAutoStarted) {
+    if (window.__longHaulBooted && sceneId === "title" && campaignLaunch?.course && !campaignAutoStarted) {
       campaignAutoStarted = true;
       startGeneration(campaignLaunch.course.seed, false, "start");
     }

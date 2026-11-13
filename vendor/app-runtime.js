@@ -785,7 +785,7 @@
     }
     let arcadeBonuses=0,arcadeAttemptId="";
     const arcadeStartGeneration=startGeneration;
-    startGeneration=function(...args){const sceneId=engine.n.coreScene.getCurrentScene()?.id;if(generation&&!generation.ready&&!generation.error||!["title","dispatch","paused","results","loss","driving"].includes(sceneId))return;arcadeAttemptId=globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(36).slice(2)}`;arcadeBonuses=0;arcadeConfiguredRun="";arcadeCachedSave=null;arcadeEdgeCache=null;arcadeGarageCourse=null;arcadeGarageStops=[];arcadeTrafficEdge=null;arcadeTrafficEdgeCandidate=null;arcadeTrafficEdgeWait=0;arcadeGaragePanel.hidden=true;$("#arcade-loss-payout")?.remove();for(const cell of $("#arcade-endless-payout"))cell.remove();$("#loss-retry-btn").textContent="Retry Same Course";$("#loss-new-btn").textContent="New Course";$("#loss-title-btn").textContent="Title";$("#result-new-btn").textContent="New Course";$("#result-title-btn").textContent="Title";arcadeTrafficRoot.children.forEach(child=>child.visible=false);for(const v of arcadeVehicles)v.active=false;return arcadeStartGeneration(...args)};
+    startGeneration=function(...args){const sceneId=engine.n.coreScene.getCurrentScene()?.id;if(generation&&!generation.ready&&!generation.error||!["title","dispatch","paused","results","loss","driving"].includes(sceneId))return;arcadeAttemptId=globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(36).slice(2)}`;arcadeBonuses=0;arcadeConfiguredRun="";arcadeCachedSave=null;arcadeEdgeCache=null;arcadeGarageCourse=null;arcadeGarageStops=[];arcadeTrafficEdge=null;arcadeTrafficEdgeCandidate=null;arcadeTrafficEdgeWait=0;arcadeGaragePanel.hidden=true;$("#arcade-loss-payout")?.remove();for(const cell of $$("#arcade-endless-payout"))cell.remove();$("#loss-retry-btn").textContent="Retry Same Course";$("#loss-new-btn").textContent="New Course";$("#loss-title-btn").textContent="Title";$("#result-new-btn").textContent="New Course";$("#result-title-btn").textContent="Title";arcadeTrafficRoot.children.forEach(child=>child.visible=false);for(const v of arcadeVehicles)v.active=false;return arcadeStartGeneration(...args)};
     function arcadeApplyUpgrades(){
       if(!course||arcadeConfiguredRun===runKey)return;
       arcadeConfiguredRun=runKey;
@@ -859,7 +859,7 @@
       let saved=false;try{if(!arcadeSaveWritable())throw Error("Save unavailable");localStorage.setItem("longhaul-campaign-v1",JSON.stringify(save));arcadeCachedSave=save;saved=true}catch{}
       const host=delivered?$("#score-grid"):$("#loss-screen .result-card");if(!host)return;
       let cell=host.querySelector("#arcade-endless-payout");if(!cell){cell=document.createElement("div");cell.id="arcade-endless-payout";cell.className="score-cell major";const footer=host.querySelector(".panel-footer");if(footer)host.insertBefore(cell,footer);else host.append(cell)}
-      cell.replaceChildren();const label=document.createElement("span"),amount=document.createElement("b");label.textContent=delivered?`Delivery ${deliveryPay} · time bonus ${timeBonus} · driving bonuses ${arcadeBonuses}`:`Run pay ${deliveryPay} · driving bonuses ${arcadeBonuses}`;amount.textContent=saved?`${cash} · Garage balance ${save.cash.toLocaleString()}`:`${cash} · Save unavailable`;cell.append(label,amount);
+      cell.replaceChildren();const label=document.createElement("span"),amount=document.createElement("b");label.textContent=delivered?`Delivery $${deliveryPay} · time bonus $${timeBonus} · driving bonuses $${arcadeBonuses}`:`Run pay $${deliveryPay} · driving bonuses $${arcadeBonuses}`;amount.textContent=saved?`$${cash} · Garage balance $${save.cash.toLocaleString()}`:`$${cash} · Save unavailable`;cell.append(label,amount);
     }
     const arcadeOriginalPostTick=postTickGameplay;
     const arcadeGarageCatalog=[
@@ -942,8 +942,8 @@
       const wasHidden=arcadeGaragePanel.hidden,restoreFocus=wasHidden||arcadeGaragePanel.contains(document.activeElement),scrollTop=arcadeGaragePanel.scrollTop;
       if(wasHidden){releaseDrivingInput();forwardBoost.clearTaps();arcadeScore.tick(0,{active:false})}
       const save=arcadeUpgradeState(),upgrades=save.upgrades||{},cash=Number(save.cash)||0,saveAvailable=arcadeSaveWritable();
-      arcadeGaragePanel.innerHTML="";const title=document.createElement("h2");title.textContent="ROADSIDE GARAGE";const summary=document.createElement("p");summary.textContent=saveAvailable?`Available cash ${cash.toLocaleString()} · Driving is paused while you shop.`:"Save unavailable · Upgrades cannot be purchased. Driving is paused.";arcadeGaragePanel.append(title,summary);
-      for(const item of arcadeGarageCatalog){const level=Math.max(0,Number(upgrades[item.id])||0),cost=Math.round(item.base*Math.pow(1.65,level)),row=document.createElement("div");row.className="garage-row";const info=document.createElement("div"),name=document.createElement("b"),description=document.createElement("small"),button=document.createElement("button");name.textContent=`${item.label} · LEVEL ${level}/${item.max}`;description.textContent=item.description;info.append(name,description);button.dataset.upgrade=item.id;button.textContent=level>=item.max?"MAX":`UPGRADE ${cost}`;button.disabled=!saveAvailable||level>=item.max||cash<cost;button.addEventListener("click",()=>{const latest=arcadeUpgradeState(),nextCash=Number(latest.cash)||0,nextLevel=Number(latest.upgrades?.[item.id])||0;if(nextLevel!==level||nextCash<cost){arcadeShowGarage(item.id);return}if(nextLevel>=item.max)return;latest.cash=nextCash-cost;latest.upgrades={...(latest.upgrades||{}),[item.id]:nextLevel+1};try{if(!arcadeSaveWritable())throw Error("Save unavailable");localStorage.setItem("longhaul-campaign-v1",JSON.stringify(latest));arcadeCachedSave=latest;arcadeConfiguredRun="";arcadeApplyUpgrades();arcadeShowGarage(item.id)}catch{toast("Garage save unavailable","bad",1600)}});row.append(info,button);arcadeGaragePanel.append(row)}
+      arcadeGaragePanel.innerHTML="";const title=document.createElement("h2");title.textContent="ROADSIDE GARAGE";const summary=document.createElement("p");summary.textContent=saveAvailable?`Available cash $${cash.toLocaleString()} · Driving is paused while you shop.`:"Save unavailable · Upgrades cannot be purchased. Driving is paused.";arcadeGaragePanel.append(title,summary);
+      for(const item of arcadeGarageCatalog){const level=Math.max(0,Number(upgrades[item.id])||0),cost=Math.round(item.base*Math.pow(1.65,level)),row=document.createElement("div");row.className="garage-row";const info=document.createElement("div"),name=document.createElement("b"),description=document.createElement("small"),button=document.createElement("button");name.textContent=`${item.label} · LEVEL ${level}/${item.max}`;description.textContent=item.description;info.append(name,description);button.dataset.upgrade=item.id;button.textContent=level>=item.max?"MAX":`UPGRADE $${cost}`;button.disabled=!saveAvailable||level>=item.max||cash<cost;button.addEventListener("click",()=>{const latest=arcadeUpgradeState(),nextCash=Number(latest.cash)||0,nextLevel=Number(latest.upgrades?.[item.id])||0;if(nextLevel!==level||nextCash<cost){arcadeShowGarage(item.id);return}if(nextLevel>=item.max)return;latest.cash=nextCash-cost;latest.upgrades={...(latest.upgrades||{}),[item.id]:nextLevel+1};try{if(!arcadeSaveWritable())throw Error("Save unavailable");localStorage.setItem("longhaul-campaign-v1",JSON.stringify(latest));arcadeCachedSave=latest;arcadeConfiguredRun="";arcadeApplyUpgrades();arcadeShowGarage(item.id)}catch{toast("Garage save unavailable","bad",1600)}});row.append(info,button);arcadeGaragePanel.append(row)}
       const close=document.createElement("button");close.textContent="CLOSE · F TO DRIVE";close.addEventListener("click",closeArcadeGarage);arcadeGaragePanel.append(close);arcadeGaragePanel.hidden=false;arcadeGaragePanel.scrollTop=scrollTop;if(restoreFocus){const target=focusItem?arcadeGaragePanel.querySelector(`button[data-upgrade="${focusItem}"]:not(:disabled)`):arcadeGaragePanel;(target||close).focus({preventScroll:true})}
     }
     const arcadeOriginalInteractionPrompt=interactionPrompt;
@@ -2316,6 +2316,8 @@ $("#loss-title-btn").addEventListener("click", () => {
 });
 function showBootError(error) {
   console.error(error);
+  window.LongHaulStartup?.fail(error);
+  window.LongHaulAsyncLoading?.fail(error);
   $("#boot-error").textContent = String(error?.message ?? error);
   $("#boot-failure").classList.add("show");
 }
@@ -2338,8 +2340,8 @@ window.render_game_to_text = () => {
   const truck = readTruck(), run = readRun();
   return JSON.stringify({ scene: currentScene(), mode: arcadeCampaign() ? "campaign" : "endless", coordinates: "meters; x east, y up, z south; heading 0 faces +z", player: { position: truck.position, velocity: truck.velocity, heading: truck.heading, speed: truck.speed, normalTopSpeed: readDynamics().maximumForwardSpeed, grounded: truck.grounded, tipped: truck.tipped, landingSequence: truck.landingSequence, lastLanding: truck.lastLanding }, run: { status: run.status, distance: run.distance, time: run.rawTime, recoveryCount: run.recoveryCount }, fuel: meters.get("fuel")?.value, presentation: { contactShape: truck.contactShape, contactRadius: truck.contactRadius, lean: truckRig?.leanPivot.rotation.z, clearance: truckRig?.grounding.minimumClearance, scraping, sparks: scrapeLife.filter((n) => n > 0).length }, boost: { ...forwardBoost.snapshot(), visualStrength: boostVisualStrength, streaks: boostStreaks.visible }, cinematic: { ...launchIntro }, risk: arcadeScore.snapshot(), encounters: { label: arcadeEventLabel, planned: arcadeEncounters.length, active: arcadeEncounterHosts.size, rampsUsed: arcadeUsedRamps.size, propsBroken: arcadeBrokenProps.size, traffic: arcadeVehicles.filter((v) => v.active).length }, weather: { rain: arcadeWeatherAmount, time: arcadeWeatherTime }, skills: skillSnapshot(), freight: window.LongHaulFreight?.getState(), events: arcadeEventHistory.slice(-16), loading: generation && !generation.ready ? generation.cursor : null });
 };
-window.__longHaulBooted = true;
-window.longHaulBootReady?.();
+window.__longHaulRuntimeReady = true;
+window.LongHaulStartup?.runtimeReady();
 transition("ready");
 const performanceStats = createPerformanceStats();
 let previous = performance.now(), scheduled = previous, lastHud = -Infinity, lastMap = -Infinity, frameFailed = false;
@@ -2386,7 +2388,7 @@ function frame(now) {
     engine.world.__longHaulScene = simulate ? "driving" : beforeScene === "driving" ? "paused" : beforeScene;
     performanceStats.measure("simulation", () => engine.tick(simulate ? dt : 0));
     const sceneId = updateSceneUi();
-    if (sceneId === "title" && campaignLaunch?.course && !campaignAutoStarted) {
+    if (window.__longHaulBooted && sceneId === "title" && campaignLaunch?.course && !campaignAutoStarted) {
       campaignAutoStarted = true;
       startGeneration(campaignLaunch.course.seed, false, "start");
     }

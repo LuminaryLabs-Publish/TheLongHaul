@@ -61,142 +61,34 @@ Object.assign(globalThis, { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES,
 Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary });
 Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
 Object.assign(globalThis,{PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances});
-// Guard dynamically-created Resume as well as Start until both host layers
-// are ready. This never changes disabled states owned by an existing control.
-const blockEarlyEntry = event => {
-  if (event.target?.closest?.('#start-btn, #freight-resume-btn')) {
-    event.preventDefault(); event.stopImmediatePropagation();
+// One controller owns entry readiness. Keep mandatory host installation ordered.
+const startup = window.LongHaulStartup;
+if (!startup) throw new Error('Startup controller is unavailable');
+try {
+  await startup.loadScript(new URL('../../vendor/app-runtime.js', import.meta.url));
+  if (!window.__longHaulRuntimeReady) throw new Error('The local game runtime did not initialize');
+  await startup.loadScript(new URL('./endless-roads.js', import.meta.url));
+  if (!window.__longHaulRoadsReady) throw new Error('The road host did not initialize');
+  await startup.loadScript(new URL('./freight-terminal-host.js', import.meta.url));
+  // This host chooses the start location: settle its known legacy fallback before entry.
+  if (!window.LongHaulFreightTerminal?.readyPromise) throw new Error('Freight terminal host did not initialize');
+  await startup.required(window.LongHaulFreightTerminal.readyPromise, 'freight terminal');
+  for (const name of ['./visual-presentation.js', './hero-truck-host.js', './traffic-vehicles-host.js',
+    './lighting-shadow-host.js', './lighting-host.js', './environment-tiles-host.js', './guidance-v2.js',
+    './four-band-cel-host.js', './sobel-outline-host.js']) {
+    await startup.loadScript(new URL(name, import.meta.url));
   }
-};
-document.addEventListener('click', blockEarlyEntry, true);
-const entryButtons = [...document.querySelectorAll("#start-btn, #freight-resume-btn")];
-entryButtons.forEach(button => button.disabled = true);
-await new Promise((resolve, reject) => {
-  const script=document.createElement("script");
-  script.src=new URL("../../vendor/app-runtime.js",import.meta.url).href;
-  script.async=false;script.onload=resolve;script.onerror=()=>reject(new Error("The local game runtime could not load."));
-  document.head.append(script);
-});
-
-await new Promise((resolve, reject) => {
-  const script = document.createElement("script");
-  script.src = new URL("./endless-roads.js", import.meta.url).href;
-  script.async = false; script.onload = resolve;
-  script.onerror = () => reject(new Error("The Endless road host could not load."));
-  document.head.append(script);
-});
-// The authored freight yard joins the active highway graph and displays the
-// actual production GLB. Load before enabling start/resume actions.
-await new Promise((resolve,reject)=>{
-  const script=document.createElement('script');
-  script.src=new URL('./freight-terminal-host.js',import.meta.url).href;
-  script.async=false;script.onload=resolve;
-  script.onerror=()=>reject(new Error('Freight terminal host could not load'));
-  document.head.append(script);
-});
-await window.LongHaulFreightTerminal.readyPromise;
-await new Promise((resolve, reject) => {
-  const script = document.createElement("script");
-  script.src = new URL("./visual-presentation.js", import.meta.url).href;
-  script.async = false; script.onload = resolve;
-  script.onerror = () => reject(new Error("The visual presentation host could not load."));
-  document.head.append(script);
-});
-await new Promise((resolve, reject) => {
-  const script = document.createElement("script");
-  script.src = new URL("./hero-truck-host.js", import.meta.url).href;
-  script.async = false; script.onload = resolve;
-  script.onerror = () => reject(new Error("The authored hero truck host could not load."));
-  document.head.append(script);
-});
-await new Promise((resolve, reject) => {
-  const script = document.createElement("script");
-  script.src = new URL("./traffic-vehicles-host.js", import.meta.url).href;
-  script.async = false;
-  script.onload = resolve;
-  script.onerror = () => reject(new Error("The authored traffic fleet host could not load."));
-  document.head.append(script);
-});
-await new Promise((resolve, reject) => {
-  const script = document.createElement("script");
-  script.src = new URL("./lighting-shadow-host.js", import.meta.url).href;
-  script.async = false; script.onload = resolve;
-  script.onerror=()=>reject(new Error("The illustrated lighting host could not load."));
-  document.head.append(script);
-});
-await new Promise((resolve,reject)=>{
-  const script=document.createElement('script');
-  script.src=new URL('./lighting-host.js',import.meta.url).href;
-  script.async=false;script.onload=resolve;
-  script.onerror=()=>reject(new Error('The lighting controller could not load'));
-  document.head.append(script);
-});
-await new Promise((resolve, reject) => {
-  const script = document.createElement("script");
-  script.src = new URL("./environment-tiles-host.js", import.meta.url).href;
-  script.async = false;
-  script.onload = resolve;
-  script.onerror = () => reject(new Error("The 200m environment tile host could not load."));
-  document.head.append(script);
-});
-// Load the local prebuilt foliage-card tree library after the existing
-// environment and lighting hosts. A failed import retains their old trees.
-await new Promise((resolve,reject) => {
-  const script=document.createElement('script');
-  script.src=new URL('./prebuilt-tree-host.js',import.meta.url).href;
-  script.async=false;script.onload=resolve;
-  script.onerror=()=>{console.warn('Optional prebuilt tree host unavailable; using procedural fallback');resolve();};
-  document.head.append(script);
-});
-// Tree meshes are optional visual assets. They can finish streaming after entry.
-// Their host retains procedural fallback while the GLBs are unavailable.
-window.LongHaulPrebuiltTrees?.readyPromise?.catch(error => {
-  console.warn('Optional tree library unavailable; using procedural fallback', error);
-});
-// The authored town presenter is optional. Neither its script download nor
-// its 17 GLB downloads may delay Endless Drive or Resume Haul.
-{
-  const script = document.createElement('script');
-  script.src = new URL('./connected-town-host.js', import.meta.url).href;
-  script.async = true;
-  script.onerror = () => console.warn('Optional town presenter unavailable; road network remains driveable');
-  document.head.append(script);
+  if (!window.__longHaulVisualsReady) throw new Error('Presentation did not initialize');
+  // Optional scripts install in their original order, but do not hold the menu.
+  // A failed script settles its own bounded promise and the next host still runs.
+  void (async () => {
+    for (const name of ['./prebuilt-tree-host.js', './connected-town-host.js', './menu-attract-host.js']) {
+      await startup.loadScript(new URL(name, import.meta.url), {optional:true, timeoutMs:8000});
+      if (name === './prebuilt-tree-host.js') window.LongHaulPrebuiltTrees?.readyPromise?.catch(startup.warn);
+      if (name === './connected-town-host.js') window.LongHaulTowns?.readyPromise?.catch(startup.warn);
+    }
+  })().catch(startup.warn);
+  await startup.complete();
+} catch (error) {
+  startup.fail(error);
 }
-// V2 remains opt-in until its browser/video acceptance is complete.
-await new Promise((resolve, reject) => {
-  const script = document.createElement('script');
-  script.src = new URL('./guidance-v2.js', import.meta.url).href;
-  script.async = false; script.onload = resolve;
-  script.onerror = () => reject(new Error('TLH-003 guidance host could not load.'));
-  document.head.append(script);
-});
-// The title attract-mode renders from the existing deterministic road sampling
-// contract. It never owns gameplay physics, freight, save or input state.
-await new Promise(resolve => {
-  const script = document.createElement('script');
-  script.src = new URL('./menu-attract-host.js', import.meta.url).href;
-  script.async = false;
-  script.onload = resolve;
-  script.onerror = () => { console.warn('Cinematic menu background unavailable; preserving menu controls'); resolve(); };
-  document.head.append(script);
-});
-// Four high-contrast lighting bands belong to opaque world materials, before
-// the existing Sobel postprocess; the HTML HUD and sky stay unquantized.
-await new Promise((resolve,reject)=>{
-  const script=document.createElement('script');
-  script.src=new URL('./four-band-cel-host.js',import.meta.url).href;
-  script.async=false;script.onload=resolve;
-  script.onerror=()=>reject(new Error('Four-band cel shading host failed to load'));
-  document.head.append(script);
-});
-// Outline the entire rendered 3D game using its original depth and color.
-// One postprocess pass wraps the existing renderer, not a second world.
-await new Promise((resolve,reject)=>{
-  const script=document.createElement('script');
-  script.src=new URL('./sobel-outline-host.js',import.meta.url).href;
-  script.async=false;script.onload=resolve;
-  script.onerror=()=>reject(new Error('Sobel outline host failed to load'));
-  document.head.append(script);
-});
-entryButtons.forEach(button => button.disabled = false);
-document.removeEventListener('click', blockEarlyEntry, true);

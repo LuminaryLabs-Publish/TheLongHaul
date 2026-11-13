@@ -26,7 +26,9 @@ assert.doesNotMatch(combined,/transmission:\s*\.18/,"gameplay glass does not add
 assert.doesNotMatch(combined,/new THREE\.Fog|scene\.fog\./,"accepted fog-free presentation is retained");
 assert.match(bootstrap,/vendor\/app-runtime\.js/);
 assert.match(bootstrap,/patch-worker-client\.mjs/);
-assert.match(combined,/longHaulBootReady/);
+assert.match(combined,/LongHaulStartup\?\.runtimeReady/);
+assert.doesNotMatch(combined,/window\.__longHaulBooted\s*=\s*true/,'core runtime cannot announce menu readiness');
+assert.match(index,/startup-controller\.js/);
 assert.match(combined,/visibilitychange/);
 assert.match(combined,/launchSpeed=.*maximumForwardSpeed\*\.5/);
 const generated=readFileSync(join(root,"vendor/app-runtime.js"),"utf8");
@@ -36,6 +38,8 @@ new Function(combined);
 
 for (const relative of [
   "src/app/bootstrap.mjs",
+  "src/app/startup-controller.js",
+  "src/app/async-loading-scene.js",
   "src/long-haul-core.mjs",
   "src/long-haul-game.mjs",
   "src/game/shared.mjs",

@@ -134,3 +134,15 @@ scene='title';await tick(now+100);await tick(now+100);
 assert.equal(api.getState().active,true);
 assert.ok(generationRequests>0);
 console.log('PASS cinematic title + loading cutover: real patch/road/environment hosts, camera, reduced motion, generation, cleanup, reentry, no save writes');
+
+// An optional per-frame preview error must not terminate the gameplay frame.
+let previewWarnings=0;context.console.warn=()=>previewWarnings++;
+context.advanceEndlessHighway=()=>{throw new Error('preview-frame-failure');};
+scene='title';await tick(now+100);
+assert.equal(api.getState().mode,'fallback');
+assert.equal(cellRoot.visible,true);assert.equal(dynamicRoot.visible,true);
+const priorFrames=frames;await tick(now+100);
+assert.equal(frames,priorFrames+1,'upstream game frame continues after preview failure');
+assert.ok(previewWarnings>0);
+assert.doesNotMatch(source,/LongHaulAsyncLoading\?\.finishBoot/,'preview has no boot-release authority');
+console.log('PASS optional preview failure isolation');

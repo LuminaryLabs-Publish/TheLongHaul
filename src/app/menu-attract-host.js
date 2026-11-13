@@ -225,8 +225,7 @@
       if(state.changed&&worker){worker.updateCourse(previewCourse);lastRevision=state.revision;}
       const point=previewFocus();
       streamNear(point);
-      // First painted canonical road cell establishes actual title readiness.
-      if(sceneId==='title'&&cells.size>0)window.LongHaulAsyncLoading?.finishBoot?.();
+      // Preview cells are visual progress only; bootstrap alone opens the menu.
       const look=endlessHighwayPoint(previewCourse,progress+18);
       const dx=look.x-point.x,dz=look.z-point.z,len=Math.hypot(dx,dz)||1;
       const fx=dx/len,fz=dz/len;
@@ -253,6 +252,11 @@
           entry.proceduralTree.visible=!ready;
       }
     }
+    let previewFailed=false;
+    const restoreGameplayVisibility=()=>{
+      cellRoot.visible=true;dynamicRoot.visible=true;
+      if(typeof horizonRoot!=='undefined')horizonRoot.visible=true;
+    };
     const oldFrame=arcadeVisualFrame;
     arcadeVisualFrame=function previewPresentationFrame(now){
       // Restore game presentation before the existing hosts update/render.
@@ -260,7 +264,16 @@
         cellRoot.visible=true;dynamicRoot.visible=true;
         if(typeof horizonRoot!=='undefined')horizonRoot.visible=true;
       }
-      oldFrame(now);update(now);
+      oldFrame(now);
+      if(previewFailed)return;
+      try { update(now); }
+      catch(e) {
+        previewFailed=true;active=false;mode='fallback';error=String(e);root.visible=false;
+        try { retireWorld(); } catch(cleanupError) { console.warn('Preview cleanup failed',cleanupError); }
+        restoreGameplayVisibility();
+        if(loading.firstElementChild){loading.firstElementChild.style.visibility='';loading.firstElementChild.style.pointerEvents='';}
+        console.warn('Title preview stopped; menu and gameplay remain available',e);
+      }
     };
     window.LongHaulTitleAttract={
       getState:()=>({active,mode,progress,meshCount:cells.size,roadRebuilds:builds,
@@ -270,7 +283,6 @@
       getPreviewTreeCandidates:()=>[...cells.values()].flatMap(e=>e.patch.vegetation??[])
     };
   }catch(e){
-    window.LongHaulAsyncLoading?.finishBoot?.();
     console.warn('Canonical title/loading preview unavailable; game controls stay usable',e);
     window.LongHaulTitleAttract={getState:()=>({active:false,status:'fallback',error:String(e),saveWrites:0})};
   }

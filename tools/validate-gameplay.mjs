@@ -89,8 +89,10 @@ export async function preparePage(context, url, { seed = 'haul-1nwc3cl-12goa01',
 
 export async function beginRun(page) {
   await page.locator('#start-btn').click();
-  await page.waitForFunction(() => currentScene() === 'dispatch');
-  await page.locator('#dispatch-go-btn').click();
+  await page.waitForFunction(() => ['dispatch','generating','driving'].includes(currentScene()));
+  // Current Endless entry starts or resumes directly; older dispatch remains supported.
+  if (await page.evaluate(() => currentScene() === 'dispatch'))
+    await page.locator('#dispatch-go-btn').click();
   await page.waitForFunction(() => generation?.ready || generation?.error, null, { timeout: 120000 });
   assert.equal(await page.evaluate(() => generation?.error ? String(generation.error) : null), null, 'Course generation must complete.');
 }

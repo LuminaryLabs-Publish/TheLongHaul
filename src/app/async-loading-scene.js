@@ -32,17 +32,20 @@
       return;
     }
     const motion = element.animate(frames, {duration, easing:'cubic-bezier(.22,.72,.28,1)', fill:'forwards'});
-    function onAbort() { motion.cancel(); reject(new Error('SCENE_LOAD_CANCELLED')); }
-    signal.addEventListener('abort', onAbort, {once:true});
-    motion.finished.then(() => {
-      signal.removeEventListener('abort', onAbort);
-      if (signal.aborted) return;
-      // Retain the completed position as ordinary layout, rather than
-      // leaving a composited transform/old animation controlling the door.
-      Object.assign(element.style, frames[frames.length - 1]);
+    let settled=false;
+    const finishMotion=error=>{
+      if(settled)return;settled=true;
+      clearTimeout(timer);signal.removeEventListener('abort',onAbort);
+      if(!error)Object.assign(element.style,frames[frames.length-1]);
       motion.cancel();
-      resolve();
-    }, () => {signal.removeEventListener('abort', onAbort); reject(new Error('SCENE_LOAD_CANCELLED'));});
+      if(error)reject(error);else resolve();
+    };
+    function onAbort(){finishMotion(new Error('SCENE_LOAD_CANCELLED'));}
+    // Web Animations can stay pending in suspended/background tabs. Presentation
+    // may finish without animation, but a failed scene commit never becomes success.
+    const timer=setTimeout(()=>finishMotion(),duration+1000);
+    signal.addEventListener('abort',onAbort,{once:true});
+    motion.finished.then(()=>finishMotion(),()=>finishMotion(new Error('SCENE_LOAD_CANCELLED')));
   });
   const report = (operation=current, info = {}) => {
     if (current !== operation) return;
@@ -160,6 +163,7 @@
   }
   window.LongHaulAsyncLoading={
     begin,run,finish,finishBoot,cancel,report,
+    releaseBoot(reason='boot-released'){return current===boot?cancel(boot,reason):false;},
     fail(error){if(current)cancel(current,'failed');return error;},
     getState:()=>({active:Boolean(current),kind:current?.kind??null,
       status:current?.status??'inactive',minimumMs:MIN_VISIBLE_MS,
