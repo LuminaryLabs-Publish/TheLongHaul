@@ -180,12 +180,18 @@ function fromLegacy(source,{revision=1,context=null}={}){
     optionalRoads:[...source.optionalRoads,...extraOptional],
     branches:[...source.branches,...extraBranches],
     depots,signs,loadingStations:stations,
-    towns:(source.towns??[]).map(town=>({ ...town,...translateOther(context,town,town.progress),
-      parcels:town.parcels.map(parcel=>{
+    towns:(source.towns??[]).map(town=>{
+      const mapParcel=parcel=>{
         const position=translateOther(context,parcel,parcel.progress),
           base=endlessHighwayPoint(v2Course(seed),parcel.progress),aligned=align(context,parcel.progress);
         return {...position,heading:aligned.heading+(parcel.heading-base.heading)};
-      }) })),
+      };
+      return {...town,...translateOther(context,town,town.progress),
+        parcels:town.parcels.map(mapParcel),
+        outlyingParcels:(town.outlyingParcels??[]).map(mapParcel),
+        trees:(town.trees??[]).map(tree=>translateOther(context,tree,tree.progress)),
+        outerCenter:town.outerCenter?translateOther(context,town.outerCenter,town.progress):null};
+    }),
     bounds:boundsFor(edges),maxRoadWidth:Math.max(...edges.map(e=>e.width)),
     totalProgress:source.endless.windowEnd,
     endless:{...source.endless,revision},

@@ -252,8 +252,9 @@ function rebuildWindow(course, centerSection) {
   // trunk junctions; never replace the freight path or introduce dead ends.
   if(modular(course))for(const start of townStartsInWindow(first,last)){
     const layout=generateConnectedTown(course.seed,start);
-    edges.push(...layout.edges);nodes.push(...layout.nodes);towns.push(layout.town);
+    edges.push(...layout.edges,...layout.outerEdges);nodes.push(...layout.nodes,...layout.outerNodes);towns.push(layout.town);
     signs.push(layout.sign);routeChoices.push(layout.routeChoice);townBranches.push(layout.branch);
+    if(layout.outerBranch)townBranches.push(layout.outerBranch);
   }
   course.roadChunks = chunks;
   course.towns=towns;
