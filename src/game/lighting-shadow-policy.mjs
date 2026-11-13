@@ -1,22 +1,8 @@
 // The Long Haul presentation-only, deterministic lighting budgets.
 // No physics, collisions, world state or renderer dependencies belong here.
-export const LIGHTING_SHADOW_PRESETS = Object.freeze({
-  high: Object.freeze({ mapSize: 1024, halfSpan: 70, shadowHz: 24, selectionHz: 7,
-    texelSnap: 140 / 1024, casterRadius: 93, staticCasters: 16, treeCasters: 2,
-    trafficVehicles: 3, trafficCastersEach: 6, heroCasters: 18,
-    aoInstances: 46, aoRadius: 90 }),
-  low: Object.freeze({ mapSize: 512, halfSpan: 52, shadowHz: 15, selectionHz: 4,
-    texelSnap: 104 / 512, casterRadius: 64, staticCasters: 8, treeCasters: 1,
-    trafficVehicles: 2, trafficCastersEach: 4, heroCasters: 12,
-    aoInstances: 22, aoRadius: 64 })
-});
-export const LIGHTING_SOURCE = Object.freeze({
-  id: 'long-haul:presentation:local-sun-shadows:v1',
-  method: 'single-orthographic-PCF-map+bounded-local-occlusion',
-  owner: 'long-haul-presentation',
-  engine: 'unchanged',
-  dependencies: ['sun', 'hemi', 'illustrated 4-band toon', 'actual truck/traffic/cell groups']
-});
+import {PRESENTATION_PROFILE} from './scene-profiles.mjs';
+export const LIGHTING_SHADOW_PRESETS=PRESENTATION_PROFILE.lightingShadowPresets;
+export const LIGHTING_SOURCE=PRESENTATION_PROFILE.lightingSource;
 export const lightingPreset = quality => quality ? LIGHTING_SHADOW_PRESETS.high : LIGHTING_SHADOW_PRESETS.low;
 export const planarDistanceSquared = (a, b) => (a.x-b.x)**2 + (a.z-b.z)**2;
 export function shadowAnchor(truck, preset) {

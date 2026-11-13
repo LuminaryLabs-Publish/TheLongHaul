@@ -1,0 +1,87 @@
+{
+  "schema": "long-haul.profile/1",
+  "id": "winding-connected-road-v3",
+  "town": {
+    "layoutVersion": "long-haul:connected-settlements/2",
+    "firstSection": 8,
+    "sectionStride": 12,
+    "spanSections": 2,
+    "cityDistrictOffsetMeters": 720,
+    "assetIds": [
+      "Apartment_LowRise",
+      "Garage_Detached",
+      "Gazebo_Park",
+      "House_Bungalow",
+      "House_Cottage",
+      "House_Craftsman",
+      "House_Duplex",
+      "House_Modern",
+      "House_Ranch",
+      "House_SplitLevel",
+      "House_Townhouse",
+      "House_TwoStory",
+      "House_Victorian",
+      "Shed_Garden",
+      "Shop_Bookstore",
+      "Shop_Cafe",
+      "Shop_CornerMarket"
+    ],
+    "zones": {
+      "residential": [
+        "House_Cottage",
+        "House_Craftsman",
+        "House_Victorian",
+        "House_TwoStory",
+        "House_Townhouse",
+        "House_Ranch",
+        "House_Modern",
+        "House_SplitLevel",
+        "House_Duplex",
+        "House_Bungalow"
+      ],
+      "commercial": [
+        "Shop_Cafe",
+        "Shop_CornerMarket",
+        "Shop_Bookstore",
+        "Apartment_LowRise"
+      ],
+      "services": [
+        "Garage_Detached",
+        "Shed_Garden"
+      ],
+      "civic": [
+        "Gazebo_Park"
+      ]
+    },
+    "names": [
+      "Meadow Creek",
+      "Cedar Crossing",
+      "Brookline",
+      "Fox Hollow",
+      "Willow Junction",
+      "Larkspur",
+      "Redstone"
+    ],
+    "roadWidth": 12,
+    "mainLoopOffset": 178,
+    "loopSectionLength": 640,
+    "buildingSetback": 25
+  },
+  "v3Terrain": {
+    "schema": "long-haul.road-v3-terrain/1",
+    "regionLength": 1024,
+    "samplesPerRegion": 64,
+    "roadWidth": 24,
+    "lanes": 5,
+    "maxBank": 0.085,
+    "bankDesignSpeed": 30,
+    "maxBridgeRise": 13,
+    "maxCutDepth": 7,
+    "maxFillHeight": 3
+  },
+  "compatibility": {
+    "newRuns": "long-haul-endless-v3",
+    "savedRuns": "preserve-generator-and-progress",
+    "v2QueryFallback": "road=v2"
+  }
+}

@@ -1,26 +1,7 @@
 const clone = (value) => value === undefined ? undefined : structuredClone(value);
 
-export const DEFAULT_TERRAIN_POLICY = Object.freeze({
-  id: "rolling-country",
-  octaves: Object.freeze([
-    Object.freeze({ frequency: 0.0008, amplitude: 26 }),
-    Object.freeze({ frequency: 0.0024, amplitude: 12 }),
-    Object.freeze({ frequency: 0.0070, amplitude: 4 }),
-    Object.freeze({ frequency: 0.0240, amplitude: 1.2 })
-  ]),
-  hillDensity: 0.62,
-  ridgeDensity: 0.18,
-  valleyDensity: 0.22,
-  roadCrossSectionFlatten: 0.88,
-  roadLongitudinalSmoothing: 0.74,
-  jumpProfiles: Object.freeze({
-    softCrest: Object.freeze({ height: [0.7, 1.8], length: [18, 34], takeoffSharpness: 1.0, landingSharpness: 0.72 }),
-    drainageRise: Object.freeze({ height: [0.5, 1.2], length: [12, 22], takeoffSharpness: 1.2, landingSharpness: 0.85 }),
-    erodedRamp: Object.freeze({ height: [1.2, 2.8], length: [12, 26], takeoffSharpness: 1.55, landingSharpness: 0.68 }),
-    tabletop: Object.freeze({ height: [1.4, 2.5], length: [22, 38], takeoffSharpness: 1.35, landingSharpness: 0.8 }),
-    bridgeApproach: Object.freeze({ height: [0.8, 1.7], length: [20, 32], takeoffSharpness: 1.1, landingSharpness: 0.9 })
-  })
-});
+import {WORLD_PROFILE} from './scene-profiles.mjs';
+export const DEFAULT_TERRAIN_POLICY=WORLD_PROFILE.terrain;
 
 export function createLongHaulTerrainPolicyKit(N, options = {}) {
   const TerrainPolicyState = N.defineResource("long-haul.terrain-policy.state");

@@ -1,0 +1,78 @@
+{
+  "schema": "long-haul.profile/1",
+  "id": "tree-presentation-v1",
+  "version": "long-haul:tree-glb-3species:v1",
+  "species": [
+    {
+      "id": "red_maple",
+      "name": "Red maple",
+      "height": 15.613,
+      "files": [
+        "red_maple_LOD0.glb",
+        "red_maple_LOD1.glb",
+        "red_maple_LOD2.glb"
+      ]
+    },
+    {
+      "id": "paper_birch",
+      "name": "Paper birch",
+      "height": 17.42,
+      "files": [
+        "paper_birch_LOD0.glb",
+        "paper_birch_LOD1.glb",
+        "paper_birch_LOD2.glb"
+      ]
+    },
+    {
+      "id": "weeping_willow",
+      "name": "Weeping willow",
+      "height": 13.674,
+      "files": [
+        "weeping_willow_LOD0.glb",
+        "weeping_willow_LOD1.glb",
+        "weeping_willow_LOD2.glb"
+      ]
+    }
+  ],
+  "environmentKinds": [
+    "tree",
+    "maple",
+    "oak",
+    "pine",
+    "fir",
+    "juniper",
+    "willow"
+  ],
+  "lod": {
+    "high": {
+      "near": 105,
+      "medium": 260,
+      "distance": 560,
+      "maxInstances": 240
+    },
+    "low": {
+      "near": 65,
+      "medium": 145,
+      "distance": 340,
+      "maxInstances": 115
+    }
+  },
+  "shadow": {
+    "high": {
+      "maxInstances": 12,
+      "maxDistance": 80
+    },
+    "low": {
+      "maxInstances": 5,
+      "maxDistance": 80
+    }
+  },
+  "assetsBase": "assets/trees/",
+  "fallback": "procedural-existing",
+  "texturePolicy": {
+    "alphaMode": "MASK",
+    "twoSided": true,
+    "source": "embedded-glb-png",
+    "noColorRepaint": true
+  }
+}

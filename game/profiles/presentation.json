@@ -1,0 +1,182 @@
+{
+  "schema": "long-haul.profile/1",
+  "id": "anime-countryside",
+  "toonStyle": {
+    "id": "long-haul-illustrated-v5",
+    "levels": [
+      0.3,
+      0.52,
+      0.78,
+      1.05
+    ],
+    "thresholds": [
+      0.15,
+      0.45,
+      0.9
+    ],
+    "softness": 0.018,
+    "illumination": {
+      "clear": {
+        "sun": 1.85,
+        "hemisphere": 1.14,
+        "fill": 0.65
+      },
+      "rain": {
+        "sun": 1.17,
+        "hemisphere": 1.05,
+        "fill": 0.56
+      },
+      "sunColor": 16767910,
+      "skyColor": 14740991,
+      "groundColor": 8689781,
+      "fillColor": 13886975,
+      "shadowedSunFactor": 0.34,
+      "weatherDesaturate": 0.08
+    },
+    "clouds": {
+      "levels": [
+        0.24,
+        0.58,
+        0.96
+      ],
+      "thresholds": [
+        0.34,
+        0.7
+      ],
+      "softness": 0.02,
+      "rimLimit": 0.3
+    },
+    "shadowTint": [
+      0.88,
+      0.94,
+      1.08
+    ],
+    "midTint": [
+      0.94,
+      0.98,
+      1.04
+    ],
+    "highlightTint": [
+      1.04,
+      1.01,
+      0.94
+    ],
+    "outline": {
+      "strength": 0.62,
+      "depthGain": 32,
+      "pixels": 1,
+      "color": [
+        0.018,
+        0.031,
+        0.049
+      ]
+    },
+    "roles": {
+      "structure": {
+        "bias": 0,
+        "specular": 0.08,
+        "rim": 0.025
+      },
+      "road": {
+        "bias": -0.065,
+        "specular": 0.035,
+        "rim": 0
+      },
+      "terrain": {
+        "bias": 0.075,
+        "specular": 0.025,
+        "rim": 0,
+        "shadeFloor": 0.62
+      },
+      "vehicle": {
+        "bias": 0,
+        "specular": 0.14,
+        "rim": 0.045
+      },
+      "foliage": {
+        "bias": 0.02,
+        "specular": 0.025,
+        "rim": 0.015,
+        "shadeFloor": 0.58
+      },
+      "metal": {
+        "bias": 0,
+        "specular": 0.24,
+        "rim": 0.055
+      },
+      "glass": {
+        "bias": 0,
+        "specular": 0.18,
+        "rim": 0.035,
+        "blend": true
+      },
+      "smoke": {
+        "bias": 0.02,
+        "specular": 0,
+        "rim": 0,
+        "blend": true
+      }
+    }
+  },
+  "lightingShadowPresets": {
+    "high": {
+      "mapSize": 1024,
+      "halfSpan": 70,
+      "shadowHz": 24,
+      "selectionHz": 7,
+      "texelSnap": 0.13671875,
+      "casterRadius": 93,
+      "staticCasters": 16,
+      "treeCasters": 2,
+      "trafficVehicles": 3,
+      "trafficCastersEach": 6,
+      "heroCasters": 18,
+      "aoInstances": 46,
+      "aoRadius": 90
+    },
+    "low": {
+      "mapSize": 512,
+      "halfSpan": 52,
+      "shadowHz": 15,
+      "selectionHz": 4,
+      "texelSnap": 0.203125,
+      "casterRadius": 64,
+      "staticCasters": 8,
+      "treeCasters": 1,
+      "trafficVehicles": 2,
+      "trafficCastersEach": 4,
+      "heroCasters": 12,
+      "aoInstances": 22,
+      "aoRadius": 64
+    }
+  },
+  "lightingSource": {
+    "id": "long-haul:presentation:local-sun-shadows:v1",
+    "method": "single-orthographic-PCF-map+bounded-local-occlusion",
+    "owner": "long-haul-presentation",
+    "engine": "unchanged",
+    "dependencies": [
+      "sun",
+      "hemi",
+      "illustrated 4-band toon",
+      "actual truck/traffic/cell groups"
+    ]
+  },
+  "materialPresets": {
+    "foliage": {
+      "materialRole": "foliage",
+      "alphaMode": "MASK",
+      "doubleSided": true,
+      "sourceTextureAuthority": "glb",
+      "outline": "silhouette-not-leaf-fragments"
+    },
+    "bark": {
+      "materialRole": "structure",
+      "sourceTextureAuthority": "glb"
+    },
+    "architecture": {
+      "materialRole": "structure",
+      "sourceTextureAuthority": "glb"
+    }
+  }
+}

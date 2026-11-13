@@ -1,0 +1,346 @@
+{
+  "schema": "long-haul.profile/1",
+  "id": "world-country",
+  "world": {
+    "id": "massive-country",
+    "worldSeed": "long-haul",
+    "extent": "infinite",
+    "playableRadius": null,
+    "boundaryFadeWidth": 0,
+    "macroSectorSize": 1024,
+    "gameplayCellSize": 160,
+    "gameplayActiveRadius": 1,
+    "horizon": {
+      "rootBounds": {
+        "minX": -24576,
+        "minZ": -24576,
+        "maxX": 24576,
+        "maxZ": 24576
+      },
+      "maxDepth": 6,
+      "minCellSize": 768,
+      "refineRadius": 12000,
+      "curveStart": 650,
+      "curveEnd": 2600,
+      "visualRadius": 26000
+    },
+    "atlas": {
+      "targetSettlements": 112,
+      "targetRoads": 360,
+      "primaryRoadWeight": 0.18,
+      "secondaryRoadWeight": 0.52,
+      "trailWeight": 0.3
+    }
+  },
+  "terrain": {
+    "id": "rolling-country",
+    "octaves": [
+      {
+        "frequency": 0.0008,
+        "amplitude": 26
+      },
+      {
+        "frequency": 0.0024,
+        "amplitude": 12
+      },
+      {
+        "frequency": 0.007,
+        "amplitude": 4
+      },
+      {
+        "frequency": 0.024,
+        "amplitude": 1.2
+      }
+    ],
+    "hillDensity": 0.62,
+    "ridgeDensity": 0.18,
+    "valleyDensity": 0.22,
+    "roadCrossSectionFlatten": 0.88,
+    "roadLongitudinalSmoothing": 0.74,
+    "jumpProfiles": {
+      "softCrest": {
+        "height": [
+          0.7,
+          1.8
+        ],
+        "length": [
+          18,
+          34
+        ],
+        "takeoffSharpness": 1,
+        "landingSharpness": 0.72
+      },
+      "drainageRise": {
+        "height": [
+          0.5,
+          1.2
+        ],
+        "length": [
+          12,
+          22
+        ],
+        "takeoffSharpness": 1.2,
+        "landingSharpness": 0.85
+      },
+      "erodedRamp": {
+        "height": [
+          1.2,
+          2.8
+        ],
+        "length": [
+          12,
+          26
+        ],
+        "takeoffSharpness": 1.55,
+        "landingSharpness": 0.68
+      },
+      "tabletop": {
+        "height": [
+          1.4,
+          2.5
+        ],
+        "length": [
+          22,
+          38
+        ],
+        "takeoffSharpness": 1.35,
+        "landingSharpness": 0.8
+      },
+      "bridgeApproach": {
+        "height": [
+          0.8,
+          1.7
+        ],
+        "length": [
+          20,
+          32
+        ],
+        "takeoffSharpness": 1.1,
+        "landingSharpness": 0.9
+      }
+    }
+  },
+  "environmentTiles": {
+    "version": "long-haul-env-tiles-v1",
+    "tileMeters": 200,
+    "cellMeters": 160,
+    "variants": [
+      {
+        "id": "open",
+        "label": "Open view",
+        "density": 0.68,
+        "height": 0.92,
+        "landmark": 0,
+        "wear": 0.05
+      },
+      {
+        "id": "lush",
+        "label": "Layered growth",
+        "density": 1.25,
+        "height": 1.15,
+        "landmark": 1,
+        "wear": 0.02
+      },
+      {
+        "id": "signature",
+        "label": "Signature landmark",
+        "density": 0.94,
+        "height": 1.24,
+        "landmark": 2,
+        "wear": 0.05
+      },
+      {
+        "id": "weathered",
+        "label": "Weathered route",
+        "density": 0.84,
+        "height": 0.98,
+        "landmark": 1,
+        "wear": 0.8
+      }
+    ],
+    "biomes": [
+      {
+        "id": "new-england",
+        "name": "New England forest",
+        "primary": "maple",
+        "secondary": "pine",
+        "rock": "granite",
+        "structure": "cedar",
+        "ground": "woods",
+        "tint": 6719314
+      },
+      {
+        "id": "high-pines",
+        "name": "Northern pinewoods",
+        "primary": "pine",
+        "secondary": "fir",
+        "rock": "granite",
+        "structure": "timber",
+        "ground": "woods",
+        "tint": 5535075
+      },
+      {
+        "id": "alpine",
+        "name": "Alpine passes",
+        "primary": "fir",
+        "secondary": "pine",
+        "rock": "boulder",
+        "structure": "stone",
+        "ground": "mountain",
+        "tint": 7047822
+      },
+      {
+        "id": "golden-hills",
+        "name": "Golden foothills",
+        "primary": "oak",
+        "secondary": "grass",
+        "rock": "sandstone",
+        "structure": "timber",
+        "ground": "grassland",
+        "tint": 10590814
+      },
+      {
+        "id": "farmland",
+        "name": "Agricultural plains",
+        "primary": "oak",
+        "secondary": "crop",
+        "rock": "sandstone",
+        "structure": "farm",
+        "ground": "grassland",
+        "tint": 9280336
+      },
+      {
+        "id": "badlands",
+        "name": "Red-rock badlands",
+        "primary": "cactus",
+        "secondary": "scrub",
+        "rock": "redstone",
+        "structure": "rust",
+        "ground": "desert",
+        "tint": 13075297
+      },
+      {
+        "id": "high-desert",
+        "name": "High desert",
+        "primary": "juniper",
+        "secondary": "cactus",
+        "rock": "sandstone",
+        "structure": "rust",
+        "ground": "desert",
+        "tint": 11049841
+      },
+      {
+        "id": "canyon",
+        "name": "Canyon country",
+        "primary": "juniper",
+        "secondary": "scrub",
+        "rock": "redstone",
+        "structure": "stone",
+        "ground": "desert",
+        "tint": 12158309
+      },
+      {
+        "id": "coastal",
+        "name": "Coastal highway",
+        "primary": "pine",
+        "secondary": "grass",
+        "rock": "limestone",
+        "structure": "marine",
+        "ground": "coastal",
+        "tint": 6589329
+      },
+      {
+        "id": "wetlands",
+        "name": "River and wetlands",
+        "primary": "willow",
+        "secondary": "reeds",
+        "rock": "riverstone",
+        "structure": "timber",
+        "ground": "wetland",
+        "tint": 6916724
+      }
+    ],
+    "compositions": [
+      {
+        "id": "ridge",
+        "name": "Layered roadside ridges",
+        "landmark": "rock-wall",
+        "roadMark": "edge-studs",
+        "roadside": "rock",
+        "landmarkScale": 1.05
+      },
+      {
+        "id": "grove",
+        "name": "Dense vegetation corridor",
+        "landmark": "old-tree",
+        "roadMark": "rumble",
+        "roadside": "tree",
+        "landmarkScale": 1.04
+      },
+      {
+        "id": "wayside",
+        "name": "Wayside rest and service",
+        "landmark": "rest-shelter",
+        "roadMark": "patch",
+        "roadside": "shelter",
+        "landmarkScale": 1.12
+      },
+      {
+        "id": "lookout",
+        "name": "Vista pullout and overlook",
+        "landmark": "view-gantry",
+        "roadMark": "guide-arrows",
+        "roadside": "rock",
+        "landmarkScale": 1.14
+      },
+      {
+        "id": "utility",
+        "name": "Utilities and maintenance",
+        "landmark": "power-pole",
+        "roadMark": "seam",
+        "roadside": "pole",
+        "landmarkScale": 1.1
+      },
+      {
+        "id": "fence",
+        "name": "Fenced roadside frontage",
+        "landmark": "farm-shed",
+        "roadMark": "road-studs",
+        "roadside": "fence",
+        "landmarkScale": 1.08
+      },
+      {
+        "id": "water",
+        "name": "Drainage and water crossing",
+        "landmark": "drainage-arch",
+        "roadMark": "drain-hatch",
+        "roadside": "boulder",
+        "landmarkScale": 1.07
+      },
+      {
+        "id": "works",
+        "name": "Road works and repair",
+        "landmark": "maintenance-gantry",
+        "roadMark": "patch",
+        "roadside": "barrier",
+        "landmarkScale": 1.12
+      },
+      {
+        "id": "freight",
+        "name": "Freight access corridor",
+        "landmark": "freight-yard",
+        "roadMark": "guide-arrows",
+        "roadside": "depot",
+        "landmarkScale": 1.15
+      },
+      {
+        "id": "settlement",
+        "name": "Approach to a rural settlement",
+        "landmark": "roadside-diner",
+        "roadMark": "rumble",
+        "roadside": "building",
+        "landmarkScale": 1.1
+      }
+    ]
+  }
+}

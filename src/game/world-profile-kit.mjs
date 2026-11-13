@@ -1,31 +1,7 @@
 const clone = (value) => value === undefined ? undefined : structuredClone(value);
 
-export const DEFAULT_LONG_HAUL_WORLD_PROFILE = Object.freeze({
-  id: "massive-country",
-  worldSeed: "long-haul",
-  extent: "infinite",
-  playableRadius: null,
-  boundaryFadeWidth: 0,
-  macroSectorSize: 1024,
-  gameplayCellSize: 160,
-  gameplayActiveRadius: 1,
-  horizon: Object.freeze({
-    rootBounds: Object.freeze({ minX: -24576, minZ: -24576, maxX: 24576, maxZ: 24576 }),
-    maxDepth: 6,
-    minCellSize: 768,
-    refineRadius: 12000,
-    curveStart: 650,
-    curveEnd: 2600,
-    visualRadius: 26000
-  }),
-  atlas: Object.freeze({
-    targetSettlements: 112,
-    targetRoads: 360,
-    primaryRoadWeight: 0.18,
-    secondaryRoadWeight: 0.52,
-    trailWeight: 0.30
-  })
-});
+import {WORLD_PROFILE} from './scene-profiles.mjs';
+export const DEFAULT_LONG_HAUL_WORLD_PROFILE=WORLD_PROFILE.world;
 
 function normalizeProfile(input = {}) {
   const horizon = { ...DEFAULT_LONG_HAUL_WORLD_PROFILE.horizon, ...(input.horizon ?? {}) };

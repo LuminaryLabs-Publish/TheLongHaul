@@ -1,4 +1,8 @@
 import {TOON_STYLE} from '../game/toon-style.mjs';
+import {GAME_PROFILE,SCENE_PROFILES,ASSET_MANIFEST,VEGETATION_PROFILE,ROADS_PROFILE,validateSceneProfileCatalog} from '../game/scene-profiles.mjs';
+const profileValidation=validateSceneProfileCatalog();
+if(!profileValidation.ok)throw Error('Game scene profiles are not valid');
+Object.assign(globalThis,{LongHaulSceneProfiles:Object.freeze({game:GAME_PROFILE,scenes:SCENE_PROFILES,roads:ROADS_PROFILE,vegetation:VEGETATION_PROFILE,assets:ASSET_MANIFEST})});
 globalThis.LongHaulToonStyle=TOON_STYLE;
 import {createImpactClock,sweptVehicleImpact} from '../game/impact-kit.mjs';
 import {createComicCrashKits,DESTRUCTIBLE_PROFILES} from '../game/destructible-vehicle-kit.mjs';

@@ -5,12 +5,8 @@ import {hashText} from './shared.mjs';
 import {roadV3NaturalHeight} from './landscape-style.mjs';
 import {ROAD_V3_VERSION, ROAD_V3_LIMITS} from './road-v3-geometry.mjs';
 
-export const TERRAIN_ROAD_V3 = Object.freeze({
-  schema: 'long-haul.road-v3-terrain/1', regionLength: 1024,
-  samplesPerRegion: 64, roadWidth: 24, lanes: 5,
-  maxBank: .085, bankDesignSpeed: 30, maxBridgeRise: 13,
-  maxCutDepth: 7, maxFillHeight: 3
-});
+import {ROADS_PROFILE} from './scene-profiles.mjs';
+export const TERRAIN_ROAD_V3=ROADS_PROFILE.v3Terrain;
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const blend = (a,b,t) => a+(b-a)*t;
 const wrap = a => Math.atan2(Math.sin(a),Math.cos(a));

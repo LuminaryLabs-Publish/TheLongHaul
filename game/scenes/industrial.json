@@ -1,0 +1,28 @@
+{
+  "schema": "long-haul.scene/1",
+  "id": "industrial",
+  "kind": "settlement",
+  "biomes": [
+    "farmland",
+    "badlands"
+  ],
+  "assetCollections": [
+    "freight-terminal",
+    "service-buildings"
+  ],
+  "roadLayout": "connected-town-loop",
+  "entrances": 2,
+  "exits": 2,
+  "reconnectTo": "main-highway",
+  "presentation": {
+    "profile": "anime-countryside"
+  },
+  "world": {
+    "generator": "existing-endless",
+    "streaming": "existing-nexus-world"
+  },
+  "runtime": {
+    "sceneLifecycle": "existing-core-scene",
+    "savePolicy": "preserve"
+  }
+}

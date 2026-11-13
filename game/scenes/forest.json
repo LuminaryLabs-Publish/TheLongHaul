@@ -1,0 +1,26 @@
+{
+  "schema": "long-haul.scene/1",
+  "id": "forest",
+  "kind": "region",
+  "biomes": [
+    "new-england",
+    "high-pines",
+    "wetlands"
+  ],
+  "assetCollections": [
+    "vegetation",
+    "roadside"
+  ],
+  "roadLayout": "winding-highway",
+  "presentation": {
+    "profile": "anime-countryside"
+  },
+  "world": {
+    "generator": "existing-endless",
+    "streaming": "existing-nexus-world"
+  },
+  "runtime": {
+    "sceneLifecycle": "existing-core-scene",
+    "savePolicy": "preserve"
+  }
+}

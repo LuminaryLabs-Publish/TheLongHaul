@@ -1,0 +1,30 @@
+{
+  "schema": "long-haul.scene/1",
+  "id": "small-town",
+  "kind": "settlement",
+  "biomes": [
+    "farmland",
+    "golden-hills",
+    "new-england"
+  ],
+  "assetCollections": [
+    "neighborhood-houses",
+    "small-town-shops",
+    "civic"
+  ],
+  "roadLayout": "connected-town-loop",
+  "entrances": 2,
+  "exits": 2,
+  "reconnectTo": "main-highway",
+  "presentation": {
+    "profile": "anime-countryside"
+  },
+  "world": {
+    "generator": "existing-endless",
+    "streaming": "existing-nexus-world"
+  },
+  "runtime": {
+    "sceneLifecycle": "existing-core-scene",
+    "savePolicy": "preserve"
+  }
+}

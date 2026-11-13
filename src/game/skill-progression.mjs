@@ -1,12 +1,8 @@
 // Career XP is independent of delivery cash and the temporary arcade multiplier.
 // The host supplies completed, physical maneuvers; this ledger owns qualification,
 // deduplication, milestone points, purchases, and the compatible save payload.
-export const SKILL_LIMITS = Object.freeze({
-  maxLevel: 1_000_000,
-  maxTier: 10_000,
-  maxSeenIds: 4096,
-  maxRevision: Number.MAX_SAFE_INTEGER - 1,
-});
+import {GAMEPLAY_PROFILE} from './scene-profiles.mjs';
+export const SKILL_LIMITS=Object.freeze({...GAMEPLAY_PROFILE.skillLimits,maxRevision:Number.MAX_SAFE_INTEGER-1});
 
 const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 const record = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -31,21 +27,9 @@ function levelForXp(xp) {
   return level;
 }
 
-export const SKILL_UPGRADES = Object.freeze([
-  { id: 'engine', kind: 'stat', label: 'Engine response', description: 'Accelerate harder and raise your controlled top speed.', component: 'exhaust' },
-  { id: 'brakes', kind: 'stat', label: 'Brake balance', description: 'Slow down faster before corners and recover your line.', component: 'brakes' },
-  { id: 'grip', kind: 'stat', label: 'Road tires', description: 'Gain traction and recover lateral slides more confidently.', component: 'tires' },
-  { id: 'suspension', kind: 'stat', label: 'Load suspension', description: 'Settle cargo and body motion with greater stability.', component: 'suspension' },
-  { id: 'armor', kind: 'stat', label: 'Reinforced body', description: 'Reduce collision damage while keeping roadside recovery.', component: 'bodywork' },
-  { id: 'drift-reserve', kind: 'modifier', label: 'Momentum control', description: 'Retain more of an earned drift reserve for your countersteer exit.', requires: { grip: 1 } },
-  { id: 'boost-tuning', kind: 'modifier', label: 'Rush tuning', description: 'Increase boost force; the existing recharge still applies.', requires: { engine: 1 } },
-  { id: 'combo-focus', kind: 'modifier', label: 'Combo focus', description: 'Earn more skill XP and gain a longer safe combo window.' },
-  { id: 'ability-charge', kind: 'modifier', label: 'Ability amplifier', description: 'Improve both equipped powers independently of their own tiers.', minimumLevel: 2 },
-  { id: 'mini-trucks', kind: 'ability', label: 'Mini Trucks', description: 'Deploy a stronger convoy that clears obstacles ahead.', initialLevel: 1 },
-  { id: 'road-shield', kind: 'ability', label: 'Road Shield', description: 'Improve your temporary protection from impacts.', initialLevel: 1 },
-  { id: 'shockwave', kind: 'ability', label: 'Shockwave', description: 'Clear nearby obstacles with a radial burst. Choose Q or E to equip it.', initialLevel: 0, minimumLevel: 2 },
-].map(item => Object.freeze({ ...item, requires: item.requires ? Object.freeze(item.requires) : undefined })));
-
+export const SKILL_UPGRADES=Object.freeze(GAMEPLAY_PROFILE.skillUpgrades.map(item => Object.freeze({
+  ...item, requires:item.requires?Object.freeze(item.requires):undefined
+})));
 const DEFINITIONS = new Map(SKILL_UPGRADES.map(item => [item.id, item]));
 const groupFor = kind => kind === 'stat' ? 'stats' : kind === 'modifier' ? 'modifiers' : 'abilities';
 const defaultsFor = kind => Object.fromEntries(SKILL_UPGRADES.filter(item => item.kind === kind).map(item => [item.id, item.initialLevel || 0]));

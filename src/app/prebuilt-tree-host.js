@@ -3,7 +3,8 @@
  * A failed asset load retains the existing procedural fallback. */
 (() => {
   'use strict';
-  const MAX_INSTANCES=240;
+  const profile=globalThis.LongHaulSceneProfiles?.vegetation;
+  const MAX_INSTANCES=profile?.lod?.high?.maxInstances??240;
   const perSpecies=new Map();
   const assetBase=new URL('../../assets/trees/',document.currentScript.src);
   const root=new THREE.Group();
@@ -125,7 +126,8 @@
   function lodWithHysteresis(tree,quality){
     const preferred=tree.lod,previous=previousLod.get(tree.id);
     if(previous===undefined){previousLod.set(tree.id,preferred);return preferred;}
-    const near=quality?105:65,mid=quality?260:145;
+    const spec=quality?profile?.lod?.high:profile?.lod?.low;
+    const near=spec?.near??(quality?105:65),mid=spec?.medium??(quality?260:145);
     const d=tree.distance;
     const lod=previous===0&&d<near*1.17?0:
       previous===1&&d>near*.86&&d<mid*1.17?1:
@@ -162,7 +164,8 @@
       }
     }
     // Limit both instance count and triangle work in the shadow map.
-    const nearest=candidates.filter(tree=>tree.distance<=80).slice(0,quality?12:5);
+    const shadowPolicy=quality?profile?.shadow?.high:profile?.shadow?.low;
+    const nearest=candidates.filter(tree=>tree.distance<=(shadowPolicy?.maxDistance??80)).slice(0,shadowPolicy?.maxInstances??(quality?12:5));
     for(const [species,levels] of perSpecies.entries()){
       const chosen=nearest.filter(tree=>tree.species===species);
       const info=TREE_SPECIES.find(tree=>tree.id===species);

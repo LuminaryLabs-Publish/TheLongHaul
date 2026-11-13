@@ -2,13 +2,10 @@
  * The existing World/road/collision state owns placement. This module only
  * decodes the approved embedded-texture GLBs and supplies deterministic LODs.
  * No GLTFLoader CDN dependency and no source mutation are introduced. */
-export const PREBUILT_TREE_VERSION='long-haul:tree-glb-3species:v1';
-export const TREE_SPECIES=Object.freeze([
-  Object.freeze({id:'red_maple',name:'Red maple',height:15.613,files:['red_maple_LOD0.glb','red_maple_LOD1.glb','red_maple_LOD2.glb']}),
-  Object.freeze({id:'paper_birch',name:'Paper birch',height:17.420,files:['paper_birch_LOD0.glb','paper_birch_LOD1.glb','paper_birch_LOD2.glb']}),
-  Object.freeze({id:'weeping_willow',name:'Weeping willow',height:13.674,files:['weeping_willow_LOD0.glb','weeping_willow_LOD1.glb','weeping_willow_LOD2.glb']})
-]);
-export const TREE_ENVIRONMENT_KINDS=Object.freeze(['tree','maple','oak','pine','fir','juniper','willow']);
+import {VEGETATION_PROFILE} from './scene-profiles.mjs';
+export const PREBUILT_TREE_VERSION=VEGETATION_PROFILE.version;
+export const TREE_SPECIES=VEGETATION_PROFILE.species;
+export const TREE_ENVIRONMENT_KINDS=VEGETATION_PROFILE.environmentKinds;
 const TREE_KIND_SET=new Set(TREE_ENVIRONMENT_KINDS);
 const COMPONENTS=Object.freeze({5121:{type:Uint8Array,size:1},5123:{type:Uint16Array,size:2},5125:{type:Uint32Array,size:4},5126:{type:Float32Array,size:4}});
 const VALUES=Object.freeze({SCALAR:1,VEC2:2,VEC3:3,VEC4:4});
@@ -31,13 +28,15 @@ export function isTreeEnvironmentObject(object) {
 }
 export function selectTreeLod(distance,quality=true) {
   if(!Number.isFinite(distance)||distance<0)return 2;
-  return distance<(quality?105:65)?0:distance<(quality?260:145)?1:2;
+  const policy=quality?VEGETATION_PROFILE.lod.high:VEGETATION_PROFILE.lod.low;
+  return distance<policy.near?0:distance<policy.medium?1:2;
 }
 // Maintain a bounded list independent of streaming order; nearest first,
 // deterministic ID tie-break. The far view intentionally keeps a smaller set.
 export function selectVisibleTreeInstances(candidates,observer,{quality=true}={}){
   if(!isFinite3(observer))return [];
-  const maxDistance=quality?560:340, maxCount=quality?240:115;
+  const policy=quality?VEGETATION_PROFILE.lod.high:VEGETATION_PROFILE.lod.low;
+  const maxDistance=policy.distance,maxCount=policy.maxInstances;
   const seen=new Set();
   return (candidates||[]).filter(x=>x&&isFinite3(x.position)&&Number.isFinite(x.height)&&x.height>0)
     .map(x=>({...x,distance:Math.hypot(x.position[0]-observer[0],x.position[2]-observer[2])}))

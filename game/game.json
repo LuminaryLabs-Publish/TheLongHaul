@@ -1,0 +1,59 @@
+{
+  "schema": "long-haul.game/1",
+  "id": "the-long-haul",
+  "title": "The Long Haul",
+  "sourceFreeze": "38d9f93f4da72bf82c42c1ee7322b716e99bc0b1",
+  "engine": {
+    "revision": "b941c9b2995e3449c6987908657753e2cf2df242",
+    "renderer": "three.js",
+    "release": "0.165.0"
+  },
+  "profileRefs": {
+    "world": "profiles/world.json",
+    "presentation": "profiles/presentation.json",
+    "vegetation": "profiles/vegetation.json",
+    "roads": "profiles/roads.json",
+    "gameplay": "profiles/gameplay.json"
+  },
+  "sceneRefs": [
+    "scenes/countryside.json",
+    "scenes/forest.json",
+    "scenes/small-town.json",
+    "scenes/city.json",
+    "scenes/industrial.json"
+  ],
+  "assetManifest": "assets/manifest.json",
+  "modes": [
+    "endless",
+    "campaign"
+  ],
+  "gameplaySystems": [
+    "truck-driving",
+    "freight-delivery",
+    "road-choices",
+    "town-loops",
+    "garage",
+    "weather",
+    "traffic",
+    "boost",
+    "skills",
+    "active-abilities",
+    "scoring",
+    "save-resume",
+    "recovery",
+    "comic-crashes"
+  ],
+  "authority": {
+    "world": "n:world",
+    "presentation": "n:presentation",
+    "source": "n:authoring",
+    "sequences": "n:runtime:sequence",
+    "host": "existing-threejs-host"
+  },
+  "commitFreezePoints": {
+    "worldRoads": "67a6d86c318c77d65d55c4011e97e0112c8d611a",
+    "connectedCities": "9ebf15cdbb385b79832e4d80225b4f284876c8d8",
+    "lighting": "5fcc5616315be89cb510936d6c4943eafc22168e",
+    "startup": "38d9f93f4da72bf82c42c1ee7322b716e99bc0b1"
+  }
+}

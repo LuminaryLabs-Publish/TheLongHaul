@@ -1,0 +1,30 @@
+{
+  "schema": "long-haul.scene/1",
+  "id": "countryside",
+  "kind": "region",
+  "biomes": [
+    "farmland",
+    "golden-hills",
+    "alpine",
+    "badlands",
+    "high-desert",
+    "canyon",
+    "coastal"
+  ],
+  "assetCollections": [
+    "roadside",
+    "vegetation"
+  ],
+  "roadLayout": "winding-highway",
+  "presentation": {
+    "profile": "anime-countryside"
+  },
+  "world": {
+    "generator": "existing-endless",
+    "streaming": "existing-nexus-world"
+  },
+  "runtime": {
+    "sceneLifecycle": "existing-core-scene",
+    "savePolicy": "preserve"
+  }
+}

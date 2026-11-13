@@ -98,6 +98,14 @@
       const index=await fetch(new URL('manifest.json',base));
       if(!index.ok)throw Error('Neighborhood manifest not found');
       const manifest=await index.json();
+      // Profiles identify the allowed GLB collection. This host still owns
+      // actual network fetches and Three instances, not a second asset database.
+      const sceneAssets=globalThis.LongHaulSceneProfiles?.assets;
+      const expectedFiles=sceneAssets?new Set(Object.values(sceneAssets.collections)
+        .flat().filter(path=>path.startsWith('assets/settlements/'))
+        .map(path=>path.split('/').at(-1))):null;
+      if(expectedFiles&&!manifest.buildings.every(building=>expectedFiles.has(building.file)))
+        throw Error('Neighborhood runtime manifest differs from scene asset profile');
       if(manifest.schema!=='long-haul.settlement-assets/1'||manifest.buildings?.length!==17)
         throw Error('Unexpected neighborhood asset manifest');
       const entries=await Promise.all(manifest.buildings.map(async data=>{

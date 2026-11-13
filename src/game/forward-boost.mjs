@@ -1,17 +1,18 @@
+import {GAMEPLAY_PROFILE} from './scene-profiles.mjs';
 // A burst and its recharge use simulation time: menus never refill a boost.
 // The input host filters keyboard repeat; two different forward keys do not pair.
 export function createForwardBoost() {
   const taps = new Map();
-  const duration = 5, recharge = 3;
+  const {duration,recharge,doubleTapMs,forwardKeys}=GAMEPLAY_PROFILE.boost;
   let remaining = 0, cooldown = 0;
   return {
     tap(code, now) {
-      if (!["KeyW", "ArrowUp"].includes(code) || !Number.isFinite(now)) return false;
+      if (!forwardKeys.includes(code) || !Number.isFinite(now)) return false;
       if (remaining > 0 || cooldown > 0) { taps.clear(); return false; }
       const previous = taps.get(code);
       if (previous !== undefined && now <= previous) return false;
       taps.set(code, now);
-      if (previous === undefined || now - previous > 300) return false;
+      if (previous === undefined || now - previous > doubleTapMs) return false;
       taps.clear(); remaining = duration; return true;
     },
     advance(dt, { cancel = false } = {}) {

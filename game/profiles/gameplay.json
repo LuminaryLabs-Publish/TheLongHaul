@@ -1,0 +1,232 @@
+{
+  "schema": "long-haul.profile/1",
+  "id": "truck-freight-gameplay",
+  "cargo": [
+    {
+      "id": "standard",
+      "label": "General freight",
+      "massKg": 1600,
+      "centerOfMassHeight": 1.55,
+      "rearOffset": -0.3,
+      "damageMultiplier": 1,
+      "landingDamageMultiplier": 1,
+      "shiftDamageMultiplier": 1,
+      "hazardousFailureDamage": 0,
+      "loadShiftStrength": 0,
+      "handlingHint": "Balanced load",
+      "color": "#7bd8bd"
+    },
+    {
+      "id": "fragile",
+      "label": "Fragile glass",
+      "massKg": 800,
+      "centerOfMassHeight": 1.7,
+      "rearOffset": -0.15,
+      "damageMultiplier": 2.2,
+      "landingDamageMultiplier": 2.7,
+      "shiftDamageMultiplier": 1.5,
+      "hazardousFailureDamage": 0,
+      "loadShiftStrength": 0,
+      "handlingHint": "Land gently · avoid impacts",
+      "color": "#81c9ff"
+    },
+    {
+      "id": "heavy",
+      "label": "Heavy machinery",
+      "massKg": 6200,
+      "centerOfMassHeight": 1.45,
+      "rearOffset": -0.55,
+      "damageMultiplier": 0.72,
+      "landingDamageMultiplier": 0.9,
+      "shiftDamageMultiplier": 0.8,
+      "hazardousFailureDamage": 0,
+      "loadShiftStrength": 0,
+      "handlingHint": "Brake early · use wide turns",
+      "color": "#ffca78"
+    },
+    {
+      "id": "hazardous",
+      "label": "Hazardous drums",
+      "massKg": 3200,
+      "centerOfMassHeight": 1.8,
+      "rearOffset": -0.3,
+      "damageMultiplier": 1.35,
+      "landingDamageMultiplier": 1.55,
+      "shiftDamageMultiplier": 1.2,
+      "hazardousFailureDamage": 14,
+      "loadShiftStrength": 0.22,
+      "handlingHint": "Protect the load · spills damage truck",
+      "color": "#ff9e68"
+    },
+    {
+      "id": "unstable",
+      "label": "Unsecured salvage",
+      "massKg": 3900,
+      "centerOfMassHeight": 2.5,
+      "rearOffset": -0.45,
+      "damageMultiplier": 1.15,
+      "landingDamageMultiplier": 1.45,
+      "shiftDamageMultiplier": 1.8,
+      "hazardousFailureDamage": 0,
+      "loadShiftStrength": 1,
+      "handlingHint": "Smooth steering · load can shift",
+      "color": "#dab4ff"
+    }
+  ],
+  "abilities": {
+    "mini-trucks": {
+      "id": "mini-trucks",
+      "name": "Mini Trucks",
+      "shortName": "MINIS",
+      "icon": "▰",
+      "description": "Launch three miniature trucks ahead. They smash crates and shove traffic aside.",
+      "upgradeDescription": "More trucks, longer reach and a shorter recharge.",
+      "cooldown": 12,
+      "minimumCooldown": 5,
+      "requiresGround": true
+    },
+    "road-shield": {
+      "id": "road-shield",
+      "name": "Road Shield",
+      "shortName": "SHIELD",
+      "icon": "◇",
+      "description": "Absorb the next two impacts for six seconds, protecting cargo and steering.",
+      "upgradeDescription": "More protected impacts, longer protection and a shorter recharge.",
+      "cooldown": 18,
+      "minimumCooldown": 8,
+      "requiresGround": false
+    },
+    "shockwave": {
+      "id": "shockwave",
+      "name": "Shockwave",
+      "shortName": "PULSE",
+      "icon": "◉",
+      "description": "Clear nearby breakable hazards and push surrounding traffic away.",
+      "upgradeDescription": "A wider clearing radius, stronger push and a shorter recharge.",
+      "cooldown": 16,
+      "minimumCooldown": 7,
+      "requiresGround": false
+    }
+  },
+  "abilityLimits": {
+    "maxStep": 0.25,
+    "maxMiniTrucks": 12,
+    "maxPulses": 3,
+    "maxObstacles": 256,
+    "maxLevel": 1000000,
+    "maxDistanceFromPlayer": 230,
+    "maxRecentHits": 512
+  },
+  "skillUpgrades": [
+    {
+      "id": "engine",
+      "kind": "stat",
+      "label": "Engine response",
+      "description": "Accelerate harder and raise your controlled top speed.",
+      "component": "exhaust"
+    },
+    {
+      "id": "brakes",
+      "kind": "stat",
+      "label": "Brake balance",
+      "description": "Slow down faster before corners and recover your line.",
+      "component": "brakes"
+    },
+    {
+      "id": "grip",
+      "kind": "stat",
+      "label": "Road tires",
+      "description": "Gain traction and recover lateral slides more confidently.",
+      "component": "tires"
+    },
+    {
+      "id": "suspension",
+      "kind": "stat",
+      "label": "Load suspension",
+      "description": "Settle cargo and body motion with greater stability.",
+      "component": "suspension"
+    },
+    {
+      "id": "armor",
+      "kind": "stat",
+      "label": "Reinforced body",
+      "description": "Reduce collision damage while keeping roadside recovery.",
+      "component": "bodywork"
+    },
+    {
+      "id": "drift-reserve",
+      "kind": "modifier",
+      "label": "Momentum control",
+      "description": "Retain more of an earned drift reserve for your countersteer exit.",
+      "requires": {
+        "grip": 1
+      }
+    },
+    {
+      "id": "boost-tuning",
+      "kind": "modifier",
+      "label": "Rush tuning",
+      "description": "Increase boost force; the existing recharge still applies.",
+      "requires": {
+        "engine": 1
+      }
+    },
+    {
+      "id": "combo-focus",
+      "kind": "modifier",
+      "label": "Combo focus",
+      "description": "Earn more skill XP and gain a longer safe combo window."
+    },
+    {
+      "id": "ability-charge",
+      "kind": "modifier",
+      "label": "Ability amplifier",
+      "description": "Improve both equipped powers independently of their own tiers.",
+      "minimumLevel": 2
+    },
+    {
+      "id": "mini-trucks",
+      "kind": "ability",
+      "label": "Mini Trucks",
+      "description": "Deploy a stronger convoy that clears obstacles ahead.",
+      "initialLevel": 1
+    },
+    {
+      "id": "road-shield",
+      "kind": "ability",
+      "label": "Road Shield",
+      "description": "Improve your temporary protection from impacts.",
+      "initialLevel": 1
+    },
+    {
+      "id": "shockwave",
+      "kind": "ability",
+      "label": "Shockwave",
+      "description": "Clear nearby obstacles with a radial burst. Choose Q or E to equip it.",
+      "initialLevel": 0,
+      "minimumLevel": 2
+    }
+  ],
+  "skillLimits": {
+    "maxLevel": 1000000,
+    "maxTier": 10000,
+    "maxSeenIds": 4096,
+    "maxRevision": 9007199254740990
+  },
+  "mechanicsPolicy": {
+    "boost": "existing-forward-boost",
+    "truckDynamics": "existing-nexus-truck-kit",
+    "scoring": "existing-arcade-score",
+    "garage": "existing-garage-system",
+    "checkpoints": "existing-freight-save"
+  },
+  "boost": {
+    "duration": 5,
+    "recharge": 3,
+    "doubleTapMs": 300,
+    "forwardKeys": [
+      "KeyW",
+      "ArrowUp"
+    ]
+  }
+}

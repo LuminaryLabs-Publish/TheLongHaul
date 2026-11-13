@@ -2,13 +2,8 @@ import { clamp, finite } from "./shared.mjs";
 
 // Product-owned load data. Physics consumes mass and placement; the freight
 // lifecycle owns condition, payouts and hazardous-cargo failure consequences.
-export const CARGO_PROFILES = Object.freeze(Object.fromEntries([
-  { id: "standard", label: "General freight", massKg: 1600, centerOfMassHeight: 1.55, rearOffset: -0.3, damageMultiplier: 1, landingDamageMultiplier: 1, shiftDamageMultiplier: 1, hazardousFailureDamage: 0, loadShiftStrength: 0, handlingHint: "Balanced load", color: "#7bd8bd" },
-  { id: "fragile", label: "Fragile glass", massKg: 800, centerOfMassHeight: 1.7, rearOffset: -0.15, damageMultiplier: 2.2, landingDamageMultiplier: 2.7, shiftDamageMultiplier: 1.5, hazardousFailureDamage: 0, loadShiftStrength: 0, handlingHint: "Land gently · avoid impacts", color: "#81c9ff" },
-  { id: "heavy", label: "Heavy machinery", massKg: 6200, centerOfMassHeight: 1.45, rearOffset: -0.55, damageMultiplier: 0.72, landingDamageMultiplier: 0.9, shiftDamageMultiplier: 0.8, hazardousFailureDamage: 0, loadShiftStrength: 0, handlingHint: "Brake early · use wide turns", color: "#ffca78" },
-  { id: "hazardous", label: "Hazardous drums", massKg: 3200, centerOfMassHeight: 1.8, rearOffset: -0.3, damageMultiplier: 1.35, landingDamageMultiplier: 1.55, shiftDamageMultiplier: 1.2, hazardousFailureDamage: 14, loadShiftStrength: 0.22, handlingHint: "Protect the load · spills damage truck", color: "#ff9e68" },
-  { id: "unstable", label: "Unsecured salvage", massKg: 3900, centerOfMassHeight: 2.5, rearOffset: -0.45, damageMultiplier: 1.15, landingDamageMultiplier: 1.45, shiftDamageMultiplier: 1.8, hazardousFailureDamage: 0, loadShiftStrength: 1, handlingHint: "Smooth steering · load can shift", color: "#dab4ff" }
-].map((profile) => [profile.id, Object.freeze(profile)])));
+import {GAMEPLAY_PROFILE} from './scene-profiles.mjs';
+export const CARGO_PROFILES=Object.freeze(Object.fromEntries(GAMEPLAY_PROFILE.cargo.map(profile=>[profile.id,profile])));
 
 export function getCargoProfile(id = "standard") {
   const key = String(id);

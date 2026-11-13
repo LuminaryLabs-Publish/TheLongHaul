@@ -1,0 +1,50 @@
+{
+  "schema": "long-haul.assets/1",
+  "id": "long-haul-assets",
+  "collections": {
+    "neighborhood-houses": [
+      "assets/settlements/low-poly-neighborhood/Apartment_LowRise.glb",
+      "assets/settlements/low-poly-neighborhood/House_Bungalow.glb",
+      "assets/settlements/low-poly-neighborhood/House_Cottage.glb",
+      "assets/settlements/low-poly-neighborhood/House_Craftsman.glb",
+      "assets/settlements/low-poly-neighborhood/House_Duplex.glb",
+      "assets/settlements/low-poly-neighborhood/House_Modern.glb",
+      "assets/settlements/low-poly-neighborhood/House_Ranch.glb",
+      "assets/settlements/low-poly-neighborhood/House_SplitLevel.glb",
+      "assets/settlements/low-poly-neighborhood/House_Townhouse.glb",
+      "assets/settlements/low-poly-neighborhood/House_TwoStory.glb",
+      "assets/settlements/low-poly-neighborhood/House_Victorian.glb"
+    ],
+    "small-town-shops": [
+      "assets/settlements/low-poly-neighborhood/Shop_Bookstore.glb",
+      "assets/settlements/low-poly-neighborhood/Shop_Cafe.glb",
+      "assets/settlements/low-poly-neighborhood/Shop_CornerMarket.glb"
+    ],
+    "city-frontage": [
+      "assets/settlements/low-poly-neighborhood/Apartment_LowRise.glb"
+    ],
+    "service-buildings": [
+      "assets/settlements/low-poly-neighborhood/Garage_Detached.glb",
+      "assets/settlements/low-poly-neighborhood/Shed_Garden.glb"
+    ],
+    "vegetation": [
+      "assets/trees/red_maple_LOD0.glb",
+      "assets/trees/red_maple_LOD1.glb",
+      "assets/trees/red_maple_LOD2.glb",
+      "assets/trees/paper_birch_LOD0.glb",
+      "assets/trees/paper_birch_LOD1.glb",
+      "assets/trees/paper_birch_LOD2.glb",
+      "assets/trees/weeping_willow_LOD0.glb",
+      "assets/trees/weeping_willow_LOD1.glb",
+      "assets/trees/weeping_willow_LOD2.glb"
+    ],
+    "freight-terminal": [
+      "assets/freight-terminal/terminal-yard.glb"
+    ],
+    "roadside": [],
+    "civic": [
+      "assets/settlements/low-poly-neighborhood/Gazebo_Park.glb"
+    ]
+  },
+  "sourceNote": "Paths are project-local; scene descriptors do not duplicate mesh buffers."
+}

@@ -4,24 +4,17 @@
 import {roadChunkSample,ROAD_GENERATOR_VERSION} from './road-chunks.mjs';
 import {edgeLength,hashText} from './shared.mjs';
 
-export const TOWN_LAYOUT_VERSION='long-haul:connected-settlements/2';
-export const CITY_DISTRICT_OFFSET_METERS=720;
-export const ROAD_USE_ZONES=Object.freeze({
-  residential:['House_Cottage','House_Craftsman','House_Victorian','House_TwoStory','House_Townhouse','House_Ranch','House_Modern','House_SplitLevel','House_Duplex','House_Bungalow'],
-  commercial:['Shop_Cafe','Shop_CornerMarket','Shop_Bookstore','Apartment_LowRise'],
-  services:['Garage_Detached','Shed_Garden'],civic:['Gazebo_Park']
-});
-export const TOWN_FIRST_SECTION=8;
-export const TOWN_SECTION_STRIDE=12;
-export const TOWN_SPAN_SECTIONS=2;
-export const TOWN_ASSET_IDS=Object.freeze([
-  'Apartment_LowRise','Garage_Detached','Gazebo_Park','House_Bungalow',
-  'House_Cottage','House_Craftsman','House_Duplex','House_Modern',
-  'House_Ranch','House_SplitLevel','House_Townhouse','House_TwoStory',
-  'House_Victorian','Shed_Garden','Shop_Bookstore','Shop_Cafe','Shop_CornerMarket'
-]);
+import {ROADS_PROFILE,sceneProfile} from './scene-profiles.mjs';
+const townPolicy=ROADS_PROFILE.town;
+export const TOWN_LAYOUT_VERSION=townPolicy.layoutVersion;
+export const CITY_DISTRICT_OFFSET_METERS=townPolicy.cityDistrictOffsetMeters;
+export const ROAD_USE_ZONES=townPolicy.zones;
+export const TOWN_FIRST_SECTION=townPolicy.firstSection;
+export const TOWN_SECTION_STRIDE=townPolicy.sectionStride;
+export const TOWN_SPAN_SECTIONS=townPolicy.spanSections;
+export const TOWN_ASSET_IDS=townPolicy.assetIds;
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)};
-const towns=Object.freeze(['Meadow Creek','Cedar Crossing','Brookline','Fox Hollow','Willow Junction','Larkspur','Redstone']);
+const towns=townPolicy.names;
 const NODE_PREFIX='endless:node:';
 const trunkNode=index=>index===0?'origin':NODE_PREFIX+index;
 const point=(seed,progress,offset)=>{
@@ -30,9 +23,9 @@ const point=(seed,progress,offset)=>{
     progress,width:12,laneFactor:3,bank:0,structure:null};
 };
 function frame(seed,start,progress,side){
-  const t=(progress-start)/640,offset=side*178*smooth(t/.25)*smooth((1-t)/.25);
-  const p=point(seed,progress,offset),lo=point(seed,progress-1,side*178*smooth((t-1/640)/.25)*smooth((1-t+1/640)/.25)),
-    hi=point(seed,progress+1,side*178*smooth((t+1/640)/.25)*smooth((1-t-1/640)/.25));
+  const t=(progress-start)/townPolicy.loopSectionLength,offset=side*townPolicy.mainLoopOffset*smooth(t/.25)*smooth((1-t)/.25);
+  const p=point(seed,progress,offset),lo=point(seed,progress-1,side*townPolicy.mainLoopOffset*smooth((t-1/640)/.25)*smooth((1-t+1/640)/.25)),
+    hi=point(seed,progress+1,side*townPolicy.mainLoopOffset*smooth((t+1/640)/.25)*smooth((1-t-1/640)/.25));
   const dx=hi.x-lo.x,dz=hi.z-lo.z,length=Math.hypot(dx,dz)||1;
   return {...p,heading:Math.atan2(dx,dz),nx:dz/length,nz:-dx/length,grade:(hi.y-lo.y)/length};
 }
@@ -123,7 +116,7 @@ export function generateConnectedTown(seed,startSection){
   for(let i=0;i<modelOrder.length;i++){
     const progress=start+178+Math.floor(i/2)*35+(i%2)*3;
     const road=frame(seed,start,progress,side),streetSide=i%2===0?1:-1,
-      setback=streetSide*25;
+      setback=streetSide*townPolicy.buildingSetback;
     parcels.push({id:`${id}:building:${i}`,assetId:modelOrder[i],townId:id,progress,
       x:road.x+road.nx*setback,z:road.z+road.nz*setback,y:road.y,
       heading:road.heading+(streetSide>0?0:Math.PI),
@@ -139,7 +132,8 @@ export function generateConnectedTown(seed,startSection){
     fallbackEdgeIds:[`endless:highway:${startSection}`,`endless:highway:${startSection+1}`],
     warningProgress:start-95,entryProgress:start,exitProgress:start+640};
   const center=frame(seed,start,start+320,side),outer=generateOutlyingDistrict(seed,startSection,start,side,name,id);
-  const town={id,name,kind:outer?'outlying-city':startSection%24===8?'town':'city-fringe',layoutVersion:TOWN_LAYOUT_VERSION,
+  const scene=sceneProfile(outer?'city':'small-town');
+  const town={id,name,kind:outer&&scene?.id==='city'?'outlying-city':startSection%24===8?'town':'city-fringe',layoutVersion:TOWN_LAYOUT_VERSION,
     progress:start+320,x:center.x,z:center.z,y:center.y,side,
     roadIds:[...edges.map(e=>e.id),...(outer?.edges.map(e=>e.id)??[])],entryNodeId:edges[0].from,exitNodeId:edges.at(-1).to,
     outerDistrictId:outer?.id??null,outerCenter:outer?.center??null,

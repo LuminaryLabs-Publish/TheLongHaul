@@ -6,36 +6,9 @@ const copy = value => structuredClone(value);
 const angleDifference = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const own = (object, key) => Object.hasOwn(object, key);
 
-export const ABILITY_DEFINITIONS = Object.freeze({
-  "mini-trucks": Object.freeze({
-    id: "mini-trucks", name: "Mini Trucks", shortName: "MINIS", icon: "▰",
-    description: "Launch three miniature trucks ahead. They smash crates and shove traffic aside.",
-    upgradeDescription: "More trucks, longer reach and a shorter recharge.",
-    cooldown: 12, minimumCooldown: 5, requiresGround: true,
-  }),
-  "road-shield": Object.freeze({
-    id: "road-shield", name: "Road Shield", shortName: "SHIELD", icon: "◇",
-    description: "Absorb the next two impacts for six seconds, protecting cargo and steering.",
-    upgradeDescription: "More protected impacts, longer protection and a shorter recharge.",
-    cooldown: 18, minimumCooldown: 8, requiresGround: false,
-  }),
-  shockwave: Object.freeze({
-    id: "shockwave", name: "Shockwave", shortName: "PULSE", icon: "◉",
-    description: "Clear nearby breakable hazards and push surrounding traffic away.",
-    upgradeDescription: "A wider clearing radius, stronger push and a shorter recharge.",
-    cooldown: 16, minimumCooldown: 7, requiresGround: false,
-  }),
-});
-
-export const ABILITY_LIMITS = Object.freeze({
-  maxStep: 0.25,
-  maxMiniTrucks: 12,
-  maxPulses: 3,
-  maxObstacles: 256,
-  maxLevel: 1_000_000,
-  maxDistanceFromPlayer: 230,
-  maxRecentHits: 512,
-});
+import {GAMEPLAY_PROFILE} from './scene-profiles.mjs';
+export const ABILITY_DEFINITIONS=GAMEPLAY_PROFILE.abilities;
+export const ABILITY_LIMITS=GAMEPLAY_PROFILE.abilityLimits;
 
 const DEFAULT_SLOTS = Object.freeze({ q: "mini-trucks", e: "road-shield" });
 const DEFAULT_LEVELS = Object.freeze({ "mini-trucks": 1, "road-shield": 1, shockwave: 0 });
