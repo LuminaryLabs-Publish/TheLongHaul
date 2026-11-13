@@ -66,15 +66,18 @@ function generateOutlyingDistrict(seed,startSection,start,side,name,baseId){
       modular:true,generatorVersion:ROAD_GENERATOR_VERSION,sectionIndex:startSection+.5+i*.25,
       startProgress:begin,endProgress:begin+80,samples,length:edgeLength({samples})});
   }
-  const selected=[...ROAD_USE_ZONES.residential.slice(0,6),...ROAD_USE_ZONES.commercial,
-    ...ROAD_USE_ZONES.services,...ROAD_USE_ZONES.civic],parcels=[];
-  for(let i=0;i<selected.length;i++){
-    const progress=start+214+i*17,road=sample(progress),assetId=selected[i],
-      index=Math.min(3,Math.floor((progress-start-160)/80)),sideOfRoad=i%2?1:-1;
+  // Explicit zoning keeps each model on a permitted road and clear of junctions.
+  const slots=[
+    ...ROAD_USE_ZONES.residential.slice(0,6).map((assetId,i)=>({assetId,index:0,progress:start+180+i*8})),
+    ...ROAD_USE_ZONES.commercial.map((assetId,i)=>({assetId,index:1,progress:start+258+i*15})),
+    ...ROAD_USE_ZONES.civic.map((assetId,i)=>({assetId,index:2,progress:start+350+i*12})),
+    ...ROAD_USE_ZONES.services.map((assetId,i)=>({assetId,index:3,progress:start+418+i*22}))
+  ],parcels=[];
+  for(let i=0;i<slots.length;i++){
+    const {assetId,index,progress}=slots[i],road=sample(progress),sideOfRoad=i%2?1:-1;
     parcels.push({id:id+':building:'+i,assetId,townId:baseId,districtId:id,
-      roadEdgeId:edges[index].id,zone:edges[index].districtZone,
-      purpose:edges[index].districtZone,progress,
-      x:road.x+road.nx*sideOfRoad*27,z:road.z+road.nz*sideOfRoad*27,y:road.y,
+      roadEdgeId:edges[index].id,zone:edges[index].districtZone,purpose:edges[index].districtZone,
+      progress,x:road.x+road.nx*sideOfRoad*27,z:road.z+road.nz*sideOfRoad*27,y:road.y,
       heading:road.heading+(sideOfRoad>0?0:Math.PI)});
   }
   const trees=[];

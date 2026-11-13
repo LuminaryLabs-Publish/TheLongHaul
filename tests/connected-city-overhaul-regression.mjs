@@ -21,7 +21,12 @@ for(let i=0;i<24;i++){
     assert.ok(roads.every(e=>e.optional&&e.samples.length===41));
     const p=roads[0].samples[0],q=roads[1].samples.at(-1);
     maxOffset=Math.max(maxOffset,Math.hypot(q.x-p.x,q.z-p.z));
-    for(const b of town.outlyingParcels)assert.ok(roads.some(e=>e.id===b.roadEdgeId));
+    for(const b of town.outlyingParcels){
+      const road=roads.find(e=>e.id===b.roadEdgeId);
+      assert.ok(road);
+      assert.equal(b.zone,road.districtZone);
+      assert.ok(b.progress>=road.startProgress+16&&b.progress<=road.endProgress-16);
+    }
   }
   const snapshot=JSON.stringify(course.towns);
   advanceEndlessHighway(course,9000);advanceEndlessHighway(course,6400);
