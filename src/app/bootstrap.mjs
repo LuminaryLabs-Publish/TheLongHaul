@@ -145,21 +145,23 @@ await new Promise((resolve,reject) => {
   const script=document.createElement('script');
   script.src=new URL('./prebuilt-tree-host.js',import.meta.url).href;
   script.async=false;script.onload=resolve;
-  script.onerror=()=>reject(new Error('The prebuilt tree host could not load.'));
+  script.onerror=()=>{console.warn('Optional prebuilt tree host unavailable; using procedural fallback');resolve();};
   document.head.append(script);
 });
-await window.LongHaulPrebuiltTrees?.readyPromise;
-// The shared-drive GLB library supplies actual town buildings. Its absence
-// leaves connected roads traversable, never a synthetic placeholder model.
-await new Promise((resolve,reject)=>{
-  const script=document.createElement('script');
-  script.src=new URL('./connected-town-host.js',import.meta.url).href;
-  script.async=false;script.onload=resolve;
-  script.onerror=()=>reject(new Error('Connected town presenter could not load'));
-  document.head.append(script);
+// Tree meshes are optional visual assets. They can finish streaming after entry.
+// Their host retains procedural fallback while the GLBs are unavailable.
+window.LongHaulPrebuiltTrees?.readyPromise?.catch(error => {
+  console.warn('Optional tree library unavailable; using procedural fallback', error);
 });
-await window.LongHaulTowns?.readyPromise;
-
+// The authored town presenter is optional. Neither its script download nor
+// its 17 GLB downloads may delay Endless Drive or Resume Haul.
+{
+  const script = document.createElement('script');
+  script.src = new URL('./connected-town-host.js', import.meta.url).href;
+  script.async = true;
+  script.onerror = () => console.warn('Optional town presenter unavailable; road network remains driveable');
+  document.head.append(script);
+}
 // V2 remains opt-in until its browser/video acceptance is complete.
 await new Promise((resolve, reject) => {
   const script = document.createElement('script');

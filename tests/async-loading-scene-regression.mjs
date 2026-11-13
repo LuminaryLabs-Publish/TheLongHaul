@@ -119,3 +119,35 @@ await assert.rejects(api.run({
 assert.equal(api.getState().active,false);
 assert.ok(!trace.includes('failure:commit'));
 console.log('PASS async trailer: no truck, sliding halves, boot hold, commit sequence, retries, cancellation and failures');
+
+
+// Optional scenery must never hold the main menu hostage. Reproduce a tree
+// library that never finishes and a town-host script that has not downloaded.
+const bootstrap=await read('src/app/bootstrap.mjs');
+const optionalStart=bootstrap.indexOf('// Tree meshes are optional visual assets.');
+const optionalEnd=bootstrap.indexOf('// V2 remains opt-in',optionalStart);
+assert.ok(optionalStart>=0&&optionalEnd>optionalStart,'optional scenery boot boundary exists');
+const optionalBlock=bootstrap.slice(optionalStart,optionalEnd);
+assert.doesNotMatch(optionalBlock,/await\s+(?:window\.)?LongHaul(?:Towns|PrebuiltTrees)/,
+  'optional GLB readiness cannot gate the Start button');
+const never=new Promise(()=>{}), appended=[];
+const startupContext={
+  URL,
+  window:{LongHaulPrebuiltTrees:{readyPromise:never},LongHaulTowns:{readyPromise:never}},
+  console:{warn(){}},
+  document:{createElement:()=>({}),head:{append:script=>appended.push(script)}}
+};
+const asynchronousSnippet=optionalBlock.replaceAll('import.meta.url',JSON.stringify('https://example.invalid/src/app/bootstrap.mjs'));
+const didNotWait=await Promise.race([
+  vm.runInNewContext(`(async()=>{${asynchronousSnippet}})()`,startupContext),
+  new Promise(resolve=>setTimeout(()=>resolve(false),300))
+]);
+assert.notEqual(didNotWait,false,'unresolved decoration loads never delay menu activation');
+assert.equal(appended.length,1);
+assert.equal(appended[0].async,true,'optional town presenter loads without a script gate');
+assert.match(appended[0].src,/connected-town-host\.js$/);
+assert.doesNotThrow(()=>appended[0].onerror(new Error('offline')),
+  'optional scenery script failure cannot block the menu');
+assert.match(bootstrap,/entryButtons\.forEach\(button => button\.disabled = false\)/,
+  'bootstrap still enables Start after the required engine hosts load');
+console.log('PASS menu startup: GLB delays and town-host failures cannot block Endless Drive');
