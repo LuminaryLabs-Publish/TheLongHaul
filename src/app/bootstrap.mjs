@@ -12,7 +12,7 @@ import {parseSettlementGlb,createSettlementGeometry} from '../game/settlement-gl
 Object.assign(globalThis,{createNeighborhoodTree});
 Object.assign(globalThis,{parseSettlementGlb,createSettlementGeometry});
 import {FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes} from '../game/freight-terminal-start.mjs';
-import {parseFreightTerminalGlb,createFreightTerminalThreeObject} from '../game/freight-terminal-glb.mjs';
+import {parseFreightTerminalGlb,createFreightTerminalThreeObject} from '../game/freight-terminal-glb.mjs?v=tlh-yard-crop-02';
 import {FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies} from '../game/freight-terminal-activity.mjs';
 import {PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances} from '../game/prebuilt-tree-library.mjs';
 import * as LongHaulArt from '../game/landscape-style.mjs';

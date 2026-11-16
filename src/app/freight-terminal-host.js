@@ -9,7 +9,7 @@
     getState:()=>({ready:loaded,visible:!!art?.visible,assetUrl:assetUrl.href,
       site:activeCourse?.freightTerminal?.id??null,obstacles:obstacles.length,
       movingTrucks:trafficVehicles.filter(v=>v.root.visible).length,traffic:trafficVehicles.map(v=>({id:v.id,visible:v.root.visible,position:v.root.position.toArray()})),
-      elapsed:trafficElapsed,error:lastError})};
+      elapsed:trafficElapsed,error:lastError,scenePruning:art?.userData?.terminalYardPruning??null})};
   const priorGenerate=generateEndlessCourse;
   generateEndlessCourse=function(seed){
     const generated=priorGenerate(seed),saved=freightResumeCheckpoint;

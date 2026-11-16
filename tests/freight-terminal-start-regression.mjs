@@ -10,8 +10,8 @@ const file=new URL('../assets/freight-terminal/terminal-yard.glb',import.meta.ur
 const data=readFileSync(file);const buf=data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength);
 const parsed=parseFreightTerminalGlb(buf);
 assert.ok(parsed.meshes.length>20&&parsed.triangles>30000,'real GLB batches decoded');
-assert.ok(parsed.materials.some(m=>m.name==='yard_asphalt'),'yard pavement preserved');
-assert.ok(parsed.materials.some(m=>m.name==='asphalt'),'original GLB retains source road for offline review; runtime excludes it');
+assert.ok(parsed.materials.some(m=>m.name==='V1F_YardAsphalt'),'actual GLB contains yard pavement');
+assert.ok(parsed.materials.some(m=>m.name==='TLH_V1_darkAsphalt'),'source GLB has demonstration highway which the runtime must exclude');
 let checks=0;
 for(const version of ['v2','v3'])for(let n=0;n<3;n++){
  const seed=`terminal-seed-${n}`;
