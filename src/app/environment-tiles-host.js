@@ -54,7 +54,9 @@
         return {...p,kind:chunk.kind,chunkId:chunk.id};}:null;
       const iterator=environmentCellPlanSteps(course.seed,entry.patch.bounds,{
         terrainHeight:(x,z)=>terrainHeight(course,x,z),quality,roadPoint,roadProgressBounds,
-        roadSafety:(x,z,margin)=>{const near=nearestRoad(course,{x,z});
+        roadSafety:(x,z,margin)=>{
+          if(v3)return roadSceneryPositionAllowed(course,x,z,margin);
+          const near=nearestRoad(course,{x,z});
           return !near||near.distance>=(Number(near.edge?.width)||28)*.5+margin;} });
       const state={id:entry.patch.cellId,quality,plan:null,iterator,index:0,phase:'planning',
         render:factory.startCell({quality,visualOnly:entry.visualOnly}),applied:false};

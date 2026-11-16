@@ -123,6 +123,7 @@
           }:null,
           roadProgressBounds:roadV3?{min:Math.min(...progresses),max:Math.max(...progresses)}:null,
           roadSafety:(x,z,margin)=>{
+            if(roadV3)return roadSceneryPositionAllowed(previewCourse,x,z,margin);
             const nearest=nearestRoad(previewCourse,{x,z});
             return !nearest||nearest.distance>=(Number(nearest.edge?.width)||28)*.5+margin;
           }

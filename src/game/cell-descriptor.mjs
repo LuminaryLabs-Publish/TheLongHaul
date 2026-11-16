@@ -3,13 +3,14 @@ import {ROAD_V3_VERSION,roadV3TerrainHeight} from './road-v3-geometry.mjs';
 import { landscapeTint } from './landscape-style.mjs';
 import { roadCrossSection, roadTerrainHeight } from "./road-surface.mjs";
 import { roadSegmentsNear } from "./road-spatial-index.mjs";
+import { roadJunctionsInCell,JUNCTION_TERRAIN_SEGMENTS } from "./road-junction-clearance.mjs";
 import { CELL_SIZE, TAU, clone, clamp, hashText, segmentInfo } from "./shared.mjs";
 import { roadElevation, terrainNoise, naturalTerrainHeight } from "./world-base.mjs";
 
 export function createCourseCellDescriptor(course, cell, options = {}) {
   const bounds = cell.bounds;
   const [cx, cz] = cell.coordinates;
-  const terrainSegments = Math.max(8, Math.floor(Number(options.terrainSegments ?? 20)));
+  let terrainSegments = Math.max(8, Math.floor(Number(options.terrainSegments ?? 20)));
   const suppliedSampleHeight = typeof options.sampleHeight === "function" ? options.sampleHeight : null;
   const sampleSurface = typeof options.sampleSurface === "function" ? options.sampleSurface : null;
   const terrainRoadSegments = [];
@@ -31,9 +32,20 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       if (midpointX >= bounds.minX && midpointX < bounds.maxX && midpointZ >= bounds.minZ && midpointZ < bounds.maxZ) ownedRoadSegments.push(segment);
   }
 
+  // The normal 10 m grid can span an entire narrow junction in one triangle.
+  // Refine only cells containing road intersections, preserving the same
+  // authoritative height function for worker, main thread, and truck support.
+  const junctionDetail=course?.generatorVersion===ROAD_V3_VERSION&&
+    roadJunctionsInCell(course,bounds,{maxResults:1}).length>0;
+  // The actual worker/main-thread V3 runtime requests 16 samples. Explicit
+  // 8-sample inspection/LOD fixtures retain their requested budget.
+  const highDetailJunction=junctionDetail&&terrainSegments>=12;
+  if(highDetailJunction)terrainSegments=Math.max(terrainSegments,JUNCTION_TERRAIN_SEGMENTS);
+  const meshClearancePad=highDetailJunction?CELL_SIZE/terrainSegments*Math.SQRT2+.6:0;
+
   const localHeightRaw = suppliedSampleHeight ?? ((x, z) => {
     const natural = naturalTerrainHeight(course, x, z);
-    if (course?.generatorVersion === ROAD_V3_VERSION) return roadV3TerrainHeight(natural, course, {x,z});
+    if (course?.generatorVersion === ROAD_V3_VERSION) return roadV3TerrainHeight(natural, course, {x,z,meshClearancePad});
     let best = null;
     for (const road of localRoadSamples) {
       const info = segmentInfo({ x, z }, road.a, road.b);

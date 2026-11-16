@@ -152,12 +152,29 @@ export function roadV3TerrainHeight(naturalHeight,graph,point) {
     const blend=t*t*(3-2*t);
     finalHeight=lerp(roadY-.4,naturalHeight,blend);
   }
-  // Intersecting local roadbeds can leave centimetres of terrain penetrating
-  // a bridge deck. Excavate only that small interference; bridges otherwise
-  // preserve the natural ground and underpass clearance beneath them.
-  const decks=surfaces.filter(s=>
-    s.structure==='bridge'&&s.distance<=s.width/2);
-  for(const deck of decks){
+  // A junction has more than one road surface at the same X/Z. The nearest
+  // *centerline* can belong to an upper approach, leaving an earth triangle
+  // that rises through the lower road. Excavate beneath EVERY ground-level
+  // driving footprint and use the lowest valid pavement plane at a crossing.
+  // Intentional bridge decks are independent support surfaces, never earth.
+  // The triangle grid spans a finite area around each sample. At junction
+  // cells, also lower the vertices one mesh diagonal *outside* the pavement
+  // footprint so interpolation cannot reintroduce soil above the road.
+  const meshPad=Math.max(.8,Math.min(16,Number(point.meshClearancePad)||0));
+  const inRoad=surfaces.filter(s=>s.structure!=='bridge' && s.distance<=s.width/2+meshPad);
+  if(inRoad.length){
+    let lowest=Infinity;
+    for(const road of inRoad){
+      const side=(point.x-road.x)*road.nx+(point.z-road.z)*road.nz;
+      lowest=Math.min(lowest,road.y+road.bank*side);
+    }
+    finalHeight=Math.min(finalHeight,lowest-.55);
+  }
+  // Keep the existing shallow bridge cut too: otherwise a hill that lies
+  // just above a valid elevated span can protrude through its pavement.
+  // The lower road excavation above already wins where the spans intersect.
+  for(const deck of surfaces){
+    if(deck.structure!=='bridge'||deck.distance>deck.width/2)continue;
     const side=(point.x-deck.x)*deck.nx+(point.z-deck.z)*deck.nz;
     const deckY=deck.y+deck.bank*side;
     if(finalHeight>deckY-.4&&finalHeight<deckY+2)

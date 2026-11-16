@@ -19,6 +19,7 @@ import * as LongHaulArt from '../game/landscape-style.mjs';
 import * as LongHaulGuidance from '../game/navigation-guidance.mjs';
 import { resolveRoadStructureContact } from "../game/road-structure-contact.mjs";
 import { bridgePierAllowed, bridgeRailAllowed } from "../game/highway-interchange.mjs";
+import { roadStructurePositionAllowed, roadSceneryPositionAllowed } from "../game/road-junction-clearance.mjs";
 import { installLongHaulErrorLedger } from "../game/runtime-error-ledger.mjs";
 if(typeof window !== 'undefined')installLongHaulErrorLedger(window);
 import { sampleTerrainTriangle, authoredPropCollider, resolveWorldContact } from "../game/world-contact.mjs";
@@ -61,7 +62,7 @@ Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TO
 Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction, createSkillProgression, SKILL_UPGRADES, createActiveAbilities, ABILITY_DEFINITIONS, createDrivingPickups, PICKUP_DEFINITIONS, freshCampaignSave, readCampaignSave });
 
 Object.assign(globalThis, { LongHaulGuidance, LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact, sampleTerrainTriangle, authoredPropCollider, resolveWorldContact });
-Object.assign(globalThis, { ROAD_V3_VERSION, createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress, bridgePierAllowed, bridgeRailAllowed });
+Object.assign(globalThis, { ROAD_V3_VERSION, createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress, bridgePierAllowed, bridgeRailAllowed, roadStructurePositionAllowed, roadSceneryPositionAllowed });
 Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
 Object.assign(globalThis,{FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes,parseFreightTerminalGlb,createFreightTerminalThreeObject});
 Object.assign(globalThis,{FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies});
@@ -70,7 +71,7 @@ Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPr
 Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
 Object.assign(globalThis,{PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances});
 // One controller owns entry readiness. Keep mandatory host installation ordered.
-const RELEASE_TOKEN='tlh-cohesive-start-01';
+const RELEASE_TOKEN='tlh-intersection-clearance-01';
 const releaseScript=name=>{
   const url=new URL(name,import.meta.url);
   url.searchParams.set('v',RELEASE_TOKEN);

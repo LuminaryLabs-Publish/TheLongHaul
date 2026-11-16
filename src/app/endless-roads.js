@@ -95,19 +95,42 @@
     if (feature === 'bridge') {
       addBox(0, -.55, width * 1.12, .85, length + .08);
       for (const side of [-1, 1]) {
-        if(bridgeRailAllowed(side,x,z,course?.interchanges))
-          addBox(side * (width / 2 + 1), .62, .36, 1.05, length + .1, rail);
+        const lateral=side*(width/2+1);
+        const railPoint={x:x+nx*lateral,z:z+nz*lateral};
+        // At-grade junctions must not be closed by the side rail of a road
+        // that happens to carry a bridge flag. True elevated spans keep rails.
+        if(bridgeRailAllowed(side,x,z,course?.interchanges)&&
+            roadStructurePositionAllowed(course,railPoint,{ownerEdgeId:segment.edgeId,
+              kind:'rail',roadY:y+bank*lateral,halfWidth:.55}))
+          addBox(lateral,.62,.36,1.05,length+.1,rail);
       }
-      // Viaduct supports must never appear inside the real lower road.
-      if (Math.round(a.progress / 5) % 8 === 0 &&
-          bridgePierAllowed(x,z,course?.interchanges)) {
-        for (const side of [-1, 1]) addBox(side * width * .29, -5, 1.5, 9, 2.2);
+      // Support piers belong outside the pavement. Do not place a column
+      // through any lower driving lane or at-grade crossing, including crossings
+      // not registered as one of the authored interchange structures.
+      if(Math.round(a.progress/5)%8===0&&bridgePierAllowed(x,z,course?.interchanges)){
+        for(const side of [-1,1]){
+          const lateral=side*(width/2+3.2);
+          const foot={x:x+nx*lateral,z:z+nz*lateral};
+          if(roadStructurePositionAllowed(course,foot,{ownerEdgeId:segment.edgeId,
+            kind:'pier',roadY:y+bank*lateral,halfWidth:1.5,verticalReach:11.2}))
+            addBox(lateral,-5,1.5,9,2.2);
+        }
       }
     } else {
-      // A covered mountain gallery with open portals, not a decorative facade.
-      for (const side of [-1, 1]) addBox(side * (width / 2 + 1.2), 4.1, 1.1, 8.2, length + .08);
-      addBox(0, 8.6, width + 3.5, .8, length + .08);
-      if (Math.round(a.progress / 5) % 4 === 0) addBox(0, 8.12, .7, .08, 2, warmLight);
+      // At a same-level crossing even a gallery may not put an overhead roof
+      // or side wall through the road connecting into the tunnel.
+      for(const side of [-1,1]){
+        const lateral=side*(width/2+1.2);
+        const wallPoint={x:x+nx*lateral,z:z+nz*lateral};
+        if(roadStructurePositionAllowed(course,wallPoint,{ownerEdgeId:segment.edgeId,
+          kind:'wall',roadY:y+bank*lateral,halfWidth:.8}))
+          addBox(lateral,4.1,1.1,8.2,length+.08);
+      }
+      if(roadStructurePositionAllowed(course,{x,z},{ownerEdgeId:segment.edgeId,
+        kind:'roof',roadY:y,halfWidth:width/2})){
+        addBox(0,8.6,width+3.5,.8,length+.08);
+        if(Math.round(a.progress/5)%4===0)addBox(0,8.12,.7,.08,2,warmLight);
+      }
     }
 
   }

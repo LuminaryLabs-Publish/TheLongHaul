@@ -7,6 +7,8 @@ import { roadRibbonData } from '../src/game/road-surface.mjs';
 import { resolveRoadStructureContact } from '../src/game/road-structure-contact.mjs';
 import {createEndlessHighway, endlessHighwayPoint, endlessHighwayProgress, advanceEndlessHighway} from '../src/game/endless-highway.mjs';
 import {ROAD_V3_VERSION} from '../src/game/road-v3-geometry.mjs';
+import {bridgePierAllowed,bridgeRailAllowed} from '../src/game/highway-interchange.mjs';
+import {roadStructurePositionAllowed} from '../src/game/road-junction-clearance.mjs';
 import {createPlayableRoadV3Course,advancePlayableRoadV3Course,playableRoadV3Point,playableRoadV3Progress} from '../src/game/road-v3-playable-course.mjs';
 import { createCourseCellDescriptor } from '../src/game/cell-descriptor.mjs';
 // Unit test of the actual host adapter with real Three.js geometry. The base
@@ -17,7 +19,7 @@ let frozen=false, truck, rawTime=1;
 const c = {
   THREE, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample,
   roadRibbonData, resolveRoadStructureContact, createEndlessHighway,
-  ROAD_V3_VERSION, endlessHighwayPoint, endlessHighwayProgress, advanceEndlessHighway,
+  ROAD_V3_VERSION, bridgePierAllowed,bridgeRailAllowed,roadStructurePositionAllowed, endlessHighwayPoint, endlessHighwayProgress, advanceEndlessHighway,
   createPlayableRoadV3Course,advancePlayableRoadV3Course,playableRoadV3Point,playableRoadV3Progress,
   location:{search:''},
   course: createEndlessHighway('road-matrix-1'), freightResumeCheckpoint: null,
