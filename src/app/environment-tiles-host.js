@@ -19,6 +19,12 @@
       const state=entry?.environmentTileState;
       if(!state)return;
       factory.releaseCell(state.render);
+      if(state.utilityWire){
+        state.utilityWire.mesh.removeFromParent();
+        state.utilityWire.geometry.dispose();
+        state.utilityWire.material.dispose();
+        state.utilityWire=null;
+      }
       if(state.colliderIds?.length){
         const owned=new Set(state.colliderIds);
         entry.obstacles=entry.obstacles.filter(o=>!owned.has(o.id));
@@ -78,7 +84,21 @@
       try{
         if(state.phase==='planning'){
           const page=state.iterator.next();
-          if(page.done){state.plan=page.value;state.phase='parts';state.iterator=null;}
+          if(page.done){
+            // Road owns pole coordinates. Authored tiles supply the high-fidelity
+            // pole shape and other scenery, never random telephone poles.
+            const utilities=course.generatorVersion===ROAD_V3_VERSION
+              ?planRoadsideUtilitiesForCell(course,entry.patch.bounds,{
+                heightAt:(x,z)=>terrainHeight(course,x,z),
+                roadSafety:(x,z,margin)=>roadSceneryPositionAllowed(course,x,z,margin)})
+              :{poles:[],spans:[],nearbyPoles:[]};
+            const objects=page.value.objects.filter(obj=>
+              obj.role==='on-road-paint'||!utilities.nearbyPoles.some(p=>
+                Math.hypot(obj.position.x-p.position.x,obj.position.z-p.position.z)<11));
+            state.utilitySpans=utilities.spans;
+            state.plan={...page.value,objects:[...objects,...utilities.poles]};
+            state.phase='parts';state.iterator=null;
+          }
           else {cellDecorationQueue.push(job);return result;}
         }
         if(state.phase==='parts'){
@@ -90,8 +110,24 @@
         }
         if(state.phase==='batches'){
           if(factory.finalizeStep(state.render,entry.group).finished){
+            // Each midpoint owns exactly one span, including across cell seams.
+            // Cable motion is presentation-only; no rope colliders or road writes.
+            if(state.utilitySpans?.length){
+              const geometry=new THREE.BufferGeometry();
+              const positions=utilityCableVertices(state.utilitySpans,0);
+              geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+              geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
+              geometry.computeBoundingSphere();
+              const material=new THREE.LineBasicMaterial({color:0x38434a,transparent:true,opacity:.88});
+              const mesh=new THREE.LineSegments(geometry,material);
+              mesh.name='LH_ROADSIDE_WIND_CABLES';mesh.frustumCulled=false;
+              mesh.userData.environmentAuthored=true;
+              entry.group.add(mesh);
+              state.utilityWire={mesh,geometry,material,spans:state.utilitySpans};
+            }
             if(!entry.visualOnly){
-              const colliders=state.plan.objects.map(o=>authoredPropCollider(o,truckRenderedGroundHeight(o.position.x,o.position.z))).filter(Boolean);
+              const colliders=state.plan.objects.map(o=>authoredPropCollider(o,
+                o.kind==='pole'?o.position.y:truckRenderedGroundHeight(o.position.x,o.position.z))).filter(Boolean);
               state.colliderIds=colliders.map(o=>o.id);
               entry.obstacles.push(...colliders);
               refreshObstacles();
@@ -109,9 +145,20 @@
     // Prefetch already-streamed visual cells as they enter the near scenic band.
     // This runs at low frequency and queues at most one existing cell; it does
     // not create cells, alter World membership, or install another scheduler.
-    const priorCloud=updateCloudLayers;let lastNearbyScan=-Infinity;
+    const priorCloud=updateCloudLayers;let lastNearbyScan=-Infinity,lastCableUpdate=-Infinity;
     updateCloudLayers=function environmentTileNearby(state,milliseconds){
       const result=priorCloud(state,milliseconds);
+      if(milliseconds-lastCableUpdate>=110){
+        lastCableUpdate=milliseconds;
+        for(const entry of cellHosts.values()){
+          const wire=entry.environmentTileState?.utilityWire;
+          if(!wire||distanceToCell(state.position,entry.patch.bounds)>480)continue;
+          const moved=utilityCableVertices(wire.spans,milliseconds);
+          if(moved.length!==wire.geometry.attributes.position.array.length)continue;
+          wire.geometry.attributes.position.array.set(moved);
+          wire.geometry.attributes.position.needsUpdate=true;
+        }
+      }
       if(milliseconds-lastNearbyScan<650)return result;lastNearbyScan=milliseconds;
       if(!course||!(course.generatorVersion===ROAD_GENERATOR_VERSION||course.generatorVersion===ROAD_V3_VERSION))return result;
       for(const entry of cellHosts.values()){
@@ -136,9 +183,12 @@
     };
     initial.status='authored';
     report.getState=()=>({...initial,renderer:factory.stats(),
-      streamingCells:cellHosts.size,activeTiles:[...cellHosts.values()].flatMap(entry=>entry.environmentTileState?.plan?.tiles??[]).length});
+      streamingCells:cellHosts.size,
+      utilityPoles:[...cellHosts.values()].reduce((n,e)=>n+(e.environmentTileState?.plan?.objects?.filter(o=>o.kind==='pole').length??0),0),
+      utilitySpans:[...cellHosts.values()].reduce((n,e)=>n+(e.environmentTileState?.utilitySpans?.length??0),0),
+      activeTiles:[...cellHosts.values()].flatMap(entry=>entry.environmentTileState?.plan?.tiles??[]).length});
   }catch(error){
     initial.status='fallback';initial.errors.push({stage:'initialization',reason:String(error)});
-    console.warn('Environment tile host unavailable; original procedural scenery retained',error);
+    console.warn('Authored environment tiles unavailable; V3 legacy props remain disabled',error);
   }
 })();

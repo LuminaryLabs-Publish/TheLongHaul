@@ -34,8 +34,8 @@ function worldPose(seed,s,lateral,yProvider,onRoad=false,roadPoint=null){
 const decorate=(kind,pose,id,scale,role='roadside',templateId=null,variantId=null)=>Object.freeze({id,kind,role,scale,templateId,catalogId:templateId,variantId,
   position:Object.freeze({x:pose.x,y:pose.y,z:pose.z}), heading:pose.heading,
   progress:pose.progress,roadKind:pose.roadKind,lateral:pose.lateral});
-const mainTypes=['tree','rock','shelter','rock','pole','fence','culvert','barrier','depot','diner'];
-const supports=['shrub','grass','tree','rock','fence','pole','shrub','rock','shrub','pole'];
+const mainTypes=['tree','rock','shelter','rock','tree','fence','culvert','barrier','depot','diner'];
+const supports=['shrub','grass','tree','rock','fence','shrub','shrub','rock','shrub','tree'];
 const roadMarkTypes=['edge-studs','rumble','patch','guide-arrows','seam','road-studs','drain-hatch','patch','guide-arrows','rumble'];
 const footprint={tree:5,shrub:3,grass:2,rock:7,shelter:8,pole:3,fence:3,culvert:8,barrier:3,depot:9,diner:9};
 // Road paint only. No collision authority, road deck, obstacles, or payments.

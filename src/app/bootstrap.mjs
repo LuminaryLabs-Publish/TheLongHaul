@@ -46,6 +46,7 @@ import { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOUR
 import { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary } from "../game/lighting-shadow-policy.mjs";
 import { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG } from "../game/environment-tile-catalog.mjs";
 import { environmentCellPlanSteps } from "../game/environment-tile-planner.mjs";
+import { planRoadsideUtilitiesForCell, utilityCableVertices } from "../game/roadside-utilities.mjs";
 import { ENVIRONMENT_AUTHORING_SOURCE } from "../game/environment-tile-authoring.mjs";
 import { createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS } from "../game/environment-tile-renderer.mjs";
 import * as THREE from "three";
@@ -69,10 +70,10 @@ Object.assign(globalThis,{FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,fr
 Object.assign(globalThis,{FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies});
 Object.assign(globalThis, { createTrafficVehicleFactory, TRAFFIC_FLEET_PROFILES, TRAFFIC_FLEET_SOURCE, trafficVariantForClass });
 Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPreset, shadowAnchor, shouldRefresh, selectClosest, planarDistanceSquared, profileSummary });
-Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
+Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS, planRoadsideUtilitiesForCell, utilityCableVertices });
 Object.assign(globalThis,{PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances});
 // One controller owns entry readiness. Keep mandatory host installation ordered.
-const RELEASE_TOKEN='tlh-procedural-safe-01';
+const RELEASE_TOKEN='tlh-roadside-props-pass2-01';
 const releaseScript=name=>{
   const url=new URL(name,import.meta.url);
   url.searchParams.set('v',RELEASE_TOKEN);

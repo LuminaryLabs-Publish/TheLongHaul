@@ -51,6 +51,6 @@ test('runtime and startup require correct terminal presentation',()=>{
  const runtime=read('vendor/app-runtime.js'),menu=read('index.html');
  assert.match(host,/haul-terminal-cohesive-/);
  assert.match(bootstrap,/freight terminal model did not load/);
- assert.match(menu,/bootstrap\.mjs\?v=tlh-procedural-safe-01/);
+ assert.match(menu,/bootstrap\.mjs\?v=tlh-roadside-props-pass2-01/);
  assert.match(runtime,/haul-procedural-safe-\$\{values\[0\]/);
 });

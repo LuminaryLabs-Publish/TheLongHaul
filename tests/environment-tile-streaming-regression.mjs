@@ -8,6 +8,7 @@ import {ENV_TILE_METERS,ENV_CELL_METERS,ENV_TILE_VARIANTS,ENVIRONMENT_TILE_CATAL
 import {ENVIRONMENT_AUTHORING_SOURCE} from '../src/game/environment-tile-authoring.mjs';
 import {ROAD_GENERATOR_VERSION} from '../src/game/road-chunks.mjs';
 import {ROAD_V3_VERSION} from '../src/game/road-v3-geometry.mjs';
+import {authoredPropCollider} from '../src/game/world-contact.mjs';
 class Node {
  constructor(){this.children=[];this.parent=null;}
  add(n){this.children.push(n);n.parent=this;}
@@ -17,7 +18,7 @@ const seed='world-streaming-integration',cellHosts=new Map(),cellDecorationQueue
 const truckPosition={x:0,y:0,z:-230};
 const course={seed,generatorVersion:ROAD_GENERATOR_VERSION};
 function addEntry(id,bounds,visualOnly=false){
- const entry={decorationStage:0,patch:{cellId:id,bounds},visualOnly,group:new Node(),owned:{instances:[]}};
+ const entry={decorationStage:0,patch:{cellId:id,bounds},visualOnly,group:new Node(),owned:{instances:[]},obstacles:[]};
  cellHosts.set(id,entry);cellDecorationQueue.push({id,entry});return entry;
 }
 const root=addEntry('world:0:0',{minX:0,maxX:160,minZ:-320,maxZ:-160});
@@ -30,6 +31,7 @@ const sandbox={
  ENVIRONMENT_AUTHORING_SOURCE,ENVIRONMENT_TILE_CATALOG,ENV_TILE_METERS,ENV_CELL_METERS,ENV_TILE_VARIANTS,ENVIRONMENT_RENDER_LIMITS,
  ROAD_GENERATOR_VERSION,ROAD_V3_VERSION,materials:{truckRed:{gradientMap:{id:'toon'}}},THREE:MOCK_THREE,
  planEnvironmentCell,environmentCellPlanSteps,createEnvironmentTileRenderer,terrainHeight:()=>0,
+ authoredPropCollider,truckRenderedGroundHeight:()=>0,refreshObstacles:()=>{},
  nearestRoad:()=>({distance:100,edge:{width:28}}),
  readTruck:()=>({position:truckPosition}),updateCloudLayers:()=>{},
  decorateCell(job){const e=cellHosts.get(job.id);if(e!==job.entry)return;

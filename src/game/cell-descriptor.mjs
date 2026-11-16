@@ -153,6 +153,9 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       segmentInfo({ x, z }, other.a, other.b).distance < other.width * 0.5 + 2);
   };
 
+  // V3 scenery is authored by the environment-tile system, never this legacy generator.
+  // Keep older saved V1/V2 placement behavior and all terrain/road contracts.
+  if (course.generatorVersion !== ROAD_V3_VERSION) {
   for (let cluster = 0; cluster < clusterCount; cluster += 1) {
     const centerX = bounds.minX + 18 + randomAt(cluster, "cx") * (CELL_SIZE - 36);
     const centerZ = bounds.minZ + 18 + randomAt(cluster, "cz") * (CELL_SIZE - 36);
@@ -214,6 +217,8 @@ export function createCourseCellDescriptor(course, cell, options = {}) {
       if (!insideTerminal(px,pz)&&!obstructsJunctionOrSign(px, pz, road.edgeId)) scenery.push({ id: `${road.id}:boulder`, kind: "roadside-boulder", x: px, y: localHeight(px, pz), z: pz, heading, side });
     }
   }
+
+  } // End legacy World-cell prop generation.
 
   return { schema: "long-haul.course-cell/4", cellId: cell.id, coordinates: [cx, cz], bounds: clone(bounds), foundationRevision: Number(options.foundationRevision ?? 0), terrain: { segments: terrainSegments, heights, colors }, roads, roundabouts, depots: clone(depots), signs: clone(signs), vegetation, grass, rocks, scenery };
 }
