@@ -10,7 +10,7 @@ test('fresh run never depends on terminal GLB load timing',()=>{
 test('opening viaduct flags removed independently of an optional spur',()=>{
  const src=read('src/game/road-v3-playable-course.mjs');
  const start=src.indexOf('if(groundLevelOpening||directTerminal)edges=removeOpeningBridgeSpan(edges,2);');
- const loop=src.indexOf('for(let index=3;index<=last;index+=9)');
+ const loop=src.indexOf('for(let index=3;!safeProcedural&&index<=last;index+=9)');
  assert.ok(start>=0 && loop>start);
 });
 test('saved routes and later roads retain previous layout contracts',()=>{

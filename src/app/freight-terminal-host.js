@@ -21,7 +21,10 @@
       (seed.startsWith('haul-terminal-direct-')||seed.startsWith('haul-terminal-cohesive-'));
     const legacyAllowed=loaded && !(!saved && seed.startsWith('haul-winding-ground-')) &&
       (!saved||saved.freightTerminal===FREIGHT_TERMINAL_VERSION);
-    const enable=Boolean(generated?.endless && (directStart||restoreDirect||legacyAllowed));
+    // Endless's new procedural-only sessions never attach terminal art or its
+    // authored roadside collision volumes. Keep the terminal files for Campaign.
+    const proceduralOnly=seed.startsWith('haul-procedural-safe-');
+    const enable=Boolean(!proceduralOnly && generated?.endless && (directStart||restoreDirect||legacyAllowed));
     return attachFreightTerminalStart(generated,{enabled:enable});
   };
   // When the Endless window regenerates, retain the terminal's merge edge and

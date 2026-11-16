@@ -39,7 +39,7 @@ test('no duplicate first interchange; later procedural road continues',()=>{
 });
 test('browser runtime regenerated from newest source',()=>{
  const runtime=p('vendor/app-runtime.js'),seed=p('src/app/app-chunk-5.js');
- assert.match(seed,/haul-terminal-cohesive-\$\{values\[0\]/);
- assert.match(runtime,/haul-terminal-cohesive-\$\{values\[0\]/);
+ assert.match(seed,/haul-procedural-safe-\$\{values\[0\]/);
+ assert.match(runtime,/haul-procedural-safe-\$\{values\[0\]/);
  assert.match(runtime,/applyWorldContact\(worldContactPrevious,dt\)/);
 });

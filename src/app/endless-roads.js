@@ -2,6 +2,7 @@
 // entry is enabled. Campaign and the generated base runtime remain untouched.
 (() => {
   const isV3 = () => course?.generatorVersion === ROAD_V3_VERSION && course?.terrainAware;
+  const safeProcedural=()=>course?.seed?.startsWith('haul-procedural-safe-')===true;
   const isModular = () => course?.generatorVersion === ROAD_GENERATOR_VERSION || isV3();
   // New runs use terrain-aware V3; ?road=v2 retains a V2 fallback.
   // Resume always honors the checkpoint's original generator.
@@ -80,7 +81,7 @@
 
   function structure(entry, segment, visualOnly) {
     const a = segment.a, b = segment.b, feature = a.structure;
-    if (segment.chunk?.kind === 'construction' && segment.type === 'endless-highway' && Math.round(a.progress / 5) % 6 === 0 && a.laneFactor < 3.4) {
+    if (!safeProcedural() && segment.chunk?.kind === 'construction' && segment.type === 'endless-highway' && Math.round(a.progress / 5) % 6 === 0 && a.laneFactor < 3.4) {
       for (const side of [-1, 1]) {
         const x = a.x + a.nx * side * 6.6, z = a.z + a.nz * side * 6.6;
         entry.group.add(mesh(geometries.cone, materials.yellow, { x, y: a.y + .65, z }, { x: .38, y: 1.1, z: .38 }));
@@ -160,7 +161,9 @@
   // elevated structures. The underlying challenge/deadline systems are retained.
   const priorPlan = planFreightEncounters;
   planFreightEncounters = function() {
-    const events = priorPlan(); if (!isModular()) return events;
+    const events = priorPlan();
+    if(safeProcedural())return events.filter(e=>!['ramp','roadblock','weave'].includes(e.kind));
+    if (!isModular()) return events;
     return events.filter(event => {
       const feature = roadChunkAt(course.seed, event.absoluteProgress);
       return !['bridge', 'tunnel', 'lane-transition', 'construction'].includes(feature.kind);
@@ -229,10 +232,6 @@
     if (isModular() && !simulationFrozen() && currentScene() === 'driving') {
       if (structureRun !== runKey) { structureRun = runKey; previousRoadPosition = null; lastStructureImpact = -Infinity; }
       const truck = readTruck(), progress = isV3() ? endlessHighwayProgress(course,truck.position) : -truck.position.z, p = isV3() ? {...endlessHighwayPoint(course,progress),chunkId:roadChunkAt(course.seed,progress).id} : roadChunkSample(course.seed,progress);
-      // The opening depot exit has no authored bridge/tunnel barriers.
-      // Match the visual suppression in structure(): never collide against
-      // procedural structure tags inside the first 960m of a terminal run.
-      // Real bridge/tunnel contacts outside this corridor remain active.
       const terminalOpening = isV3() && !!course?.freightTerminal &&
         Number.isFinite(progress) && progress >= 0 && progress < 960;
       const contact = terminalOpening ? null :

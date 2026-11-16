@@ -12,6 +12,7 @@ import { roadV3NaturalHeight } from './landscape-style.mjs';
 import { createHighwayInterchange, applyInterchangeDeckSpan, validateHighwayInterchange } from './highway-interchange.mjs';
 import { createGroundLevelAccess, validateGroundLevelAccess, removeOpeningBridgeSpan } from './opening-access.mjs';
 import { isCohesiveTerminalRun, cohesiveOpeningElevation, cohesiveOpeningWidth } from './terminal-direct-road.mjs';
+import { isProceduralSafeRun, selectProceduralCourseEdges } from './procedural-road-safety.mjs';
 
 const contexts=new WeakMap();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -35,12 +36,15 @@ function translate(context,source,progress) {
   const baseline=cohesive?(context.openingLevel??=
     roadV3NaturalHeight(seed,mergeFrame.x,mergeFrame.z)+.65):null;
   const roadY=cohesive?cohesiveOpeningElevation(progress,baseline,frame.y):frame.y;
+  // New safe-road policy uses zero crossfall on branching roads. Otherwise
+  // a narrow shortcut can exceed grade limits while the highway remains flat.
+  const bank=isProceduralSafeRun(seed)?0:frame.bank;
   const point={x:frame.x+frame.nx*lateral+Math.sin(frame.heading)*forward,
-    y:roadY+frame.bank*lateral+extraY,
+    y:roadY+bank*lateral+extraY,
     z:frame.z+frame.nz*lateral+Math.cos(frame.heading)*forward,
     heading:frame.heading,nx:frame.nx,nz:frame.nz,
-    width:source.width??frame.width,bank:frame.bank,grade:frame.grade,progress};
-  return {...point,structure:cohesive&&progress<=960?null:
+    width:source.width??frame.width,bank,grade:frame.grade,progress};
+  return {...point,structure:isProceduralSafeRun(seed)||cohesive&&progress<=960?null:
     classifyTerrainRoadV3Structure(seed,point,source.structure)};
 }
 function translateEdge(context,edge) {
@@ -168,21 +172,24 @@ function fromLegacy(source,{revision=1,context=null}={}){
   // The through highway begins at node 1, exactly where the terminal joins.
   if(isCohesiveTerminalRun(seed))edges=edges.filter(edge=>
     !(edge.branchId==='trunk'&&edge.type==='endless-highway'&&edge.endProgress<=320));
+  const safeProcedural=isProceduralSafeRun(seed);
+  if(safeProcedural)edges=selectProceduralCourseEdges(edges);
   context.edges=nextEdges;
   const mapNode=node=>translateOther(context,node,Number.isFinite(node.progress)?node.progress:-node.z);
-  const nodes=source.nodes.map(mapNode);
+  const acceptedNodes=safeProcedural?new Set(edges.flatMap(e=>[e.from,e.to])):null;
+  const nodes=source.nodes.filter(node=>!safeProcedural||acceptedNodes.has(node.id)).map(mapNode);
   const depots=source.depots.map(depot=>{
     const station=source.loadingStations?.find(s=>s.id===depot.stationId),
       progress=station?.progress??0;
     return translateOther(context,depot,progress);
   });
-  const signs=source.signs.map(sign=>translateOther(context,sign,Number.isFinite(sign.progress)?sign.progress:0));
+  const signs=source.signs.filter(sign=>!safeProcedural||sign.kind==='freight-route'||!!sign.stationId).map(sign=>translateOther(context,sign,Number.isFinite(sign.progress)?sign.progress:0));
   const stations=source.loadingStations.map(s=>translateStation(context,s));
   // Roundabout regions are indexed by course progress. Only the current
   // geometry window is materialized and the feature is fully reproducible.
   const roundabouts=[],extraChoices=[],extraOptional=[],extraBranches=[];
   const first=source.endless.firstSection,last=source.endless.lastSection;
-  for(let index=6;index<=last;index+=9){
+  for(let index=6;!safeProcedural&&index<=last;index+=9){
     if(index<first||index+1>last+1)continue;
     const item=roundaboutAt(seed,index,context);
     edges.push(...item.edges);nodes.push(...item.nodes);
@@ -199,7 +206,7 @@ function fromLegacy(source,{revision=1,context=null}={}){
   // V3's terrain-classified bridge flags for the opening 960 metres, whether
   // the optional kilometre-3 access spur is constructible or not.
   if(groundLevelOpening||directTerminal)edges=removeOpeningBridgeSpan(edges,2);
-  for(let index=3;index<=last;index+=9){
+  for(let index=3;!safeProcedural&&index<=last;index+=9){
     if(index<first||index+1>last+1)continue;
     // Only newly seeded runs use the new opening layout. Existing saved V3
     // journeys retain their original road geometry and checkpoint identity.
@@ -223,15 +230,16 @@ function fromLegacy(source,{revision=1,context=null}={}){
       bridgeSpan:site.bridgeSpan??0,clearance:site.clearance??null,maxGrade:site.maxGrade});
   }
   const originPoint=align(context,0);
+  if(safeProcedural)originPoint.structure=null;
   const course={...source,schema:'long-haul.course-package/1',generatorVersion:ROAD_V3_VERSION,
     packageId:`endless-v3-${hashText(seed).toString(36)}`,terrainAware:true,
     origin:{id:'origin',...originPoint},
     edges,nodes,hub:nodes.find(n=>n.id===source.hub?.id)??nodes[0],
-    roundabouts,interchanges,routeChoices:[...source.routeChoices,...extraChoices],
-    optionalRoads:[...source.optionalRoads,...extraOptional],
-    branches:[...source.branches,...extraBranches],
+    roundabouts,interchanges,routeChoices:[...source.routeChoices.filter(c=>!safeProcedural||c.kind==='loading-route'),...extraChoices],
+    optionalRoads:[...(safeProcedural?[]:source.optionalRoads),...extraOptional],
+    branches:[...(safeProcedural?source.branches.filter(b=>b.id==='trunk'):source.branches),...extraBranches],
     depots,signs,loadingStations:stations,
-    towns:(source.towns??[]).map(town=>{
+    towns:(safeProcedural?[]:(source.towns??[])).map(town=>{
       const mapParcel=parcel=>{
         const position=translateOther(context,parcel,parcel.progress),
           base=endlessHighwayPoint(v2Course(seed),parcel.progress),aligned=align(context,parcel.progress);
@@ -246,8 +254,8 @@ function fromLegacy(source,{revision=1,context=null}={}){
     bounds:boundsFor(edges),maxRoadWidth:Math.max(...edges.map(e=>e.width)),
     totalProgress:source.endless.windowEnd,
     endless:{...source.endless,revision},
-    persistence:{seed,version:ROAD_V3_VERSION,layoutRevision:4},
-    validation:{...source.validation,contract:'terrain-aware playable V3 with preserved V2 topology'}};
+    persistence:{seed,version:ROAD_V3_VERSION,layoutRevision:safeProcedural?5:4},
+    validation:{...source.validation,contract:safeProcedural?'procedural-safe V3 through-highway and freight branches':'terrain-aware playable V3 with preserved V2 topology'}};
   if(!Number.isFinite(course.origin.heading))course.origin.heading=Math.PI;
   contexts.set(course,context);
   return course;
