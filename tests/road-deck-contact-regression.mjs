@@ -1,0 +1,14 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {selectRoadDeckContact,boundedWheelSupport} from '../src/game/road-deck-contact.mjs';
+const a=(y,structure='bridge')=>({x:-20,y,z:0,width:14,nx:0,nz:-1,grade:0,bank:0,structure});
+const b=(y,structure='bridge')=>({x:20,y,z:0,width:14,nx:0,nz:-1,grade:0,bank:0,structure});
+const segment=(y,id,structure)=>({a:a(y,structure),b:b(y,structure),edge:{id,width:14},segmentIndex:0});
+const both=[segment(0,'under','road'),segment(10,'over','bridge')];
+test('underpass contact selects road below',()=>assert.equal(selectRoadDeckContact({x:0,z:0,y:.92},both)?.road.edge.id,'under'));
+test('overpass contact selects top deck',()=>assert.equal(selectRoadDeckContact({x:0,z:0,y:10.92},both)?.road.edge.id,'over'));
+test('traveling below an overpass never snaps onto it',()=>assert.equal(selectRoadDeckContact({x:0,z:0,y:4},[both[1]]),null));
+test('road merging from side admits real support within width',()=>assert.ok(selectRoadDeckContact({x:0,z:6.5,y:.92},both)));
+test('nonadjacent road is not support',()=>assert.equal(selectRoadDeckContact({x:0,z:9,y:.92},both),null));
+test('steep nearby wheel sample cannot promote distant upper deck',()=>assert.equal(boundedWheelSupport(0,[0,0,10,10]),.45));
+test('legitimate wheel rise remains supported',()=>assert.equal(boundedWheelSupport(2,[2.2,2.1,1.9]),2.2));
+test('never invents a surface without samples',()=>assert.equal(selectRoadDeckContact({x:0,z:0,y:.92},[]),null));

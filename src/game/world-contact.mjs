@@ -1,5 +1,6 @@
 // The Long Haul — terrain/roadside collision against authoritative world geometry.
 import { LONG_HAUL_TRUCK_COLLIDER } from './vehicle-collider.mjs';
+import { boundedWheelSupport } from './road-deck-contact.mjs';
 const EPS=1e-8, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), finite=Number.isFinite;
 export function sampleTerrainTriangle(patch,x,z){
   const {bounds,terrain}=patch??{},n=terrain?.segments;
@@ -109,8 +110,8 @@ export function resolveWorldContact(truck,previous,groundAt,obstacles=[],{dt=1/6
         z:position.z+cs*longitudinal-sn*lateral,y:position.y});
       if(finite(support?.height))wheelHeight.push(support.height);
     }
-    const wheelFloor=wheelHeight.length?Math.max(...wheelHeight)+travel-.35:-Infinity;
-    const minimum=Math.max(ground.height+travel,wheelFloor);
+    // Limit the influence of probes across different-height road decks.
+    const minimum=boundedWheelSupport(ground.height,wheelHeight)+travel;
     if(position.y<minimum-1e-5){
       position.y=minimum;velocity.y=Math.max(0,velocity.y??0);
       groundHit=corrected=true;

@@ -1,6 +1,7 @@
 import { freightTerminalGroundHeight } from './freight-terminal-start.mjs';
 import { ROAD_V3_VERSION, roadV3TerrainHeight } from './road-v3-geometry.mjs';
 import { roadV3Project } from './road-v3-journey.mjs';
+import { selectRoadDeckContact } from './road-deck-contact.mjs';
 import { landscapeRelief, roadV3NaturalHeight } from './landscape-style.mjs';
 import { roadCrossSection, roadPlaneHeight, roadTerrainHeight } from "./road-surface.mjs";
 import { candidateRoadSegments, terrainRoadSegments } from "./road-spatial-index.mjs";
@@ -31,20 +32,8 @@ export function nearestRoad(course, point) {
 // V2 never calls this path and retains its historical ground query.
 export function roadV3GroundContact(course, position) {
   if (course?.generatorVersion !== ROAD_V3_VERSION) return null;
-  const road=nearestRoad(course,position);
-  if(!road || !Number.isFinite(road.y) || road.distance > road.edge.width*.55+1.4) return null;
-  // A road deck is not drivable ground for a truck underneath an overpass.
-  // Keep a small below-deck tolerance for wheel travel and short airborne arcs;
-  // the terrain query owns ground contact when the deck is farther overhead.
-  if(Number.isFinite(position.y) && road.y - position.y > 4.7) return null;
-  const a=road.edge.samples[road.segmentIndex],b=road.edge.samples[road.segmentIndex+1];
-  if(!a||!b)return null;
-  const t=road.t, grade=a.grade+(b.grade-a.grade)*t,
-    bank=(a.bank??0)+((b.bank??0)-(a.bank??0))*t;
-  const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1,
-    fx=dx/len,fz=dz/len,nx=fz,nz=-fx;
-  const x=-grade*fx-bank*nx,z=-grade*fz-bank*nz,m=Math.hypot(x,1,z);
-  return {height:road.y,normal:{x:x/m,y:1/m,z:z/m},road};
+  // Choose only a reachable upper surface, not an overhead bridge.
+  return selectRoadDeckContact(position,candidateRoadSegments(course,position));
 }
 
 export function nearestDepot(course, point) {

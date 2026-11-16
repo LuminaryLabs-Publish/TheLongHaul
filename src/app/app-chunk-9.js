@@ -51,13 +51,20 @@
       scrapeSparks.visible=alive>0;if(alive){scrapeGeometry.attributes.position.needsUpdate=true;scrapeGeometry.attributes.color.needsUpdate=true}
     }
     const truckSurfaceEntries=[];
-    function truckRenderedGroundHeight(x,z){
+    function truckRenderedGroundHeight(x,z,referenceY=undefined){
       const cell=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${Math.floor(x/CELL_SIZE)}:${Math.floor(z/CELL_SIZE)}`);
       // Grid keys are resolved from cached active entries, avoiding world snapshot APIs.
       const patch=(cell??truckSurfaceEntries.find(e=>x>=e.patch.bounds.minX&&x<e.patch.bounds.maxX&&z>=e.patch.bounds.minZ&&z<e.patch.bounds.maxZ))?.patch;
       let height;
       height=patch?(sampleTerrainTriangle(patch,x,z)?.height??terrainHeight(course,x,z)):terrainHeight(course,x,z);
-      for(const entry of truckSurfaceEntries)height=sampleDriveSurface(entry.group.userData.driveSurface??[],x,z,height);
+      if(course?.generatorVersion===ROAD_V3_VERSION){
+        if(Number.isFinite(referenceY)){
+          const contact=roadV3GroundContact(course,{x,z,y:referenceY});
+          if(contact)height=contact.height;
+        }
+      }else{
+        for(const entry of truckSurfaceEntries)height=sampleDriveSurface(entry.group.userData.driveSurface??[],x,z,height);
+      }
       return arcadeRampGround({x,z},height);
     }
     function updateTruckVisual(dt){
@@ -85,7 +92,7 @@
         rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lean+slopeRoll);
         rig.leanPivot.position.y=1.5-clamp(state.suspensionCompression??0,-1,1)*.12;
         truckSurfaceEntries.length=0;const cx=Math.floor(state.position.x/CELL_SIZE),cz=Math.floor(state.position.z/CELL_SIZE);for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){const entry=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${x}:${z}`);if(entry)truckSurfaceEntries.push(entry)}
-        rig.grounding.resolve(rig.root,rig.leanPivot,truckRenderedGroundHeight);
+        rig.grounding.resolve(rig.root,rig.leanPivot,(x,z)=>truckRenderedGroundHeight(x,z,state.position.y));
       }
       for(const wheel of rig.wheels)wheel.rotation.x=state.wheelTravel/.82;
       for(const pivot of rig.steering)pivot.rotation.y=state.steeringAngle;
