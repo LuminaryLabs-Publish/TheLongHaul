@@ -179,6 +179,10 @@ function fromLegacy(source,{revision=1,context=null}={}){
   // A stable section index controls reconstruction across streamed windows.
   const interchanges=[];
   const groundLevelOpening=seed.startsWith('haul-winding-ground-');
+  // A real highway spawn must not sit behind a viaduct guardrail. Clear
+  // V3's terrain-classified bridge flags for the opening 960 metres, whether
+  // the optional kilometre-3 access spur is constructible or not.
+  if(groundLevelOpening)edges=removeOpeningBridgeSpan(edges,2);
   for(let index=3;index<=last;index+=9){
     if(index<first||index+1>last+1)continue;
     // Only newly seeded runs use the new opening layout. Existing saved V3

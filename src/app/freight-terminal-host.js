@@ -13,7 +13,13 @@
   const priorGenerate=generateEndlessCourse;
   generateEndlessCourse=function(seed){
     const generated=priorGenerate(seed),saved=freightResumeCheckpoint;
-    const enable=loaded && generated?.endless && (!saved||saved.freightTerminal===FREIGHT_TERMINAL_VERSION);
+    // A fresh winding-ground journey ALWAYS starts on the drivable highway.
+    // Otherwise a fast Start click and a slow GLB load produce different
+    // spawn roads for the same seed. Existing saves with an explicit terminal
+    // marker retain their authored terminal ramp and layout.
+    const freshGroundStart=!saved && seed.startsWith('haul-winding-ground-');
+    const enable=loaded && generated?.endless && !freshGroundStart &&
+      (!saved||saved.freightTerminal===FREIGHT_TERMINAL_VERSION);
     return attachFreightTerminalStart(generated,{enabled:enable});
   };
   // When the Endless window regenerates, retain the terminal's merge edge and

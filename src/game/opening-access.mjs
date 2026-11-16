@@ -103,7 +103,7 @@ export function validateGroundLevelAccess(site,{maxGrade=.12}={}){
 // first opening site changes: don't force a raised bridge in the startup region.
 export function removeOpeningBridgeSpan(edges,openingSection,sectionMeters=320){
  const end=(openingSection+1)*sectionMeters;
- return edges.map(e=>e.branchId==='trunk'&&e.type==='endless-highway'&&e.startProgress<end
+ return edges.map(e=>e.branchId==='trunk'&&e.type==='endless-highway'&&e.startProgress<=end
    ?{...e,samples:e.samples.map(p=>p.progress<=end?{...p,structure:p.structure==='bridge'?null:p.structure}:p)}
    :e);
 }
