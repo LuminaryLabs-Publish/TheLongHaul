@@ -229,7 +229,14 @@
     if (isModular() && !simulationFrozen() && currentScene() === 'driving') {
       if (structureRun !== runKey) { structureRun = runKey; previousRoadPosition = null; lastStructureImpact = -Infinity; }
       const truck = readTruck(), progress = isV3() ? endlessHighwayProgress(course,truck.position) : -truck.position.z, p = isV3() ? {...endlessHighwayPoint(course,progress),chunkId:roadChunkAt(course.seed,progress).id} : roadChunkSample(course.seed,progress);
-      const contact = resolveRoadStructureContact(truck, previousRoadPosition, p);
+      // The opening depot exit has no authored bridge/tunnel barriers.
+      // Match the visual suppression in structure(): never collide against
+      // procedural structure tags inside the first 960m of a terminal run.
+      // Real bridge/tunnel contacts outside this corridor remain active.
+      const terminalOpening = isV3() && !!course?.freightTerminal &&
+        Number.isFinite(progress) && progress >= 0 && progress < 960;
+      const contact = terminalOpening ? null :
+        resolveRoadStructureContact(truck, previousRoadPosition, p);
       if (contact) {
         const { contacts, strength, ...resolved } = contact;
         engine.n.longHaulTruck.loadSnapshot({ ...engine.n.longHaulTruck.snapshot(), ...resolved });

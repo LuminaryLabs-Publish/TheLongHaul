@@ -72,7 +72,7 @@ Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPr
 Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
 Object.assign(globalThis,{PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances});
 // One controller owns entry readiness. Keep mandatory host installation ordered.
-const RELEASE_TOKEN='tlh-terminal-beeline-02';
+const RELEASE_TOKEN='tlh-depot-collider-03';
 const releaseScript=name=>{
   const url=new URL(name,import.meta.url);
   url.searchParams.set('v',RELEASE_TOKEN);
