@@ -27,6 +27,7 @@ import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSamp
 import { ROAD_V3_VERSION } from "../game/road-v3-geometry.mjs";
 import { createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress } from "../game/road-v3-playable-course.mjs";
 import { roadRibbonData } from "../game/road-surface.mjs";
+import { terminalExitSegments, overheadTerminalExit, clearOverheadRoadTriangles } from "../game/terminal-merge-clearance.mjs";
 import { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction } from "../game/driving-controls.mjs";
 import { createSkillProgression, SKILL_UPGRADES } from "../game/skill-progression.mjs";
 import { createActiveAbilities, ABILITY_DEFINITIONS } from "../game/active-abilities.mjs";
@@ -62,7 +63,7 @@ Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TO
 Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction, createSkillProgression, SKILL_UPGRADES, createActiveAbilities, ABILITY_DEFINITIONS, createDrivingPickups, PICKUP_DEFINITIONS, freshCampaignSave, readCampaignSave });
 
 Object.assign(globalThis, { LongHaulGuidance, LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact, sampleTerrainTriangle, authoredPropCollider, resolveWorldContact });
-Object.assign(globalThis, { ROAD_V3_VERSION, createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress, bridgePierAllowed, bridgeRailAllowed, roadStructurePositionAllowed, roadSceneryPositionAllowed });
+Object.assign(globalThis, { ROAD_V3_VERSION, createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress, bridgePierAllowed, bridgeRailAllowed, roadStructurePositionAllowed, roadSceneryPositionAllowed, terminalExitSegments, overheadTerminalExit, clearOverheadRoadTriangles });
 Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
 Object.assign(globalThis,{FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes,parseFreightTerminalGlb,createFreightTerminalThreeObject});
 Object.assign(globalThis,{FREIGHT_TERMINAL_TRAFFIC,evaluateFreightTerminalTraffic,terminalTrafficCollisionProxies});
@@ -71,7 +72,7 @@ Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPr
 Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
 Object.assign(globalThis,{PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances});
 // One controller owns entry readiness. Keep mandatory host installation ordered.
-const RELEASE_TOKEN='tlh-intersection-clearance-01';
+const RELEASE_TOKEN='tlh-terminal-beeline-02';
 const releaseScript=name=>{
   const url=new URL(name,import.meta.url);
   url.searchParams.set('v',RELEASE_TOKEN);

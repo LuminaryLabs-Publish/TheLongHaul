@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample } from '../src/game/road-chunks.mjs';
 import { roadRibbonData } from '../src/game/road-surface.mjs';
+import {terminalExitSegments,clearOverheadRoadTriangles} from '../src/game/terminal-merge-clearance.mjs';
 import { resolveRoadStructureContact } from '../src/game/road-structure-contact.mjs';
 import {createEndlessHighway, endlessHighwayPoint, endlessHighwayProgress, advanceEndlessHighway} from '../src/game/endless-highway.mjs';
 import {ROAD_V3_VERSION} from '../src/game/road-v3-geometry.mjs';
@@ -18,7 +19,7 @@ const counters = { base: 0, refresh: 0, batch: 0, traffic: 0, post: 0, damage: 0
 let frozen=false, truck, rawTime=1;
 const c = {
   THREE, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample,
-  roadRibbonData, resolveRoadStructureContact, createEndlessHighway,
+  roadRibbonData, terminalExitSegments, clearOverheadRoadTriangles, resolveRoadStructureContact, createEndlessHighway,
   ROAD_V3_VERSION, bridgePierAllowed,bridgeRailAllowed,roadStructurePositionAllowed, endlessHighwayPoint, endlessHighwayProgress, advanceEndlessHighway,
   createPlayableRoadV3Course,advancePlayableRoadV3Course,playableRoadV3Point,playableRoadV3Progress,
   location:{search:''},

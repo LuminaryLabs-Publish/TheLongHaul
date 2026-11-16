@@ -40,7 +40,11 @@
   const previousRibbon = ribbonGeometry;
   ribbonGeometry = function(roads, widthScale, yOffset) {
     if (!roads.length || !roads[0].modular) return previousRibbon(roads, widthScale, yOffset);
-    const data = roadRibbonData(roads, widthScale, yOffset), geometry = new THREE.BufferGeometry();
+    const raw = roadRibbonData(roads, widthScale, yOffset);
+    // Reject only genuinely elevated road triangles intruding over the terminal exit.
+    // The at-grade highway merge and existing collision surface remain intact.
+    const data = clearOverheadRoadTriangles(raw,terminalExitSegments(course));
+    const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.positions, 3));
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uvs, 2));
     geometry.setIndex(data.indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
@@ -84,6 +88,9 @@
       }
     }
     if (!['bridge','tunnel'].includes(feature) || b.structure !== feature) return;
+    // No bridge decks, roofs, piers or guardrails over the depot's opening drive.
+    // This also covers legacy checkpoint seeds that retain earlier V3 structure tags.
+    if(course?.freightTerminal && a.progress<960)return;
     const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz), heading = Math.atan2(dx, dz);
     const x = (a.x + b.x) / 2, z = (a.z + b.z) / 2, y = (a.y + b.y) / 2 + .12;
     const nx = (a.nx + b.nx) / 2, nz = (a.nz + b.nz) / 2, width = (a.width + b.width) / 2;
