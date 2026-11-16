@@ -127,7 +127,7 @@
 
     const audio={context:null,master:null,engineOsc:null,engineGain:null,windSource:null,windGain:null,enabled:settings.sound,ensure(){if(!this.enabled)return;if(this.context){try{if(this.context.state!=="running")this.context.resume()?.catch(()=>{})}catch{}return}try{const Context=window.AudioContext||window.webkitAudioContext;if(!Context)return;this.context=new Context();this.master=this.context.createGain();this.master.gain.value=.55*(settings.masterVolume??100)/100;this.master.connect(this.context.destination);this.engineOsc=this.context.createOscillator();this.engineOsc.type="sawtooth";const filter=this.context.createBiquadFilter();filter.type="lowpass";filter.frequency.value=420;this.engineGain=this.context.createGain();this.engineGain.gain.value=0;this.engineOsc.connect(filter).connect(this.engineGain).connect(this.master);this.engineOsc.start();const length=this.context.sampleRate*2,buffer=this.context.createBuffer(1,length,this.context.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*.25;this.windSource=this.context.createBufferSource();this.windSource.buffer=buffer;this.windSource.loop=true;const windFilter=this.context.createBiquadFilter();windFilter.type="lowpass";windFilter.frequency.value=800;this.windGain=this.context.createGain();this.windGain.gain.value=.01;this.windSource.connect(windFilter).connect(this.windGain).connect(this.master);this.windSource.start()}catch{this.context=null}},update(speed,throttle,active){if(!this.context||!this.engineGain)return;const now=this.context.currentTime,effects=(settings.effectsVolume??100)/100,gain=this.enabled&&active?(.018+clamp(Math.abs(speed)/32,0,1)*.045)*effects:0;this.engineGain.gain.setTargetAtTime(gain,now,.07);this.engineOsc.frequency.setTargetAtTime(52+Math.abs(speed)*2.7+throttle*15,now,.05);this.windGain?.gain.setTargetAtTime(this.enabled&&active?(.008+clamp(Math.abs(speed)/30,0,1)*.03)*effects:0,now,.1)},tone(f=440,d=.12,type="sine",g=.1,delay=0){if(!this.enabled)return;this.ensure();if(!this.context||!this.master)return;try{const o=this.context.createOscillator(),a=this.context.createGain(),now=this.context.currentTime+delay;o.type=type;o.frequency.setValueAtTime(f,now);a.gain.setValueAtTime(.0001,now);a.gain.exponentialRampToValueAtTime(g*(settings.effectsVolume??100)/100,now+.012);a.gain.exponentialRampToValueAtTime(.0001,now+d);o.connect(a).connect(this.master);o.start(now);o.stop(now+d+.03)}catch{}},wrong(){this.tone(150,.22,"square",.08);this.tone(108,.28,"square",.07,.13)},good(){this.tone(330,.28,"sine",.12);this.tone(440,.38,"sine",.11,.1);this.tone(660,.48,"sine",.1,.2)},hit(){this.tone(72,.18,"sawtooth",.15)},click(){this.tone(260,.06,"square",.04)}};
 
-    function newSeed(previous=""){const values=new Uint32Array(2);try{crypto.getRandomValues(values)}catch{values[0]=Date.now()>>>0;values[1]=Math.floor(Math.random()*0xffffffff)}let seed=`haul-winding-${values[0].toString(36)}-${values[1].toString(36)}`;if(seed===previous)seed+="-next";return seed}function seedCode(seed){return hashText(seed).toString(36).toUpperCase().padStart(7,"0").slice(0,7)}function formatTime(seconds){const safe=Math.max(0,finite(seconds));const min=Math.floor(safe/60),sec=Math.floor(safe%60),tenths=Math.floor((safe-Math.floor(safe))*10);return safe<60?`${min}:${String(sec).padStart(2,"0")}.${tenths}`:`${min}:${String(sec).padStart(2,"0")}`}function formatDistance(value){return `${(Math.max(0,finite(value))/1609.344).toFixed(2)} mi`}
+    function newSeed(previous=""){const values=new Uint32Array(2);try{crypto.getRandomValues(values)}catch{values[0]=Date.now()>>>0;values[1]=Math.floor(Math.random()*0xffffffff)}let seed=`haul-terminal-direct-${values[0].toString(36)}-${values[1].toString(36)}`;if(seed===previous)seed+="-next";return seed}function seedCode(seed){return hashText(seed).toString(36).toUpperCase().padStart(7,"0").slice(0,7)}function formatTime(seconds){const safe=Math.max(0,finite(seconds));const min=Math.floor(safe/60),sec=Math.floor(safe%60),tenths=Math.floor((safe-Math.floor(safe))*10);return safe<60?`${min}:${String(sec).padStart(2,"0")}.${tenths}`:`${min}:${String(sec).padStart(2,"0")}`}function formatDistance(value){return `${(Math.max(0,finite(value))/1609.344).toFixed(2)} mi`}
 
 
 // app-chunk-6.js
@@ -209,7 +209,42 @@
     function spendTruckDamage(amount,reason){const armor=clamp(Number((arcadeCachedSave??=arcadeUpgradeState()).upgrades?.armor)||0,0,5),damage=Math.max(0,amount)*(1-armor*.08);meters.spend("truck-condition",damage,reason);return damage}
     function currentScene(){return engine.n.coreScene.getCurrentScene()?.id??"boot"}
     function surfaceAt(position){const road=nearestRoad(course,position);if(!road)return{surface:"off-road",grip:.38,road:null};const onRoad=road.distance<=road.edge.width*.55+1.4;const shoulder=road.distance<=road.edge.width*.85+5;return{surface:onRoad?"road":shoulder?"shoulder":"off-road",grip:onRoad?(road.edge.type==="rough-shortcut"?.72:1):shoulder?.62:.38,road}}
-    function groundSample(position){const roadContact=roadV3GroundContact(course,position);if(roadContact)return{height:roadContact.height,normal:roadContact.normal};const e=2,h=terrainHeight(course,position.x,position.z),left=terrainHeight(course,position.x-e,position.z),right=terrainHeight(course,position.x+e,position.z),back=terrainHeight(course,position.x,position.z-e),front=terrainHeight(course,position.x,position.z+e),nx=left-right,ny=e*2,nz=back-front,length=Math.hypot(nx,ny,nz)||1;return{height:h,normal:{x:nx/length,y:ny/length,z:nz/length}}}
+    function groundSample(position){
+      const roadContact=roadV3GroundContact(course,position);
+      if(roadContact)return{height:roadContact.height,normal:roadContact.normal};
+      const e=.3,x=position.x,z=position.z,h=truckRenderedGroundHeight(x,z,position.y);
+      const nx=truckRenderedGroundHeight(x-e,z,position.y)-truckRenderedGroundHeight(x+e,z,position.y);
+      const nz=truckRenderedGroundHeight(x,z-e,position.y)-truckRenderedGroundHeight(x,z+e,position.y);
+      const ny=e*2,length=Math.hypot(nx,ny,nz)||1;
+      return{height:h,normal:{x:nx/length,y:ny/length,z:nz/length}};
+    }
+    const worldContactDiagnostics={frames:0,groundCorrections:0,propImpacts:0,lastImpact:null};
+    window.LongHaulWorldContact={getState:()=>({...worldContactDiagnostics})};
+    function applyWorldContact(previous,dt){
+      if(!previous||!course)return;
+      const truck=readTruck(),now=truck.position;
+      const middle={x:(previous.x+now.x)*.5,z:(previous.z+now.z)*.5};
+      const radius=Math.min(80,Math.hypot(now.x-previous.x,now.z-previous.z)+17);
+      const collisionCandidates=[...obstacleCandidates(previous,radius),...obstacleCandidates(middle,radius),...obstacleCandidates(now,radius)];
+      const obstacles=[...new Map(collisionCandidates.filter(o=>{
+        if(o.kind==='roundabout-island')return false;
+        if(o.id?.startsWith('authored:') || ['tree','rock'].includes(o.kind)){
+          const near=nearestRoad(course,{x:o.x,z:o.z,y:o.y});
+          if(near && near.distance<(near.edge?.width??0)*.5+(o.radius??0)+.4 &&
+             (!Number.isFinite(o.y)||!Number.isFinite(near.y)||Math.abs(o.y-near.y)<2.5))return false;
+        }
+        return true;
+      }).map(o=>[o.id,o])).values()];
+      const result=resolveWorldContact(truck,previous,groundSample,obstacles,{dt,travel:readDynamics().suspension.travel??.92});
+      worldContactDiagnostics.frames++;
+      if(!result)return;
+      engine.n.longHaulTruck.loadSnapshot({...engine.n.longHaulTruck.snapshot(),...result.state});
+      if(result.groundHit)worldContactDiagnostics.groundCorrections++;
+      if(result.impacts.length){
+        worldContactDiagnostics.propImpacts+=result.impacts.length;
+        worldContactDiagnostics.lastImpact=result.impacts[0].id;
+      }
+    }
     function preTickDriving(dt){
       if(skillMenuOpen()){
         if(consumeAction("upgrades")||consumeAction("pause"))closeSkillMenu();
@@ -334,13 +369,20 @@
       scrapeSparks.visible=alive>0;if(alive){scrapeGeometry.attributes.position.needsUpdate=true;scrapeGeometry.attributes.color.needsUpdate=true}
     }
     const truckSurfaceEntries=[];
-    function truckRenderedGroundHeight(x,z){
+    function truckRenderedGroundHeight(x,z,referenceY=undefined){
       const cell=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${Math.floor(x/CELL_SIZE)}:${Math.floor(z/CELL_SIZE)}`);
       // Grid keys are resolved from cached active entries, avoiding world snapshot APIs.
       const patch=(cell??truckSurfaceEntries.find(e=>x>=e.patch.bounds.minX&&x<e.patch.bounds.maxX&&z>=e.patch.bounds.minZ&&z<e.patch.bounds.maxZ))?.patch;
       let height;
-      if(patch){const data=patch.terrain,n=data.segments,gx=clamp((x-patch.bounds.minX)/CELL_SIZE*n,0,n-1e-8),gz=clamp((z-patch.bounds.minZ)/CELL_SIZE*n,0,n-1e-8),ix=Math.floor(gx),iz=Math.floor(gz),u=gx-ix,v=gz-iz,a=iz*(n+1)+ix,h=data.heights,h00=h[a],h10=h[a+1],h01=h[a+n+1],h11=h[a+n+2];height=u+v<=1?h00+(h10-h00)*u+(h01-h00)*v:h11+(h01-h11)*(1-u)+(h10-h11)*(1-v)}else height=terrainHeight(course,x,z);
-      for(const entry of truckSurfaceEntries)height=sampleDriveSurface(entry.group.userData.driveSurface??[],x,z,height);
+      height=patch?(sampleTerrainTriangle(patch,x,z)?.height??terrainHeight(course,x,z)):terrainHeight(course,x,z);
+      if(course?.generatorVersion===ROAD_V3_VERSION){
+        if(Number.isFinite(referenceY)){
+          const contact=roadV3GroundContact(course,{x,z,y:referenceY});
+          if(contact)height=contact.height;
+        }
+      }else{
+        for(const entry of truckSurfaceEntries)height=sampleDriveSurface(entry.group.userData.driveSurface??[],x,z,height);
+      }
       return arcadeRampGround({x,z},height);
     }
     function updateTruckVisual(dt){
@@ -368,7 +410,7 @@
         rig.leanPivot.rotation.set(lerp(rig.leanPivot.rotation.x,clamp(state.bodyPitch+pitch,-.72,.72),1-Math.exp(-8*dt)),0,lean+slopeRoll);
         rig.leanPivot.position.y=1.5-clamp(state.suspensionCompression??0,-1,1)*.12;
         truckSurfaceEntries.length=0;const cx=Math.floor(state.position.x/CELL_SIZE),cz=Math.floor(state.position.z/CELL_SIZE);for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){const entry=cellHosts.get(`${WORLD_ID}:uniform-grid:0:${x}:${z}`);if(entry)truckSurfaceEntries.push(entry)}
-        rig.grounding.resolve(rig.root,rig.leanPivot,truckRenderedGroundHeight);
+        rig.grounding.resolve(rig.root,rig.leanPivot,(x,z)=>truckRenderedGroundHeight(x,z,state.position.y));
       }
       for(const wheel of rig.wheels)wheel.rotation.x=state.wheelTravel/.82;
       for(const pivot of rig.steering)pivot.rotation.y=state.steeringAngle;
@@ -1209,18 +1251,22 @@
     $("#fullscreen-btn").addEventListener("click",async()=>{try{const stage=$("#game-stage");if(document.fullscreenElement)await document.exitFullscreen();else if(stage.requestFullscreen)await stage.requestFullscreen();else{toast("Fullscreen is unavailable in this browser","",1800);return}resize()}catch{toast("Fullscreen could not be opened here","",1800)}});
     document.addEventListener("fullscreenchange",()=>{$("#fullscreen-btn").setAttribute("aria-pressed",String(Boolean(document.fullscreenElement)));resize()});
 
-    function readFreightCheckpoint(){
+    function readFreightCheckpoint(fullValidation=false){
       try{
         if(!arcadeSaveWritable())return null;
         const saved=readCampaignSave(localStorage.getItem("longhaul-campaign-v1")).save,checkpoint=saved?.freightJourney;
         if(!checkpoint||checkpoint.schema!=="long-haul.freight-checkpoint/1"||checkpoint.terminal)return null;
         if(!checkpoint.truck?.position||![checkpoint.truck.position.x,checkpoint.truck.position.y,checkpoint.truck.position.z,checkpoint.truck.heading].every(Number.isFinite))return null;
         if(!checkpoint.meters||![checkpoint.meters.fuel,checkpoint.meters.truck,checkpoint.meters.cargo].every(v=>Number.isFinite(v)&&v>=0&&v<=100)||checkpoint.meters.truck<=0)return null;
-        const v3=checkpoint.journey.generatorVersion===ROAD_V3_VERSION;
-        const graph=v3?engine.n.longHaulRoadV3.buildPlayable(checkpoint.journey.seed,{progress:checkpoint.journey.progress}):null;
-        createFreightJourney({seed:checkpoint.journey.seed,sessionId:checkpoint.journey.sessionId,initialType:checkpoint.initialType,snapshot:checkpoint.journey,
-          generatorVersion:checkpoint.journey.generatorVersion,roadGraph:graph});
+        // Verify checkpoint integrity before offering Resume. Do not allocate
+        // a V3 road graph solely to render the title screen on fresh launches.
         if(!prepareFreightSave(saved,checkpoint,{expectedRevision:checkpoint.revision}).ok)return null;
+        if(fullValidation){
+          const v3=checkpoint.journey.generatorVersion===ROAD_V3_VERSION;
+          const graph=v3?engine.n.longHaulRoadV3.buildPlayable(checkpoint.journey.seed,{progress:checkpoint.journey.progress}):null;
+          createFreightJourney({seed:checkpoint.journey.seed,sessionId:checkpoint.journey.sessionId,initialType:checkpoint.initialType,snapshot:checkpoint.journey,
+            generatorVersion:checkpoint.journey.generatorVersion,roadGraph:graph});
+        }
         return checkpoint;
       }catch{return null}
     }
@@ -1232,7 +1278,7 @@
     const freightResumeButton=document.createElement("button");freightResumeButton.id="freight-resume-btn";freightResumeButton.className="btn";
     freightResumeButton.textContent="Resume haul";$("#title-screen .menu-actions").append(freightResumeButton);
     function refreshFreightResume(){freightResumeButton.hidden=!readFreightCheckpoint()}
-    freightResumeButton.addEventListener("click",()=>{const saved=readFreightCheckpoint();if(!saved){refreshFreightResume();toast("This haul cannot be resumed. Your garage balance is preserved.","",2500);return}freightResumeCheckpoint=saved;audio.ensure();startGeneration(saved.journey.seed,false,"start")});
+    freightResumeButton.addEventListener("click",()=>{const saved=readFreightCheckpoint(true);if(!saved){refreshFreightResume();toast("This haul cannot be resumed. Your garage balance is preserved.","",2500);return}freightResumeCheckpoint=saved;audio.ensure();startGeneration(saved.journey.seed,false,"start")});
     refreshFreightResume();
 
     const freightStartGenerationBase=startGeneration;
@@ -2386,6 +2432,7 @@ function frame(now) {
     } else if (beforeScene === "paused" && consume("Escape")) resumeGame();
     const simulate = !frozenAtStart && !simulationFrozen() && currentScene() === "driving";
     engine.world.__longHaulScene = simulate ? "driving" : beforeScene === "driving" ? "paused" : beforeScene;
+    const worldContactPrevious=simulate?{...readTruck().position}:null;
     performanceStats.measure("simulation", () => engine.tick(simulate ? dt : 0));
     const sceneId = updateSceneUi();
     if (window.__longHaulBooted && sceneId === "title" && campaignLaunch?.course && !campaignAutoStarted) {
@@ -2396,6 +2443,7 @@ function frame(now) {
       if (simulate) {
         updateSkillGameplay(dt);
         performanceStats.measure("gameplay", () => postTickGameplay(surface ?? surfaceAt(readTruck().position), dt));
+        performanceStats.measure("world-contact",()=>applyWorldContact(worldContactPrevious,dt));
         updateArcadeRules(dt);
       }
       performanceStats.measure("streaming", updateWorldStreaming);

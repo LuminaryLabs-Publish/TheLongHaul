@@ -178,15 +178,18 @@ function fromLegacy(source,{revision=1,context=null}={}){
   // underpass and continuous graded entrance to an existing trunk node.
   // A stable section index controls reconstruction across streamed windows.
   const interchanges=[];
+  const directTerminal=seed.startsWith('haul-terminal-direct-');
   const groundLevelOpening=seed.startsWith('haul-winding-ground-');
   // A real highway spawn must not sit behind a viaduct guardrail. Clear
   // V3's terrain-classified bridge flags for the opening 960 metres, whether
   // the optional kilometre-3 access spur is constructible or not.
-  if(groundLevelOpening)edges=removeOpeningBridgeSpan(edges,2);
+  if(groundLevelOpening||directTerminal)edges=removeOpeningBridgeSpan(edges,2);
   for(let index=3;index<=last;index+=9){
     if(index<first||index+1>last+1)continue;
     // Only newly seeded runs use the new opening layout. Existing saved V3
     // journeys retain their original road geometry and checkpoint identity.
+    // The terminal owns the only authored opening. No second opening spur.
+    if(directTerminal&&index===3)continue;
     const opening=groundLevelOpening&&index===3;
     const site=opening
       ?createGroundLevelAccess(edges,index,{naturalHeight:(x,z)=>roadV3NaturalHeight(seed,x,z)})

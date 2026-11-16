@@ -17,9 +17,15 @@
     // Otherwise a fast Start click and a slow GLB load produce different
     // spawn roads for the same seed. Existing saves with an explicit terminal
     // marker retain their authored terminal ramp and layout.
-    const freshGroundStart=!saved && seed.startsWith('haul-winding-ground-');
-    const enable=loaded && generated?.endless && !freshGroundStart &&
+    // Physics must not depend on whether the terminal art loads first.
+    // New terminal-direct journeys spawn on the one connected straight exit.
+    // Direct checkpoint resumes retain the same road even before GLB readiness.
+    const directStart=!saved && seed.startsWith('haul-terminal-direct-');
+    const restoreDirect=saved?.freightTerminal===FREIGHT_TERMINAL_VERSION &&
+      seed.startsWith('haul-terminal-direct-');
+    const legacyAllowed=loaded && !(!saved && seed.startsWith('haul-winding-ground-')) &&
       (!saved||saved.freightTerminal===FREIGHT_TERMINAL_VERSION);
+    const enable=Boolean(generated?.endless && (directStart||restoreDirect||legacyAllowed));
     return attachFreightTerminalStart(generated,{enabled:enable});
   };
   // When the Endless window regenerates, retain the terminal's merge edge and

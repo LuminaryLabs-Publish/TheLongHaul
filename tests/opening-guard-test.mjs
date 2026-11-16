@@ -4,12 +4,12 @@ import {readFileSync} from 'node:fs';
 const read=(p)=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('fresh run never depends on terminal GLB load timing',()=>{
  const host=read('src/app/freight-terminal-host.js');
- assert.match(host,/const freshGroundStart=!saved && seed\.startsWith\('haul-winding-ground-'\)/);
- assert.match(host,/loaded && generated\?\.endless && !freshGroundStart/);
+ assert.match(host,/const directStart=!saved && seed\.startsWith\('haul-terminal-direct-'\)/);
+ assert.match(host,/directStart\|\|restoreDirect\|\|legacyAllowed/);
 });
 test('opening viaduct flags removed independently of an optional spur',()=>{
  const src=read('src/game/road-v3-playable-course.mjs');
- const start=src.indexOf('if(groundLevelOpening)edges=removeOpeningBridgeSpan(edges,2);');
+ const start=src.indexOf('if(groundLevelOpening||directTerminal)edges=removeOpeningBridgeSpan(edges,2);');
  const loop=src.indexOf('for(let index=3;index<=last;index+=9)');
  assert.ok(start>=0 && loop>start);
 });

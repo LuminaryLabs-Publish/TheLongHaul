@@ -4,6 +4,7 @@ import { endlessHighwayPoint } from './endless-highway.mjs';
 import { playableRoadV3Point } from './road-v3-playable-course.mjs';
 import { ROAD_V3_VERSION } from './road-v3-geometry.mjs';
 import { edgeLength } from './shared.mjs';
+import { isDirectTerminalRun, straightTerminalRoadPoints, validateStraightTerminalRoad } from './terminal-direct-road.mjs';
 
 export const FREIGHT_TERMINAL_VERSION = 'long-haul.freight-terminal-start/1';
 export const FREIGHT_TERMINAL_MERGE_PROGRESS = 320;
@@ -27,7 +28,11 @@ function siteFor(course){
     :endlessHighwayPoint(course,FREIGHT_TERMINAL_MERGE_PROGRESS);
   if(!point||![point.x,point.y,point.z,point.heading].every(Number.isFinite))
     throw new Error('Freight terminal requires a sampled highway frame');
-  const yaw=point.heading-Math.PI,c=Math.cos(yaw),s=Math.sin(yaw);
+  // Align the straight terminal road with the highway tangent at its join.
+  // Older terminal checkpoint layouts retain their authored orientation.
+  const direct=isDirectTerminalRun(course.seed);
+  const localExitHeading=Math.atan2(LOCAL_MERGE[0]-LOCAL_SPAWN[0],LOCAL_MERGE[2]-LOCAL_SPAWN[2]);
+  const yaw=point.heading-(direct?localExitHeading:Math.PI),c=Math.cos(yaw),s=Math.sin(yaw);
   return {id:FREIGHT_TERMINAL_VERSION,yaw,
     x:point.x-c*LOCAL_MERGE[0]-s*LOCAL_MERGE[2],
     y:point.y-LOCAL_MERGE[1],
@@ -49,7 +54,17 @@ export function freightTerminalGroundHeight(course,x,z,underlying){
   return site.y+0.035+(underlying-site.y-0.035)*smooth;
 }
 function rampEdge(course,site){
-  const samples=RAMP_LOCAL.map(p=>terminalWorldPoint(site,p));
+  const direct=isDirectTerminalRun(course.seed);
+  const samples=direct
+    ?straightTerminalRoadPoints(terminalWorldPoint(site,LOCAL_SPAWN),
+      course.generatorVersion===ROAD_V3_VERSION
+        ?playableRoadV3Point(course,FREIGHT_TERMINAL_MERGE_PROGRESS)
+        :endlessHighwayPoint(course,FREIGHT_TERMINAL_MERGE_PROGRESS))
+    :RAMP_LOCAL.map(p=>terminalWorldPoint(site,p));
+  if(direct){
+    const failures=validateStraightTerminalRoad(samples);
+    if(failures.length)throw Error(`Invalid direct terminal road: ${failures.join(', ')}`);
+  }
   // Snap the final road sample exactly onto the real seeded highway deck.
   const merge=course.generatorVersion===ROAD_V3_VERSION
     ?playableRoadV3Point(course,FREIGHT_TERMINAL_MERGE_PROGRESS)
@@ -64,14 +79,14 @@ function rampEdge(course,site){
     const a=samples[Math.max(0,i-1)],b=samples[Math.min(samples.length-1,i+1)];
     const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1;
     Object.assign(samples[i],{heading:Math.atan2(dx,dz),nx:dz/len,nz:-dx/len,
-      width:i<3?11:8.6,bank:0,grade:(b.y-a.y)/len,structure:null,
+      width:direct?11:i<3?11:8.6,bank:0,grade:(b.y-a.y)/len,structure:null,
       laneFactor:3,laneCount:1,
       progress:FREIGHT_TERMINAL_MERGE_PROGRESS*lengths[i]/Math.max(1,distance)});
   }
   const edge={id:'terminal:start-ramp',from:'terminal:spawn',to:'endless:node:1',
     branchId:'terminal:exit',branchName:'Freight Terminal On-ramp',
     type:'terminal-onramp',roadClass:'paved-regional',surface:'paved',
-    width:8.6,laneCount:1,laneWidth:3.8,roughness:.025,
+    width:direct?11:8.6,laneCount:1,laneWidth:3.8,roughness:.025,
     optional:false,endless:true,modular:true,generatorVersion:course.generatorVersion,
     startProgress:0,endProgress:FREIGHT_TERMINAL_MERGE_PROGRESS,
     samples,sectionIndex:0,length:distance};
