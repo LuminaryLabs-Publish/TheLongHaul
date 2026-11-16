@@ -10,6 +10,7 @@ import { roadV3Project, roadV3PointAt } from './road-v3-journey.mjs';
 import { edgeLength, hashText } from './shared.mjs';
 import { roadV3NaturalHeight } from './landscape-style.mjs';
 import { createHighwayInterchange, applyInterchangeDeckSpan, validateHighwayInterchange } from './highway-interchange.mjs';
+import { createGroundLevelAccess, validateGroundLevelAccess, removeOpeningBridgeSpan } from './opening-access.mjs';
 
 const contexts=new WeakMap();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -177,20 +178,27 @@ function fromLegacy(source,{revision=1,context=null}={}){
   // underpass and continuous graded entrance to an existing trunk node.
   // A stable section index controls reconstruction across streamed windows.
   const interchanges=[];
+  const groundLevelOpening=seed.startsWith('haul-winding-ground-');
   for(let index=3;index<=last;index+=9){
     if(index<first||index+1>last+1)continue;
-    const site=createHighwayInterchange(edges,index,{naturalHeight:(x,z)=>roadV3NaturalHeight(seed,x,z)});
-    if(!site)continue; // grade/clearance gate: no partial geometry is installed
-    const failures=validateHighwayInterchange(site);
+    // Only newly seeded runs use the new opening layout. Existing saved V3
+    // journeys retain their original road geometry and checkpoint identity.
+    const opening=groundLevelOpening&&index===3;
+    const site=opening
+      ?createGroundLevelAccess(edges,index,{naturalHeight:(x,z)=>roadV3NaturalHeight(seed,x,z)})
+      :createHighwayInterchange(edges,index,{naturalHeight:(x,z)=>roadV3NaturalHeight(seed,x,z)});
+    if(!site)continue; // Reject the entire site rather than a dead-end segment.
+    const failures=opening?validateGroundLevelAccess(site):validateHighwayInterchange(site);
     if(failures.length)throw Error(`Invalid V3 interchange ${index}: ${failures.join(', ')}`);
-    edges=applyInterchangeDeckSpan(edges,site);
+    edges=opening?removeOpeningBridgeSpan(edges,index):applyInterchangeDeckSpan(edges,site);
     edges.push(...site.edges);
     nodes.push(...site.nodes);
     extraOptional.push(site.optional);
     extraBranches.push(site.branch);
     signs.push(site.sign);
-    interchanges.push({id:site.id,sectionIndex:index,crossing:site.crossing,
-      merge:site.merge,bridgeSpan:site.bridgeSpan,clearance:site.clearance,maxGrade:site.maxGrade});
+    interchanges.push({id:site.id,kind:site.kind??'overpass',sectionIndex:index,
+      crossing:site.crossing??null,merge:site.merge,
+      bridgeSpan:site.bridgeSpan??0,clearance:site.clearance??null,maxGrade:site.maxGrade});
   }
   const originPoint=align(context,0);
   const course={...source,schema:'long-haul.course-package/1',generatorVersion:ROAD_V3_VERSION,

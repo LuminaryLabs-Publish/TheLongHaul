@@ -16,18 +16,22 @@
     $("#fullscreen-btn").addEventListener("click",async()=>{try{const stage=$("#game-stage");if(document.fullscreenElement)await document.exitFullscreen();else if(stage.requestFullscreen)await stage.requestFullscreen();else{toast("Fullscreen is unavailable in this browser","",1800);return}resize()}catch{toast("Fullscreen could not be opened here","",1800)}});
     document.addEventListener("fullscreenchange",()=>{$("#fullscreen-btn").setAttribute("aria-pressed",String(Boolean(document.fullscreenElement)));resize()});
 
-    function readFreightCheckpoint(){
+    function readFreightCheckpoint(fullValidation=false){
       try{
         if(!arcadeSaveWritable())return null;
         const saved=readCampaignSave(localStorage.getItem("longhaul-campaign-v1")).save,checkpoint=saved?.freightJourney;
         if(!checkpoint||checkpoint.schema!=="long-haul.freight-checkpoint/1"||checkpoint.terminal)return null;
         if(!checkpoint.truck?.position||![checkpoint.truck.position.x,checkpoint.truck.position.y,checkpoint.truck.position.z,checkpoint.truck.heading].every(Number.isFinite))return null;
         if(!checkpoint.meters||![checkpoint.meters.fuel,checkpoint.meters.truck,checkpoint.meters.cargo].every(v=>Number.isFinite(v)&&v>=0&&v<=100)||checkpoint.meters.truck<=0)return null;
-        const v3=checkpoint.journey.generatorVersion===ROAD_V3_VERSION;
-        const graph=v3?engine.n.longHaulRoadV3.buildPlayable(checkpoint.journey.seed,{progress:checkpoint.journey.progress}):null;
-        createFreightJourney({seed:checkpoint.journey.seed,sessionId:checkpoint.journey.sessionId,initialType:checkpoint.initialType,snapshot:checkpoint.journey,
-          generatorVersion:checkpoint.journey.generatorVersion,roadGraph:graph});
+        // Verify checkpoint integrity before offering Resume. Do not allocate
+        // a V3 road graph solely to render the title screen on fresh launches.
         if(!prepareFreightSave(saved,checkpoint,{expectedRevision:checkpoint.revision}).ok)return null;
+        if(fullValidation){
+          const v3=checkpoint.journey.generatorVersion===ROAD_V3_VERSION;
+          const graph=v3?engine.n.longHaulRoadV3.buildPlayable(checkpoint.journey.seed,{progress:checkpoint.journey.progress}):null;
+          createFreightJourney({seed:checkpoint.journey.seed,sessionId:checkpoint.journey.sessionId,initialType:checkpoint.initialType,snapshot:checkpoint.journey,
+            generatorVersion:checkpoint.journey.generatorVersion,roadGraph:graph});
+        }
         return checkpoint;
       }catch{return null}
     }
@@ -39,7 +43,7 @@
     const freightResumeButton=document.createElement("button");freightResumeButton.id="freight-resume-btn";freightResumeButton.className="btn";
     freightResumeButton.textContent="Resume haul";$("#title-screen .menu-actions").append(freightResumeButton);
     function refreshFreightResume(){freightResumeButton.hidden=!readFreightCheckpoint()}
-    freightResumeButton.addEventListener("click",()=>{const saved=readFreightCheckpoint();if(!saved){refreshFreightResume();toast("This haul cannot be resumed. Your garage balance is preserved.","",2500);return}freightResumeCheckpoint=saved;audio.ensure();startGeneration(saved.journey.seed,false,"start")});
+    freightResumeButton.addEventListener("click",()=>{const saved=readFreightCheckpoint(true);if(!saved){refreshFreightResume();toast("This haul cannot be resumed. Your garage balance is preserved.","",2500);return}freightResumeCheckpoint=saved;audio.ensure();startGeneration(saved.journey.seed,false,"start")});
     refreshFreightResume();
 
     const freightStartGenerationBase=startGeneration;
