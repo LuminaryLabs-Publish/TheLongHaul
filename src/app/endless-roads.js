@@ -94,8 +94,13 @@
     };
     if (feature === 'bridge') {
       addBox(0, -.55, width * 1.12, .85, length + .08);
-      for (const side of [-1, 1]) addBox(side * (width / 2 + 1), .62, .36, 1.05, length + .1, rail);
-      if (Math.round(a.progress / 5) % 8 === 0) {
+      for (const side of [-1, 1]) {
+        if(bridgeRailAllowed(side,x,z,course?.interchanges))
+          addBox(side * (width / 2 + 1), .62, .36, 1.05, length + .1, rail);
+      }
+      // Viaduct supports must never appear inside the real lower road.
+      if (Math.round(a.progress / 5) % 8 === 0 &&
+          bridgePierAllowed(x,z,course?.interchanges)) {
         for (const side of [-1, 1]) addBox(side * width * .29, -5, 1.5, 9, 2.2);
       }
     } else {

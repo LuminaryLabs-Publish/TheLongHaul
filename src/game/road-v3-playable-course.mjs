@@ -8,6 +8,8 @@ import { ROAD_V3_VERSION } from './road-v3-geometry.mjs';
 import { createTerrainRoadV3Sampler, classifyTerrainRoadV3Structure } from './road-v3-terrain-route.mjs';
 import { roadV3Project, roadV3PointAt } from './road-v3-journey.mjs';
 import { edgeLength, hashText } from './shared.mjs';
+import { roadV3NaturalHeight } from './landscape-style.mjs';
+import { createHighwayInterchange, applyInterchangeDeckSpan, validateHighwayInterchange } from './highway-interchange.mjs';
 
 const contexts=new WeakMap();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -145,7 +147,7 @@ function fromLegacy(source,{revision=1,context=null}={}){
   const seed=source.seed;
   context??={seed,sampler:createTerrainRoadV3Sampler(seed),edges:new Map()};
   const nextEdges=new Map();
-  const edges=source.edges.map(edge=>{
+  let edges=source.edges.map(edge=>{
     const cached=context.edges.get(edge.id);
     const mapped=cached??translateEdge(context,edge);
     nextEdges.set(edge.id,mapped);return mapped;
@@ -171,12 +173,31 @@ function fromLegacy(source,{revision=1,context=null}={}){
     roundabouts.push(item.roundabout);extraChoices.push(item.choice);
     extraOptional.push(item.optional);extraBranches.push(item.branch);
   }
+  // Real V3 access interchanges: an enterable lower roadway, full-depth
+  // underpass and continuous graded entrance to an existing trunk node.
+  // A stable section index controls reconstruction across streamed windows.
+  const interchanges=[];
+  for(let index=3;index<=last;index+=9){
+    if(index<first||index+1>last+1)continue;
+    const site=createHighwayInterchange(edges,index,{naturalHeight:(x,z)=>roadV3NaturalHeight(seed,x,z)});
+    if(!site)continue; // grade/clearance gate: no partial geometry is installed
+    const failures=validateHighwayInterchange(site);
+    if(failures.length)throw Error(`Invalid V3 interchange ${index}: ${failures.join(', ')}`);
+    edges=applyInterchangeDeckSpan(edges,site);
+    edges.push(...site.edges);
+    nodes.push(...site.nodes);
+    extraOptional.push(site.optional);
+    extraBranches.push(site.branch);
+    signs.push(site.sign);
+    interchanges.push({id:site.id,sectionIndex:index,crossing:site.crossing,
+      merge:site.merge,bridgeSpan:site.bridgeSpan,clearance:site.clearance,maxGrade:site.maxGrade});
+  }
   const originPoint=align(context,0);
   const course={...source,schema:'long-haul.course-package/1',generatorVersion:ROAD_V3_VERSION,
     packageId:`endless-v3-${hashText(seed).toString(36)}`,terrainAware:true,
     origin:{id:'origin',...originPoint},
     edges,nodes,hub:nodes.find(n=>n.id===source.hub?.id)??nodes[0],
-    roundabouts,routeChoices:[...source.routeChoices,...extraChoices],
+    roundabouts,interchanges,routeChoices:[...source.routeChoices,...extraChoices],
     optionalRoads:[...source.optionalRoads,...extraOptional],
     branches:[...source.branches,...extraBranches],
     depots,signs,loadingStations:stations,
