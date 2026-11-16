@@ -19,6 +19,11 @@
       const state=entry?.environmentTileState;
       if(!state)return;
       factory.releaseCell(state.render);
+      if(state.colliderIds?.length){
+        const owned=new Set(state.colliderIds);
+        entry.obstacles=entry.obstacles.filter(o=>!owned.has(o.id));
+        refreshObstacles();
+      }
       entry.environmentTileState=null;
       initial.activeCells=Math.max(0,initial.activeCells-1);
     }
@@ -82,7 +87,15 @@
           if(state.index===state.plan.objects.length)state.phase='batches';
         }
         if(state.phase==='batches'){
-          if(factory.finalizeStep(state.render,entry.group).finished){state.applied=true;initial.builtCells++;}
+          if(factory.finalizeStep(state.render,entry.group).finished){
+            if(!entry.visualOnly){
+              const colliders=state.plan.objects.map(o=>authoredPropCollider(o,truckRenderedGroundHeight(o.position.x,o.position.z))).filter(Boolean);
+              state.colliderIds=colliders.map(o=>o.id);
+              entry.obstacles.push(...colliders);
+              refreshObstacles();
+            }
+            state.applied=true;initial.builtCells++;
+          }
         }
         if(!state.applied)cellDecorationQueue.push(job);
       }catch(error){

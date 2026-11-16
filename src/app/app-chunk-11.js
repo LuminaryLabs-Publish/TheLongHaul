@@ -139,6 +139,7 @@ function frame(now) {
     } else if (beforeScene === "paused" && consume("Escape")) resumeGame();
     const simulate = !frozenAtStart && !simulationFrozen() && currentScene() === "driving";
     engine.world.__longHaulScene = simulate ? "driving" : beforeScene === "driving" ? "paused" : beforeScene;
+    const worldContactPrevious=simulate?{...readTruck().position}:null;
     performanceStats.measure("simulation", () => engine.tick(simulate ? dt : 0));
     const sceneId = updateSceneUi();
     if (window.__longHaulBooted && sceneId === "title" && campaignLaunch?.course && !campaignAutoStarted) {
@@ -149,6 +150,7 @@ function frame(now) {
       if (simulate) {
         updateSkillGameplay(dt);
         performanceStats.measure("gameplay", () => postTickGameplay(surface ?? surfaceAt(readTruck().position), dt));
+        performanceStats.measure("world-contact",()=>applyWorldContact(worldContactPrevious,dt));
         updateArcadeRules(dt);
       }
       performanceStats.measure("streaming", updateWorldStreaming);

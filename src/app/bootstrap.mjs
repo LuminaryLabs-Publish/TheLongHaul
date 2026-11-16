@@ -18,6 +18,7 @@ import {PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTr
 import * as LongHaulArt from '../game/landscape-style.mjs';
 import * as LongHaulGuidance from '../game/navigation-guidance.mjs';
 import { resolveRoadStructureContact } from "../game/road-structure-contact.mjs";
+import { sampleTerrainTriangle, authoredPropCollider, resolveWorldContact } from "../game/world-contact.mjs";
 import { ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample } from "../game/road-chunks.mjs";
 import { ROAD_V3_VERSION } from "../game/road-v3-geometry.mjs";
 import { createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress } from "../game/road-v3-playable-course.mjs";
@@ -56,7 +57,7 @@ Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TO
 Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction, createSkillProgression, SKILL_UPGRADES, createActiveAbilities, ABILITY_DEFINITIONS, createDrivingPickups, PICKUP_DEFINITIONS, createEndlessHighway, advanceEndlessHighway, endlessHighwayPoint, endlessHighwayProgress, endlessHighwayStation, nextEndlessLoadingStation, endlessHorizonBounds, isEndlessLoadingZone, createFreightJourney, freightDifficulty, prepareFreightSave, CARGO_PROFILES, getCargoProfile, cargoDamageMultiplier, pruneLongHaulContactLedger });
 Object.assign(globalThis, { LONG_HAUL_CONTROLS, LONG_HAUL_BINDINGS, LONG_HAUL_TOUCH_ACTIONS, heldAction, createSkillProgression, SKILL_UPGRADES, createActiveAbilities, ABILITY_DEFINITIONS, createDrivingPickups, PICKUP_DEFINITIONS, freshCampaignSave, readCampaignSave });
 
-Object.assign(globalThis, { LongHaulGuidance, LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact });
+Object.assign(globalThis, { LongHaulGuidance, LongHaulArt, ROAD_GENERATOR_VERSION, LEGACY_ROAD_VERSION, roadChunkAt, roadChunkSample, roadRibbonData, resolveRoadStructureContact, sampleTerrainTriangle, authoredPropCollider, resolveWorldContact });
 Object.assign(globalThis, { ROAD_V3_VERSION, createPlayableRoadV3Course, advancePlayableRoadV3Course, playableRoadV3Point, playableRoadV3Progress });
 Object.assign(globalThis, { createHeroTruckMesh, HERO_TRUCK_SOURCE });
 Object.assign(globalThis,{FREIGHT_TERMINAL_VERSION,attachFreightTerminalStart,freightTerminalGroundHeight,terminalWorldPoint,terminalLocalPoint,terminalObstacleVolumes,parseFreightTerminalGlb,createFreightTerminalThreeObject});

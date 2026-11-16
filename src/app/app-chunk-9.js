@@ -56,7 +56,7 @@
       // Grid keys are resolved from cached active entries, avoiding world snapshot APIs.
       const patch=(cell??truckSurfaceEntries.find(e=>x>=e.patch.bounds.minX&&x<e.patch.bounds.maxX&&z>=e.patch.bounds.minZ&&z<e.patch.bounds.maxZ))?.patch;
       let height;
-      if(patch){const data=patch.terrain,n=data.segments,gx=clamp((x-patch.bounds.minX)/CELL_SIZE*n,0,n-1e-8),gz=clamp((z-patch.bounds.minZ)/CELL_SIZE*n,0,n-1e-8),ix=Math.floor(gx),iz=Math.floor(gz),u=gx-ix,v=gz-iz,a=iz*(n+1)+ix,h=data.heights,h00=h[a],h10=h[a+1],h01=h[a+n+1],h11=h[a+n+2];height=u+v<=1?h00+(h10-h00)*u+(h01-h00)*v:h11+(h01-h11)*(1-u)+(h10-h11)*(1-v)}else height=terrainHeight(course,x,z);
+      height=patch?(sampleTerrainTriangle(patch,x,z)?.height??terrainHeight(course,x,z)):terrainHeight(course,x,z);
       for(const entry of truckSurfaceEntries)height=sampleDriveSurface(entry.group.userData.driveSurface??[],x,z,height);
       return arcadeRampGround({x,z},height);
     }

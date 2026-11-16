@@ -2,7 +2,34 @@
     function spendTruckDamage(amount,reason){const armor=clamp(Number((arcadeCachedSave??=arcadeUpgradeState()).upgrades?.armor)||0,0,5),damage=Math.max(0,amount)*(1-armor*.08);meters.spend("truck-condition",damage,reason);return damage}
     function currentScene(){return engine.n.coreScene.getCurrentScene()?.id??"boot"}
     function surfaceAt(position){const road=nearestRoad(course,position);if(!road)return{surface:"off-road",grip:.38,road:null};const onRoad=road.distance<=road.edge.width*.55+1.4;const shoulder=road.distance<=road.edge.width*.85+5;return{surface:onRoad?"road":shoulder?"shoulder":"off-road",grip:onRoad?(road.edge.type==="rough-shortcut"?.72:1):shoulder?.62:.38,road}}
-    function groundSample(position){const roadContact=roadV3GroundContact(course,position);if(roadContact)return{height:roadContact.height,normal:roadContact.normal};const e=2,h=terrainHeight(course,position.x,position.z),left=terrainHeight(course,position.x-e,position.z),right=terrainHeight(course,position.x+e,position.z),back=terrainHeight(course,position.x,position.z-e),front=terrainHeight(course,position.x,position.z+e),nx=left-right,ny=e*2,nz=back-front,length=Math.hypot(nx,ny,nz)||1;return{height:h,normal:{x:nx/length,y:ny/length,z:nz/length}}}
+    function groundSample(position){
+      const roadContact=roadV3GroundContact(course,position);
+      if(roadContact)return{height:roadContact.height,normal:roadContact.normal};
+      const e=.3,x=position.x,z=position.z,h=truckRenderedGroundHeight(x,z);
+      const nx=truckRenderedGroundHeight(x-e,z)-truckRenderedGroundHeight(x+e,z);
+      const nz=truckRenderedGroundHeight(x,z-e)-truckRenderedGroundHeight(x,z+e);
+      const ny=e*2,length=Math.hypot(nx,ny,nz)||1;
+      return{height:h,normal:{x:nx/length,y:ny/length,z:nz/length}};
+    }
+    const worldContactDiagnostics={frames:0,groundCorrections:0,propImpacts:0,lastImpact:null};
+    window.LongHaulWorldContact={getState:()=>({...worldContactDiagnostics})};
+    function applyWorldContact(previous,dt){
+      if(!previous||!course)return;
+      const truck=readTruck(),now=truck.position;
+      const middle={x:(previous.x+now.x)*.5,z:(previous.z+now.z)*.5};
+      const radius=Math.min(80,Math.hypot(now.x-previous.x,now.z-previous.z)+17);
+      const collisionCandidates=[...obstacleCandidates(previous,radius),...obstacleCandidates(middle,radius),...obstacleCandidates(now,radius)];
+      const obstacles=[...new Map(collisionCandidates.filter(o=>o.kind!=='roundabout-island').map(o=>[o.id,o])).values()];
+      const result=resolveWorldContact(truck,previous,groundSample,obstacles,{dt,travel:readDynamics().suspension.travel??.92});
+      worldContactDiagnostics.frames++;
+      if(!result)return;
+      engine.n.longHaulTruck.loadSnapshot({...engine.n.longHaulTruck.snapshot(),...result.state});
+      if(result.groundHit)worldContactDiagnostics.groundCorrections++;
+      if(result.impacts.length){
+        worldContactDiagnostics.propImpacts+=result.impacts.length;
+        worldContactDiagnostics.lastImpact=result.impacts[0].id;
+      }
+    }
     function preTickDriving(dt){
       if(skillMenuOpen()){
         if(consumeAction("upgrades")||consumeAction("pause"))closeSkillMenu();

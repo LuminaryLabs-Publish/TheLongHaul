@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {sampleTerrainTriangle,authoredPropCollider,resolveSolidObstacle,resolveWorldContact} from '../src/game/world-contact.mjs';
+const near=(a,b,e=1e-5)=>assert.ok(Math.abs(a-b)<=e,`${a} vs ${b}`);
+const patch={bounds:{minX:0,maxX:10,minZ:0,maxZ:10},terrain:{segments:1,heights:[0,10,0,10]}};
+test('exact two-triangle mesh surface',()=>{for(const [x,z] of [[1,1],[4,8],[9,9],[2,7],[9.99,.5]]){const p=sampleTerrainTriangle(patch,x,z);near(p.height,x);near(p.normal.x,-1/Math.sqrt(2));near(p.normal.y,1/Math.sqrt(2));near(p.normal.z,0);}});
+test('outside patch is not collision floor',()=>{assert.equal(sampleTerrainTriangle(patch,-.01,4),null);assert.equal(sampleTerrainTriangle(patch,11,4),null);});
+test('steep slope retains truck above mesh',()=>{const truck={position:{x:8,y:2,z:8},velocity:{x:0,y:-6,z:0},heading:0,grounded:false};const hit=resolveWorldContact(truck,{x:8,y:2,z:8},p=>sampleTerrainTriangle(patch,p.x,p.z));assert.ok(hit?.groundHit);assert.ok(hit.state.position.y>=8.92);});
+test('airborne truck is not pulled down',()=>{const truck={position:{x:4,y:20,z:5},velocity:{x:0,y:2,z:0},heading:0};assert.equal(resolveWorldContact(truck,{x:4,y:20,z:5},p=>sampleTerrainTriangle(patch,p.x,p.z)),null);});
+test('pole blocks inward velocity',()=>{const o={id:'pole-1',x:0,z:5,y:0,height:10,radius:.6};const hit=resolveSolidObstacle({x:0,y:1,z:1.2},{x:0,y:0,z:30},0,o);assert.ok(hit);assert.ok(hit.position.z<1.2);assert.ok(hit.velocity.z<=0);});
+test('vertical separation excludes obstacle',()=>{assert.equal(resolveSolidObstacle({x:0,y:0,z:0},{x:0,z:0},0,{id:'bridge',x:0,z:0,y:30,height:2,radius:3}),null);});
+test('swept pole hit in normal speed',()=>{const truck={position:{x:0,y:1,z:12},velocity:{x:0,y:0,z:40},heading:0};const hit=resolveWorldContact(truck,{x:0,y:1,z:0},()=>({height:0,normal:{x:0,y:1,z:0}}),[{id:'pole',x:0,z:7,y:0,height:11,radius:.5}]);assert.ok(hit?.impacts.length);assert.ok(hit.state.position.z<7);});
+test('catalog solid vs decoration',()=>{const tree=authoredPropCollider({id:'oak1',kind:'oak',position:{x:3,z:4},scale:1.2},5);assert.equal(tree.id,'authored:oak1');near(tree.y,5);assert.equal(authoredPropCollider({id:'paint',kind:'rock',role:'on-road-paint',position:{x:0,z:0}},0),null);assert.equal(authoredPropCollider({id:'grass',kind:'grass',position:{x:0,z:0}},0),null);});
+test('long high-speed sweep hits small pole',()=>{const truck={position:{x:0,y:1,z:51},velocity:{x:0,y:0,z:80},heading:0};const hit=resolveWorldContact(truck,{x:0,y:1,z:0},()=>({height:0,normal:{x:0,y:1,z:0}}),[{id:'fast-pole',x:0,z:25,y:0,height:12,radius:.3}]);assert.ok(hit?.impacts.length);assert.ok(hit.state.position.z<25);});
