@@ -193,7 +193,7 @@ function fromLegacy(source,{revision=1,context=null}={}){
   // underpass and continuous graded entrance to an existing trunk node.
   // A stable section index controls reconstruction across streamed windows.
   const interchanges=[];
-  const directTerminal=seed.startsWith('haul-terminal-direct-');
+  const directTerminal=seed.startsWith('haul-terminal-direct-')||isCohesiveTerminalRun(seed);
   const groundLevelOpening=seed.startsWith('haul-winding-ground-');
   // A real highway spawn must not sit behind a viaduct guardrail. Clear
   // V3's terrain-classified bridge flags for the opening 960 metres, whether
