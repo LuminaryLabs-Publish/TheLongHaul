@@ -70,28 +70,35 @@ Object.assign(globalThis, { LIGHTING_SHADOW_PRESETS, LIGHTING_SOURCE, lightingPr
 Object.assign(globalThis, { ENV_TILE_METERS, ENV_CELL_METERS, ENV_TILE_VARIANTS, ENVIRONMENT_TILE_CATALOG, environmentCellPlanSteps, ENVIRONMENT_AUTHORING_SOURCE, createEnvironmentTileRenderer, ENVIRONMENT_RENDER_LIMITS });
 Object.assign(globalThis,{PREBUILT_TREE_VERSION,TREE_SPECIES,parsePrebuiltTreeGlb,createPrebuiltTreeMeshes,speciesForTree,isTreeEnvironmentObject,selectVisibleTreeInstances});
 // One controller owns entry readiness. Keep mandatory host installation ordered.
+const RELEASE_TOKEN='tlh-cohesive-start-01';
+const releaseScript=name=>{
+  const url=new URL(name,import.meta.url);
+  url.searchParams.set('v',RELEASE_TOKEN);
+  return url;
+};
 const startup = window.LongHaulStartup;
 if (!startup) throw new Error('Startup controller is unavailable');
 try {
-  await startup.loadScript(new URL('../../vendor/app-runtime.js', import.meta.url));
+  await startup.loadScript(releaseScript('../../vendor/app-runtime.js'));
   if (!window.__longHaulRuntimeReady) throw new Error('The local game runtime did not initialize');
-  await startup.loadScript(new URL('./endless-roads.js', import.meta.url));
+  await startup.loadScript(releaseScript('./endless-roads.js'));
   if (!window.__longHaulRoadsReady) throw new Error('The road host did not initialize');
-  await startup.loadScript(new URL('./freight-terminal-host.js', import.meta.url));
+  await startup.loadScript(releaseScript('./freight-terminal-host.js'));
   // This host chooses the start location: settle its known legacy fallback before entry.
   if (!window.LongHaulFreightTerminal?.readyPromise) throw new Error('Freight terminal host did not initialize');
-  await startup.required(window.LongHaulFreightTerminal.readyPromise, 'freight terminal');
+  if(await startup.required(window.LongHaulFreightTerminal.readyPromise, 'freight terminal')!==true)
+    throw new Error('The freight terminal model did not load. Cannot start the terminal without its scenery.');
   for (const name of ['./visual-presentation.js', './hero-truck-host.js', './traffic-vehicles-host.js',
     './lighting-shadow-host.js', './lighting-host.js', './environment-tiles-host.js', './guidance-v2.js',
     './four-band-cel-host.js', './sobel-outline-host.js']) {
-    await startup.loadScript(new URL(name, import.meta.url));
+    await startup.loadScript(releaseScript(name));
   }
   if (!window.__longHaulVisualsReady) throw new Error('Presentation did not initialize');
   // Optional scripts install in their original order, but do not hold the menu.
   // A failed script settles its own bounded promise and the next host still runs.
   void (async () => {
     for (const name of ['./prebuilt-tree-host.js', './connected-town-host.js', './menu-attract-host.js']) {
-      await startup.loadScript(new URL(name, import.meta.url), {optional:true, timeoutMs:8000});
+      await startup.loadScript(releaseScript(name), {optional:true, timeoutMs:8000});
       if (name === './prebuilt-tree-host.js') window.LongHaulPrebuiltTrees?.readyPromise?.catch(startup.warn);
       if (name === './connected-town-host.js') window.LongHaulTowns?.readyPromise?.catch(startup.warn);
     }

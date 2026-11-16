@@ -13,16 +13,12 @@
   const priorGenerate=generateEndlessCourse;
   generateEndlessCourse=function(seed){
     const generated=priorGenerate(seed),saved=freightResumeCheckpoint;
-    // A fresh winding-ground journey ALWAYS starts on the drivable highway.
-    // Otherwise a fast Start click and a slow GLB load produce different
-    // spawn roads for the same seed. Existing saves with an explicit terminal
-    // marker retain their authored terminal ramp and layout.
-    // Physics must not depend on whether the terminal art loads first.
-    // New terminal-direct journeys spawn on the one connected straight exit.
-    // Direct checkpoint resumes retain the same road even before GLB readiness.
-    const directStart=!saved && seed.startsWith('haul-terminal-direct-');
+    // The new cohesive opening always starts inside the authored terminal.
+    // The road graph is deterministic and does not depend on GLB completion.
+    // Legacy saves retain the exact terminal or highway layout they recorded.
+    const directStart=!saved && (seed.startsWith('haul-terminal-direct-')||seed.startsWith('haul-terminal-cohesive-'));
     const restoreDirect=saved?.freightTerminal===FREIGHT_TERMINAL_VERSION &&
-      seed.startsWith('haul-terminal-direct-');
+      (seed.startsWith('haul-terminal-direct-')||seed.startsWith('haul-terminal-cohesive-'));
     const legacyAllowed=loaded && !(!saved && seed.startsWith('haul-winding-ground-')) &&
       (!saved||saved.freightTerminal===FREIGHT_TERMINAL_VERSION);
     const enable=Boolean(generated?.endless && (directStart||restoreDirect||legacyAllowed));

@@ -37,7 +37,7 @@ function preferredX(seed,index) {
   const z=-index*TERRAIN_ROAD_V3.regionLength;
   // Fresh connected-world seeds intentionally seek broad winding valleys.
   // Historical V3 checkpoints keep their original alignment byte-for-byte.
-  const winding=seed.startsWith('haul-winding-')||seed.startsWith('haul-terminal-direct-');
+  const winding=seed.startsWith('haul-winding-')||seed.startsWith('haul-terminal-direct-')||seed.startsWith('haul-terminal-cohesive-');
   const phase=hashUnit(seed,'connected-winding-phase')*Math.PI*2;
   const preferred=winding?320*Math.sin(index*.83+phase)+80*Math.sin(index*.43+phase*.5):0;
   let best=null;

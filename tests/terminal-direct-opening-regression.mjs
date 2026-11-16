@@ -23,7 +23,7 @@ test('terminal orientation aligns the exit tangent with the highway tangent',()=
 });
 test('terminal always owns fresh direct run independent of art load',()=>{
  const src=p('src/app/freight-terminal-host.js');
- assert.match(src,/const directStart=!saved && seed\.startsWith\('haul-terminal-direct-'\)/);
+ assert.match(src,/const directStart=!saved && \(seed\.startsWith\('haul-terminal-direct-'\)\|\|seed\.startsWith\('haul-terminal-cohesive-'\)\)/);
  assert.match(src,/directStart\|\|restoreDirect\|\|legacyAllowed/);
 });
 test('authored curved ramp stays only for legacy saves',()=>{
@@ -39,7 +39,7 @@ test('no duplicate first interchange; later procedural road continues',()=>{
 });
 test('browser runtime regenerated from newest source',()=>{
  const runtime=p('vendor/app-runtime.js'),seed=p('src/app/app-chunk-5.js');
- assert.match(seed,/haul-terminal-direct-\$\{values\[0\]/);
- assert.match(runtime,/haul-terminal-direct-\$\{values\[0\]/);
+ assert.match(seed,/haul-terminal-cohesive-\$\{values\[0\]/);
+ assert.match(runtime,/haul-terminal-cohesive-\$\{values\[0\]/);
  assert.match(runtime,/applyWorldContact\(worldContactPrevious,dt\)/);
 });

@@ -100,16 +100,16 @@ function harness({finishBoot=async()=>true}={}) {
 
 // Execute the actual outer bootstrap, not a text-only readiness check. Optional
 // scripts and GLBs intentionally never settle; required hosts alone release entry.
-const program=bootstrap.slice(bootstrap.indexOf('// One controller owns entry readiness.'))
+const program=bootstrap.slice(bootstrap.indexOf('const RELEASE_TOKEN='))
  .replaceAll('import.meta.url',JSON.stringify('https://example.invalid/src/app/bootstrap.mjs'));
 for(const broken of [null,'endless-roads.js','runtime-silent-failure']){
  const h=harness();h.onScript=script=>{
   if(/prebuilt-tree-host|connected-town-host|menu-attract-host/.test(script.src))return;
-  if(broken==='endless-roads.js'&&script.src.endsWith(broken)){script.onerror();return;}
-  if(script.src.endsWith('app-runtime.js')&&broken!=='runtime-silent-failure')h.api.runtimeReady();
-  if(script.src.endsWith('endless-roads.js'))h.window.__longHaulRoadsReady=true;
-  if(script.src.endsWith('visual-presentation.js'))h.window.__longHaulVisualsReady=true;
-  if(script.src.endsWith('freight-terminal-host.js'))h.window.LongHaulFreightTerminal={readyPromise:Promise.resolve(false)};
+  if(broken==='endless-roads.js'&&script.src.includes(broken)){script.onerror();return;}
+  if(script.src.includes('app-runtime.js')&&broken!=='runtime-silent-failure')h.api.runtimeReady();
+  if(script.src.includes('endless-roads.js'))h.window.__longHaulRoadsReady=true;
+  if(script.src.includes('visual-presentation.js'))h.window.__longHaulVisualsReady=true;
+  if(script.src.includes('freight-terminal-host.js'))h.window.LongHaulFreightTerminal={readyPromise:Promise.resolve(true)};
   script.onload();
  };
  await vm.runInNewContext(`(async()=>{${program}})()`,h.context);

@@ -11,6 +11,7 @@ import { edgeLength, hashText } from './shared.mjs';
 import { roadV3NaturalHeight } from './landscape-style.mjs';
 import { createHighwayInterchange, applyInterchangeDeckSpan, validateHighwayInterchange } from './highway-interchange.mjs';
 import { createGroundLevelAccess, validateGroundLevelAccess, removeOpeningBridgeSpan } from './opening-access.mjs';
+import { isCohesiveTerminalRun, cohesiveOpeningElevation, cohesiveOpeningWidth } from './terminal-direct-road.mjs';
 
 const contexts=new WeakMap();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -27,18 +28,28 @@ function translate(context,source,progress) {
   const tx=Math.sin(original.heading),tz=Math.cos(original.heading);
   const lateral=dx*nx+dz*nz,forward=dx*tx+dz*tz;
   const extraY=Number.isFinite(source.y)&&Number.isFinite(original.y)?clamp(source.y-original.y,-4,4):0;
+  const cohesive=isCohesiveTerminalRun(seed);
+  // Grade the starting highway into the same local terrain level as the
+  // terminal's join, then smoothly return to the normal procedural relief.
+  const mergeFrame=cohesive?align(context,320):null;
+  const baseline=cohesive?(context.openingLevel??=
+    roadV3NaturalHeight(seed,mergeFrame.x,mergeFrame.z)+.65):null;
+  const roadY=cohesive?cohesiveOpeningElevation(progress,baseline,frame.y):frame.y;
   const point={x:frame.x+frame.nx*lateral+Math.sin(frame.heading)*forward,
-    y:frame.y+frame.bank*lateral+extraY,
+    y:roadY+frame.bank*lateral+extraY,
     z:frame.z+frame.nz*lateral+Math.cos(frame.heading)*forward,
     heading:frame.heading,nx:frame.nx,nz:frame.nz,
     width:source.width??frame.width,bank:frame.bank,grade:frame.grade,progress};
-  return {...point,structure:classifyTerrainRoadV3Structure(seed,point,source.structure)};
+  return {...point,structure:cohesive&&progress<=960?null:
+    classifyTerrainRoadV3Structure(seed,point,source.structure)};
 }
 function translateEdge(context,edge) {
   const samples=edge.samples.map((p,i)=>{
     const progress=Number.isFinite(p.progress)?p.progress:(edge.startProgress+
       (edge.endProgress-edge.startProgress)*i/(edge.samples.length-1));
-    return {...p,...translate(context,p,progress),width:p.width??edge.width,
+    return {...p,...translate(context,p,progress),
+      width:isCohesiveTerminalRun(context.seed)&&edge.type==='endless-highway'
+        ?cohesiveOpeningWidth(progress,p.width??edge.width):(p.width??edge.width),
       laneFactor:p.laneFactor??3};
   });
   // Recalculate tangent and signed bank on the transformed visible geometry.
@@ -153,6 +164,10 @@ function fromLegacy(source,{revision=1,context=null}={}){
     const mapped=cached??translateEdge(context,edge);
     nextEdges.set(edge.id,mapped);return mapped;
   });
+  // The terminal road replaces the old 0–320 m hardcoded trunk.
+  // The through highway begins at node 1, exactly where the terminal joins.
+  if(isCohesiveTerminalRun(seed))edges=edges.filter(edge=>
+    !(edge.branchId==='trunk'&&edge.type==='endless-highway'&&edge.endProgress<=320));
   context.edges=nextEdges;
   const mapNode=node=>translateOther(context,node,Number.isFinite(node.progress)?node.progress:-node.z);
   const nodes=source.nodes.map(mapNode);

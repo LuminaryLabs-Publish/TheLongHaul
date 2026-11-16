@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const load=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('fresh-run seed selects the terminal-direct opening while older seeds retain geometry',()=>{
  const host=load('src/app/app-chunk-5.js'),adapter=load('src/game/road-v3-playable-course.mjs');
- assert.match(host,/let seed=`haul-terminal-direct-\$\{/);
+ assert.match(host,/let seed=`haul-terminal-cohesive-\$\{/);
  assert.match(adapter,/seed\.startsWith\('haul-terminal-direct-'\)/);
  assert.match(adapter,/if\(directTerminal&&index===3\)continue/);
 });

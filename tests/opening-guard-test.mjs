@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read=(p)=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('fresh run never depends on terminal GLB load timing',()=>{
  const host=read('src/app/freight-terminal-host.js');
- assert.match(host,/const directStart=!saved && seed\.startsWith\('haul-terminal-direct-'\)/);
+ assert.match(host,/const directStart=!saved && \(seed\.startsWith\('haul-terminal-direct-'\)\|\|seed\.startsWith\('haul-terminal-cohesive-'\)\)/);
  assert.match(host,/directStart\|\|restoreDirect\|\|legacyAllowed/);
 });
 test('opening viaduct flags removed independently of an optional spur',()=>{

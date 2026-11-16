@@ -4,7 +4,7 @@ import { endlessHighwayPoint } from './endless-highway.mjs';
 import { playableRoadV3Point } from './road-v3-playable-course.mjs';
 import { ROAD_V3_VERSION } from './road-v3-geometry.mjs';
 import { edgeLength } from './shared.mjs';
-import { isDirectTerminalRun, straightTerminalRoadPoints, validateStraightTerminalRoad } from './terminal-direct-road.mjs';
+import { isDirectTerminalRun, isCohesiveTerminalRun, cohesiveTerminalSoilHeight, straightTerminalRoadPoints, validateStraightTerminalRoad } from './terminal-direct-road.mjs';
 
 export const FREIGHT_TERMINAL_VERSION = 'long-haul.freight-terminal-start/1';
 export const FREIGHT_TERMINAL_MERGE_PROGRESS = 320;
@@ -45,6 +45,10 @@ function siteFor(course){
 export function freightTerminalGroundHeight(course,x,z,underlying){
   const site=course?.freightTerminal;
   if(!site||!Number.isFinite(underlying))return underlying;
+  if(isCohesiveTerminalRun(course.seed)){
+    const start=terminalWorldPoint(site,LOCAL_SPAWN),end=terminalWorldPoint(site,LOCAL_MERGE);
+    return cohesiveTerminalSoilHeight(site,start,end,x,z,underlying);
+  }
   const p=terminalLocalPoint(site,{x,z,y:site.y});
   const dx=Math.max(-318-p.x,0,p.x-45);
   const dz=Math.max(-230-p.z,0,p.z-225);
@@ -84,8 +88,8 @@ function rampEdge(course,site){
       progress:FREIGHT_TERMINAL_MERGE_PROGRESS*lengths[i]/Math.max(1,distance)});
   }
   const edge={id:'terminal:start-ramp',from:'terminal:spawn',to:'endless:node:1',
-    branchId:'terminal:exit',branchName:'Freight Terminal On-ramp',
-    type:'terminal-onramp',roadClass:'paved-regional',surface:'paved',
+    branchId:'terminal:exit',branchName:isCohesiveTerminalRun(course.seed)?'Freight Terminal Exit':'Freight Terminal On-ramp',
+    type:isCohesiveTerminalRun(course.seed)?'terminal-exit':'terminal-onramp',roadClass:'paved-regional',surface:'paved',
     width:direct?11:8.6,laneCount:1,laneWidth:3.8,roughness:.025,
     optional:false,endless:true,modular:true,generatorVersion:course.generatorVersion,
     startProgress:0,endProgress:FREIGHT_TERMINAL_MERGE_PROGRESS,
